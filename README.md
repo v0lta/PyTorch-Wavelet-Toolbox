@@ -1,4 +1,4 @@
-# Pytorch Adaptive Wavelet Toolbox (ptwt)
+# Pytorch adaptive Wavelet Toolbox (ptwt)
 Welcome to the PyTorch adaptive wavelet toolbox.
 This package implements the fast wavelet transform
 (wavedec) and it's inverse (waverec)
