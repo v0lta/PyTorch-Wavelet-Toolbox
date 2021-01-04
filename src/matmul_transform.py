@@ -1,13 +1,10 @@
 # Created by moritz (wolter@cs.uni-bonn.de) at 14.04.20
 """
-WARNING EXPERIMENTAL!
-Implement a matrix based fwt using Strang Nguyen p. 32
+This module implements matrix based fwt and ifwt 
+based on the description in Strang Nguyen (p. 32).
 """
-import pywt
 import torch
 import numpy as np
-import time
-from tests.mackey_glass import MackeyGenerator
 
 
 def cat_sparse_identity_matrix(sparse_matrix, new_length):
@@ -73,7 +70,7 @@ def construct_a(wavelet, length, wrap=True):
     return a_ten
 
 
-def matrix_fwt(data, wavelet, scales: int = None):
+def matrix_wavedec(data, wavelet, scales: int = None):
     """ Compute the sparse matrix fast wavlet transform.
     :param wavelet: A wavelet object in pywave
     :param data: Batched input data [batch_size, time]
@@ -99,14 +96,14 @@ def matrix_fwt(data, wavelet, scales: int = None):
     al2 = construct_a(wavelet, length//2)
     al2 = cat_sparse_identity_matrix(al2, length)
     if scales == 2:
-        coefficients = torch.sparse.mm(al2, torch.sparse.mm(ar, pt_data.T))
+        coefficients = torch.sparse.mm(al2, torch.sparse.mm(ar, data.T))
         return torch.split(coefficients, [length//4, length//4, length//2]), \
             [ar, al2]
     ar3 = construct_a(wavelet, length//4)
     ar3 = cat_sparse_identity_matrix(ar3, length)
     if scales == 3:
         coefficients = torch.sparse.mm(ar3, torch.sparse.mm(al2,
-                                       torch.sparse.mm(ar, pt_data.T)))
+                                       torch.sparse.mm(ar, data.T)))
         return torch.split(coefficients, [length//8, length//8,
                                           length//4, length//2]), \
             [ar, al2, ar3]
@@ -152,7 +149,7 @@ def construct_s(wavelet, length, wrap=True):
     return s_ten
 
 
-def matrix_ifwt(coefficients, wavelet, scales: int = None):
+def matrix_waverec(coefficients, wavelet, scales: int = None):
     _, _, rec_lo, rec_hi = wavelet.filter_bank
 
     # if the coefficients come in a list concatenate!
@@ -182,147 +179,3 @@ def matrix_ifwt(coefficients, wavelet, scales: int = None):
     for ifwt_mat in ifwt_mat_lst[::-1]:
         reconstruction = torch.sparse.mm(ifwt_mat, reconstruction)
     return reconstruction.T, ifwt_mat_lst[::-1]
-
-
-if __name__ == '__main__':
-    # ----------------------- matrix construction tests ----------------------#
-    a_db1 = construct_a(pywt.Wavelet('db1'), 8)
-    s_db1 = construct_s(pywt.Wavelet('db1'), 8)
-    err = np.mean(np.abs(torch.sparse.mm(a_db1, s_db1.to_dense()).numpy()
-                  - np.eye(8)))
-    print('db1 8 inverse error', err)
-
-    a_db2 = construct_a(pywt.Wavelet('db2'), 64, wrap=True)
-    s_db2 = construct_s(pywt.Wavelet('db2'), 64, wrap=True)
-    test_eye = torch.sparse.mm(a_db2, s_db2.to_dense()).numpy()
-    err = np.mean(np.abs(test_eye - np.eye(64)))
-    print('db2 64 inverse error', err)
-
-    a_db2_66 = construct_a(pywt.Wavelet('db2'), 66, wrap=True)
-    s_db2_66 = construct_s(pywt.Wavelet('db2'), 66, wrap=True)
-    test_eye = torch.sparse.mm(a_db2_66, s_db2_66.to_dense()).numpy()
-    err = np.mean(np.abs(test_eye - np.eye(66)))
-    print('db2 66 inverse error', err)
-
-    a_db2 = construct_a(pywt.Wavelet('db8'), 128)
-    s_db2 = construct_s(pywt.Wavelet('db8'), 128)
-    test_eye = torch.sparse.mm(a_db2, s_db2.to_dense()).numpy()
-    err = np.mean(np.abs(test_eye - np.eye(128)))
-    print('db8 128 inverse error', err)
-
-    # ------------------------- Haar fwt-ifwt tests ----------------
-    wavelet = pywt.Wavelet('haar')
-    data2 = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
-    data = np.array([1, 2, 3, 4])
-
-    # level 1
-    coeffs = pywt.dwt(data2, wavelet)
-    print(coeffs[0], coeffs[1])
-    # AR = construct_ar(wavelet, data2.shape[0])
-    pt_data = torch.from_numpy(data2.astype(np.float32)).unsqueeze(0)
-    coeffsmat1, _ = matrix_fwt(pt_data, wavelet, 1)
-    print(coeffsmat1[0].T.numpy(), coeffsmat1[1].T.numpy())
-    print(np.sum(np.abs(coeffs[0] - coeffsmat1[0].squeeze().numpy()))
-          < 0.00001,
-          np.sum(np.abs(coeffs[1] - coeffsmat1[1].squeeze().numpy()))
-          < 0.00001)
-
-    coeffs2 = pywt.wavedec(data2, wavelet, level=2)
-    coeffsmat2, _ = matrix_fwt(pt_data, wavelet, 2)
-    print(coeffs2[0], coeffs2[1], coeffs2[2])
-    print(coeffsmat2[0].T.numpy().astype(np.float32),
-          coeffsmat2[1].T.numpy().astype(np.float32),
-          coeffsmat2[2].T.numpy().astype(np.float32))
-    print(np.sum(np.abs(coeffs2[0] - coeffsmat2[0].squeeze().numpy()))
-          < 0.00001,
-          np.sum(np.abs(coeffs2[1] - coeffsmat2[1].squeeze().numpy()))
-          < 0.00001,
-          np.sum(np.abs(coeffs2[2] - coeffsmat2[2].squeeze().numpy()))
-          < 0.00001)
-
-    coeffs3 = pywt.wavedec(data2, wavelet, level=3)
-    coeffsmat3, mat_3_lst = matrix_fwt(pt_data, wavelet, 3)
-    print(np.sum(np.abs(coeffs3[0] - coeffsmat3[0].squeeze().numpy()))
-          < 0.00001,
-          np.sum(np.abs(coeffs3[1] - coeffsmat3[1].squeeze().numpy()))
-          < 0.00001,
-          np.sum(np.abs(coeffs3[2] - coeffsmat3[2].squeeze().numpy()))
-          < 0.00001,
-          np.sum(np.abs(coeffs3[3] - coeffsmat3[3].squeeze().numpy()))
-          < 0.00001)
-
-    reconstructed_data, ifwt_mat_3_lst = matrix_ifwt(coeffsmat3, wavelet, 3)
-    print('abs ifwt 3 reconstruction error', torch.mean(
-          torch.abs(pt_data - reconstructed_data)))
-
-    plot = False
-    save = False
-    if plot:
-        operator_mat = mat_3_lst[0].to_dense()
-        inv_operator_mat = ifwt_mat_3_lst[0].to_dense()
-        for mat_no in range(1, len(mat_3_lst)):  # mat_lst[1:]:
-            operator_mat = torch.sparse.mm(mat_3_lst[mat_no], operator_mat)
-            inv_operator_mat = torch.sparse.mm(ifwt_mat_3_lst[mat_no],
-                                               inv_operator_mat)
-
-    pd = {}
-    pd['delta_t'] = 1
-    pd['tmax'] = 1024
-    pd['batch_size'] = 24
-
-    generator = MackeyGenerator(batch_size=pd['batch_size'],
-                                tmax=pd['tmax'],
-                                delta_t=pd['delta_t'])
-    wavelet = pywt.Wavelet('haar')
-    pt_data = torch.squeeze(generator()).cpu()
-    numpy_data = pt_data.cpu().numpy()
-    pywt_start = time.time()
-    coeffs_max = pywt.wavedec(numpy_data, wavelet, level=9)
-    time_pywt = time.time() - pywt_start
-    sparse_fwt_start = time.time()
-    coeffs_mat_max, mat_lst = matrix_fwt(pt_data, wavelet, 9)
-    time_sparse_fwt = time.time() - sparse_fwt_start
-
-    test_lst = []
-    for test_no in range(9):
-        test_lst.append(np.sum(np.abs(coeffs_max[test_no]
-                                      - coeffs_mat_max[test_no].T.numpy()))
-                        < 0.001)
-    print(test_lst)
-    print('time pywt', time_pywt)
-    print('time_sparse_wt', time_sparse_fwt)
-
-    # test the inverse fwt.
-    reconstructed_data, ifwt_mat_lst = matrix_ifwt(coeffs_mat_max, wavelet, 9)
-    print('abs ifwt reconstruction error',
-          torch.mean(torch.abs(pt_data - reconstructed_data)))
-
-    operator_mat = mat_lst[0].to_dense()
-    inv_operator_mat = ifwt_mat_lst[0].to_dense()
-    for mat_no in range(1, len(mat_lst)):  # mat_lst[1:]:
-        operator_mat = torch.sparse.mm(mat_lst[mat_no], operator_mat)
-        inv_operator_mat = torch.sparse.mm(ifwt_mat_lst[mat_no],
-                                           inv_operator_mat)
-
-    coeff = torch.sparse.mm(operator_mat, pt_data.T)
-    data_rec = torch.sparse.mm(inv_operator_mat, coeff).T
-    print('abs. reconstruction error:', np.mean(np.abs(data_rec.numpy()
-                                                       - numpy_data)))
-
-    # ------------ db2 fwt-ifwt tests --------------------------------------
-    pd = {}
-    pd['delta_t'] = 1
-    pd['tmax'] = 512
-    pd['batch_size'] = 24
-    wavelet = pywt.Wavelet('db2')
-    generator = MackeyGenerator(batch_size=pd['batch_size'],
-                                tmax=pd['tmax'],
-                                delta_t=pd['delta_t'])
-    pt_data = torch.squeeze(generator()).cpu()
-    numpy_data = pt_data.cpu().numpy()
-    coeffs_max = pywt.wavedec(numpy_data, wavelet, level=4)
-    coeffs_mat_max, mat_lst = matrix_fwt(pt_data, wavelet, 4)
-
-    reconstructed_data, ifwt_mat = matrix_ifwt(coeffs_mat_max, wavelet, 4)
-    print('reconstruction error:', torch.mean(torch.abs(pt_data
-                                              - reconstructed_data)))
