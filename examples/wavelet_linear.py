@@ -3,7 +3,7 @@
 import torch
 import numpy as np
 from torch.nn.parameter import Parameter
-from src.conv_transform import conv_fwt, conv_ifwt
+from src.conv_transform import wavedec, waverec
 import pywt
 
 
@@ -22,17 +22,21 @@ class WaveletLayer(torch.nn.Module):
         self.mode = 'zero'
         self.coefficient_len_lst = [depth]
         for _ in range(scales):
-            self.coefficient_len_lst.append(pywt.dwt_coeff_len(self.coefficient_len_lst[-1],
-                                                               init_wavelet.dec_lo.shape[-1],
-                                                               self.mode))
+            self.coefficient_len_lst.append(
+                pywt.dwt_coeff_len(self.coefficient_len_lst[-1],
+                                   init_wavelet.dec_lo.shape[-1],
+                                   self.mode))
         self.coefficient_len_lst = self.coefficient_len_lst[1:]
         self.coefficient_len_lst.append(self.coefficient_len_lst[-1])
 
         wave_depth = np.sum(self.coefficient_len_lst)
         self.depth = depth
-        self.diag_vec_s = Parameter(torch.from_numpy(np.ones(depth, np.float32)))
-        self.diag_vec_g = Parameter(torch.from_numpy(np.ones(wave_depth, np.float32)))
-        self.diag_vec_b = Parameter(torch.from_numpy(np.ones(depth, np.float32)))
+        self.diag_vec_s = Parameter(torch.from_numpy(np.ones(depth,
+                                                             np.float32)))
+        self.diag_vec_g = Parameter(torch.from_numpy(np.ones(wave_depth,
+                                                             np.float32)))
+        self.diag_vec_b = Parameter(torch.from_numpy(np.ones(depth,
+                                                             np.float32)))
         perm = np.random.permutation(np.eye(wave_depth, dtype=np.float32))
         self.perm = Parameter(torch.from_numpy(perm), requires_grad=False)
 
@@ -60,7 +64,7 @@ class WaveletLayer(torch.nn.Module):
             [torch.tensor]: 2d output tensor.
         """
         # c_lst = self.wavelet.analysis(x.unsqueeze(0).unsqueeze(0))
-        c_lst = conv_fwt(x.unsqueeze(1), self.wavelet, scales=self.scales)
+        c_lst = wavedec(x.unsqueeze(1), self.wavelet, scales=self.scales)
         shape_lst = [c_el.shape[-1] for c_el in c_lst]
         c_tensor = torch.cat([c for c in c_lst], -1)
         assert shape_lst == self.coefficient_len_lst[::-1], \
@@ -81,7 +85,7 @@ class WaveletLayer(torch.nn.Module):
             stop = start + self.coefficient_len_lst[::-1][s]
             coeff_lst.append(x[..., start:stop])
             start = self.coefficient_len_lst[s]
-        y = conv_ifwt(coeff_lst, self.wavelet)
+        y = waverec(coeff_lst, self.wavelet)
         return y
 
     def forward(self, x):

@@ -1,10 +1,6 @@
 # Created by moritz wolter, 14.04.20
 import torch
-# import numpy as np
 import pywt
-# from util.mackey_glass import MackeyGenerator
-# from util.learnable_wavelets import OrthogonalWavelet
-# import matplotlib.pyplot as plt
 
 
 def get_filter_tensors(wavelet, flip, device):
@@ -65,25 +61,29 @@ def get_pad(data_len, filt_len):
     return padr, padl
 
 
-def fwt_pad(data, wavelet):
+def fwt_pad(data, wavelet, mode='reflect'):
     """ Pad the input signal to make the fwt matrix work.
     :param data: Input data [batch_size, 1, time]
     :param wavelet: The input wavelet following the pywt wavelet format.
     :return: The padded input data
     """
+    if mode == 'zero':
+        # convert pywt to pytorch convention.
+        mode = 'constant'
+
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo))
 
     # print('fwt pad', data.shape, pad)
     data_pad = torch.nn.functional.pad(data, [padl, padr],
-                                       mode='reflect')
+                                       mode=mode)
     return data_pad
 
 
-def fwt_pad2d(data, wavelet):
+def fwt_pad2d(data, wavelet, mode='reflect'):
     padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo))
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo))
     data_pad = torch.nn.functional.pad(data, [padt, padb, padl, padr],
-                                       mode='reflect')
+                                       mode=mode)
     return data_pad
 
 
@@ -123,32 +123,27 @@ def construct_2d_filt(lo, hi):
     return filt
 
 
-def conv_fwt_2d(data, wavelet, scales: int = None) -> list:
+def wavedec2(data, wavelet, level: int = None) -> list:
     """ Non seperated two dimensional wavelet transform.
 
     Args:
         data (torch.tensor): [batch_size, 1, height, width]
         wavelet ([type]): [description]
-        scales (int, optional): [description]. Defaults to None.
+        level (int, optional): [description]. Defaults to None.
 
     Returns:
         [list]: List containing the wavelet coefficients.
     """
-    # dec_lo, dec_hi, _, _ = wavelet.filter_bank
-    # filt_len = len(dec_lo)
-    # dec_lo = torch.tensor(dec_lo[::-1]).unsqueeze(0)
-    # dec_hi = torch.tensor(dec_hi[::-1]).unsqueeze(0)
     dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True,
                                               device=data.device)
-    # filt_len = dec_lo.shape[-1]
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
 
-    if scales is None:
-        scales = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
+    if level is None:
+        level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
 
     result_lst = []
     res_ll = data
-    for s in range(scales):
+    for s in range(level):
         res_ll = fwt_pad2d(res_ll, wavelet)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
@@ -157,12 +152,8 @@ def conv_fwt_2d(data, wavelet, scales: int = None) -> list:
     return result_lst[::-1]
 
 
-def conv_ifwt_2d(coeffs, wavelet):
+def waverec2(coeffs, wavelet):
     """ 2d non separated ifwt"""
-    # _, _, rec_lo, rec_hi = wavelet.filter_bank
-    # filt_len = len(rec_lo)
-    # rec_lo = torch.tensor(rec_lo).unsqueeze(0)
-    # rec_hi = torch.tensor(rec_hi).unsqueeze(0)
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=False, device=flatten_2d_coeff_lst(coeffs)[0].device)
     filt_len = rec_lo.shape[-1]
@@ -207,12 +198,16 @@ def conv_ifwt_2d(coeffs, wavelet):
 
 
 def conv_fwt(data, wavelet, scales: int = None) -> list:
+    return wavedec(data, wavelet, scales)
+
+
+def wavedec(data, wavelet, level: int = None, mode='reflect') -> list:
     """Compute the analysis (forward) 1d fast wavelet transform."
 
     Args:
         data (torch.tensor): Input time series of shape [batch_size, 1, time]
         wavelet (util.WaveletFilter): The wavelet object to be used.
-        scales (int, optional): The scale level to be computed.
+        level (int, optional): The scale level to be computed.
                                 Defaults to None.
 
     Returns:
@@ -225,13 +220,13 @@ def conv_fwt(data, wavelet, scales: int = None) -> list:
     # dec_hi = torch.tensor(dec_hi[::-1]).unsqueeze(0)
     filt = torch.stack([dec_lo, dec_hi], 0)
 
-    if scales is None:
-        scales = pywt.dwt_max_level(data.shape[-1], filt_len)
+    if level is None:
+        level = pywt.dwt_max_level(data.shape[-1], filt_len)
 
     result_lst = []
     res_lo = data
-    for s in range(scales):
-        res_lo = fwt_pad(res_lo, wavelet)
+    for s in range(level):
+        res_lo = fwt_pad(res_lo, wavelet, mode=mode)
         res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)
         result_lst.append(res_hi.squeeze(1))
@@ -240,6 +235,10 @@ def conv_fwt(data, wavelet, scales: int = None) -> list:
 
 
 def conv_ifwt(coeffs: list, wavelet) -> torch.tensor:
+    return waverec(coeffs, wavelet)
+
+
+def waverec(coeffs: list, wavelet) -> torch.tensor:
     # _, _, rec_lo, rec_hi = wavelet.filter_bank
     # filt_len = len(rec_lo)
     # rec_lo = torch.tensor(rec_lo).unsqueeze(0)
