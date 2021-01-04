@@ -3,7 +3,7 @@ import numpy as np
 import pywt
 import scipy.misc
 from tests.mackey_glass import MackeyGenerator
-from examples.learnable_wavelets import SoftOrthogonalWavelet
+from src.learnable_wavelets import SoftOrthogonalWavelet
 from src.conv_transform import conv_fwt, conv_ifwt, conv_fwt_2d, conv_ifwt_2d
 from src.conv_transform import flatten_2d_coeff_lst
 
