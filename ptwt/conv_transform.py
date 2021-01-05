@@ -4,6 +4,17 @@ import pywt
 
 
 def get_filter_tensors(wavelet, flip, device):
+    """Convert input wavelet to filter tensors.
+    Args:
+        wavelet: Wavelet object, assmuing ptwt-like
+                 field names.
+        flip ([bool]]): If true filters ar eflipped.
+        device : PyTorch target device.
+
+    Returns:
+        Tuple containing the four filter tensors
+        dec_lo, dec_hi, rec_lo, rec_hi
+    """
     def create_tensor(filter):
         if flip:
             if isinstance(filter, torch.Tensor):
@@ -25,9 +36,12 @@ def get_filter_tensors(wavelet, flip, device):
 
 def get_pad(data_len, filt_len):
     """ Compute the required padding.
-    :param data: The input tensor.
-    :param wavelet: The wavelet filters used.
-    :return: The numbers to attach on the edges of the input.
+    Args:
+        data: The input tensor.
+        wavelet: The wavelet filters used.
+
+    Returns:
+        The numbers to attach on the edges of the input.
     """
     # filt_len = wavelet.__len__()
     # pywt_coeff_no = (data_len + filt_len - 1) // 2
@@ -63,9 +77,12 @@ def get_pad(data_len, filt_len):
 
 def fwt_pad(data, wavelet, mode='reflect'):
     """ Pad the input signal to make the fwt matrix work.
-    :param data: Input data [batch_size, 1, time]
-    :param wavelet: The input wavelet following the pywt wavelet format.
-    :return: The padded input data
+    Args:
+        data: Input data [batch_size, 1, time]
+        wavelet: The input wavelet following the pywt wavelet format.
+
+    Returns:
+        A pytorch tensor with the padded input data
     """
     if mode == 'zero':
         # convert pywt to pytorch convention.
@@ -80,6 +97,15 @@ def fwt_pad(data, wavelet, mode='reflect'):
 
 
 def fwt_pad2d(data, wavelet, mode='reflect'):
+    """Padding for the 2d FWT.
+    Args:
+        data (torch.Tensor): Input data with 4 domensions.
+        wavelet (pywt.Wavelet or WaveletFilter): The wavelet used.
+        mode (str, optional): [description]. Defaults to 'reflect'.
+
+    Returns:
+        The padded output tensor.
+    """
     padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo))
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo))
     data_pad = torch.nn.functional.pad(data, [padt, padb, padl, padr],
@@ -114,6 +140,16 @@ def flatten_2d_coeff_lst(coeff_lst_2d, flatten_tensors=True):
 
 
 def construct_2d_filt(lo, hi):
+    """Construct two dimensional filters using outer
+       products.
+
+    Args:
+        lo (torch.tensor): Low-pass input filter.
+        hi (torch.tensor): High-pass input filter
+
+    Returns:
+        [torch.tensor]: Stacked 2d filters.
+    """
     ll = outer(lo, lo)
     lh = outer(hi, lo)
     hl = outer(lo, hi)
@@ -259,10 +295,6 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
     Returns:
         torch.tensor: The reconstructed signal.
     """
-    # _, _, rec_lo, rec_hi = wavelet.filter_bank
-    # filt_len = len(rec_lo)
-    # rec_lo = torch.tensor(rec_lo).unsqueeze(0)
-    # rec_hi = torch.tensor(rec_hi).unsqueeze(0)
     _, _, rec_lo, rec_hi = get_filter_tensors(wavelet, flip=False,
                                               device=coeffs[-1].device)
     filt_len = rec_lo.shape[-1]
