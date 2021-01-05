@@ -153,7 +153,16 @@ def wavedec2(data, wavelet, level: int = None) -> list:
 
 
 def waverec2(coeffs, wavelet):
-    """ 2d non separated ifwt"""
+    """Reconstruct a signal from wavelet coefficients.
+
+    Args:
+        coeffs (list): The wavelet coefficient list produced by wavedec2.
+        wavelet (learnable_wavelets.WaveletFilter): The wavelet object
+            used to compute the forward transform.
+
+    Returns:
+        torch.tensor: The reconstructed signal.
+    """
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=False, device=flatten_2d_coeff_lst(coeffs)[0].device)
     filt_len = rec_lo.shape[-1]
@@ -249,7 +258,7 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
 
     Returns:
         torch.tensor: The reconstructed signal.
-    """    
+    """
     # _, _, rec_lo, rec_hi = wavelet.filter_bank
     # filt_len = len(rec_lo)
     # rec_lo = torch.tensor(rec_lo).unsqueeze(0)
