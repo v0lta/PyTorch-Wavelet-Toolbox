@@ -41,7 +41,7 @@ Adaptive wavelets
 Code to train an adaptive wavelet layer in PyTorch is available in
 the `examples` folder. In addition to static wavelets from pywt,
 
-- Adaptive Product-filters
+- Adaptive product-filters
 
 - and optimizable orthogonal-wavelets are supported.
 
