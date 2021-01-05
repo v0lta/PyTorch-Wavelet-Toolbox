@@ -1,4 +1,6 @@
-# Pytorch adaptive Wavelet Toolbox (ptwt)
+Pytorch adaptive Wavelet Toolbox (ptwt)
+=======================================
+
 Welcome to the PyTorch adaptive wavelet toolbox.
 This package implements:
 - the fast wavelet transform (fwt) (wavedec)
@@ -6,7 +8,8 @@ This package implements:
 - the 2d fwt wavedec2
 - the inverse 2d fwt waverec2.
 
-## Example usage:
+Example usage:
+--------------
 
 .. code-block:: python
 
@@ -29,10 +32,14 @@ This package implements:
           level=2), wavelet))
 
 ## Adaptive wavelets
+--------------------
+
 Code to train an adaptive wavelet layer in PyTorch is available in
 the `examples` folder.
 
-## Matrix multiplication transform (experimental).
+Sparse-Matrix-multiplication transform (experimental).
+------------------------------------------------------
+
 In addition to convolution-based fwt implementations 
 matrix-based code is available Continuing the example above
 on could try:
@@ -46,7 +53,9 @@ on could try:
     rec, ifwt_matrix = ptwt.matrix_waverec(coeff, wavelet, level=2)
     print(rec)
 
-## Unit tests
+# Unit tests
+------------
+
 The `tests` folder contains multiple tests, to allow independent
 verification of this toolbox. Run 
 
