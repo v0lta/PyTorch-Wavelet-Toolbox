@@ -12,11 +12,11 @@ import torch.optim as optim
 import collections
 import pywt
 import matplotlib.pyplot as plt
-from ptwt.learnable_wavelets import ProductFilter
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 from wavelet_linear import WaveletLayer
 from torch.utils.tensorboard.writer import SummaryWriter
+from ptwt.learnable_wavelets import ProductFilter
 
 
 def compute_parameter_total(net):

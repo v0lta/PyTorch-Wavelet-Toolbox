@@ -3,8 +3,8 @@
 import torch
 import numpy as np
 from torch.nn.parameter import Parameter
-from ptwt.conv_transform import wavedec, waverec
 import pywt
+from ptwt.conv_transform import wavedec, waverec
 
 
 class WaveletLayer(torch.nn.Module):
@@ -64,7 +64,7 @@ class WaveletLayer(torch.nn.Module):
             [torch.tensor]: 2d output tensor.
         """
         # c_lst = self.wavelet.analysis(x.unsqueeze(0).unsqueeze(0))
-        c_lst = wavedec(x.unsqueeze(1), self.wavelet, scales=self.scales)
+        c_lst = wavedec(x.unsqueeze(1), self.wavelet, level=self.scales)
         shape_lst = [c_el.shape[-1] for c_el in c_lst]
         c_tensor = torch.cat([c for c in c_lst], -1)
         assert shape_lst == self.coefficient_len_lst[::-1], \

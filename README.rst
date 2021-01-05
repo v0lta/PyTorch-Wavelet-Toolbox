@@ -29,7 +29,7 @@ Example usage:
 
     # invert the fwt.
     print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero',
-          level=2), wavelet))
+        level=2), wavelet))
 
 Adaptive wavelets
 --------------------

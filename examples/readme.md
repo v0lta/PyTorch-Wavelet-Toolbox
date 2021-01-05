@@ -1,4 +1,5 @@
 # Adaptive Wavelet examples
-Run ```mnist_compression.py``` to train a CNN on MNIST with a wavelet
+```mnist_compression.py``` trains a CNN on MNIST with a wavelet
 compressed linear layer. See https://arxiv.org/pdf/2004.09569v3.pdf
-for a detailed decription of the method.
+for a detailed description of the method.
+To run it type ```cd ..```, ```ipython examples/mnist_compression.py```
