@@ -70,13 +70,19 @@ def construct_a(wavelet, length, wrap=True):
     return a_ten
 
 
-def matrix_wavedec(data, wavelet, scales: int = None):
+def matrix_wavedec(data, wavelet, level: int = None):
     """ Compute the sparse matrix fast wavlet transform.
     :param wavelet: A wavelet object in pywave
     :param data: Batched input data [batch_size, time]
-    :param scales: The desired scales up to which to compute the fwt.
+    :param level: The desired level up to which to compute the fwt.
     :return: The wavelet coefficients in a single vector.
+             As well as the transformation matrices.
     """
+
+    if len(data.shape) == 1:
+        # assume time series
+        data = data.unsqueeze(0)
+
     dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
     assert len(dec_lo) == len(dec_hi), 'All filters hast have the same length.'
     assert len(dec_hi) == len(rec_lo), 'All filters hast have the same length.'
@@ -85,23 +91,23 @@ def matrix_wavedec(data, wavelet, scales: int = None):
 
     length = data.shape[1]
 
-    if scales is None:
-        scales = int(np.log2(length))
+    if level is None:
+        level = int(np.log2(length))
     else:
-        assert scales > 0, 'scales must be a positive integer.'
+        assert level > 0, 'level must be a positive integer.'
     ar = construct_a(wavelet, length)
-    if scales == 1:
+    if level == 1:
         coefficients = torch.sparse.mm(ar, data.T)
         return torch.split(coefficients, coefficients.shape[0]//2), [ar]
     al2 = construct_a(wavelet, length//2)
     al2 = cat_sparse_identity_matrix(al2, length)
-    if scales == 2:
+    if level == 2:
         coefficients = torch.sparse.mm(al2, torch.sparse.mm(ar, data.T))
         return torch.split(coefficients, [length//4, length//4, length//2]), \
             [ar, al2]
     ar3 = construct_a(wavelet, length//4)
     ar3 = cat_sparse_identity_matrix(ar3, length)
-    if scales == 3:
+    if level == 3:
         coefficients = torch.sparse.mm(ar3, torch.sparse.mm(al2,
                                        torch.sparse.mm(ar, data.T)))
         return torch.split(coefficients, [length//8, length//8,
@@ -109,7 +115,7 @@ def matrix_wavedec(data, wavelet, scales: int = None):
             [ar, al2, ar3]
     fwt_mat_lst = [ar, al2, ar3]
     split_lst = [length//2, length//4, length//8]
-    for s in range(4, scales+1):
+    for s in range(4, level+1):
         if split_lst[-1] < filt_len:
             break
         an = construct_a(wavelet, split_lst[-1])
@@ -120,7 +126,7 @@ def matrix_wavedec(data, wavelet, scales: int = None):
     coefficients = data.T
     for fwt_mat in fwt_mat_lst:
         coefficients = torch.sparse.mm(fwt_mat, coefficients)
-    split_lst.append(length//np.power(2, scales))
+    split_lst.append(length//np.power(2, level))
     return torch.split(coefficients, split_lst[::-1]), fwt_mat_lst
 
 
@@ -149,7 +155,7 @@ def construct_s(wavelet, length, wrap=True):
     return s_ten
 
 
-def matrix_waverec(coefficients, wavelet, scales: int = None):
+def matrix_waverec(coefficients, wavelet, level: int = None):
     _, _, rec_lo, rec_hi = wavelet.filter_bank
 
     # if the coefficients come in a list concatenate!
@@ -159,14 +165,14 @@ def matrix_waverec(coefficients, wavelet, scales: int = None):
     filt_len = len(rec_lo)
     length = coefficients.shape[0]
 
-    if scales is None:
-        scales = int(np.log2(length))
+    if level is None:
+        level = int(np.log2(length))
     else:
-        assert scales > 0, 'scales must be a positive integer.'
+        assert level > 0, 'level must be a positive integer.'
 
     ifwt_mat_lst = []
     split_lst = [length]
-    for s in range(1, scales+1):
+    for s in range(1, level+1):
         if split_lst[-1] < filt_len:
             break
         sn = construct_s(wavelet, split_lst[-1])

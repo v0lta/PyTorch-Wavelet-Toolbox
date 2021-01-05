@@ -12,7 +12,7 @@ import torch.optim as optim
 import collections
 import pywt
 import matplotlib.pyplot as plt
-from src.learnable_wavelets import ProductFilter
+from ptwt.learnable_wavelets import ProductFilter
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 from wavelet_linear import WaveletLayer

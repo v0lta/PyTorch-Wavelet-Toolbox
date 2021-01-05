@@ -197,15 +197,13 @@ def waverec2(coeffs, wavelet):
     return res_ll
 
 
-def conv_fwt(data, wavelet, scales: int = None) -> list:
-    return wavedec(data, wavelet, scales)
-
-
-def wavedec(data, wavelet, level: int = None, mode='reflect') -> list:
+def wavedec(data, wavelet, level: int = None, mode='zero') -> list:
     """Compute the analysis (forward) 1d fast wavelet transform."
 
     Args:
         data (torch.tensor): Input time series of shape [batch_size, 1, time]
+                             1d inputs are interpreted as [time],
+                             2d inputs are interpreted as [batch_size, time].
         wavelet (util.WaveletFilter): The wavelet object to be used.
         level (int, optional): The scale level to be computed.
                                 Defaults to None.
@@ -213,6 +211,13 @@ def wavedec(data, wavelet, level: int = None, mode='reflect') -> list:
     Returns:
         [list]: A list containing the wavelet coefficients.
     """
+    if len(data.shape) == 1:
+        # assume time series
+        data = data.unsqueeze(0).unsqueeze(0)
+    elif len(data.shape) == 2:
+        # assume batched time series
+        data = data.unsqueeze(1)
+
     dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True,
                                               device=data.device)
     filt_len = dec_lo.shape[-1]
@@ -232,10 +237,6 @@ def wavedec(data, wavelet, level: int = None, mode='reflect') -> list:
         result_lst.append(res_hi.squeeze(1))
     result_lst.append(res_lo.squeeze(1))
     return result_lst[::-1]
-
-
-def conv_ifwt(coeffs: list, wavelet) -> torch.tensor:
-    return waverec(coeffs, wavelet)
 
 
 def waverec(coeffs: list, wavelet) -> torch.tensor:

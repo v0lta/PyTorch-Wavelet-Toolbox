@@ -3,7 +3,7 @@
 import torch
 import numpy as np
 from torch.nn.parameter import Parameter
-from src.conv_transform import wavedec, waverec
+from ptwt.conv_transform import wavedec, waverec
 import pywt
 
 

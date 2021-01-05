@@ -3,8 +3,8 @@ import time
 import torch
 import numpy as np
 from tests.mackey_glass import MackeyGenerator
-from src.matmul_transform import matrix_wavedec, matrix_waverec
-from src.matmul_transform import construct_a, construct_s
+from ptwt.matmul_transform import matrix_wavedec, matrix_waverec
+from ptwt.matmul_transform import construct_a, construct_s
 
 
 # ----------------------- matrix construction tests ----------------------#
@@ -173,4 +173,3 @@ def test_fwt_ifwt_mackey_db2():
     err = torch.mean(torch.abs(pt_data - reconstructed_data))
     print('reconstruction error:', err)
     assert err < 1e-6
-

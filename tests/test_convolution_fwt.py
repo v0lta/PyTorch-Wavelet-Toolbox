@@ -3,11 +3,9 @@ import numpy as np
 import pywt
 import scipy.misc
 from tests.mackey_glass import MackeyGenerator
-from src.learnable_wavelets import SoftOrthogonalWavelet
-from src.conv_transform import wavedec, waverec, wavedec2, waverec2
-from src.conv_transform import flatten_2d_coeff_lst
-
-# import matplotlib.pyplot as plt
+from ptwt.learnable_wavelets import SoftOrthogonalWavelet
+from ptwt.conv_transform import wavedec, waverec, wavedec2, waverec2
+from ptwt.conv_transform import flatten_2d_coeff_lst
 
 
 def test_conv_fwt_haar_lvl2():
