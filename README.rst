@@ -39,7 +39,11 @@ Adaptive wavelets
 --------------------
 
 Code to train an adaptive wavelet layer in PyTorch is available in
-the `examples` folder.
+the `examples` folder. In addition to static wavelets from pywt,
+
+- Adaptive Product-filters
+
+- and optimizable orthogonal-wavelets are supported.
 
 Sparse-Matrix-multiplication transform (experimental).
 ------------------------------------------------------
@@ -72,5 +76,5 @@ to evaluate all of them.
 
 Known issues
 ------------
-Pytorch and PyWt pad slightly differently. Depending on the padding mode this
+Pytorch and pywt pad slightly differently. Depending on the padding mode this
 can cause slightly different coefficients. Invertibility however remains un-affected.  
