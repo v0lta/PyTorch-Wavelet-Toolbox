@@ -64,3 +64,9 @@ verification of this toolbox. Run
     pytest
 
 to evaluate all of them.
+
+
+Known issues
+------------
+Pytorch and PyWt pad slightly differently. Depending on the padding mode this
+can cause slightly different coefficients. Invertibility however remains un-affected.  
