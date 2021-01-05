@@ -12,7 +12,8 @@ class WaveletLayer(torch.nn.Module):
     Create a learn-able Wavelet layer as described here:
     https://arxiv.org/pdf/2004.09569.pdf
     The weights are parametrized by S*W*G*P*W*B
-    With S,G,B diagonal matrices, P a random permutation and W a learnable-wavelet transform.
+    With S,G,B diagonal matrices, P a random permutation and W a
+    learnable-wavelet transform.
     """
     def __init__(self, depth, init_wavelet, scales, p_drop=0.5):
         super().__init__()
@@ -77,7 +78,7 @@ class WaveletLayer(torch.nn.Module):
             x (torch.tensor): Analysis coefficient tensor.
         Returns:
             torch.tensor: Input reconstruction.
-        """  
+        """
         coeff_lst = []
         start = 0
         # turn tensor into list

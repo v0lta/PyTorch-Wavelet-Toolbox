@@ -204,7 +204,7 @@ def wavedec(data, wavelet, level: int = None, mode='zero') -> list:
         data (torch.tensor): Input time series of shape [batch_size, 1, time]
                              1d inputs are interpreted as [time],
                              2d inputs are interpreted as [batch_size, time].
-        wavelet (util.WaveletFilter): The wavelet object to be used.
+        wavelet (learnable_wavelets.WaveletFilter): The wavelet object to be used.
         level (int, optional): The scale level to be computed.
                                 Defaults to None.
 
@@ -240,6 +240,16 @@ def wavedec(data, wavelet, level: int = None, mode='zero') -> list:
 
 
 def waverec(coeffs: list, wavelet) -> torch.tensor:
+    """Reconstruct a signal from wavelet coefficients.
+
+    Args:
+        coeffs (list): The wavelet coefficient list produced by wavedec.
+        wavelet (learnable_wavelets.WaveletFilter): The wavelet object
+            used to compute the forward transform.
+
+    Returns:
+        torch.tensor: The reconstructed signal.
+    """    
     # _, _, rec_lo, rec_hi = wavelet.filter_bank
     # filt_len = len(rec_lo)
     # rec_lo = torch.tensor(rec_lo).unsqueeze(0)
