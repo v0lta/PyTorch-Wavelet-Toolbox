@@ -31,7 +31,7 @@ Example usage:
     print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero',
           level=2), wavelet))
 
-## Adaptive wavelets
+Adaptive wavelets
 --------------------
 
 Code to train an adaptive wavelet layer in PyTorch is available in
@@ -53,7 +53,7 @@ on could try:
     rec, ifwt_matrix = ptwt.matrix_waverec(coeff, wavelet, level=2)
     print(rec)
 
-# Unit tests
+Unit tests
 ------------
 
 The `tests` folder contains multiple tests, to allow independent
