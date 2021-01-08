@@ -49,8 +49,8 @@ Sparse-Matrix-multiplication transform (experimental).
 ------------------------------------------------------
 
 In addition to convolution-based fwt implementations 
-matrix-based code is available Continuing the example above
-on could try:
+matrix-based code is available. Continuing the example above
+one could try:
 
 .. code-block:: python
 
