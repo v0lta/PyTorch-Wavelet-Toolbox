@@ -43,17 +43,8 @@ def get_pad(data_len, filt_len):
     Returns:
         The numbers to attach on the edges of the input.
     """
-    # filt_len = wavelet.__len__()
-    # pywt_coeff_no = (data_len + filt_len - 1) // 2
-    # pywt_len = pywt.dwt_coeff_len(data_len, filt_len, mode='reflect')
-    # assert pywt_coeff_no == pywt_len, 'padding error.'
-    # pad = (2*filt_len - 3)//2
-    # if data_len % 2 != 0:
-    #     pad += 1
-    # pt_coeff_no = (data_len + 2*pad - (filt_len - 1) - 1) // 2 + 1
-    # assert pt_coeff_no == pywt_len, \
-    #  'padding error, this is a bug please open an issue on github.'
-    # pad to we see all filter positions and pywt compatability.
+    # pad to ensure we see all filter positions and
+    # for pywt compatability.
     # convolution output length:
     # see https://arxiv.org/pdf/1603.07285.pdf section 2.3:
     # floor([data_len - filt_len]/2) + 1
