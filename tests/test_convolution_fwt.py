@@ -28,27 +28,6 @@ def test_conv_fwt_haar_lvl2():
     assert err < 1e-4
 
 
-def test_conv_fwt_haar_lvl2_odd():
-    data = [1., 2., 3., 4., 5., 6., 7., 8., 9.,
-            10., 11., 12., 13., 14., 15.]
-    # npdata = np.array(data)
-    ptdata = torch.tensor(data).unsqueeze(0).unsqueeze(0)
-
-    # -------------------------- Haar wavelet tests --------------------- #
-    wavelet = pywt.Wavelet('haar')
-    coeffs = pywt.wavedec(data, wavelet, level=2)
-    coeffs2 = wavedec(ptdata, wavelet, level=2)
-    # print(coeffs)
-    # print(coeffs2)
-    assert len(coeffs) == len(coeffs2)
-    err = np.mean(np.abs(np.concatenate(coeffs)
-                  - torch.cat(coeffs2, -1).squeeze().numpy()))
-    print('haar coefficient error scale 2', err,
-          ['ok' if err < 1e-4 else 'failed!'])
-    assert err < 1e-4
-
-
-
 def test_conv_fwt_haar_lvl4():
     generator = MackeyGenerator(batch_size=24, tmax=512,
                                 delta_t=1, device='cpu')
