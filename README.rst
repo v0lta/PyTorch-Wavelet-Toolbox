@@ -76,6 +76,7 @@ to evaluate all of them.
 
 Known issues
 ------------
-Pytorch and pywt pad slightly differently. Depending on the padding mode and
-sequence length this can cause slightly different coefficients.
+Pytorch and pywt pad slightly differently. All is well with zero padding 
+on even length sequences. Depending on the padding mode and
+for odd sequence lengths the differences can cause slightly different coefficients.
 Invertibility however remains un-affected.  
