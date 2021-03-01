@@ -34,7 +34,7 @@ def get_filter_tensors(wavelet, flip, device):
     return dec_lo, dec_hi, rec_lo, rec_hi
 
 
-def get_pad(data_len, filt_len):
+def get_pad(data_len, filt_len, level):
     """ Compute the required padding.
     Args:
         data: The input tensor.
@@ -66,7 +66,7 @@ def get_pad(data_len, filt_len):
     return padr, padl
 
 
-def fwt_pad(data, wavelet, mode='reflect'):
+def fwt_pad(data, wavelet, level, mode='reflect'):
     """ Pad the input signal to make the fwt matrix work.
     Args:
         data: Input data [batch_size, 1, time]
@@ -79,7 +79,7 @@ def fwt_pad(data, wavelet, mode='reflect'):
         # convert pywt to pytorch convention.
         mode = 'constant'
 
-    padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo))
+    padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo), level)
 
     # print('fwt pad', data.shape, pad)
     data_pad = torch.nn.functional.pad(data, [padl, padr],
@@ -87,7 +87,7 @@ def fwt_pad(data, wavelet, mode='reflect'):
     return data_pad
 
 
-def fwt_pad2d(data, wavelet, mode='reflect'):
+def fwt_pad2d(data, wavelet, level, mode='reflect'):
     """Padding for the 2d FWT.
     Args:
         data (torch.Tensor): Input data with 4 domensions.
@@ -97,8 +97,8 @@ def fwt_pad2d(data, wavelet, mode='reflect'):
     Returns:
         The padded output tensor.
     """
-    padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo))
-    padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo))
+    padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo), level)
+    padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo), level)
     data_pad = torch.nn.functional.pad(data, [padt, padb, padl, padr],
                                        mode=mode)
     return data_pad
@@ -171,7 +171,7 @@ def wavedec2(data, wavelet, level: int = None) -> list:
     result_lst = []
     res_ll = data
     for s in range(level):
-        res_ll = fwt_pad2d(res_ll, wavelet)
+        res_ll = fwt_pad2d(res_ll, wavelet, level=s)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
         result_lst.append((res_lh, res_hl, res_hh))
@@ -267,7 +267,7 @@ def wavedec(data, wavelet, level: int = None, mode='zero') -> list:
     result_lst = []
     res_lo = data
     for s in range(level):
-        res_lo = fwt_pad(res_lo, wavelet, mode=mode)
+        res_lo = fwt_pad(res_lo, wavelet, level=s, mode=mode)
         res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)
         result_lst.append(res_hi.squeeze(1))
@@ -294,7 +294,6 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
 
     res_lo = coeffs[0]
     for c_pos, res_hi in enumerate(coeffs[1:]):
-        # print('shapes', res_lo.shape, res_hi.shape)
         res_lo = torch.stack([res_lo, res_hi], 1)
         res_lo = torch.nn.functional.conv_transpose1d(
             res_lo, filt, stride=2).squeeze(1)
@@ -310,9 +309,6 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
                 pred_len = res_lo.shape[-1] - (padl + padr)
                 assert nex_len == pred_len, \
                     'padding error, please open an issue on github '
-            # ensure correct padding removal.
-        # if padl > 0 and padr > 0:
-        #     res_lo = res_lo[..., padl:-padr]
         if padl > 0:
             res_lo = res_lo[..., padl:]
         if padr > 0:

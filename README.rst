@@ -1,4 +1,4 @@
-Pytorch adaptive Wavelet Toolbox (ptwt)
+Pytorch Wavelet Toolbox (ptwt)
 =======================================
 
 Welcome to the PyTorch adaptive wavelet toolbox.
@@ -11,6 +11,10 @@ This package implements:
 - the 2d fwt wavedec2
 
 - the inverse 2d fwt waverec2.
+
+- adaptive wavelet support (experimental).
+
+- sparse matrix fast wavelet transforms (experimental).
 
 Example usage:
 --------------
@@ -76,7 +80,7 @@ to evaluate all of them.
 
 Known issues
 ------------
-Pytorch and pywt pad slightly differently. All is well with zero padding 
-on even length sequences. Depending on the padding mode and
-for odd sequence lengths the differences can cause slightly different coefficients.
-Invertibility however remains un-affected.  
+PyTorch and pywt pad slightly differently. All is well with zero padding 
+on even length sequences. Not all pywt padding modes exist in PyTorch.
+For odd sequence lengths the edge coefficient may differ.
+These differences *do not* affect invertibility!

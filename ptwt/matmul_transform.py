@@ -28,12 +28,14 @@ def cat_sparse_identity_matrix(sparse_matrix, new_length):
 
 # construct the FWT analysis matrix.
 def construct_a(wavelet, length, wrap=True):
-    """ Construct a sparse matrix to compute a matrix based fwt.
+    """ Constructs the sparse analysis matrix to compute a matrix based fwt.
     Following page 31 of the Strang Nguyen Wavelets and Filter Banks book.
-    :param wavelet: The wavelet coefficients stored in a wavelet object.
-    :param length: The number of entries in the input signal.
-    :param wrap: Filter wrap around produces square matrices.
-    :return: A the sparse fwt matrix
+    Args:
+        wavelet: The wavelet coefficients stored in a wavelet object.
+        length: The number of entries in the input signal.
+        wrap: Filter wrap around produces square matrices.
+    Returns:
+        The sparse fwt matrix A.
     """
     dec_lo, dec_hi, _, _ = wavelet.filter_bank
     filt_len = len(dec_lo)
@@ -71,11 +73,12 @@ def construct_a(wavelet, length, wrap=True):
 
 
 def matrix_wavedec(data, wavelet, level: int = None):
-    """ Compute the sparse matrix fast wavlet transform.
-    :param wavelet: A wavelet object in pywave
-    :param data: Batched input data [batch_size, time]
-    :param level: The desired level up to which to compute the fwt.
-    :return: The wavelet coefficients in a single vector.
+    """ Experimental computation of the sparse matrix fast wavelet transform.
+    Args:
+        wavelet: A wavelet object.
+        data: Batched input data [batch_size, time]
+        level: The desired level up to which to compute the fwt.
+    Returns: The wavelet coefficients in a single vector.
              As well as the transformation matrices.
     """
 
@@ -131,6 +134,15 @@ def matrix_wavedec(data, wavelet, level: int = None):
 
 
 def construct_s(wavelet, length, wrap=True):
+    """ Construct the sparse synthesis matrix used to invert the
+        fwt.
+    Args:
+        wavelet: The wavelet coefficients stored in a wavelet object.
+        length: The number of entries in the input signal.
+        wrap: Filter wrap around produces square matrices.
+    Returns:
+        The signal reconstruction.
+    """    
     # construct the FWT synthesis matrix.
     _, _, rec_lo, rec_hi = wavelet.filter_bank
     filt_len = len(rec_lo)
@@ -156,6 +168,17 @@ def construct_s(wavelet, length, wrap=True):
 
 
 def matrix_waverec(coefficients, wavelet, level: int = None):
+    """ Experimental matrix based inverse fast wavelet transform.
+
+    Args:
+        coefficients: The coefficients produced by the forward transform.
+        wavelet: The wavelet used to compute the forward transform.
+        level (int, optional): The level up to which the coefficients
+            have been computed.
+
+    Returns:
+        The input signal reconstruction.
+    """    
     _, _, rec_lo, rec_hi = wavelet.filter_bank
 
     # if the coefficients come in a list concatenate!
