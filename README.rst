@@ -82,5 +82,5 @@ Known issues
 ------------
 PyTorch and pywt pad slightly differently. All is well with zero padding 
 on even length sequences. Not all pywt padding modes exist in PyTorch.
-For odd sequence lengths the edge coefficient may differ.
+For odd sequence lengths the edge coefficients may differ.
 These differences *do not* affect invertibility!
