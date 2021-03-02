@@ -51,7 +51,7 @@ the `examples` folder. In addition to static wavelets from pywt,
 #### Sparse-Matrix-multiplication transform (experimental).
 In addition to convolution-based fwt implementations 
 matrix-based code is available. Continuing the example above
-one could try:
+try:
 ``` python
     # forward
     coeff, fwt_matrix = ptwt.matrix_wavedec(data_torch, wavelet, level=2)
