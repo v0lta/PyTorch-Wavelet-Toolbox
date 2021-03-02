@@ -1,6 +1,4 @@
-Pytorch Wavelet Toolbox (ptwt)
-=======================================
-
+## Pytorch Wavelet Toolbox (ptwt)
 Welcome to the PyTorch adaptive wavelet toolbox.
 This package implements:
 
@@ -16,9 +14,7 @@ This package implements:
 
 - sparse matrix fast wavelet transforms (experimental).
 
-Example usage:
---------------
-
+#### Example usage:
 .. code-block:: python
 
     import torch
@@ -40,9 +36,7 @@ Example usage:
         level=2), wavelet))
 
 
-Unit tests
-------------
-
+#### Unit tests
 The `tests` folder contains multiple tests, to allow independent
 verification of this toolbox. Run 
 
@@ -53,9 +47,7 @@ verification of this toolbox. Run
 to evaluate all of them.
 
 
-Adaptive wavelets (experimental)
---------------------------------
-
+#### Adaptive wavelets (experimental)
 Code to train an adaptive wavelet layer in PyTorch is available in
 the `examples` folder. In addition to static wavelets from pywt,
 
@@ -63,9 +55,7 @@ the `examples` folder. In addition to static wavelets from pywt,
 
 - and optimizable orthogonal-wavelets are supported.
 
-Sparse-Matrix-multiplication transform (experimental).
-------------------------------------------------------
-
+#### Sparse-Matrix-multiplication transform (experimental).
 In addition to convolution-based fwt implementations 
 matrix-based code is available. Continuing the example above
 one could try:
@@ -81,8 +71,7 @@ one could try:
 
 
 
-Known issues
-------------
+#### Known issues
 PyTorch and pywt pad slightly differently. All is well with zero padding 
 on even length sequences. Not all pywt padding modes exist in PyTorch.
 For odd sequence lengths the edge coefficients may differ.
