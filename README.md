@@ -1,22 +1,15 @@
 ## Pytorch Wavelet Toolbox (ptwt)
 Welcome to the PyTorch adaptive wavelet toolbox.
 This package implements:
-
-- the fast wavelet transform (fwt) (wavedec)
-
-- the inverse fwt (waverec)
-
-- the 2d fwt wavedec2
-
-- the inverse 2d fwt waverec2.
-
-- adaptive wavelet support (experimental).
-
-- sparse matrix fast wavelet transforms (experimental).
+    - the fast wavelet transform (fwt) (wavedec)
+    - the inverse fwt (waverec)
+    - the 2d fwt wavedec2
+    - the inverse 2d fwt waverec2.
+    - adaptive wavelet support (experimental).
+    - sparse matrix fast wavelet transforms (experimental).
 
 #### Example usage:
-.. code-block:: python
-
+``` python
     import torch
     import numpy as np
     import pywt
@@ -34,16 +27,15 @@ This package implements:
     # invert the fwt.
     print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero',
         level=2), wavelet))
-
+```
 
 #### Unit tests
 The `tests` folder contains multiple tests, to allow independent
 verification of this toolbox. Run 
 
-.. code-block:: python
-
+``` python
     pytest
-
+```
 to evaluate all of them.
 
 
@@ -59,17 +51,14 @@ the `examples` folder. In addition to static wavelets from pywt,
 In addition to convolution-based fwt implementations 
 matrix-based code is available. Continuing the example above
 one could try:
-
-.. code-block:: python
-
+``` python
     # forward
     coeff, fwt_matrix = ptwt.matrix_wavedec(data_torch, wavelet, level=2)
     print(coeff)
     # backward 
     rec, ifwt_matrix = ptwt.matrix_waverec(coeff, wavelet, level=2)
     print(rec)
-
-
+```
 
 #### Known issues
 PyTorch and pywt pad slightly differently. All is well with zero padding 
