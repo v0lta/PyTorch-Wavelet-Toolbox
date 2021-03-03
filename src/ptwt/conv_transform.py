@@ -92,7 +92,7 @@ def fwt_pad2d(data, wavelet, level, mode='reflect'):
     Args:
         data (torch.Tensor): Input data with 4 domensions.
         wavelet (pywt.Wavelet or WaveletFilter): The wavelet used.
-        mode (str, optional): [description]. Defaults to 'reflect'.
+        mode (str, optional): The padding mode. Defaults to 'reflect'.
 
     Returns:
         The padded output tensor.
@@ -155,8 +155,9 @@ def wavedec2(data, wavelet, level: int = None) -> list:
 
     Args:
         data (torch.tensor): [batch_size, 1, height, width]
-        wavelet ([type]): [description]
-        level (int, optional): [description]. Defaults to None.
+        wavelet ([type]): The transformation wavelet.
+        level (int, optional): The number of desired scales.
+            Defaults to None.
 
     Returns:
         [list]: List containing the wavelet coefficients.
