@@ -3,8 +3,8 @@ import time
 import torch
 import numpy as np
 from tests.mackey_glass import MackeyGenerator
-from ptwt.matmul_transform import matrix_wavedec, matrix_waverec
-from ptwt.matmul_transform import construct_a, construct_s
+from src.ptwt.matmul_transform import matrix_wavedec, matrix_waverec
+from src.ptwt.matmul_transform import construct_a, construct_s
 
 
 # ----------------------- matrix construction tests ----------------------#
