@@ -15,7 +15,7 @@ use pip type:
 ``` bash
  $ pip install git+https://github.com/v0lta/PyTorch-Wavelet-Toolbox.git
 ```
-
+You can remove it later by typing ```pip uninstall ptwt```.
 
 #### Example usage:
 ``` python
