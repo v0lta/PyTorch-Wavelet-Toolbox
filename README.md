@@ -1,22 +1,16 @@
-Pytorch adaptive Wavelet Toolbox (ptwt)
-=======================================
-
+## Pytorch Wavelet Toolbox (ptwt)
 Welcome to the PyTorch adaptive wavelet toolbox.
 This package implements:
 
 - the fast wavelet transform (fwt) (wavedec)
-
 - the inverse fwt (waverec)
-
 - the 2d fwt wavedec2
-
 - the inverse 2d fwt waverec2.
+- adaptive wavelet support (experimental).
+- sparse matrix fast wavelet transforms (experimental).
 
-Example usage:
---------------
-
-.. code-block:: python
-
+#### Example usage:
+``` python
     import torch
     import numpy as np
     import pywt
@@ -34,10 +28,19 @@ Example usage:
     # invert the fwt.
     print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero',
         level=2), wavelet))
+```
 
-Adaptive wavelets
---------------------
+#### Unit tests
+The `tests` folder contains multiple tests, to allow independent
+verification of this toolbox. Run 
 
+``` python
+    pytest
+```
+to evaluate all of them.
+
+
+#### Adaptive wavelets (experimental)
 Code to train an adaptive wavelet layer in PyTorch is available in
 the `examples` folder. In addition to static wavelets from pywt,
 
@@ -45,37 +48,21 @@ the `examples` folder. In addition to static wavelets from pywt,
 
 - and optimizable orthogonal-wavelets are supported.
 
-Sparse-Matrix-multiplication transform (experimental).
-------------------------------------------------------
-
+#### Sparse-Matrix-multiplication transform (experimental).
 In addition to convolution-based fwt implementations 
-matrix-based code is available Continuing the example above
-on could try:
-
-.. code-block:: python
-
+matrix-based code is available. Continuing the example above
+try:
+``` python
     # forward
     coeff, fwt_matrix = ptwt.matrix_wavedec(data_torch, wavelet, level=2)
     print(coeff)
     # backward 
     rec, ifwt_matrix = ptwt.matrix_waverec(coeff, wavelet, level=2)
     print(rec)
+```
 
-Unit tests
-------------
-
-The `tests` folder contains multiple tests, to allow independent
-verification of this toolbox. Run 
-
-.. code-block:: python
-
-    pytest
-
-to evaluate all of them.
-
-
-Known issues
-------------
-Pytorch and pywt pad slightly differently. Depending on the padding mode and
-sequence length this can cause slightly different coefficients.
-Invertibility however remains un-affected.  
+#### Known issues
+PyTorch and pywt pad slightly differently. All is well with zero padding 
+on even length sequences. Not all pywt padding modes exist in PyTorch.
+For odd sequence lengths the edge coefficients may differ.
+These differences *do not* affect invertibility!
