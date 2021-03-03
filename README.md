@@ -40,7 +40,8 @@ use pip type:
 
 #### Unit tests
 The `tests` folder contains multiple tests, to allow independent
-verification of this toolbox. Run 
+verification of this toolbox. After cloning the repositrory and moving
+into the main directory run 
 
 ``` python
     pytest
