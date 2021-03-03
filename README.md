@@ -9,12 +9,20 @@ This package implements:
 - adaptive wavelet support (experimental).
 - sparse matrix fast wavelet transforms (experimental).
 
+#### Installation
+Install the toolbox via pip or clone this repository. In order to
+use pip type:
+``` bash
+ $ pip install git+https://github.com/v0lta/PyTorch-Wavelet-Toolbox.git
+```
+
+
 #### Example usage:
 ``` python
     import torch
     import numpy as np
     import pywt
-    import ptwt
+    import ptwt   # use src.ptwt instead if you cloned the repo instead of using pip.
 
     # generate an input of even length.
     data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
