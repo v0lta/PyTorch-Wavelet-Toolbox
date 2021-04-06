@@ -80,8 +80,6 @@ def fwt_pad(data, wavelet, level, mode='reflect'):
         mode = 'constant'
 
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo), level)
-
-    # print('fwt pad', data.shape, pad)
     data_pad = torch.nn.functional.pad(data, [padl, padr],
                                        mode=mode)
     return data_pad
@@ -241,7 +239,7 @@ def wavedec(data, wavelet, level: int = None, mode='zero') -> list:
         data (torch.tensor): Input time series of shape [batch_size, 1, time]
                              1d inputs are interpreted as [time],
                              2d inputs are interpreted as [batch_size, time].
-        wavelet (learnable_wavelets.WaveletFilter): The wavelet object to be used.
+        wavelet (learnable_wavelets.WaveletFilter): The wavelet object to use.
         level (int, optional): The scale level to be computed.
                                 Defaults to None.
 

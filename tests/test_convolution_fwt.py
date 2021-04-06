@@ -8,6 +8,8 @@ from src.ptwt.conv_transform import wavedec, waverec, wavedec2, waverec2
 from src.ptwt.conv_transform import flatten_2d_coeff_lst
 
 
+
+
 def test_conv_fwt_haar_lvl2():
     data = [1., 2., 3., 4., 5., 6., 7., 8., 9.,
             10., 11., 12., 13., 14., 15., 16.]
@@ -24,6 +26,7 @@ def test_conv_fwt_haar_lvl2():
           ['ok' if err < 1e-4 else 'failed!'])
     assert err < 1e-4
 
+
 def test_conv_fwt_haar_lvl2_odd():
     data = [1., 2., 3., 4., 5., 6., 7., 8., 9.,
             10., 11., 12., 13., 14., 15., 16., 17.]
@@ -31,8 +34,6 @@ def test_conv_fwt_haar_lvl2_odd():
 
     wavelet = pywt.Wavelet('haar')
     coeffs = wavedec(ptdata, wavelet, level=2)
-    # print(coeffs)
-    # print(coeffs2)
     rec = waverec(coeffs, wavelet)
     err = np.mean(np.abs((ptdata - rec[:, 1:]).numpy()))
     assert err < 1e-4
@@ -113,6 +114,29 @@ def test_conv_fwt_db5_lvl3():
         print('db5 reconstruction error scale 4:', err,
               ['ok' if err < 1e-4 else 'failed!'], 'mode', mode)
         assert err < 1e-4
+
+
+def test_ripples_haar_lvl3():
+    """ Compute example from page 7 of
+        Ripples in Mathematics, Jensen, la Cour-Harbo
+    """
+
+    class MyHaarFilterBank(object):
+        @property
+        def filter_bank(self):
+            return ([1/2, 1/2.], [-1/2., 1/2.],
+                    [1/2., 1/2.], [1/2., -1/2.])
+
+    data = [56., 40., 8., 24., 48., 48., 40., 16.]
+    wavelet = pywt.Wavelet('unscaled Haar Wavelet',
+                           filter_bank=MyHaarFilterBank())
+    ptdata = torch.tensor(data).unsqueeze(0).unsqueeze(0)
+    coeffs = wavedec(ptdata, wavelet, level=3)
+    # print(coeffs)
+    assert torch.squeeze(coeffs[0]).numpy() == 35.
+    assert torch.squeeze(coeffs[1]).numpy() == -3.
+    assert (torch.squeeze(coeffs[2]).numpy() == [16., 10.]).all()
+    assert (torch.squeeze(coeffs[3]).numpy() == [8., -8., 0., 12.]).all()
 
 
 def test_orth_wavelet():
