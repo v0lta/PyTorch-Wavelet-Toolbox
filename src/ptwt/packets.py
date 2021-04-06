@@ -59,37 +59,6 @@ if __name__ == '__main__':
     os.environ["DISPLAY"] = ":1"
     import matplotlib
 
-    w = [56., 40., 8., 24., 48., 48., 40., 16.]
-    class MyHaarFilterBank(object):
-        @property
-        def filter_bank(self):
-            return ([1/2, 1/2.], [-1/2., 1/2.],
-                    [1/2., 1/2.], [1/2., -1/2.])
-
-    wavelet = pywt.Wavelet('unscaled Haar Wavelet',
-                           filter_bank=MyHaarFilterBank())
-    data = torch.tensor(w)
-    twp = WaveletPacket(data, wavelet, mode='reflect')
-    nodes = twp.get_level(3)
-    twp_lst = []
-    for node in nodes:
-        twp_lst.append(torch.squeeze(twp[node]))
-    res = torch.stack(twp_lst).numpy()
-
-    wp = pywt.WaveletPacket(data=np.array(w), wavelet=wavelet,
-                            mode='reflect')
-    nodes = [node.path for node in wp.get_level(3, 'freq')]
-    np_lst = []
-    for node in nodes:
-        np_lst.append(wp[node].data)
-    viz = np.concatenate(np_lst)
-
-    print(np.round(res))
-    print(np.round(viz))
-    print('err', np.mean(np.abs(res - viz)))
-
-
-
     t = np.linspace(0, 10, 5001)
     wavelet = pywt.Wavelet('db4')
     w = signal.chirp(t, f0=.00001, f1=20, t1=10, method='linear')
