@@ -52,7 +52,6 @@ class WaveletPacket(collections.UserDict):
 
 
 if __name__ == '__main__':
-    import pywt
     import numpy as np
     import matplotlib.pyplot as plt
     import scipy.signal as signal
@@ -100,7 +99,7 @@ if __name__ == '__main__':
     plt.xlabel('t (sec)')
     plt.show()
 
-    wp = WaveletPacket(data=np.expand_dims(np.expand_dims(w, 0), 0),
+    wp = WaveletPacket(data=torch.tensor(w.astype(np.float32)),
                        wavelet=wavelet,
                        mode='reflect')
     nodes = wp.get_level(7)
