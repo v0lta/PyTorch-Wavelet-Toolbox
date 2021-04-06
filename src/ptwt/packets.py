@@ -36,15 +36,8 @@ class WaveletPacket(collections.UserDict):
     def recursive_dwt(self, data, level, max_level, path):
         self.data[path] = torch.squeeze(data)
         if level < max_level:
-            # data = fwt_pad(data, filt_len=filt.shape[-1])
-            # res = jax.lax.conv_general_dilated(
-            #    lhs=data,  # lhs = NCH image tensor
-            #    rhs=filt,  # rhs = OIH conv kernel tensor
-            #    padding='VALID', window_strides=[2, ],
-            #    dimension_numbers=('NCH', 'OIH', 'NCH'))
-            # res_lo, res_hi = np.split(res, 2, 1)
             res_lo, res_hi = wavedec(data, self.wavelet, level=1,
-                                     mode=self.mode)#[::-1]
+                                     mode=self.mode)
             return self.recursive_dwt(res_lo, level+1, max_level, path + 'a'),\
                 self.recursive_dwt(res_hi, level+1, max_level, path + 'd')
         else:
@@ -67,28 +60,35 @@ if __name__ == '__main__':
     os.environ["DISPLAY"] = ":1"
     import matplotlib
 
-    w = [56., 40., 8., 24., 48., 40., 16.]
-    wavelet = pywt.Wavelet('haar')
+    w = [56., 40., 8., 24., 48., 48., 40., 16.]
+    class MyHaarFilterBank(object):
+        @property
+        def filter_bank(self):
+            return ([1/2, 1/2.], [-1/2., 1/2.],
+                    [1/2., 1/2.], [1/2., -1/2.])
+
+    wavelet = pywt.Wavelet('unscaled Haar Wavelet',
+                           filter_bank=MyHaarFilterBank())
     data = torch.tensor(w)
     twp = WaveletPacket(data, wavelet, mode='reflect')
-    nodes = twp.get_level(2)
+    nodes = twp.get_level(3)
     twp_lst = []
     for node in nodes:
         twp_lst.append(torch.squeeze(twp[node]))
     res = torch.stack(twp_lst).numpy()
 
-    wp = pywt.WaveletPacket(data=np.array(w), wavelet='haar',
+    wp = pywt.WaveletPacket(data=np.array(w), wavelet=wavelet,
                             mode='reflect')
-    nodes = [node.path for node in wp.get_level(2, 'freq')]
+    nodes = [node.path for node in wp.get_level(3, 'freq')]
     np_lst = []
     for node in nodes:
         np_lst.append(wp[node].data)
-    viz = np.stack(np_lst)
+    viz = np.concatenate(np_lst)
 
     print(np.round(res))
     print(np.round(viz))
     print('err', np.mean(np.abs(res - viz)))
-    print('stop')
+
 
 
     t = np.linspace(0, 10, 5001)
