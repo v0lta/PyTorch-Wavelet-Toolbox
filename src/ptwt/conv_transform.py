@@ -8,7 +8,7 @@ def get_filter_tensors(wavelet, flip, device):
     Args:
         wavelet: Wavelet object, assmuing ptwt-like
                  field names.
-        flip ([bool]]): If true filters ar eflipped.
+        flip ([bool]]): If true filters are flipped.
         device : PyTorch target device.
 
     Returns:
