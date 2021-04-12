@@ -8,6 +8,8 @@ from src.ptwt.packets import WaveletPacket
 
 
 def test_packet_harbo_lvl3():
+    # From Jensen, La Cour-Harbo,
+    # Rippels in Mathematics, Chapter 8 (page 89).
     w = [56., 40., 8., 24., 48., 48., 40., 16.]
 
     class MyHaarFilterBank(object):

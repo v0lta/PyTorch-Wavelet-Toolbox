@@ -148,7 +148,7 @@ def construct_2d_filt(lo, hi):
     return filt
 
 
-def wavedec2(data, wavelet, level: int = None) -> list:
+def wavedec2(data, wavelet, level: int = None, mode: str = 'reflect') -> list:
     """ Non seperated two dimensional wavelet transform.
 
     Args:
@@ -156,6 +156,8 @@ def wavedec2(data, wavelet, level: int = None) -> list:
         wavelet ([type]): The transformation wavelet.
         level (int, optional): The number of desired scales.
             Defaults to None.
+        mode (str, optinal): The padding mode, i.e. zero or reflect.
+            Defaults to reflect.
 
     Returns:
         [list]: List containing the wavelet coefficients.
@@ -170,7 +172,7 @@ def wavedec2(data, wavelet, level: int = None) -> list:
     result_lst = []
     res_ll = data
     for s in range(level):
-        res_ll = fwt_pad2d(res_ll, wavelet, level=s)
+        res_ll = fwt_pad2d(res_ll, wavelet, level=s, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
         result_lst.append((res_lh, res_hl, res_hh))
@@ -232,7 +234,7 @@ def waverec2(coeffs, wavelet):
     return res_ll
 
 
-def wavedec(data, wavelet, level: int = None, mode='zero') -> list:
+def wavedec(data, wavelet, level: int = None, mode='reflect') -> list:
     """Compute the analysis (forward) 1d fast wavelet transform."
 
     Args:
@@ -241,7 +243,9 @@ def wavedec(data, wavelet, level: int = None, mode='zero') -> list:
                              2d inputs are interpreted as [batch_size, time].
         wavelet (learnable_wavelets.WaveletFilter): The wavelet object to use.
         level (int, optional): The scale level to be computed.
-                                Defaults to None.
+                               Defaults to None.
+        mode (str, optional): The padding mode i.e. zero or reflect.
+                              Defaults to reflect.
 
     Returns:
         [list]: A list containing the wavelet coefficients.
