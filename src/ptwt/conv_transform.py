@@ -61,7 +61,7 @@ def get_pad(data_len, filt_len, level):
 
     # pad to even singal length.
     if data_len % 2 != 0:
-        padl += 1
+        padr += 1
 
     return padr, padl
 
@@ -194,7 +194,7 @@ def waverec2(coeffs, wavelet):
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=False, device=flatten_2d_coeff_lst(coeffs)[0].device)
     filt_len = rec_lo.shape[-1]
-    rec_filt = construct_2d_filt(rec_lo, rec_hi)
+    rec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
 
     res_ll = coeffs[0]
     for c_pos, res_lh_hl_hh in enumerate(coeffs[1:]):
@@ -209,17 +209,18 @@ def waverec2(coeffs, wavelet):
         padt = (2*filt_len - 3)//2
         padb = (2*filt_len - 3)//2
         if c_pos < len(coeffs)-2:
+            # if 1:
             pred_len = res_ll.shape[-1] - (padl + padr)
             next_len = coeffs[c_pos+2][0].shape[-1]
             pred_len2 = res_ll.shape[-2] - (padt + padb)
             next_len2 = coeffs[c_pos+2][0].shape[-2]
             if next_len != pred_len:
-                padl += 1
+                padr += 1
                 pred_len = res_ll.shape[-1] - (padl + padr)
                 assert next_len == pred_len, \
                     'padding error, please open an issue on github '
             if next_len2 != pred_len2:
-                padt += 1
+                padb += 1
                 pred_len2 = res_ll.shape[-2] - (padt + padb)
                 assert next_len2 == pred_len2, \
                     'padding error, please open an issue on github '
@@ -308,7 +309,7 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
             pred_len = res_lo.shape[-1] - (padl + padr)
             nex_len = coeffs[c_pos+2].shape[-1]
             if nex_len != pred_len:
-                padl += 1
+                padr += 1
                 pred_len = res_lo.shape[-1] - (padl + padr)
                 assert nex_len == pred_len, \
                     'padding error, please open an issue on github '

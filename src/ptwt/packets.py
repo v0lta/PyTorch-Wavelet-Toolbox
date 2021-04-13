@@ -66,10 +66,13 @@ class WaveletPacked2D(collections.UserDict):
         """
         self.input_data = torch.unsqueeze(data, 1)
         self.wavelet = wavelet
-        self.mode = mode
+        if mode == 'zero':
+            self.mode = 'constant'
+        else:
+            self.mode = mode
         self.nodes = {}
         self.data = None
-        self._wavepacketdec2d(self.input_data, wavelet, mode=mode)
+        self._wavepacketdec2d(self.input_data, wavelet, mode=self.mode)
 
     def get_level(self, level):
         return self.get_graycode_order(level)
@@ -102,7 +105,7 @@ if __name__ == '__main__':
     from itertools import product
 
     from scipy import misc
-    face = misc.face()[128:(512+128), 256:(512+256)]
+    face = misc.face() # [128:(512+128), 256:(512+256)]
     plt.imshow(face)
     plt.show()
     wavelet = pywt.Wavelet('db8')
@@ -162,11 +165,11 @@ if __name__ == '__main__':
     plt.show()
 
     abs = np.abs(img_pt - img_pywt)
-    plt.imshow(np.log(abs))
+    plt.imshow(abs)
     plt.show()
 
     err = np.mean(abs)
-    print(err)
+    print('total error', err)
 
     print('a', np.mean(np.abs(wp_tree['a'].data
           - torch.squeeze(ptwt_wp_tree['a']).numpy())))
@@ -176,6 +179,12 @@ if __name__ == '__main__':
           - torch.squeeze(ptwt_wp_tree['v']).numpy())))
     print('d', np.mean(np.abs(wp_tree['d'].data
           - torch.squeeze(ptwt_wp_tree['d']).numpy())))
+
+    cat_res = np.concatenate([np.abs(wp_tree['aa'].data),
+                             np.abs(torch.squeeze(ptwt_wp_tree['aa']).numpy())],
+                             axis=0)
+    plt.imshow(cat_res)
+    plt.show()
 
 
     print('break')

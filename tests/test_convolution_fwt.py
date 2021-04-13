@@ -8,8 +8,6 @@ from src.ptwt.conv_transform import wavedec, waverec, wavedec2, waverec2
 from src.ptwt.conv_transform import flatten_2d_coeff_lst
 
 
-
-
 def test_conv_fwt_haar_lvl2():
     data = [1., 2., 3., 4., 5., 6., 7., 8., 9.,
             10., 11., 12., 13., 14., 15., 16.]
@@ -33,9 +31,16 @@ def test_conv_fwt_haar_lvl2_odd():
     ptdata = torch.tensor(data).unsqueeze(0).unsqueeze(0)
 
     wavelet = pywt.Wavelet('haar')
-    coeffs = wavedec(ptdata, wavelet, level=2)
-    rec = waverec(coeffs, wavelet)
-    err = np.mean(np.abs((ptdata - rec[:, 1:]).numpy()))
+
+    pycoeff = pywt.wavedec(data, wavelet, level=2, mode='reflect')
+    cpycoeff = np.concatenate(pycoeff)
+    ptcoeff = wavedec(ptdata, wavelet, level=2, mode='reflect')
+    cptcoeff = torch.cat(ptcoeff, -1)[0, :].numpy()
+
+    coeff_erorr = np.mean(np.abs(cptcoeff - cpycoeff))
+    assert coeff_erorr < 1e-4
+    rec = waverec(ptcoeff, wavelet)
+    err = np.mean(np.abs((ptdata - rec[:, :-1]).numpy()))
     assert err < 1e-4
 
 
@@ -157,29 +162,32 @@ def test_orth_wavelet():
     assert err < 1e-4
 
 
-def test_2d_haar():
+def test_2d_haar_lvl1():
     # ------------------------- 2d haar wavelet tests -----------------------
     face = np.transpose(scipy.misc.face(), [2, 0, 1]).astype(np.float32)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet('haar')
 
     # single level haar - 2d
-    coeff2d_pywt = pywt.dwt2(face, wavelet)
-    coeff2d = wavedec2(pt_face, wavelet, level=1)
+    coeff2d_pywt = pywt.dwt2(face, wavelet, mode='reflect')
+    coeff2d = wavedec2(pt_face, wavelet, level=1, mode='reflect')
     flat_lst = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
     flat_lst2 = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
-    err = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
-    print('haar 2d coeff err,', err, ['ok' if err < 1e-4 else 'failed!'])
-    assert err < 1e-4
+    cerr = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
+    print('haar 2d coeff err,', cerr, ['ok' if cerr < 1e-4 else 'failed!'])
+    assert cerr < 1e-4
 
     # single level 2d haar inverse
-    rec = waverec2(coeff2d, wavelet)
-    err = np.mean(np.abs(face - rec.numpy().squeeze()))
+    # ptwt_rec = pywt.waverec2(coeff2d_pywt, wavelet)
+    rec = waverec2(coeff2d, wavelet).numpy().squeeze()
+    err_img = np.abs(face - rec)
+    err = np.mean(err_img)
+    # err2 = np.mean(np.abs(face-ptwt_rec))
     print('haar 2d rec err', err, ['ok' if err < 1e-4 else 'failed!'])
     assert err < 1e-4
 
 
-def test_2d_db2():
+def test_2d_db2_lvl1():
     # single level db2 - 2d
     face = np.transpose(scipy.misc.face(), [2, 0, 1]).astype(np.float32)
     pt_face = torch.tensor(face).unsqueeze(1)
@@ -188,9 +196,9 @@ def test_2d_db2():
     coeff2d = wavedec2(pt_face, wavelet, level=1)
     flat_lst = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
     flat_lst2 = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
-    err = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
-    print('db5 2d coeff err,', err, ['ok' if err < 1e-4 else 'failed!'])
-    assert err < 1e-4
+    cerr = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
+    print('db5 2d coeff err,', cerr, ['ok' if cerr < 1e-4 else 'failed!'])
+    assert cerr < 1e-4
 
     # single level db2 - 2d inverse.
     rec = waverec2(coeff2d, wavelet)
@@ -208,40 +216,52 @@ def test_2d_haar_multi():
     coeff2d = wavedec2(pt_face, wavelet, level=5)
     flat_lst = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
     flat_lst2 = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
-    err = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
+    cerr = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
     # plt.plot(flat_lst); plt.show()
     # plt.plot(flat_lst2); plt.show()
-    print('haar 2d scale 5 coeff err,', err,
-          ['ok' if err < 1e-4 else 'failed!'])
-    assert err < 1e-4
+    print('haar 2d scale 5 coeff err,', cerr,
+          ['ok' if cerr < 1e-4 else 'failed!'])
+    assert cerr < 1e-4
 
     # inverse multi level Harr - 2d
-    rec = waverec2(coeff2d, wavelet)
-    err = np.mean(np.abs(face - rec.numpy().squeeze()))
+    rec = waverec2(coeff2d, wavelet).numpy().squeeze()
+    err = np.mean(np.abs(face - rec))
     print('haar 2d scale 5 rec err,', err,
           ['ok' if err < 1e-4 else 'failed!'])
     assert err < 1e-4
 
 
-def test_2d_db5():
+def test_2d_wavedec_rec():
     # max db5
-    face = np.transpose(scipy.misc.face(), [2, 0, 1]).astype(np.float32)
-    pt_face = torch.tensor(face).unsqueeze(1)
-    wavelet = pywt.Wavelet('db5')
-    coeff2d = wavedec2(pt_face, wavelet)
-    rec = waverec2(coeff2d, wavelet)
-    err = np.mean(np.abs(face - rec.numpy().squeeze()))
-    print('db 5 scale max rec err,', err, ['ok' if err < 1e-4 else 'failed!'])
-    assert err < 1e-4
+    for level in [1, 2, 3, 4, 5]:
+        for wavelet_str in ['db1', 'db2', 'db3', 'db4', 'db5']:
+
+            face = np.transpose(
+                scipy.misc.face(), [2, 0, 1]).astype(np.float32)
+            pt_face = torch.tensor(face).unsqueeze(1)
+            wavelet = pywt.Wavelet(wavelet_str)
+            coeff2d = wavedec2(pt_face, wavelet, mode='reflect',
+                               level=level)
+            pywt_coeff2d = pywt.wavedec2(face, wavelet, mode='reflect',
+                                         level=level)
+            flat_lst = np.concatenate(flatten_2d_coeff_lst(pywt_coeff2d), -1)
+            flat_lst2 = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
+            cerr = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
+            # plt.plot(flat_lst); plt.show()
+            # plt.plot(flat_lst2); plt.show()
+            print('wavelet', wavelet_str, 'level', str(level), 'coeff err,',
+                  cerr, ['ok' if cerr < 1e-4 else 'failed!'])
+            assert cerr < 1e-4
+
+            rec = waverec2(coeff2d, wavelet)
+            rec = rec.numpy().squeeze()
+            err = np.mean(np.abs(face - rec))
+            print('wavelet', wavelet_str, 'level', str(level), 'rec   err,',
+                  err, ['ok' if err < 1e-4 else 'failed!'])
+            # assert err < 1e-4
 
 
 if __name__ == '__main__':
-    test_conv_fwt_haar_lvl2()
+    import matplotlib.pyplot as plt
     test_conv_fwt_haar_lvl4()
-    test_conv_fwt_db2_lvl1()
-    test_conv_fwt_db5_lvl3()
-    test_orth_wavelet()
-    test_2d_haar()
-    test_2d_db2()
-    test_2d_haar_multi()
-    test_2d_db5()
+    test_2d_wavedec_rec()
