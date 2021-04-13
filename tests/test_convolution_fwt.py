@@ -121,6 +121,42 @@ def test_conv_fwt_db5_lvl3():
         assert err < 1e-4
 
 
+def test_conv_fwt():
+    generator = MackeyGenerator(batch_size=24, tmax=512,
+                                delta_t=1, device='cpu')
+
+    mackey_data_1 = torch.squeeze(generator())
+    for level in [1, 2, 3, 4, 5, 6, None]:
+        for wavelet_string in ['db1', 'db2', 'db3', 'db4', 'db5']:
+            for mode in ['reflect', 'zero']:
+                wavelet = pywt.Wavelet('db5')
+                ptcoeff = wavedec(mackey_data_1.unsqueeze(1), wavelet, level=3,
+                                  mode=mode)
+                pycoeff = pywt.wavedec(mackey_data_1[0, :].numpy(), wavelet,
+                                       level=3, mode=mode)
+                cptcoeff = torch.cat(ptcoeff, -1)[0, :]
+                cpycoeff = np.concatenate(pycoeff, -1)
+                err = np.mean(np.abs(cpycoeff - cptcoeff.numpy()))
+                print('db5 coefficient error scale 3:', err,
+                      ['ok' if err < 1e-4 else 'failed!'], 'mode', mode)
+
+                res = waverec(wavedec(mackey_data_1.unsqueeze(1), wavelet,
+                                      level=3, mode=mode),
+                              wavelet)
+                err = torch.mean(torch.abs(mackey_data_1 - res)).numpy()
+                print('db5 reconstruction error scale 3:', err,
+                      ['ok' if err < 1e-4 else 'failed!'], 'mode', mode)
+                assert err < 1e-4
+
+                res = waverec(wavedec(mackey_data_1.unsqueeze(1), wavelet,
+                                      level=4, mode=mode),
+                              wavelet)
+                err = torch.mean(torch.abs(mackey_data_1 - res)).numpy()
+                print('db5 reconstruction error scale 4:', err,
+                      ['ok' if err < 1e-4 else 'failed!'], 'mode', mode)
+                assert err < 1e-4
+
+
 def test_ripples_haar_lvl3():
     """ Compute example from page 7 of
         Ripples in Mathematics, Jensen, la Cour-Harbo
@@ -263,5 +299,5 @@ def test_2d_wavedec_rec():
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    test_conv_fwt_haar_lvl4()
+    test_conv_fwt()
     test_2d_wavedec_rec()
