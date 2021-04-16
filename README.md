@@ -6,6 +6,7 @@ This package implements:
 - the inverse fwt (waverec)
 - the 2d fwt wavedec2
 - the inverse 2d fwt waverec2.
+- single and two-dimensional wavelet packet forward transforms.
 - adaptive wavelet support (experimental).
 - sparse matrix fast wavelet transforms (experimental).
 
