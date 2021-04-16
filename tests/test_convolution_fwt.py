@@ -318,6 +318,5 @@ def test_2d_wavedec_rec():
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    test_outer()
     test_conv_fwt()
     test_2d_wavedec_rec()

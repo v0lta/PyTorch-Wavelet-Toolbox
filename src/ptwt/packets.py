@@ -106,8 +106,6 @@ if __name__ == '__main__':
 
     from scipy import misc
     face = misc.face() # [128:(512+128), 256:(512+256)]
-    plt.imshow(face)
-    plt.show()
     wavelet = pywt.Wavelet('db8')
     wp_tree = pywt.WaveletPacket2D(
         data=np.mean(face, axis=-1).astype(np.float32),
@@ -132,11 +130,6 @@ if __name__ == '__main__':
             img_rows = None
 
     img_pywt = np.concatenate(img, axis=0)
-    viz = np.abs(img_pywt)
-    viz = np.log(viz/np.max(viz))
-    plt.imshow(viz)
-    plt.show()
-
     pt_data = torch.unsqueeze(
         torch.from_numpy(np.mean(face, axis=-1).astype(np.float32)), 0)
     ptwt_wp_tree = WaveletPacked2D(
@@ -159,17 +152,11 @@ if __name__ == '__main__':
             img_rows_pt = None
 
     img_pt = torch.cat(img_pt, axis=0).numpy()
-    viz = np.abs(np.squeeze(img_pt))
-    viz = np.log(viz/np.max(viz))
-    plt.imshow(viz)
-    plt.show()
-
     abs = np.abs(img_pt - img_pywt)
-    plt.imshow(abs)
-    plt.show()
 
     err = np.mean(abs)
-    print('total error', err)
+    print('total error', err, ['ok' if err < 1e-4 else 'failed!'])
+    assert err < 1e-4
 
     print('a', np.mean(np.abs(wp_tree['a'].data
           - torch.squeeze(ptwt_wp_tree['a']).numpy())))
@@ -179,12 +166,3 @@ if __name__ == '__main__':
           - torch.squeeze(ptwt_wp_tree['v']).numpy())))
     print('d', np.mean(np.abs(wp_tree['d'].data
           - torch.squeeze(ptwt_wp_tree['d']).numpy())))
-
-    cat_res = np.concatenate([np.abs(wp_tree['aa'].data),
-                             np.abs(torch.squeeze(ptwt_wp_tree['aa']).numpy())],
-                             axis=0)
-    plt.imshow(cat_res)
-    plt.show()
-
-
-    print('break')
