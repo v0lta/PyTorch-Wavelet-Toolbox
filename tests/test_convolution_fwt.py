@@ -5,6 +5,7 @@ import scipy.misc
 from tests.mackey_glass import MackeyGenerator
 from src.ptwt.learnable_wavelets import SoftOrthogonalWavelet
 from src.ptwt.conv_transform import wavedec, waverec, wavedec2, waverec2
+from src.ptwt.conv_transform import outer
 from src.ptwt.conv_transform import flatten_2d_coeff_lst
 
 
@@ -267,10 +268,18 @@ def test_2d_haar_multi():
     assert err < 1e-4
 
 
+def test_outer():
+      a = torch.tensor([1., 2., 3., 4., 5.])
+      b = torch.tensor([6., 7., 8., 9., 10.])
+      res_t = outer(a,b)
+      res_np = np.outer(a.numpy(), b.numpy())
+      assert np.sum(np.abs(res_t.numpy() - res_np)) < 1e-7
+
+
 def test_2d_wavedec_rec():
     # max db5
-    for level in [None]: # [1, 2, 3, 4, 5, None]:
-        for wavelet_str in ['db1', 'db2', 'db3', 'db4', 'db5']:
+    for level in [1, 2, 3, 4, 5, None]:
+        for wavelet_str in ['db2', 'db3', 'db4', 'db5']:
 
             face = np.transpose(
                 scipy.misc.face(), [2, 0, 1]).astype(np.float32)
@@ -300,13 +309,15 @@ def test_2d_wavedec_rec():
 
             rec = waverec2(coeff2d, wavelet)
             rec = rec.numpy().squeeze()
-            err = np.mean(np.abs(face - rec))
+            err_img = np.abs(face - rec)
+            err = np.mean(err_img)
             print('wavelet', wavelet_str, 'level', str(level), 'rec   err,',
                   err, ['ok' if err < 1e-4 else 'failed!'])
-            # assert err < 1e-4
+            assert err < 1e-4
 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+    test_outer()
     test_conv_fwt()
     test_2d_wavedec_rec()

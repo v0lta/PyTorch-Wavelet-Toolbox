@@ -4,7 +4,7 @@ import pywt
 
 
 def get_filter_tensors(wavelet, flip, device):
-    """Convert input wavelet to filter tensors.
+    """ Convert input wavelet to filter tensors.
     Args:
         wavelet: Wavelet object, assmuing ptwt-like
                  field names.
