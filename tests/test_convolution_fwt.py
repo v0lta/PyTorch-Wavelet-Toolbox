@@ -269,7 +269,7 @@ def test_2d_haar_multi():
 
 def test_2d_wavedec_rec():
     # max db5
-    for level in [1, 2, 3, 4, 5]:
+    for level in [None]: # [1, 2, 3, 4, 5, None]:
         for wavelet_str in ['db1', 'db2', 'db3', 'db4', 'db5']:
 
             face = np.transpose(
@@ -280,6 +280,15 @@ def test_2d_wavedec_rec():
                                level=level)
             pywt_coeff2d = pywt.wavedec2(face, wavelet, mode='reflect',
                                          level=level)
+            for pos, coeffs in enumerate(pywt_coeff2d):
+                  if type(coeffs) is tuple:
+                        for tuple_pos, tuple_el in enumerate(coeffs):
+                              assert tuple_el.shape \
+                                    == torch.squeeze(coeff2d[pos][tuple_pos], 1).shape,\
+                                    "pywt and ptwt should produce the same shapes."
+                  else:
+                      assert coeffs.shape == torch.squeeze(coeff2d[pos], 1).shape,\
+                      "pywt and ptwt should produce the same shapes."
             flat_lst = np.concatenate(flatten_2d_coeff_lst(pywt_coeff2d), -1)
             flat_lst2 = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
             cerr = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
