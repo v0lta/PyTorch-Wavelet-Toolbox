@@ -6,6 +6,7 @@ This package implements:
 - the inverse fwt (waverec)
 - the 2d fwt wavedec2
 - the inverse 2d fwt waverec2.
+- single and two-dimensional wavelet packet forward transforms.
 - adaptive wavelet support (experimental).
 - sparse matrix fast wavelet transforms (experimental).
 
@@ -39,8 +40,8 @@ You can remove it later by typing ```pip uninstall ptwt```.
 ```
 
 #### Unit tests
-The `tests` folder contains multiple tests, to allow independent
-verification of this toolbox. After cloning the repositrory and moving
+The `tests` folder contains multiple tests to allow independent
+verification of this toolbox. After cloning the repository and moving
 into the main directory run 
 
 ``` python
@@ -70,8 +71,3 @@ try:
     print(rec)
 ```
 
-#### Known issues
-PyTorch and pywt pad slightly differently. All is well with zero padding 
-on even length sequences. Not all pywt padding modes exist in PyTorch.
-For odd sequence lengths the edge coefficients may differ.
-These differences *do not* affect invertibility!

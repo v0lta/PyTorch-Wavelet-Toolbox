@@ -4,11 +4,11 @@ import pywt
 
 
 def get_filter_tensors(wavelet, flip, device):
-    """Convert input wavelet to filter tensors.
+    """ Convert input wavelet to filter tensors.
     Args:
         wavelet: Wavelet object, assmuing ptwt-like
                  field names.
-        flip ([bool]]): If true filters ar eflipped.
+        flip ([bool]]): If true filters are flipped.
         device : PyTorch target device.
 
     Returns:
@@ -61,7 +61,7 @@ def get_pad(data_len, filt_len, level):
 
     # pad to even singal length.
     if data_len % 2 != 0:
-        padl += 1
+        padr += 1
 
     return padr, padl
 
@@ -80,8 +80,6 @@ def fwt_pad(data, wavelet, level, mode='reflect'):
         mode = 'constant'
 
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo), level)
-
-    # print('fwt pad', data.shape, pad)
     data_pad = torch.nn.functional.pad(data, [padl, padr],
                                        mode=mode)
     return data_pad
@@ -99,7 +97,7 @@ def fwt_pad2d(data, wavelet, level, mode='reflect'):
     """
     padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo), level)
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo), level)
-    data_pad = torch.nn.functional.pad(data, [padt, padb, padl, padr],
+    data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb],
                                        mode=mode)
     return data_pad
 
@@ -150,7 +148,7 @@ def construct_2d_filt(lo, hi):
     return filt
 
 
-def wavedec2(data, wavelet, level: int = None) -> list:
+def wavedec2(data, wavelet, level: int = None, mode: str = 'reflect') -> list:
     """ Non seperated two dimensional wavelet transform.
 
     Args:
@@ -158,6 +156,8 @@ def wavedec2(data, wavelet, level: int = None) -> list:
         wavelet ([type]): The transformation wavelet.
         level (int, optional): The number of desired scales.
             Defaults to None.
+        mode (str, optinal): The padding mode, i.e. zero or reflect.
+            Defaults to reflect.
 
     Returns:
         [list]: List containing the wavelet coefficients.
@@ -172,7 +172,7 @@ def wavedec2(data, wavelet, level: int = None) -> list:
     result_lst = []
     res_ll = data
     for s in range(level):
-        res_ll = fwt_pad2d(res_ll, wavelet, level=s)
+        res_ll = fwt_pad2d(res_ll, wavelet, level=s, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
         result_lst.append((res_lh, res_hl, res_hh))
@@ -194,7 +194,7 @@ def waverec2(coeffs, wavelet):
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=False, device=flatten_2d_coeff_lst(coeffs)[0].device)
     filt_len = rec_lo.shape[-1]
-    rec_filt = construct_2d_filt(rec_lo, rec_hi)
+    rec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
 
     res_ll = coeffs[0]
     for c_pos, res_lh_hl_hh in enumerate(coeffs[1:]):
@@ -209,17 +209,18 @@ def waverec2(coeffs, wavelet):
         padt = (2*filt_len - 3)//2
         padb = (2*filt_len - 3)//2
         if c_pos < len(coeffs)-2:
+            # if 1:
             pred_len = res_ll.shape[-1] - (padl + padr)
             next_len = coeffs[c_pos+2][0].shape[-1]
             pred_len2 = res_ll.shape[-2] - (padt + padb)
             next_len2 = coeffs[c_pos+2][0].shape[-2]
             if next_len != pred_len:
-                padl += 1
+                padr += 1
                 pred_len = res_ll.shape[-1] - (padl + padr)
                 assert next_len == pred_len, \
                     'padding error, please open an issue on github '
             if next_len2 != pred_len2:
-                padt += 1
+                padb += 1
                 pred_len2 = res_ll.shape[-2] - (padt + padb)
                 assert next_len2 == pred_len2, \
                     'padding error, please open an issue on github '
@@ -234,16 +235,18 @@ def waverec2(coeffs, wavelet):
     return res_ll
 
 
-def wavedec(data, wavelet, level: int = None, mode='zero') -> list:
+def wavedec(data, wavelet, level: int = None, mode='reflect') -> list:
     """Compute the analysis (forward) 1d fast wavelet transform."
 
     Args:
         data (torch.tensor): Input time series of shape [batch_size, 1, time]
                              1d inputs are interpreted as [time],
                              2d inputs are interpreted as [batch_size, time].
-        wavelet (learnable_wavelets.WaveletFilter): The wavelet object to be used.
+        wavelet (learnable_wavelets.WaveletFilter): The wavelet object to use.
         level (int, optional): The scale level to be computed.
-                                Defaults to None.
+                               Defaults to None.
+        mode (str, optional): The padding mode i.e. zero or reflect.
+                              Defaults to reflect.
 
     Returns:
         [list]: A list containing the wavelet coefficients.
@@ -306,7 +309,7 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
             pred_len = res_lo.shape[-1] - (padl + padr)
             nex_len = coeffs[c_pos+2].shape[-1]
             if nex_len != pred_len:
-                padl += 1
+                padr += 1
                 pred_len = res_lo.shape[-1] - (padl + padr)
                 assert nex_len == pred_len, \
                     'padding error, please open an issue on github '
