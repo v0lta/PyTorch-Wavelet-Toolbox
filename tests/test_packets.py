@@ -6,7 +6,7 @@ import pywt
 import numpy as np
 from scipy import misc
 from itertools import product
-from src.ptwt.packets import WaveletPacket, WaveletPacked2D
+from src.ptwt.packets import WaveletPacket, WaveletPacket2D
 
 
 def test_packet_harbo_lvl3():
@@ -70,7 +70,7 @@ def test_2d_packets():
             img_pywt = np.concatenate(img, axis=0)
             pt_data = torch.unsqueeze(
                 torch.from_numpy(np.mean(face, axis=-1).astype(np.float32)), 0)
-            ptwt_wp_tree = WaveletPacked2D(
+            ptwt_wp_tree = WaveletPacket2D(
                 data=pt_data, wavelet=wavelet, mode='reflect')
 
             # get the pytorch decomposition

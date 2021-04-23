@@ -51,7 +51,7 @@ class WaveletPacket(collections.UserDict):
         self.recursive_dwt(data, level=0, max_level=max_level, path='')
 
 
-class WaveletPacked2D(collections.UserDict):
+class WaveletPacket2D(collections.UserDict):
     """ Two dimensional wavelet packets.
     """
     def __init__(self, data, wavelet, mode):
