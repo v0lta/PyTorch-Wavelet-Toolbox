@@ -1,10 +1,15 @@
+import numpy as np
 import pywt
 import time
 import torch
-import numpy as np
+
+from ptwt.matmul_transform import (
+    construct_a,
+    construct_s,
+    matrix_wavedec,
+    matrix_waverec,
+)
 from tests.mackey_glass import MackeyGenerator
-from src.ptwt.matmul_transform import matrix_wavedec, matrix_waverec
-from src.ptwt.matmul_transform import construct_a, construct_s
 
 
 # ----------------------- matrix construction tests ----------------------#

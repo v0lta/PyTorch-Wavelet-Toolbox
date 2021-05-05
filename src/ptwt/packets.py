@@ -1,9 +1,10 @@
 #
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 #
-import torch
-import pywt
 import collections
+import pywt
+import torch
+
 from .conv_transform import wavedec, wavedec2
 
 

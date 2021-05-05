@@ -1,12 +1,18 @@
-import torch
 import numpy as np
 import pywt
 import scipy.misc
+import torch
+
+from ptwt.conv_transform import (
+    flatten_2d_coeff_lst,
+    outer,
+    wavedec,
+    wavedec2,
+    waverec,
+    waverec2,
+)
+from ptwt.learnable_wavelets import SoftOrthogonalWavelet
 from tests.mackey_glass import MackeyGenerator
-from src.ptwt.learnable_wavelets import SoftOrthogonalWavelet
-from src.ptwt.conv_transform import wavedec, waverec, wavedec2, waverec2
-from src.ptwt.conv_transform import outer
-from src.ptwt.conv_transform import flatten_2d_coeff_lst
 
 
 def test_conv_fwt_haar_lvl2():

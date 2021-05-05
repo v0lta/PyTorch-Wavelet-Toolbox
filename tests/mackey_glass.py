@@ -1,5 +1,5 @@
-import torch
 import matplotlib.pyplot as plt
+import torch
 
 
 def generate_mackey(batch_size=100, tmax=200, delta_t=1, rnd=True, device="cuda"):

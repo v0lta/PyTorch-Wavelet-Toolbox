@@ -3,8 +3,8 @@
 This module implements matrix based fwt and ifwt 
 based on the description in Strang Nguyen (p. 32).
 """
-import torch
 import numpy as np
+import torch
 
 
 def cat_sparse_identity_matrix(sparse_matrix, new_length):

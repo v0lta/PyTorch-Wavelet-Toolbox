@@ -1,6 +1,6 @@
 # Created by moritz wolter, 14.04.20
-import torch
 import pywt
+import torch
 
 
 def get_filter_tensors(wavelet, flip, device):

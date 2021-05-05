@@ -1,12 +1,13 @@
 #
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 #
-import torch
-import pywt
 import numpy as np
-from scipy import misc
+import pywt
+import torch
 from itertools import product
-from src.ptwt.packets import WaveletPacket, WaveletPacket2D
+from scipy import misc
+
+from ptwt.packets import WaveletPacket, WaveletPacket2D
 
 
 def test_packet_harbo_lvl3():
