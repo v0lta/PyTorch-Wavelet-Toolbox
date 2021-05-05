@@ -4,7 +4,7 @@ import pywt
 
 
 def get_filter_tensors(wavelet, flip, device):
-    """ Convert input wavelet to filter tensors.
+    """Convert input wavelet to filter tensors.
     Args:
         wavelet: Wavelet object, assmuing ptwt-like
                  field names.
@@ -15,6 +15,7 @@ def get_filter_tensors(wavelet, flip, device):
         Tuple containing the four filter tensors
         dec_lo, dec_hi, rec_lo, rec_hi
     """
+
     def create_tensor(filter):
         if flip:
             if isinstance(filter, torch.Tensor):
@@ -26,6 +27,7 @@ def get_filter_tensors(wavelet, flip, device):
                 return filter.unsqueeze(0).to(device)
             else:
                 return torch.tensor(filter, device=device).unsqueeze(0)
+
     dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
     dec_lo = create_tensor(dec_lo)
     dec_hi = create_tensor(dec_hi)
@@ -35,7 +37,7 @@ def get_filter_tensors(wavelet, flip, device):
 
 
 def get_pad(data_len, filt_len, level):
-    """ Compute the required padding.
+    """Compute the required padding.
     Args:
         data: The input tensor.
         wavelet: The wavelet filters used.
@@ -66,8 +68,8 @@ def get_pad(data_len, filt_len, level):
     return padr, padl
 
 
-def fwt_pad(data, wavelet, level, mode='reflect'):
-    """ Pad the input signal to make the fwt matrix work.
+def fwt_pad(data, wavelet, level, mode="reflect"):
+    """Pad the input signal to make the fwt matrix work.
     Args:
         data: Input data [batch_size, 1, time]
         wavelet: The input wavelet following the pywt wavelet format.
@@ -75,17 +77,16 @@ def fwt_pad(data, wavelet, level, mode='reflect'):
     Returns:
         A pytorch tensor with the padded input data
     """
-    if mode == 'zero':
+    if mode == "zero":
         # convert pywt to pytorch convention.
-        mode = 'constant'
+        mode = "constant"
 
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo), level)
-    data_pad = torch.nn.functional.pad(data, [padl, padr],
-                                       mode=mode)
+    data_pad = torch.nn.functional.pad(data, [padl, padr], mode=mode)
     return data_pad
 
 
-def fwt_pad2d(data, wavelet, level, mode='reflect'):
+def fwt_pad2d(data, wavelet, level, mode="reflect"):
     """Padding for the 2d FWT.
     Args:
         data (torch.Tensor): Input data with 4 domensions.
@@ -97,8 +98,7 @@ def fwt_pad2d(data, wavelet, level, mode='reflect'):
     """
     padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo), level)
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo), level)
-    data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb],
-                                       mode=mode)
+    data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
     return data_pad
 
 
@@ -108,7 +108,7 @@ def outer(a, b):
     b_flat = torch.reshape(b, [-1])
     a_mul = torch.unsqueeze(a_flat, dim=-1)
     b_mul = torch.unsqueeze(b_flat, dim=0)
-    return a_mul*b_mul
+    return a_mul * b_mul
 
 
 def flatten_2d_coeff_lst(coeff_lst_2d, flatten_tensors=True):
@@ -148,8 +148,8 @@ def construct_2d_filt(lo, hi):
     return filt
 
 
-def wavedec2(data, wavelet, level: int = None, mode: str = 'reflect') -> list:
-    """ Non seperated two dimensional wavelet transform.
+def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
+    """Non seperated two dimensional wavelet transform.
 
     Args:
         data (torch.tensor): [batch_size, 1, height, width]
@@ -162,8 +162,7 @@ def wavedec2(data, wavelet, level: int = None, mode: str = 'reflect') -> list:
     Returns:
         [list]: List containing the wavelet coefficients.
     """
-    dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True,
-                                              device=data.device)
+    dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True, device=data.device)
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
 
     if level is None:
@@ -192,38 +191,41 @@ def waverec2(coeffs, wavelet):
         torch.tensor: The reconstructed signal.
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=flatten_2d_coeff_lst(coeffs)[0].device)
+        wavelet, flip=False, device=flatten_2d_coeff_lst(coeffs)[0].device
+    )
     filt_len = rec_lo.shape[-1]
     rec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
 
     res_ll = coeffs[0]
     for c_pos, res_lh_hl_hh in enumerate(coeffs[1:]):
-        res_ll = torch.cat([res_ll, res_lh_hl_hh[0],
-                            res_lh_hl_hh[1], res_lh_hl_hh[2]], 1)
-        res_ll = torch.nn.functional.conv_transpose2d(res_ll, rec_filt,
-                                                      stride=2)
+        res_ll = torch.cat(
+            [res_ll, res_lh_hl_hh[0], res_lh_hl_hh[1], res_lh_hl_hh[2]], 1
+        )
+        res_ll = torch.nn.functional.conv_transpose2d(res_ll, rec_filt, stride=2)
 
         # remove the padding
-        padl = (2*filt_len - 3)//2
-        padr = (2*filt_len - 3)//2
-        padt = (2*filt_len - 3)//2
-        padb = (2*filt_len - 3)//2
-        if c_pos < len(coeffs)-2:
+        padl = (2 * filt_len - 3) // 2
+        padr = (2 * filt_len - 3) // 2
+        padt = (2 * filt_len - 3) // 2
+        padb = (2 * filt_len - 3) // 2
+        if c_pos < len(coeffs) - 2:
             # if 1:
             pred_len = res_ll.shape[-1] - (padl + padr)
-            next_len = coeffs[c_pos+2][0].shape[-1]
+            next_len = coeffs[c_pos + 2][0].shape[-1]
             pred_len2 = res_ll.shape[-2] - (padt + padb)
-            next_len2 = coeffs[c_pos+2][0].shape[-2]
+            next_len2 = coeffs[c_pos + 2][0].shape[-2]
             if next_len != pred_len:
                 padr += 1
                 pred_len = res_ll.shape[-1] - (padl + padr)
-                assert next_len == pred_len, \
-                    'padding error, please open an issue on github '
+                assert (
+                    next_len == pred_len
+                ), "padding error, please open an issue on github "
             if next_len2 != pred_len2:
                 padb += 1
                 pred_len2 = res_ll.shape[-2] - (padt + padb)
-                assert next_len2 == pred_len2, \
-                    'padding error, please open an issue on github '
+                assert (
+                    next_len2 == pred_len2
+                ), "padding error, please open an issue on github "
         if padt > 0:
             res_ll = res_ll[..., padt:, :]
         if padb > 0:
@@ -235,7 +237,7 @@ def waverec2(coeffs, wavelet):
     return res_ll
 
 
-def wavedec(data, wavelet, level: int = None, mode='reflect') -> list:
+def wavedec(data, wavelet, level: int = None, mode="reflect") -> list:
     """Compute the analysis (forward) 1d fast wavelet transform."
 
     Args:
@@ -258,8 +260,7 @@ def wavedec(data, wavelet, level: int = None, mode='reflect') -> list:
         # assume batched time series
         data = data.unsqueeze(1)
 
-    dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True,
-                                              device=data.device)
+    dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True, device=data.device)
     filt_len = dec_lo.shape[-1]
     # dec_lo = torch.tensor(dec_lo[::-1]).unsqueeze(0)
     # dec_hi = torch.tensor(dec_hi[::-1]).unsqueeze(0)
@@ -290,8 +291,9 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
     Returns:
         torch.tensor: The reconstructed signal.
     """
-    _, _, rec_lo, rec_hi = get_filter_tensors(wavelet, flip=False,
-                                              device=coeffs[-1].device)
+    _, _, rec_lo, rec_hi = get_filter_tensors(
+        wavelet, flip=False, device=coeffs[-1].device
+    )
     filt_len = rec_lo.shape[-1]
 
     filt = torch.stack([rec_lo, rec_hi], 0)
@@ -299,20 +301,20 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
     res_lo = coeffs[0]
     for c_pos, res_hi in enumerate(coeffs[1:]):
         res_lo = torch.stack([res_lo, res_hi], 1)
-        res_lo = torch.nn.functional.conv_transpose1d(
-            res_lo, filt, stride=2).squeeze(1)
+        res_lo = torch.nn.functional.conv_transpose1d(res_lo, filt, stride=2).squeeze(1)
 
         # remove the padding
-        padl = (2*filt_len - 3)//2
-        padr = (2*filt_len - 3)//2
-        if c_pos < len(coeffs)-2:
+        padl = (2 * filt_len - 3) // 2
+        padr = (2 * filt_len - 3) // 2
+        if c_pos < len(coeffs) - 2:
             pred_len = res_lo.shape[-1] - (padl + padr)
-            nex_len = coeffs[c_pos+2].shape[-1]
+            nex_len = coeffs[c_pos + 2].shape[-1]
             if nex_len != pred_len:
                 padr += 1
                 pred_len = res_lo.shape[-1] - (padl + padr)
-                assert nex_len == pred_len, \
-                    'padding error, please open an issue on github '
+                assert (
+                    nex_len == pred_len
+                ), "padding error, please open an issue on github "
         if padl > 0:
             res_lo = res_lo[..., padl:]
         if padr > 0:
