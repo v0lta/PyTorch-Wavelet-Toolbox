@@ -14,7 +14,7 @@ This package implements:
 Install the toolbox via pip or clone this repository. In order to
 use pip type:
 ``` bash
- $ pip install git+https://github.com/v0lta/PyTorch-Wavelet-Toolbox.git
+ $ pip install ptwt
 ```
 You can remove it later by typing ```pip uninstall ptwt```.
 
