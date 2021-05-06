@@ -71,3 +71,12 @@ try:
     print(rec)
 ```
 
+## Making a Release
+
+The `tox` configurations can take care of bumping the version, uploading to PyPI,
+and pushing changes to GitHub. You need a username/password for PyPI to run this.
+
+```shell
+$ pip install tox
+$ tox -e finish
+```
