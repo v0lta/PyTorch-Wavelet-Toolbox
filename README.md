@@ -70,13 +70,3 @@ try:
     rec, ifwt_matrix = ptwt.matrix_waverec(coeff, wavelet, level=2)
     print(rec)
 ```
-
-## Making a Release
-
-The `tox` configurations can take care of bumping the version, uploading to PyPI,
-and pushing changes to GitHub. You need a username/password for PyPI to run this.
-
-```shell
-$ pip install tox
-$ tox -e finish
-```
