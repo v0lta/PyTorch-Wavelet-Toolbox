@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 import pywt
 import scipy.misc
@@ -364,6 +365,7 @@ def test_outer():
     assert np.sum(np.abs(res_t.numpy() - res_np)) < 1e-7
 
 
+@pytest.mark.slow
 def test_2d_wavedec_rec():
     # max db5
     for level in [1, 2, 3, 4, 5, None]:

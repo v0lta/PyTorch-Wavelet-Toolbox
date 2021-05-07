@@ -1,6 +1,7 @@
 #
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 #
+import pytest
 import numpy as np
 import pywt
 import torch
@@ -45,9 +46,10 @@ def test_packet_harbo_lvl3():
     assert err < 1e-8
 
 
+@pytest.mark.slow
 def test_2d_packets():
     for max_lev in [2, 3, 4]:
-        for wavelet_str in ["db2", "db3", "db7", "db8"]:
+        for wavelet_str in ["db2", "db3", "db4", "db5", "db6", "db7", "db8"]:
             face = misc.face()[256:(512+64), 256:(512+64)]
             wavelet = pywt.Wavelet(wavelet_str)
             wp_tree = pywt.WaveletPacket2D(
