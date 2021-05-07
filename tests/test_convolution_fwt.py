@@ -369,7 +369,7 @@ def test_2d_wavedec_rec():
     for level in [1, 2, 3, 4, 5, None]:
         for wavelet_str in ["db2", "db3", "db4", "db5"]:
 
-            face = np.transpose(scipy.misc.face()[128:(512+128), 256:(512+256)],
+            face = np.transpose(scipy.misc.face()[256:(512+64), 256:(512+64)],
                                 [2, 0, 1]).astype(np.float32)
             pt_face = torch.tensor(face).unsqueeze(1)
             wavelet = pywt.Wavelet(wavelet_str)
