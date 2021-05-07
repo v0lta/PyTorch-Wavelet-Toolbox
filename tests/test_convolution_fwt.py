@@ -12,7 +12,7 @@ from ptwt.conv_transform import (
     waverec2,
 )
 from ptwt.learnable_wavelets import SoftOrthogonalWavelet
-from ptwt.mackey_glass import MackeyGenerator
+from src.ptwt.mackey_glass import MackeyGenerator
 
 
 def test_conv_fwt_haar_lvl2():
@@ -85,7 +85,7 @@ def test_conv_fwt_haar_lvl2_odd():
 
 
 def test_conv_fwt_haar_lvl4():
-    generator = MackeyGenerator(batch_size=24, tmax=512, delta_t=1, device="cpu")
+    generator = MackeyGenerator(batch_size=8, tmax=128, delta_t=1, device="cpu")
     mackey_data_1 = torch.squeeze(generator())
     wavelet = pywt.Wavelet("haar")
     ptcoeff = wavedec(mackey_data_1.unsqueeze(1), wavelet, level=4)
@@ -141,7 +141,7 @@ def test_conv_fwt_db2_lvl1():
 
 
 def test_conv_fwt_db5_lvl3():
-    generator = MackeyGenerator(batch_size=24, tmax=512, delta_t=1, device="cpu")
+    generator = MackeyGenerator(batch_size=8, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
     wavelet = pywt.Wavelet("db5")
@@ -187,7 +187,7 @@ def test_conv_fwt_db5_lvl3():
 
 
 def test_conv_fwt():
-    generator = MackeyGenerator(batch_size=24, tmax=512, delta_t=1, device="cpu")
+    generator = MackeyGenerator(batch_size=8, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
     for level in [1, 2, 3, 4, 5, 6, None]:
@@ -267,7 +267,7 @@ def test_ripples_haar_lvl3():
 
 
 def test_orth_wavelet():
-    generator = MackeyGenerator(batch_size=24, tmax=512, delta_t=1, device="cpu")
+    generator = MackeyGenerator(batch_size=8, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
     # orthogonal wavelet object test
@@ -288,7 +288,8 @@ def test_orth_wavelet():
 
 def test_2d_haar_lvl1():
     # ------------------------- 2d haar wavelet tests -----------------------
-    face = np.transpose(scipy.misc.face(), [2, 0, 1]).astype(np.float32)
+    face = np.transpose(scipy.misc.face()[128:(512+128), 256:(512+256)],
+                        [2, 0, 1]).astype(np.float32)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet("haar")
 
@@ -313,7 +314,8 @@ def test_2d_haar_lvl1():
 
 def test_2d_db2_lvl1():
     # single level db2 - 2d
-    face = np.transpose(scipy.misc.face(), [2, 0, 1]).astype(np.float32)
+    face = np.transpose(scipy.misc.face()[128:(512+128), 256:(512+256)],
+                        [2, 0, 1]).astype(np.float32)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet("db2")
     coeff2d_pywt = pywt.dwt2(face, wavelet, mode="reflect")
@@ -333,7 +335,8 @@ def test_2d_db2_lvl1():
 
 def test_2d_haar_multi():
     # multi level haar - 2d
-    face = np.transpose(scipy.misc.face(), [2, 0, 1]).astype(np.float32)
+    face = np.transpose(scipy.misc.face()[128:(512+128), 256:(512+256)],
+                        [2, 0, 1]).astype(np.float32)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet("haar")
     coeff2d_pywt = pywt.wavedec2(face, wavelet, mode="reflect", level=5)
@@ -366,7 +369,8 @@ def test_2d_wavedec_rec():
     for level in [1, 2, 3, 4, 5, None]:
         for wavelet_str in ["db2", "db3", "db4", "db5"]:
 
-            face = np.transpose(scipy.misc.face(), [2, 0, 1]).astype(np.float32)
+            face = np.transpose(scipy.misc.face()[128:(512+128), 256:(512+256)],
+                                [2, 0, 1]).astype(np.float32)
             pt_face = torch.tensor(face).unsqueeze(1)
             wavelet = pywt.Wavelet(wavelet_str)
             coeff2d = wavedec2(pt_face, wavelet, mode="reflect", level=level)

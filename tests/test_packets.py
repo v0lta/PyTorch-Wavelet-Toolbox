@@ -47,8 +47,8 @@ def test_packet_harbo_lvl3():
 
 def test_2d_packets():
     for max_lev in [2, 3, 4, 5]:
-        for wavelet_str in ["db2", "db3", "db4", "db5", "db6", "db7", "db8"]:
-            face = misc.face()
+        for wavelet_str in ["db2", "db3", "db4", "db7", "db8"]:
+            face = misc.face()[128:(512+128), 256:(512+256)]
             wavelet = pywt.Wavelet(wavelet_str)
             wp_tree = pywt.WaveletPacket2D(
                 data=np.mean(face, axis=-1).astype(np.float32),
