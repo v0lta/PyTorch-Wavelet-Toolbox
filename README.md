@@ -1,12 +1,23 @@
 ## Pytorch Wavelet Toolbox (`ptwt`)
 
 <p align="center">
-  <a href="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions">
-    <img src="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/workflows/Tests%20master/badge.svg"
+  <a href="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml">
+    <img src="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml/badge.svg"
          alt="GitHub Actions">
   </a>
+  <a href="https://pypi.org/project/ptwt/">
+    <img src="https://img.shields.io/pypi/pyversions/ptwt"
+         alt="PyPI Versions">
+  </a>
 
-  ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ptwt) ![PyPI](https://img.shields.io/pypi/v/ptwt)
+  <a href="https://pypi.org/project/ptwt/">
+    <img src="https://img.shields.io/pypi/v/ptwt"
+         alt="PyPI - Project">
+  </a>
+  
+  <a href="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/blob/main/LICENSE">
+    <img alt="PyPI - License" src="https://img.shields.io/pypi/l/ptwt">
+  </a>
 </p>
 
 
@@ -54,13 +65,11 @@ print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2), wave
 #### Unit Tests
 
 The `tests` folder contains multiple tests to allow independent verification of this toolbox. After cloning the
-repository and moving into the main directory run
+repository, and moving into the main directory, and installing `tox` with `pip install tox` run:
 
 ```shell
-$ pytest
+$ tox -e py
 ```
-
-to evaluate all of them.
 
 #### Adaptive Wavelets (experimental)
 
