@@ -85,7 +85,7 @@ def test_conv_fwt_haar_lvl2_odd():
 
 
 def test_conv_fwt_haar_lvl4():
-    generator = MackeyGenerator(batch_size=8, tmax=128, delta_t=1, device="cpu")
+    generator = MackeyGenerator(batch_size=2, tmax=64, delta_t=1, device="cpu")
     mackey_data_1 = torch.squeeze(generator())
     wavelet = pywt.Wavelet("haar")
     ptcoeff = wavedec(mackey_data_1.unsqueeze(1), wavelet, level=4)
@@ -141,7 +141,7 @@ def test_conv_fwt_db2_lvl1():
 
 
 def test_conv_fwt_db5_lvl3():
-    generator = MackeyGenerator(batch_size=8, tmax=128, delta_t=1, device="cpu")
+    generator = MackeyGenerator(batch_size=2, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
     wavelet = pywt.Wavelet("db5")
@@ -187,7 +187,7 @@ def test_conv_fwt_db5_lvl3():
 
 
 def test_conv_fwt():
-    generator = MackeyGenerator(batch_size=8, tmax=128, delta_t=1, device="cpu")
+    generator = MackeyGenerator(batch_size=2, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
     for level in [1, 2, 3, 4, 5, 6, None]:
@@ -267,7 +267,7 @@ def test_ripples_haar_lvl3():
 
 
 def test_orth_wavelet():
-    generator = MackeyGenerator(batch_size=8, tmax=128, delta_t=1, device="cpu")
+    generator = MackeyGenerator(batch_size=2, tmax=64, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
     # orthogonal wavelet object test
@@ -314,7 +314,7 @@ def test_2d_haar_lvl1():
 
 def test_2d_db2_lvl1():
     # single level db2 - 2d
-    face = np.transpose(scipy.misc.face()[128:(512+128), 256:(512+256)],
+    face = np.transpose(scipy.misc.face()[256:(512+128), 256:(512+128)],
                         [2, 0, 1]).astype(np.float32)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet("db2")
@@ -335,7 +335,7 @@ def test_2d_db2_lvl1():
 
 def test_2d_haar_multi():
     # multi level haar - 2d
-    face = np.transpose(scipy.misc.face()[128:(512+128), 256:(512+256)],
+    face = np.transpose(scipy.misc.face()[256:(512+128), 256:(512+128)],
                         [2, 0, 1]).astype(np.float32)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet("haar")
