@@ -1,7 +1,16 @@
 ## Pytorch Wavelet Toolbox (`ptwt`)
 
-Welcome to the PyTorch (adaptive) wavelet toolbox.
-This package implements:
+<p align="center">
+  <a href="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions">
+    <img src="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/workflows/Tests%20master/badge.svg"
+         alt="GitHub Actions">
+  </a>
+
+  ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/ptwt) ![PyPI](https://img.shields.io/pypi/v/ptwt)
+</p>
+
+
+Welcome to the PyTorch (adaptive) wavelet toolbox. This package implements:
 
 - the fast wavelet transform (fwt) (wavedec)
 - the inverse fwt (waverec)
@@ -13,8 +22,7 @@ This package implements:
 
 #### Installation
 
-Install the toolbox via pip or clone this repository. In order to
-use `pip`, type:
+Install the toolbox via pip or clone this repository. In order to use `pip`, type:
 
 ``` shell
 $ pip install ptwt
@@ -28,7 +36,7 @@ You can remove it later by typing ```pip uninstall ptwt```.
 import torch
 import numpy as np
 import pywt
-import ptwt   # from src import ptwt instead if you cloned the repo instead of using pip.
+import ptwt  # from src import ptwt instead if you cloned the repo instead of using pip.
 
 # generate an input of even length.
 data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
@@ -45,9 +53,8 @@ print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2), wave
 
 #### Unit Tests
 
-The `tests` folder contains multiple tests to allow independent
-verification of this toolbox. After cloning the repository and moving
-into the main directory run 
+The `tests` folder contains multiple tests to allow independent verification of this toolbox. After cloning the
+repository and moving into the main directory run
 
 ```shell
 $ pytest
@@ -55,21 +62,17 @@ $ pytest
 
 to evaluate all of them.
 
-
 #### Adaptive Wavelets (experimental)
 
-Code to train an adaptive wavelet layer in PyTorch is available in
-the `examples` folder. In addition to static wavelets from pywt,
+Code to train an adaptive wavelet layer in PyTorch is available in the `examples` folder. In addition to static wavelets
+from pywt,
 
 - Adaptive product-filters
-
 - and optimizable orthogonal-wavelets are supported.
 
 #### Sparse-Matrix-multiplication Transform (experimental).
 
-In addition to convolution-based fwt implementations 
-matrix-based code is available. Continuing the example above
-try:
+In addition to convolution-based fwt implementations matrix-based code is available. Continuing the example above try:
 
 ```python
 # forward
