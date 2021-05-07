@@ -12,7 +12,7 @@ from ptwt.conv_transform import (
     waverec2,
 )
 from ptwt.learnable_wavelets import SoftOrthogonalWavelet
-from tests.mackey_glass import MackeyGenerator
+from ptwt.mackey_glass import MackeyGenerator
 
 
 def test_conv_fwt_haar_lvl2():
@@ -415,7 +415,5 @@ def test_2d_wavedec_rec():
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
     test_conv_fwt()
     test_2d_wavedec_rec()
