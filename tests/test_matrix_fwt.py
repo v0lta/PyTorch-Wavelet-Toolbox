@@ -9,7 +9,7 @@ from ptwt.matmul_transform import (
     matrix_wavedec,
     matrix_waverec,
 )
-from tests.mackey_glass import MackeyGenerator
+from ptwt.mackey_glass import MackeyGenerator
 
 
 # ----------------------- matrix construction tests ----------------------#
