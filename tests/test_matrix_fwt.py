@@ -2,6 +2,7 @@ import numpy as np
 import pywt
 import time
 import torch
+import pytest
 
 from ptwt.matmul_transform import (
     construct_a,
@@ -109,15 +110,11 @@ def test_fwt_ifwt_level_3():
     assert err5 < 1e-6
 
 
+@pytest.mark.slow
 def test_fwt_ifwt_mackey_haar():
     wavelet = pywt.Wavelet("haar")
-    pd = {}
-    pd["delta_t"] = 1
-    pd["tmax"] = 1024
-    pd["batch_size"] = 24
-
     generator = MackeyGenerator(
-        batch_size=pd["batch_size"], tmax=pd["tmax"], delta_t=pd["delta_t"]
+        batch_size=2, tmax=512, delta_t=1
     )
     wavelet = pywt.Wavelet("haar")
     pt_data = torch.squeeze(generator()).cpu()
@@ -159,14 +156,11 @@ def test_fwt_ifwt_mackey_haar():
 
 
 # ------------ db2 fwt-ifwt tests --------------------------------------
+@pytest.mark.slow
 def test_fwt_ifwt_mackey_db2():
-    pd = {}
-    pd["delta_t"] = 1
-    pd["tmax"] = 512
-    pd["batch_size"] = 24
     wavelet = pywt.Wavelet("db2")
     generator = MackeyGenerator(
-        batch_size=pd["batch_size"], tmax=pd["tmax"], delta_t=pd["delta_t"]
+        batch_size=2, tmax=512, delta_t=1
     )
     pt_data = torch.squeeze(generator()).cpu()
     coeffs_mat_max, mat_lst = matrix_wavedec(pt_data, wavelet, 4)
