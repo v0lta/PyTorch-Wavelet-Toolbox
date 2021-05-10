@@ -4,20 +4,12 @@
   <a href="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml">
     <img src="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml/badge.svg"
          alt="GitHub Actions">
-  </a>
-  <a href="https://pypi.org/project/ptwt/">
-    <img src="https://img.shields.io/pypi/pyversions/ptwt"
-         alt="PyPI Versions">
-  </a>
 
-  <a href="https://pypi.org/project/ptwt/">
+<a href="https://pypi.org/project/ptwt/">
     <img src="https://img.shields.io/pypi/v/ptwt"
          alt="PyPI - Project">
   </a>
   
-  <a href="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/blob/main/LICENSE">
-    <img alt="PyPI - License" src="https://img.shields.io/pypi/l/ptwt">
-  </a>
 </p>
 
 
