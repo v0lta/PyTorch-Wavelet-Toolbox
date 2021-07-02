@@ -1,9 +1,11 @@
+import sys
 import pytest
 import numpy as np
 import pywt
 import scipy.misc
 import torch
 
+sys.path.append('./src')
 from ptwt.conv_transform import (
     flatten_2d_coeff_lst,
     outer,
@@ -13,7 +15,7 @@ from ptwt.conv_transform import (
     waverec2,
 )
 from ptwt.learnable_wavelets import SoftOrthogonalWavelet
-from src.ptwt.mackey_glass import MackeyGenerator
+from ptwt.mackey_glass import MackeyGenerator
 
 
 def test_conv_fwt_haar_lvl2():
@@ -42,12 +44,16 @@ def test_conv_fwt_haar_lvl2():
     coeffs = pywt.wavedec(data, wavelet, level=2)
     coeffs2 = wavedec(ptdata, wavelet, level=2)
     assert len(coeffs) == len(coeffs2)
-    err = np.mean(
-        np.abs(np.concatenate(coeffs) - torch.cat(coeffs2, -1).squeeze().numpy())
-    )
-    print("haar coefficient error scale 2", err, ["ok" if err < 1e-4 else "failed!"])
-    assert err < 1e-4
 
+    pywt_coeffs = np.concatenate(coeffs)
+    ptwt_coeffs = torch.cat(coeffs2, -1).squeeze().numpy() 
+    err = np.mean(np.abs(pywt_coeffs - ptwt_coeffs))
+    print("haar coefficient error scale 2", err, ["ok" if err < 1e-6 else "failed!"])
+    assert np.allclose(pywt_coeffs, ptwt_coeffs)
+    rec = waverec(coeffs2, wavelet).squeeze().numpy()
+    err = np.mean(np.abs((data - rec)))
+    print("haar reconstruction error scale 2", err, ["ok" if err < 1e-6 else "failed!"])
+    assert np.allclose(data, rec)
 
 def test_conv_fwt_haar_lvl2_odd():
     data = [
@@ -74,15 +80,13 @@ def test_conv_fwt_haar_lvl2_odd():
     wavelet = pywt.Wavelet("haar")
 
     pycoeff = pywt.wavedec(data, wavelet, level=2, mode="reflect")
-    cpycoeff = np.concatenate(pycoeff)
+    pywt_coeffs = np.concatenate(pycoeff)
     ptcoeff = wavedec(ptdata, wavelet, level=2, mode="reflect")
-    cptcoeff = torch.cat(ptcoeff, -1)[0, :].numpy()
-
-    coeff_erorr = np.mean(np.abs(cptcoeff - cpycoeff))
-    assert coeff_erorr < 1e-4
+    ptwt_coeffs = torch.cat(ptcoeff, -1)[0, :].numpy()
+    assert np.allclose(ptwt_coeffs, ptwt_coeffs)
     rec = waverec(ptcoeff, wavelet)
-    err = np.mean(np.abs((ptdata - rec[:, :-1]).numpy()))
-    assert err < 1e-4
+    assert np.allclose(data, rec[:, :-1].numpy())
+
 
 
 def test_conv_fwt_haar_lvl4():
@@ -421,5 +425,6 @@ def test_2d_wavedec_rec():
 
 
 if __name__ == "__main__":
-    test_conv_fwt()
-    test_2d_wavedec_rec()
+    # test_conv_fwt()
+    # test_2d_wavedec_rec()
+    test_conv_fwt_haar_lvl2_odd()
