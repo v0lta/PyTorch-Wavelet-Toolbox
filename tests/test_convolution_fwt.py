@@ -88,25 +88,22 @@ def test_conv_fwt_haar_lvl2_odd():
     assert np.allclose(data, rec[:, :-1].numpy())
 
 
-
 def test_conv_fwt_haar_lvl4():
     generator = MackeyGenerator(batch_size=2, tmax=64, delta_t=1, device="cpu")
     mackey_data_1 = torch.squeeze(generator())
     wavelet = pywt.Wavelet("haar")
     ptcoeff = wavedec(mackey_data_1.unsqueeze(1), wavelet, level=4)
     pycoeff = pywt.wavedec(mackey_data_1[0, :].numpy(), wavelet, level=4)
-    ptcoeff = torch.cat(ptcoeff, -1)[0, :].numpy()
-    pycoeff = np.concatenate(pycoeff)
-    err = np.mean(np.abs(pycoeff - ptcoeff))
+    ptwt_coeff = torch.cat(ptcoeff, -1)[0, :].numpy()
+    pywt_coeff = np.concatenate(pycoeff)
+    err = np.mean(np.abs(pywt_coeff - ptwt_coeff))
     print("haar coefficient error scale 4:", err, ["ok" if err < 1e-4 else "failed!"])
-    assert err < 1e-4
+    assert np.allclose(pywt_coeff, ptwt_coeff, atol=1e-07)
 
-    res = waverec(wavedec(mackey_data_1.unsqueeze(1), wavelet), wavelet)
-    err = torch.mean(torch.abs(mackey_data_1 - res)).numpy()
-    print(
-        "haar reconstruction error scale 4:", err, ["ok" if err < 1e-4 else "failed!"]
-    )
-    assert err < 1e-4
+    reconstruction = waverec(wavedec(mackey_data_1.unsqueeze(1), wavelet), wavelet)
+    err = torch.mean(torch.abs(mackey_data_1 - reconstruction)).numpy()
+    print("haar reconstruction error scale 4:", err, ["ok" if err < 1e-4 else "failed!"])
+    assert np.allclose(reconstruction.numpy(), mackey_data_1.numpy())
 
 
 def test_conv_fwt_db2_lvl1():
@@ -427,4 +424,4 @@ def test_2d_wavedec_rec():
 if __name__ == "__main__":
     # test_conv_fwt()
     # test_2d_wavedec_rec()
-    test_conv_fwt_haar_lvl2_odd()
+    test_conv_fwt_haar_lvl4()
