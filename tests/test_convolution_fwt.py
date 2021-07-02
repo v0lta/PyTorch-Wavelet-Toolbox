@@ -83,7 +83,7 @@ def test_conv_fwt_haar_lvl2_odd():
     pywt_coeffs = np.concatenate(pycoeff)
     ptcoeff = wavedec(ptdata, wavelet, level=2, mode="reflect")
     ptwt_coeffs = torch.cat(ptcoeff, -1)[0, :].numpy()
-    assert np.allclose(ptwt_coeffs, ptwt_coeffs)
+    assert np.allclose(pywt_coeffs, ptwt_coeffs)
     rec = waverec(ptcoeff, wavelet)
     assert np.allclose(data, rec[:, :-1].numpy())
 
