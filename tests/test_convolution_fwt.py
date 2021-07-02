@@ -98,7 +98,7 @@ def test_conv_fwt_haar_lvl4():
     pywt_coeff = np.concatenate(pycoeff)
     err = np.mean(np.abs(pywt_coeff - ptwt_coeff))
     print("haar coefficient error scale 4:", err, ["ok" if err < 1e-4 else "failed!"])
-    assert np.allclose(pywt_coeff, ptwt_coeff, atol=1e-07)
+    assert np.allclose(pywt_coeff, ptwt_coeff, atol=1e-06)
 
     reconstruction = waverec(wavedec(mackey_data_1.unsqueeze(1), wavelet), wavelet)
     err = torch.mean(torch.abs(mackey_data_1 - reconstruction)).numpy()
@@ -135,11 +135,12 @@ def test_conv_fwt_db2_lvl1():
     ccoeffs2 = torch.cat(coeffs2, -1).numpy()
     err = np.mean(np.abs(ccoeffs - ccoeffs2))
     print("db2 coefficient error scale 1:", err, ["ok" if err < 1e-4 else "failed!"])
-    assert err < 1e-4
+    assert np.allclose(ccoeffs, ccoeffs2, atol=1e-6)
     rec = waverec(coeffs2, wavelet)
     err = np.mean(np.abs(npdata - rec.numpy()))
     print("db2 reconstruction error scale 1:", err, ["ok" if err < 1e-4 else "failed!"])
-    assert err < 1e-4
+    assert np.allclose(npdata, rec.numpy())
+
 
 
 def test_conv_fwt_db5_lvl3():
@@ -160,6 +161,7 @@ def test_conv_fwt_db5_lvl3():
             "mode",
             mode,
         )
+        assert np.allclose(cpycoeff , cptcoeff.numpy(), atol=1e-6)
 
         res = waverec(
             wavedec(mackey_data_1.unsqueeze(1), wavelet, level=3, mode=mode), wavelet
@@ -172,7 +174,7 @@ def test_conv_fwt_db5_lvl3():
             "mode",
             mode,
         )
-        assert err < 1e-4
+        assert np.allclose(mackey_data_1.numpy(), res.numpy())
 
         res = waverec(
             wavedec(mackey_data_1.unsqueeze(1), wavelet, level=4, mode=mode), wavelet
@@ -185,7 +187,7 @@ def test_conv_fwt_db5_lvl3():
             "mode",
             mode,
         )
-        assert err < 1e-4
+        assert np.allclose(mackey_data_1.numpy(), res.numpy())
 
 
 def test_conv_fwt():
@@ -424,4 +426,4 @@ def test_2d_wavedec_rec():
 if __name__ == "__main__":
     # test_conv_fwt()
     # test_2d_wavedec_rec()
-    test_conv_fwt_haar_lvl4()
+    test_conv_fwt_db5_lvl3()
