@@ -1,13 +1,10 @@
-#
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
-#
 import pytest
 import numpy as np
 import pywt
 import torch
 from itertools import product
 from scipy import misc
-
 from ptwt.packets import WaveletPacket, WaveletPacket2D
 
 

@@ -175,7 +175,6 @@ def test_conv_fwt_db5_lvl3():
             mode,
         )
         assert np.allclose(mackey_data_1.numpy(), res.numpy())
-
         res = waverec(
             wavedec(mackey_data_1.unsqueeze(1), wavelet, level=4, mode=mode), wavelet
         )
@@ -214,6 +213,7 @@ def test_conv_fwt():
                     "mode",
                     mode,
                 )
+                assert np.allclose(cptcoeff.numpy(), cpycoeff, atol=1e-6)
 
                 res = waverec(
                     wavedec(mackey_data_1.unsqueeze(1), wavelet, level=3, mode=mode),
@@ -227,7 +227,8 @@ def test_conv_fwt():
                     "mode",
                     mode,
                 )
-                assert err < 1e-4
+                assert np.allclose(mackey_data_1.numpy(), res.numpy())
+
 
                 res = waverec(
                     wavedec(mackey_data_1.unsqueeze(1), wavelet, level=4, mode=mode),
@@ -241,7 +242,7 @@ def test_conv_fwt():
                     "mode",
                     mode,
                 )
-                assert err < 1e-4
+                assert np.allclose(mackey_data_1.numpy(), res.numpy())
 
 
 def test_ripples_haar_lvl3():
@@ -287,7 +288,7 @@ def test_orth_wavelet():
     print(
         "orth reconstruction error scale 4:", err, ["ok" if err < 1e-4 else "failed!"]
     )
-    assert err < 1e-4
+    assert err < 1e-6
 
 
 def test_2d_haar_lvl1():
@@ -424,6 +425,5 @@ def test_2d_wavedec_rec():
 
 
 if __name__ == "__main__":
+    test_orth_wavelet()
     # test_conv_fwt()
-    # test_2d_wavedec_rec()
-    test_conv_fwt_db5_lvl3()
