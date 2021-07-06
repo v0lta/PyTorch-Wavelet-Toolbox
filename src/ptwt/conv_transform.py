@@ -3,13 +3,15 @@ import pywt
 import torch
 
 
-def get_filter_tensors(wavelet, flip, device):
+def get_filter_tensors(wavelet, flip, device, dtype=torch.float32):
     """Convert input wavelet to filter tensors.
     Args:
         wavelet: Wavelet object, assmuing ptwt-like
                  field names.
         flip ([bool]]): If true filters are flipped.
         device : PyTorch target device.
+        dtype: The data type sets the precision of the computation.
+               Default: torch.float32.
 
     Returns:
         Tuple containing the four filter tensors
@@ -21,12 +23,12 @@ def get_filter_tensors(wavelet, flip, device):
             if isinstance(filter, torch.Tensor):
                 return filter.flip(-1).unsqueeze(0).to(device)
             else:
-                return torch.tensor(filter[::-1], device=device).unsqueeze(0)
+                return torch.tensor(filter[::-1], device=device, dtype=dtype).unsqueeze(0)
         else:
             if isinstance(filter, torch.Tensor):
                 return filter.unsqueeze(0).to(device)
             else:
-                return torch.tensor(filter, device=device).unsqueeze(0)
+                return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
 
     dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
     dec_lo = create_tensor(dec_lo)
@@ -162,7 +164,8 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
     Returns:
         [list]: List containing the wavelet coefficients.
     """
-    dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True, device=data.device)
+    dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True, device=data.device,
+                                              dtype=data.dtype)
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
 
     if level is None:
@@ -191,7 +194,8 @@ def waverec2(coeffs, wavelet):
         torch.tensor: The reconstructed signal.
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=flatten_2d_coeff_lst(coeffs)[0].device
+        wavelet, flip=False, device=coeffs[0].device,
+        dtype=coeffs[0].dtype
     )
     filt_len = rec_lo.shape[-1]
     rec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
@@ -260,7 +264,8 @@ def wavedec(data, wavelet, level: int = None, mode="reflect") -> list:
         # assume batched time series
         data = data.unsqueeze(1)
 
-    dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True, device=data.device)
+    dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True, device=data.device,
+                                              dtype=data.dtype)
     filt_len = dec_lo.shape[-1]
     # dec_lo = torch.tensor(dec_lo[::-1]).unsqueeze(0)
     # dec_hi = torch.tensor(dec_hi[::-1]).unsqueeze(0)
@@ -292,7 +297,8 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
         torch.tensor: The reconstructed signal.
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=coeffs[-1].device
+        wavelet, flip=False, device=coeffs[-1].device,
+        dtype=coeffs[-1].dtype
     )
     filt_len = rec_lo.shape[-1]
 

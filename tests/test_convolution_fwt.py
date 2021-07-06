@@ -294,71 +294,73 @@ def test_orth_wavelet():
 def test_2d_haar_lvl1():
     # ------------------------- 2d haar wavelet tests -----------------------
     face = np.transpose(scipy.misc.face()[128:(512+128), 256:(512+256)],
-                        [2, 0, 1]).astype(np.float32)
+                        [2, 0, 1]).astype(np.float64)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet("haar")
 
     # single level haar - 2d
-    coeff2d_pywt = pywt.dwt2(face, wavelet, mode="reflect")
-    coeff2d = wavedec2(pt_face, wavelet, level=1, mode="reflect")
-    flat_lst = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
-    flat_lst2 = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
-    cerr = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
+    coeff2d_pywt = pywt.dwt2(face, wavelet, mode="zero")
+    coeff2d = wavedec2(pt_face, wavelet, level=1, mode="constant")
+    flat_list_pywt = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
+    flat_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
+    cerr = np.mean(np.abs(flat_list_pywt - flat_list_ptwt.numpy()))
     print("haar 2d coeff err,", cerr, ["ok" if cerr < 1e-4 else "failed!"])
-    assert np.allclose(flat_lst, flat_lst2.numpy(), atol=1e-04)
+    assert np.allclose(flat_list_pywt, flat_list_ptwt.numpy())
 
-    # single level 2d haar inverse
-    # ptwt_rec = pywt.waverec2(coeff2d_pywt, wavelet)
+    # plt.plot(flat_list_pywt, 'o')
+    # plt.plot(flat_list_ptwt.numpy(), '.')
+    # plt.show()
+
     rec = waverec2(coeff2d, wavelet).numpy().squeeze()
     err_img = np.abs(face - rec)
     err = np.mean(err_img)
     # err2 = np.mean(np.abs(face-ptwt_rec))
     print("haar 2d rec err", err, ["ok" if err < 1e-4 else "failed!"])
-    assert np.allclose(rec, face, atol=1e-04)
+    assert np.allclose(rec, face)
 
 
 def test_2d_db2_lvl1():
     # single level db2 - 2d
     face = np.transpose(scipy.misc.face()[256:(512+128), 256:(512+128)],
-                        [2, 0, 1]).astype(np.float32)
+                        [2, 0, 1]).astype(np.float64)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet("db2")
     coeff2d_pywt = pywt.dwt2(face, wavelet, mode="reflect")
     coeff2d = wavedec2(pt_face, wavelet, level=1)
-    flat_lst = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
-    flat_lst2 = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
-    cerr = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
+    flat_list_pywt = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
+    flat_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
+    cerr = np.mean(np.abs(flat_list_pywt - flat_list_ptwt.numpy()))
     print("db5 2d coeff err,", cerr, ["ok" if cerr < 1e-4 else "failed!"])
-    assert np.allclose(flat_lst, flat_lst2.numpy(), atol=1e-04)
+    assert np.allclose(flat_list_pywt, flat_list_ptwt.numpy())
 
     # single level db2 - 2d inverse.
     rec = waverec2(coeff2d, wavelet)
     err = np.mean(np.abs(face - rec.numpy().squeeze()))
     print("db5 2d rec err,", err, ["ok" if err < 1e-4 else "failed!"])
-    assert np.allclose(rec.numpy().squeeze(), face, atol=1e-04)
+    assert np.allclose(rec.numpy().squeeze(), face)
 
 
 def test_2d_haar_multi():
     # multi level haar - 2d
     face = np.transpose(scipy.misc.face()[256:(512+128), 256:(512+128)],
-                        [2, 0, 1]).astype(np.float32)
+                        [2, 0, 1]).astype(np.float64)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet("haar")
     coeff2d_pywt = pywt.wavedec2(face, wavelet, mode="reflect", level=5)
     coeff2d = wavedec2(pt_face, wavelet, level=5)
-    flat_lst = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
-    flat_lst2 = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
-    cerr = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
-    # plt.plot(flat_lst); plt.show()
-    # plt.plot(flat_lst2); plt.show()
+    flat_list_pywt = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
+    flat_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
+    cerr = np.mean(np.abs(flat_list_pywt - flat_list_ptwt.numpy()))
+    # plt.plot(flat_list_pywt); plt.show()
+    # plt.plot(flat_list_ptwt); plt.show()
     print("haar 2d scale 5 coeff err,", cerr, ["ok" if cerr < 1e-4 else "failed!"])
-    assert cerr < 1e-4
+    assert np.allclose(flat_list_pywt, flat_list_ptwt)
 
     # inverse multi level Harr - 2d
     rec = waverec2(coeff2d, wavelet).numpy().squeeze()
     err = np.mean(np.abs(face - rec))
     print("haar 2d scale 5 rec err,", err, ["ok" if err < 1e-4 else "failed!"])
-    assert np.allclose(rec, face, atol=1e-04)
+    assert np.allclose(rec, face)
 
 
 def test_outer():
@@ -375,7 +377,7 @@ def test_2d_wavedec_rec():
     for level in [1, 2, 3, 4, 5, None]:
         for wavelet_str in ["db2", "db3", "db4", "db5"]:
             face = np.transpose(scipy.misc.face()[256:(512+64), 256:(512+64)],
-                                [2, 0, 1]).astype(np.float32)
+                                [2, 0, 1]).astype(np.float64)
             pt_face = torch.tensor(face).unsqueeze(1)
             wavelet = pywt.Wavelet(wavelet_str)
             coeff2d = wavedec2(pt_face, wavelet, mode="reflect", level=level)
@@ -391,11 +393,11 @@ def test_2d_wavedec_rec():
                     assert (
                         coeffs.shape == torch.squeeze(coeff2d[pos], 1).shape
                     ), "pywt and ptwt should produce the same shapes."
-            flat_lst = np.concatenate(flatten_2d_coeff_lst(pywt_coeff2d), -1)
-            flat_lst2 = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
-            cerr = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
-            # plt.plot(flat_lst); plt.show()
-            # plt.plot(flat_lst2); plt.show()
+            flat_list_pywt = np.concatenate(flatten_2d_coeff_lst(pywt_coeff2d), -1)
+            flat_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
+            cerr = np.mean(np.abs(flat_list_pywt - flat_list_ptwt.numpy()))
+            # plt.plot(flat_list_pywt); plt.show()
+            # plt.plot(flat_list_ptwt); plt.show()
             print(
                 "wavelet",
                 wavelet_str,
@@ -405,8 +407,7 @@ def test_2d_wavedec_rec():
                 cerr,
                 ["ok" if cerr < 1e-4 else "failed!"],
             )
-            assert cerr < 1e-4
-            # assert np.allclose(flat_lst, flat_lst2.numpy(), atol=1e-3)
+            assert np.allclose(flat_list_pywt, flat_list_ptwt.numpy())
 
             rec = waverec2(coeff2d, wavelet)
             rec = rec.numpy().squeeze()
@@ -421,10 +422,8 @@ def test_2d_wavedec_rec():
                 err,
                 ["ok" if err < 1e-4 else "failed!"],
             )
-            assert err < 1e-4
-            # assert np.allclose(face, rec, atol=1e-4)
+            assert np.allclose(face, rec)
 
 
 if __name__ == "__main__":
     test_2d_haar_lvl1()
-    # test_conv_fwt()
