@@ -288,7 +288,7 @@ def test_orth_wavelet():
     print(
         "orth reconstruction error scale 4:", err, ["ok" if err < 1e-4 else "failed!"]
     )
-    assert err < 1e-6
+    assert np.allclose(res.detach().numpy(), mackey_data_1.numpy())
 
 
 def test_2d_haar_lvl1():
@@ -305,7 +305,7 @@ def test_2d_haar_lvl1():
     flat_lst2 = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
     cerr = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
     print("haar 2d coeff err,", cerr, ["ok" if cerr < 1e-4 else "failed!"])
-    assert cerr < 1e-4
+    assert np.allclose(flat_lst, flat_lst2.numpy(), atol=1e-04)
 
     # single level 2d haar inverse
     # ptwt_rec = pywt.waverec2(coeff2d_pywt, wavelet)
@@ -314,7 +314,7 @@ def test_2d_haar_lvl1():
     err = np.mean(err_img)
     # err2 = np.mean(np.abs(face-ptwt_rec))
     print("haar 2d rec err", err, ["ok" if err < 1e-4 else "failed!"])
-    assert err < 1e-4
+    assert np.allclose(rec, face, atol=1e-04)
 
 
 def test_2d_db2_lvl1():
@@ -329,13 +329,13 @@ def test_2d_db2_lvl1():
     flat_lst2 = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
     cerr = np.mean(np.abs(flat_lst - flat_lst2.numpy()))
     print("db5 2d coeff err,", cerr, ["ok" if cerr < 1e-4 else "failed!"])
-    assert cerr < 1e-4
+    assert np.allclose(flat_lst, flat_lst2.numpy(), atol=1e-04)
 
     # single level db2 - 2d inverse.
     rec = waverec2(coeff2d, wavelet)
     err = np.mean(np.abs(face - rec.numpy().squeeze()))
     print("db5 2d rec err,", err, ["ok" if err < 1e-4 else "failed!"])
-    assert err < 1e-4
+    assert np.allclose(rec.numpy().squeeze(), face, atol=1e-04)
 
 
 def test_2d_haar_multi():
@@ -358,7 +358,7 @@ def test_2d_haar_multi():
     rec = waverec2(coeff2d, wavelet).numpy().squeeze()
     err = np.mean(np.abs(face - rec))
     print("haar 2d scale 5 rec err,", err, ["ok" if err < 1e-4 else "failed!"])
-    assert err < 1e-4
+    assert np.allclose(rec, face, atol=1e-04)
 
 
 def test_outer():
@@ -366,7 +366,7 @@ def test_outer():
     b = torch.tensor([6.0, 7.0, 8.0, 9.0, 10.0])
     res_t = outer(a, b)
     res_np = np.outer(a.numpy(), b.numpy())
-    assert np.sum(np.abs(res_t.numpy() - res_np)) < 1e-7
+    assert np.allclose(res_t.numpy(), res_np)
 
 
 @pytest.mark.slow
@@ -374,7 +374,6 @@ def test_2d_wavedec_rec():
     # max db5
     for level in [1, 2, 3, 4, 5, None]:
         for wavelet_str in ["db2", "db3", "db4", "db5"]:
-
             face = np.transpose(scipy.misc.face()[256:(512+64), 256:(512+64)],
                                 [2, 0, 1]).astype(np.float32)
             pt_face = torch.tensor(face).unsqueeze(1)
@@ -407,6 +406,7 @@ def test_2d_wavedec_rec():
                 ["ok" if cerr < 1e-4 else "failed!"],
             )
             assert cerr < 1e-4
+            # assert np.allclose(flat_lst, flat_lst2.numpy(), atol=1e-3)
 
             rec = waverec2(coeff2d, wavelet)
             rec = rec.numpy().squeeze()
@@ -422,8 +422,9 @@ def test_2d_wavedec_rec():
                 ["ok" if err < 1e-4 else "failed!"],
             )
             assert err < 1e-4
+            # assert np.allclose(face, rec, atol=1e-4)
 
 
 if __name__ == "__main__":
-    test_orth_wavelet()
+    test_2d_haar_lvl1()
     # test_conv_fwt()
