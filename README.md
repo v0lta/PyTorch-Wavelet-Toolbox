@@ -23,7 +23,7 @@ Welcome to the PyTorch (adaptive) wavelet toolbox. This package implements:
 - adaptive wavelet support (experimental).
 - sparse matrix fast wavelet transforms (experimental).
 
-This toolbox is developed with pywt compatiblity in mind. 
+This toolbox is developed with pywt compatibility in mind. 
   
 #### Installation
 
