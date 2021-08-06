@@ -86,7 +86,7 @@ rec, ifwt_matrix = ptwt.matrix_waverec(coeff, wavelet, level=2)
 print(rec)
 ```
   
-### 📖 Citation
+#### 📖 Citation
 If you find this work useful please consider citing:
 ```
 @phdthesis{handle:20.500.11811/9245,
