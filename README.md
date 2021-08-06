@@ -85,3 +85,17 @@ print(coeff)
 rec, ifwt_matrix = ptwt.matrix_waverec(coeff, wavelet, level=2)
 print(rec)
 ```
+  
+### 📖 Citation
+If you find this work useful please consider citing:
+```
+@phdthesis{handle:20.500.11811/9245,
+  urn: https://nbn-resolving.org/urn:nbn:de:hbz:5-63361,
+  author = {{Moritz Wolter}},
+  title = {Frequency Domain Methods in Recurrent Neural Networks for Sequential Data Processing},
+  school = {Rheinische Friedrich-Wilhelms-Universität Bonn},
+  year = 2021,
+  month = jul,
+  url = {https://hdl.handle.net/20.500.11811/9245}
+}
+```
