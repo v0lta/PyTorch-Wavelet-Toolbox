@@ -2,16 +2,22 @@
 """
 This module implements matrix based fwt and ifwt 
 based on the description in Strang Nguyen (p. 32).
+As well as the description of boundary filters in 
+"Ripples in Mathematics" section 10.3 .
 """
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
 
 
 def cat_sparse_identity_matrix(sparse_matrix, new_length):
     """Concatenate a sparse input matrix and a sparse identity matrix.
-    :param sparse_matrix: The input matrix.
-    :param new_length: The length up to which the diagonal should be elongated.
-    :return: Square [input, eye] matrix of size [new_length, new_length]
+    Args:
+        sparse_matrix: The input matrix.
+        new_length: The length up to which the diagonal should be elongated.
+    
+    Returns:
+        Square [input, eye] matrix of size [new_length, new_length]
     """
     # assert square matrix.
     assert (
@@ -29,13 +35,14 @@ def cat_sparse_identity_matrix(sparse_matrix, new_length):
 
 
 # construct the FWT analysis matrix.
-def construct_a(wavelet, length, wrap=True):
+def construct_a(wavelet, length, wrap=True, dtype=torch.float64):
     """Constructs the sparse analysis matrix to compute a matrix based fwt.
     Following page 31 of the Strang Nguyen Wavelets and Filter Banks book.
     Args:
         wavelet: The wavelet coefficients stored in a wavelet object.
         length: The number of entries in the input signal.
         wrap: Filter wrap around produces square matrices.
+        dtype: The datatype to use. Defaults to torch.float64.
     Returns:
         The sparse fwt matrix A.
     """
@@ -66,12 +73,54 @@ def construct_a(wavelet, length, wrap=True):
     if wrap:
         y = y % w
     a_indices = torch.from_numpy(np.stack([x, y]).astype(np.int))
-    al_entries = torch.tensor([dec_lo[::-1]] * h).flatten()
-    ab_entries = torch.tensor([dec_hi[::-1]] * h).flatten()
+    al_entries = torch.tensor([dec_lo[::-1]] * h).flatten().type(dtype)
+    ab_entries = torch.tensor([dec_hi[::-1]] * h).flatten().type(dtype)
     a_entries = torch.cat([al_entries, ab_entries])
-    a_ten = torch.sparse.FloatTensor(a_indices, a_entries)
+    a_ten = torch.sparse.FloatTensor(a_indices, a_entries).coalesce()
     # left hand filtering and decimation matrix
     return a_ten
+
+
+def orth_via_gram_schmidt(matrix, filt_len):
+    row_count = matrix.shape[0]
+    to_orthogonalize = []
+    done = []
+    for current_row in range(row_count):
+        non_zero_elements = torch.sum((matrix[current_row, :] != 0).type(torch.float32))
+        if non_zero_elements < filt_len:
+            to_orthogonalize.append(current_row)
+        else:
+            done.append(current_row)
+
+    # loop over the rows we want to orthogonalize
+    for row_no_to_ortho in to_orthogonalize:
+        current_row = matrix[row_no_to_ortho, :]
+        sum = torch.zeros(current_row.shape, dtype=matrix.dtype)
+        for done_row_no in done:
+            done_row = matrix[done_row_no, :]
+            non_orthogonal = torch.sum(current_row*done_row)
+            sum += (non_orthogonal)*done_row
+        orthogonal_row = current_row - sum
+        length = np.linalg.norm(orthogonal_row)
+        matrix[row_no_to_ortho, :] = orthogonal_row / length
+        done.append(row_no_to_ortho)
+    return matrix    
+
+
+def construct_boundary_a(wavelet, length):
+    a_full = construct_a(wavelet, length, wrap=False)
+
+    filt_len = len(wavelet.filter_bank[0])
+    clipl = (filt_len - 2) // 2
+    clipr = (filt_len - 2) // 2
+
+    a_dense = a_full.to_dense()
+    # plt.spy(a_dense.numpy(), markersize = 5); plt.show()
+    a_clip = a_dense[:, (clipl):-(clipr)]
+    # plt.spy(a_clip.numpy(), markersize = 5); plt.show()
+    a_orth = orth_via_gram_schmidt(a_clip, filt_len)
+    return a_orth
+
 
 
 def matrix_wavedec(data, wavelet, level: int = None):
@@ -141,7 +190,7 @@ def matrix_wavedec(data, wavelet, level: int = None):
     return torch.split(coefficients, split_lst[::-1]), fwt_mat_lst
 
 
-def construct_s(wavelet, length, wrap=True):
+def construct_s(wavelet, length, wrap=True, dtype=torch.float64):
     """Construct the sparse synthesis matrix used to invert the
         fwt.
     Args:
@@ -167,8 +216,8 @@ def construct_s(wavelet, length, wrap=True):
     if wrap:
         x = x % w
     s_indices = torch.from_numpy(np.stack([x, y]).astype(np.int))
-    sl_entries = torch.tensor([rec_lo] * h).flatten()
-    sb_entries = torch.tensor([rec_hi] * h).flatten()
+    sl_entries = torch.tensor([rec_lo] * h).flatten().type(dtype)
+    sb_entries = torch.tensor([rec_hi] * h).flatten().type(dtype)
     s_entries = torch.cat([sl_entries, sb_entries])
     s_ten = torch.sparse.FloatTensor(s_indices, s_entries)
     # left hand filtering and decimation matrix
