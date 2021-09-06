@@ -14,21 +14,6 @@ from src.ptwt.matmul_transform import (
 
 from src.ptwt.mackey_glass import MackeyGenerator
 
-
-def test_cyclic_analysis_and_synthethis_matrices_db8():
-    a_db8 = construct_a(pywt.Wavelet("db8"), 128)
-    s_db8 = construct_s(pywt.Wavelet("db8"), 128)
-    
-    test_eye_inv = torch.sparse.mm(a_db8, s_db8.to_dense()).numpy()
-    test_eye_orth = torch.sparse.mm(a_db8.transpose(1, 0), a_db8.to_dense()).numpy()
-    err_inv = np.mean(np.abs(test_eye_inv - np.eye(128)))
-    err_orth = np.mean(np.abs(test_eye_orth - np.eye(128)))
-
-    print("db8 128 orthogonal error", err_orth)
-    print("db8 128 inverse error", err_inv)
-    assert err_orth < 1e-6
-    assert err_inv < 1e-6
-
 @pytest.mark.slow
 def test_boundary_filter_analysis_and_synthethis_matrices():
     for size in [24, 64, 128, 256]:
