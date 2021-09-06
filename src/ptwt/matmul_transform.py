@@ -107,22 +107,6 @@ def orth_via_gram_schmidt(matrix, filt_len):
     return matrix    
 
 
-def construct_boundary_a(wavelet, length):
-    a_full = construct_a(wavelet, length, wrap=False)
-
-    filt_len = len(wavelet.filter_bank[0])
-    clipl = (filt_len - 2) // 2
-    clipr = (filt_len - 2) // 2
-
-    a_dense = a_full.to_dense()
-    # plt.spy(a_dense.numpy(), markersize = 5); plt.show()
-    a_clip = a_dense[:, (clipl):-(clipr)]
-    # plt.spy(a_clip.numpy(), markersize = 5); plt.show()
-    a_orth = orth_via_gram_schmidt(a_clip, filt_len)
-    return a_orth
-
-
-
 def matrix_wavedec(data, wavelet, level: int = None):
     """Experimental computation of the sparse matrix fast wavelet transform.
     Args:
@@ -222,6 +206,31 @@ def construct_s(wavelet, length, wrap=True, dtype=torch.float64):
     s_ten = torch.sparse.FloatTensor(s_indices, s_entries)
     # left hand filtering and decimation matrix
     return s_ten
+
+
+def clip_and_orthogonalize(matrix, wavelet, length):
+    filt_len = len(wavelet.filter_bank[0])
+    clipl = (filt_len - 2) // 2
+    clipr = (filt_len - 2) // 2
+
+    dense = matrix.to_dense()
+    # plt.spy(a_dense.numpy(), markersize = 5); plt.show()
+    clip = dense[:, (clipl):-(clipr)]
+    # plt.spy(a_clip.numpy(), markersize = 5); plt.show()
+    orth = orth_via_gram_schmidt(clip, filt_len)
+    return orth
+
+
+def construct_boundary_a(wavelet, length):
+    a_full = construct_a(wavelet, length, wrap=False)
+    a_orth = clip_and_orthogonalize(a_full, wavelet, length)
+    return a_orth
+
+
+def construct_boundary_s(wavelet, length):
+    s_full = construct_s(wavelet, length, wrap=False)
+    s_orth = clip_and_orthogonalize(s_full.transpose(1,0), wavelet, length)
+    return s_orth.transpose(1,0)
 
 
 def matrix_waverec(coefficients, wavelet, level: int = None):
