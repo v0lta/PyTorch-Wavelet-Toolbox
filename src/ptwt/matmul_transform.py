@@ -27,7 +27,7 @@ def cat_sparse_identity_matrix(sparse_matrix, new_length):
     x = torch.arange(sparse_matrix.shape[0], new_length)
     y = torch.arange(sparse_matrix.shape[0], new_length)
     extra_indices = torch.stack([x, y])
-    extra_values = torch.ones([new_length - sparse_matrix.shape[0]])
+    extra_values = torch.ones([new_length - sparse_matrix.shape[0]], dtype=sparse_matrix.dtype)
     new_indices = torch.cat([sparse_matrix.coalesce().indices(), extra_indices], -1)
     new_values = torch.cat([sparse_matrix.coalesce().values(), extra_values], -1)
     new_matrix = torch.sparse.FloatTensor(new_indices, new_values)
@@ -116,7 +116,7 @@ def matrix_wavedec(data, wavelet, level: int = None):
     Returns: The wavelet coefficients in a single vector.
              As well as the transformation matrices.
     """
-
+    print('stop matrix_wavedec')
     if len(data.shape) == 1:
         # assume time series
         data = data.unsqueeze(0)
@@ -133,11 +133,11 @@ def matrix_wavedec(data, wavelet, level: int = None):
         level = int(np.log2(length))
     else:
         assert level > 0, "level must be a positive integer."
-    ar = construct_a(wavelet, length)
+    ar = construct_a(wavelet, length, dtype=data.dtype)
     if level == 1:
         coefficients = torch.sparse.mm(ar, data.T)
         return torch.split(coefficients, coefficients.shape[0] // 2), [ar]
-    al2 = construct_a(wavelet, length // 2)
+    al2 = construct_a(wavelet, length // 2, dtype=data.dtype)
     al2 = cat_sparse_identity_matrix(al2, length)
     if level == 2:
         coefficients = torch.sparse.mm(al2, torch.sparse.mm(ar, data.T))
@@ -145,7 +145,7 @@ def matrix_wavedec(data, wavelet, level: int = None):
             ar,
             al2,
         ]
-    ar3 = construct_a(wavelet, length // 4)
+    ar3 = construct_a(wavelet, length // 4, dtype=data.dtype)
     ar3 = cat_sparse_identity_matrix(ar3, length)
     if level == 3:
         coefficients = torch.sparse.mm(
@@ -162,7 +162,7 @@ def matrix_wavedec(data, wavelet, level: int = None):
     for s in range(4, level + 1):
         if split_lst[-1] < filt_len:
             break
-        an = construct_a(wavelet, split_lst[-1])
+        an = construct_a(wavelet, split_lst[-1], dtype=data.dtype)
         an = cat_sparse_identity_matrix(an, length)
         fwt_mat_lst.append(an)
         new_split_size = length // np.power(2, s)
@@ -171,6 +171,7 @@ def matrix_wavedec(data, wavelet, level: int = None):
     for fwt_mat in fwt_mat_lst:
         coefficients = torch.sparse.mm(fwt_mat, coefficients)
     split_lst.append(length // np.power(2, level))
+    print('done')
     return torch.split(coefficients, split_lst[::-1]), fwt_mat_lst
 
 
@@ -264,7 +265,7 @@ def matrix_waverec(coefficients, wavelet, level: int = None):
     for s in range(1, level + 1):
         if split_lst[-1] < filt_len:
             break
-        sn = construct_s(wavelet, split_lst[-1])
+        sn = construct_s(wavelet, split_lst[-1], dtype=coefficients.dtype)
         if s > 1:
             sn = cat_sparse_identity_matrix(sn, length)
         ifwt_mat_lst.append(sn)
@@ -274,3 +275,4 @@ def matrix_waverec(coefficients, wavelet, level: int = None):
     for ifwt_mat in ifwt_mat_lst[::-1]:
         reconstruction = torch.sparse.mm(ifwt_mat, reconstruction)
     return reconstruction.T, ifwt_mat_lst[::-1]
+
