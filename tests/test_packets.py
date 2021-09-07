@@ -107,6 +107,3 @@ def test_2d_packets():
             )
             assert abs_err < 1e-4
 
-
-if __name__ == "__main__":
-    test_2d_packets()

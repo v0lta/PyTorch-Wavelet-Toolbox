@@ -4,7 +4,7 @@ import time
 import torch
 import pytest
 
-from ptwt.matmul_transform import (
+from src.ptwt.matmul_transform import (
     construct_a,
     construct_s,
     matrix_wavedec,
@@ -51,12 +51,13 @@ def test_analysis_and_synthethis_matrices_db8():
 # ------------------------- Haar fwt-ifwt tests ----------------
 def test_fwt_ifwt_level_1():
     wavelet = pywt.Wavelet("haar")
-    data2 = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+    data2 = np.array([1., 2., 3., 4., 5., 6., 7., 8., 9., 10.,
+                      11., 12., 13., 14., 15., 16.])
 
     # level 1
     coeffs = pywt.dwt(data2, wavelet)
     print(coeffs[0], coeffs[1])
-    pt_data = torch.from_numpy(data2.astype(np.float32)).unsqueeze(0)
+    pt_data = torch.from_numpy(data2).unsqueeze(0)
     coeffsmat1, _ = matrix_wavedec(pt_data, wavelet, 1)
     err1 = np.mean(np.abs(coeffs[0] - coeffsmat1[0].squeeze().numpy()))
     err2 = np.mean(np.abs(coeffs[1] - coeffsmat1[1].squeeze().numpy()))
@@ -67,8 +68,9 @@ def test_fwt_ifwt_level_1():
 
 def test_fwt_ifwt_level_2():
     wavelet = pywt.Wavelet("haar")
-    data2 = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
-    pt_data = torch.from_numpy(data2.astype(np.float32)).unsqueeze(0)
+    data2 = np.array([1., 2., 3., 4., 5., 6., 7., 8., 9., 10.,
+                      11., 12., 13., 14., 15., 16.])
+    pt_data = torch.from_numpy(data2).unsqueeze(0)
 
     coeffs2 = pywt.wavedec(data2, wavelet, level=2)
     coeffsmat2, _ = matrix_wavedec(pt_data, wavelet, 2)
@@ -88,9 +90,11 @@ def test_fwt_ifwt_level_2():
 
 def test_fwt_ifwt_level_3():
     wavelet = pywt.Wavelet("haar")
-    data2 = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+    data2 = np.array([1., 2., 3., 4., 5., 6., 7., 8., 9., 10.,
+                      11., 12., 13., 14., 15., 16.])
     pt_data = torch.from_numpy(data2.astype(np.float32)).unsqueeze(0)
     coeffs3 = pywt.wavedec(data2, wavelet, level=3)
+    print('stop')
     coeffsmat3, mat_3_lst = matrix_wavedec(pt_data, wavelet, 3)
 
     err1 = np.mean(np.abs(coeffs3[0] - coeffsmat3[0].squeeze().numpy()))

@@ -5,12 +5,13 @@ import collections
 import pywt
 import torch
 
-from .conv_transform import wavedec, wavedec2
+from src.ptwt.conv_transform import wavedec, wavedec2
 
 
 class WaveletPacket(collections.UserDict):
     def __init__(self, data: torch.tensor, wavelet, mode: str = "reflect"):
-        """Create a wavelet packet decomposition object
+        """Create a wavelet packet decomposition object.
+           The decompositions will rely on padded fast wavelet transforms.
         Args:
             data (np.array): The input data array of shape [time].
             wavelet (pywt.Wavelet or WaveletFilter): The wavelet to use.
@@ -137,7 +138,7 @@ if __name__ == "__main__":
     pt_data = torch.unsqueeze(
         torch.from_numpy(np.mean(face, axis=-1).astype(np.float32)), 0
     )
-    ptwt_wp_tree = WaveletPacked2D(data=pt_data, wavelet=wavelet, mode="reflect")
+    ptwt_wp_tree = WaveletPacket2D(data=pt_data, wavelet=wavelet, mode="reflect")
 
     # get the pytorch decomposition
     count = 0
