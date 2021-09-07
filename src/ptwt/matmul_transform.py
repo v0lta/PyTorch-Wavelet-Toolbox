@@ -7,7 +7,6 @@ As well as the description of boundary filters in
 """
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 
 
 def cat_sparse_identity_matrix(sparse_matrix, new_length):
@@ -223,14 +222,14 @@ def clip_and_orthogonalize(matrix, wavelet, length):
 
 
 def construct_boundary_a(wavelet, length):
-    """ Construct a boundary filter 1d-analysis matarix.
+    """ Construct a boundary-wavelet filter 1d-analysis matarix.
 
     Args:
         wavelet : The wavelet filter object to use.
         length (int):  The number of entries in the input signal.
 
     Returns:
-        [torch.sparse.FloatTensor]: [description]
+        [torch.sparse.FloatTensor]: The analysis matrix.
     """    
     a_full = construct_a(wavelet, length, wrap=False)
     a_orth = clip_and_orthogonalize(a_full, wavelet, length)
@@ -238,6 +237,15 @@ def construct_boundary_a(wavelet, length):
 
 
 def construct_boundary_s(wavelet, length):
+    """ Construct a boundary-wavelet filter 1d-synthesis matarix.
+
+    Args:
+        wavelet : The wavelet filter object to use.
+        length (int):  The number of entries in the input signal.
+
+    Returns:
+        [torch.sparse.FloatTensor]: The synthesis matrix.
+    """   
     s_full = construct_s(wavelet, length, wrap=False)
     s_orth = clip_and_orthogonalize(s_full.transpose(1,0), wavelet, length)
     return s_orth.transpose(1,0).to_sparse()

@@ -173,7 +173,3 @@ def test_fwt_ifwt_mackey_db2():
     err = torch.mean(torch.abs(pt_data - reconstructed_data))
     print("reconstruction error:", err)
     assert err < 1e-6
-
-
-if __name__ == '__main__':
-    test_fwt_ifwt_level_3()
