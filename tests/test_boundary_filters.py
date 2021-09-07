@@ -1,13 +1,10 @@
 import pywt
-import time
 import torch
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 
 from src.ptwt.matmul_transform import (
-    construct_a,
-    construct_s,
     construct_boundary_a,
     construct_boundary_s
 )
@@ -18,8 +15,8 @@ from src.ptwt.mackey_glass import MackeyGenerator
 def test_boundary_filter_analysis_and_synthethis_matrices():
     for size in [24, 64, 128, 256]:
         for wavelet in [pywt.Wavelet("db4"), pywt.Wavelet("db6"), pywt.Wavelet("db8")]:
-            analysis_matrix = construct_boundary_a(wavelet, size)
-            synthesis_matrix = construct_boundary_s(wavelet, size)
+            analysis_matrix = construct_boundary_a(wavelet, size).to_dense()
+            synthesis_matrix = construct_boundary_s(wavelet, size).to_dense()
             # s_db2 = construct_s(pywt.Wavelet("db8"), size)
             
             # test_eye_inv = torch.sparse.mm(a_db8, s_db2.to_dense()).numpy()
@@ -29,7 +26,7 @@ def test_boundary_filter_analysis_and_synthethis_matrices():
             err_orth = np.mean(np.abs(test_eye_orth - np.eye(size)))
 
             print(wavelet.name, "orthogonal error", err_orth, 'size', size)
-            print(wavelet.name, "orthogonal error", err_inv,  'size', size)
+            print(wavelet.name, "inverse error", err_inv,  'size', size)
             assert err_orth < 1e-8
             assert err_inv < 1e-8
 
