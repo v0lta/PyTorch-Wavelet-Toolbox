@@ -82,7 +82,7 @@ def construct_conv2d_matrix(filter: torch.tensor, input_rows: int,
 
     for col in range(0, filter_columns):
         entries = filter[:, col]
-        entries = torch.stack([entries]*input_rows).flatten() # double check T?
+        entries = torch.stack([entries]*input_rows).T.flatten()
         entries = torch.stack([entries]*input_columns).flatten()
         start = col*input_columns*block_entries
         stop = start + input_columns*block_entries
@@ -105,7 +105,8 @@ def test_mean_conv_matrix_2d():
     for filter_shape in [(3,3), (3,2), (2,3), (5,3), (3,5), (2,5), (5,2)]:
         for size in [(64, 64), (32, 64), (64, 32), (64, 31), (31, 64), (65, 65)]:
             # size = (256, 256)
-            filter = torch.ones(filter_shape)/9.
+            # filter = torch.ones(filter_shape)/9.
+            filter = torch.rand(filter_shape)
             filter = filter.unsqueeze(0).unsqueeze(0)
             face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
             face = np.mean(face, -1)
@@ -125,7 +126,7 @@ def test_mean_conv_matrix_2d():
 
             diff = np.mean(np.abs(res - res_mm))
             print(size, filter_shape, '%2.2e.'%diff, np.allclose(res, res_mm))
-            # assert np.allclose(res, res_mm.numpy(), atol=1e-6)
+            # assert np.allclose(res, res_mm, atol=1e-6)
 
 
 
@@ -133,11 +134,11 @@ if __name__ == '__main__':
     import torch
     import scipy.signal
 
-    test_mean_conv_matrix_2d()
-
-    filter_shape = [3,2]
+    filter_shape = [3,3]
     size = (5, 5)
-    filter = torch.ones(filter_shape)/9.
+    # filter = torch.ones(filter_shape)/9.
+    filter = torch.tensor([[1,2,3], [4,5,6], [7,8,9]])
+    # filter = torch.rand(filter_shape)
     filter = filter.unsqueeze(0).unsqueeze(0)
     face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
     face = np.mean(face, -1)
@@ -148,7 +149,8 @@ if __name__ == '__main__':
     conv_matrix2d = construct_conv2d_matrix(filter.squeeze(), size[0], size[1], torch.float32)
 
     # plt.spy(conv_matrix2d.to_dense().numpy(), marker='.')
-    # plt.show()
+    plt.imshow(conv_matrix2d.to_dense().numpy())
+    plt.show()
     face = torch.from_numpy(face.astype(np.float32))
     face = face.unsqueeze(0).unsqueeze(0)
     res_flat = torch.sparse.mm(conv_matrix2d, face.T.flatten().unsqueeze(-1))
@@ -160,3 +162,5 @@ if __name__ == '__main__':
     plot = np.concatenate([res, res_mm.numpy(), diff], -1)
     plt.imshow(plot)
     plt.show()
+
+    test_mean_conv_matrix_2d()
