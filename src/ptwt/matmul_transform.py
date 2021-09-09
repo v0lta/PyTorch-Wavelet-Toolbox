@@ -71,7 +71,7 @@ def construct_a(wavelet, length, wrap=True, dtype=torch.float64):
     y = np.concatenate([yl, yb])
     if wrap:
         y = y % w
-    a_indices = torch.from_numpy(np.stack([x, y]).astype(np.int))
+    a_indices = torch.from_numpy(np.stack([x, y]).astype(int))
     al_entries = torch.tensor([dec_lo[::-1]] * h).flatten().type(dtype)
     ab_entries = torch.tensor([dec_hi[::-1]] * h).flatten().type(dtype)
     a_entries = torch.cat([al_entries, ab_entries])
