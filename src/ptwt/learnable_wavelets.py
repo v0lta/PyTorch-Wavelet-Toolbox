@@ -218,7 +218,8 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
 class HardOrthogonalWavelet(WaveletFilter, torch.nn.Module):
     def __init__(self, init_tensor: torch.Tensor):
         self.dec_lo = torch.nn.Parameter(init_tensor)
-        m1 = torch.tensor([-1], device=self.dec_lo.device, dtype=self.dec_lo.dtype)
+        m1 = torch.tensor(
+            [-1], device=self.dec_lo.device, dtype=self.dec_lo.dtype)
         length = self.dec_lo.shape[0]
         self.mask = torch.tensor(
             [torch.pow(m1, n) for n in range(length)][::-1],

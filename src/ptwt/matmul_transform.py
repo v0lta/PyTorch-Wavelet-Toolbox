@@ -230,7 +230,7 @@ def construct_boundary_a(wavelet, length):
 
     Returns:
         [torch.sparse.FloatTensor]: The analysis matrix.
-    """    
+    """
     a_full = construct_a(wavelet, length, wrap=False)
     a_orth = clip_and_orthogonalize(a_full, wavelet, length)
     return a_orth.to_sparse()
@@ -245,10 +245,11 @@ def construct_boundary_s(wavelet, length):
 
     Returns:
         [torch.sparse.FloatTensor]: The synthesis matrix.
-    """   
+    """
     s_full = construct_s(wavelet, length, wrap=False)
-    s_orth = clip_and_orthogonalize(s_full.transpose(1,0), wavelet, length)
-    return s_orth.transpose(1,0).to_sparse()
+    s_orth = clip_and_orthogonalize(
+        s_full.transpose(1, 0), wavelet, length)
+    return s_orth.transpose(1, 0).to_sparse()
 
 
 def matrix_waverec(coefficients, wavelet, level: int = None):
@@ -292,4 +293,3 @@ def matrix_waverec(coefficients, wavelet, level: int = None):
     for ifwt_mat in ifwt_mat_lst[::-1]:
         reconstruction = torch.sparse.mm(ifwt_mat, reconstruction)
     return reconstruction.T, ifwt_mat_lst[::-1]
-

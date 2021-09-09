@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import torch
 
 
-def generate_mackey(batch_size=100, tmax=200, delta_t=1.0, rnd=True, device="cuda"):
+def generate_mackey(
+        batch_size=100, tmax=200, delta_t=1.0, rnd=True, device="cuda"):
     """
     Generate synthetic training data using the Mackey system
     of equations (http://www.scholarpedia.org/article/Mackey-Glass_equation):
@@ -48,7 +49,8 @@ def blockify(data, block_length):
         start = block_no * block_length
         stop = (block_no + 1) * block_length
         block_mean = torch.mean(data[:, start:stop], dim=-1)
-        block = block_mean * torch.ones([batch_size, block_length], device=data.device)
+        block = block_mean * torch.ones(
+            [batch_size, block_length], device=data.device)
         block_signal.append(block)
     return torch.cat(block_signal).transpose(0, 1)
 

@@ -23,12 +23,14 @@ def get_filter_tensors(wavelet, flip, device, dtype=torch.float32):
             if isinstance(filter, torch.Tensor):
                 return filter.flip(-1).unsqueeze(0).to(device)
             else:
-                return torch.tensor(filter[::-1], device=device, dtype=dtype).unsqueeze(0)
+                return torch.tensor(filter[::-1],
+                                    device=device, dtype=dtype).unsqueeze(0)
         else:
             if isinstance(filter, torch.Tensor):
                 return filter.unsqueeze(0).to(device)
             else:
-                return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
+                return torch.tensor(filter,
+                                    device=device, dtype=dtype).unsqueeze(0)
 
     dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
     dec_lo = create_tensor(dec_lo)
@@ -100,7 +102,8 @@ def fwt_pad2d(data, wavelet, level, mode="reflect"):
     """
     padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo), level)
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo), level)
-    data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
+    data_pad = torch.nn.functional.pad(
+        data, [padl, padr, padt, padb], mode=mode)
     return data_pad
 
 
@@ -164,8 +167,8 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
     Returns:
         [list]: List containing the wavelet coefficients.
     """
-    dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True, device=data.device,
-                                              dtype=data.dtype)
+    dec_lo, dec_hi, _, _ = get_filter_tensors(
+        wavelet, flip=True, device=data.device, dtype=data.dtype)
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
 
     if level is None:
@@ -205,7 +208,8 @@ def waverec2(coeffs, wavelet):
         res_ll = torch.cat(
             [res_ll, res_lh_hl_hh[0], res_lh_hl_hh[1], res_lh_hl_hh[2]], 1
         )
-        res_ll = torch.nn.functional.conv_transpose2d(res_ll, rec_filt, stride=2)
+        res_ll = torch.nn.functional.conv_transpose2d(
+            res_ll, rec_filt, stride=2)
 
         # remove the padding
         padl = (2 * filt_len - 3) // 2
@@ -264,8 +268,8 @@ def wavedec(data, wavelet, level: int = None, mode="reflect") -> list:
         # assume batched time series
         data = data.unsqueeze(1)
 
-    dec_lo, dec_hi, _, _ = get_filter_tensors(wavelet, flip=True, device=data.device,
-                                              dtype=data.dtype)
+    dec_lo, dec_hi, _, _ = get_filter_tensors(
+        wavelet, flip=True, device=data.device, dtype=data.dtype)
     filt_len = dec_lo.shape[-1]
     # dec_lo = torch.tensor(dec_lo[::-1]).unsqueeze(0)
     # dec_hi = torch.tensor(dec_hi[::-1]).unsqueeze(0)
@@ -307,7 +311,8 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
     res_lo = coeffs[0]
     for c_pos, res_hi in enumerate(coeffs[1:]):
         res_lo = torch.stack([res_lo, res_hi], 1)
-        res_lo = torch.nn.functional.conv_transpose1d(res_lo, filt, stride=2).squeeze(1)
+        res_lo = torch.nn.functional.conv_transpose1d(
+            res_lo, filt, stride=2).squeeze(1)
 
         # remove the padding
         padl = (2 * filt_len - 3) // 2

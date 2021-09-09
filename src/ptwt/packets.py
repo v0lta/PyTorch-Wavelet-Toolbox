@@ -38,7 +38,8 @@ class WaveletPacket(collections.UserDict):
     def recursive_dwt(self, data, level, max_level, path):
         self.data[path] = torch.squeeze(data)
         if level < max_level:
-            res_lo, res_hi = wavedec(data, self.wavelet, level=1, mode=self.mode)
+            res_lo, res_hi = wavedec(
+                data, self.wavelet, level=1, mode=self.mode)
             return (
                 self.recursive_dwt(res_lo, level + 1, max_level, path + "a"),
                 self.recursive_dwt(res_hi, level + 1, max_level, path + "d"),
@@ -83,8 +84,10 @@ class WaveletPacket2D(collections.UserDict):
     def _wavepacketdec2d(self, data, wavelet, mode, max_level=None):
         self.data = {}
         if max_level is None:
-            max_level = pywt.dwt_max_level(min(self.input_data.shape[2:]), self.wavelet)
-        self.recursive_dwt2d(self.input_data, level=0, max_level=max_level, path="")
+            max_level = pywt.dwt_max_level(
+                min(self.input_data.shape[2:]), self.wavelet)
+        self.recursive_dwt2d(
+            self.input_data, level=0, max_level=max_level, path="")
 
     def recursive_dwt2d(self, data, level, max_level, path):
         self.data[path] = data
