@@ -103,7 +103,7 @@ def orth_via_gram_schmidt(matrix, filt_len):
         length = np.linalg.norm(orthogonal_row)
         matrix[row_no_to_ortho, :] = orthogonal_row / length
         done.append(row_no_to_ortho)
-    return matrix    
+    return matrix
 
 
 def matrix_wavedec(data, wavelet, level: int = None):

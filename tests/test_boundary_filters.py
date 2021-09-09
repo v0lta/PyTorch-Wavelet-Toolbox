@@ -50,7 +50,7 @@ def test_mean_conv_matrix_2d():
             face = np.mean(face, -1)
 
             # res = torch.nn.functional.conv2d(input=face, weight=filter)
-            res = scipy.signal.convolve2d(face, filter.squeeze().numpy())
+            res_scipy = scipy.signal.convolve2d(face, filter.squeeze().numpy())
 
             conv_matrix2d = construct_conv2d_matrix(
                 filter.squeeze(), size[0], size[1], torch.float32)
@@ -65,17 +65,27 @@ def test_mean_conv_matrix_2d():
                                    [filter_shape[1] + size[1] - 1,
                                     filter_shape[0] + size[0] - 1]).T
 
-            diff = np.mean(np.abs(res - res_mm.numpy()))
-            print(size, filter_shape, '%2.2e.' % diff,
-                  np.allclose(res, res_mm.numpy()))
-            assert np.allclose(res, res_mm)
+            res_torch = torch.nn.functional.conv2d(
+                face, filter.flip(2, 3),
+                padding=(filter_shape[0]-1, filter_shape[1]-1))
+
+            diff_scipy = np.mean(np.abs(res_scipy - res_mm.numpy()))
+            diff_torch = np.mean(np.abs(res_torch.numpy() - res_mm.numpy()))
+            print(size, filter_shape, '%2.2e.' % diff_scipy,
+                  np.allclose(res_scipy, res_mm.numpy()),
+                  '%2.2e.' % diff_torch, np.allclose(
+                      res_torch.numpy(), res_mm.numpy()))
+            assert np.allclose(res_scipy, res_mm)
+            assert np.allclose(res_torch.numpy(), res_mm.numpy())
 
 
 if __name__ == '__main__':
     filter_shape = [3, 3]
     size = (5, 5)
     # filter = torch.ones(filter_shape)/9.
-    filter = torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    filter = torch.tensor([[1., 2., 3.],
+                           [4., 5., 6.],
+                           [7., 8., 9.]])
     # filter = torch.rand(filter_shape)
     filter = filter.unsqueeze(0).unsqueeze(0)
     face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
@@ -99,8 +109,15 @@ if __name__ == '__main__':
 
     diff = np.abs(res - res_mm.numpy())
     print(np.mean(diff), np.allclose(res, res_mm.numpy()))
-    plot = np.concatenate([res, res_mm.numpy(), diff], -1)
-    # plt.imshow(plot)
-    # plt.show()
+
+    torch_res = torch.nn.functional.conv2d(
+        face, filter.flip(2, 3), padding=2)
+    plt.imshow(torch_res.squeeze().numpy())
+    plt.show()
+
+
+    plot = np.concatenate([res, res_mm.numpy(), torch_res.squeeze().numpy()], -1)
+    plt.imshow(plot)
+    plt.show()
 
     test_mean_conv_matrix_2d()
