@@ -67,3 +67,9 @@ def construct_conv2d_matrix(filter: torch.tensor, input_rows: int,
     # assert (matrix_height, matrix_width) == matrix.shape
     # plt.imshow(matrix.to_dense()); plt.show()
     return matrix
+
+
+def construct_stride_conv2d_matrix(
+    filter: torch.tensor, input_rows: int,
+    input_columns: int, dtype=torch.float64):
+    pass

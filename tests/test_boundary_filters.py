@@ -13,8 +13,6 @@ from src.ptwt.matmul_transform import (
 )
 
 from src.ptwt.matmul_transform_2d import construct_conv2d_matrix
-
-
 from src.ptwt.mackey_glass import MackeyGenerator
 
 
@@ -37,7 +35,6 @@ def test_boundary_filter_analysis_and_synthethis_matrices():
             print(wavelet.name, "inverse error", err_inv,  'size', size)
             assert err_orth < 1e-8
             assert err_inv < 1e-8
-
 
 
 def test_mean_conv_matrix_2d():

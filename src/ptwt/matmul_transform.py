@@ -199,7 +199,7 @@ def construct_s(wavelet, length, wrap=True, dtype=torch.float64):
     y = np.concatenate([yl, yb])
     if wrap:
         x = x % w
-    s_indices = torch.from_numpy(np.stack([x, y]).astype(np.int))
+    s_indices = torch.from_numpy(np.stack([x, y]).astype(int))
     sl_entries = torch.tensor([rec_lo] * h).flatten().type(dtype)
     sb_entries = torch.tensor([rec_hi] * h).flatten().type(dtype)
     s_entries = torch.cat([sl_entries, sb_entries])
