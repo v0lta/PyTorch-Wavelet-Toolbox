@@ -12,8 +12,11 @@ from src.ptwt.matmul_transform import (
     construct_boundary_s
 )
 
-from src.ptwt.matmul_transform_2d import construct_conv2d_matrix
-from src.ptwt.matmul_transform_2d import construct_strided_conv2d_matrix
+from src.ptwt.matmul_transform_2d import (
+    construct_conv2d_matrix,
+    construct_strided_conv2d_matrix
+)
+
 from src.ptwt.mackey_glass import MackeyGenerator
 
 
@@ -53,11 +56,11 @@ def test_conv_matrix_2d():
             face = np.mean(face, -1)
 
             res_scipy = scipy.signal.convolve2d(face, filter.squeeze().numpy())
-            conv_matrix2d = construct_conv2d_matrix(
-                filter.squeeze(), size[0], size[1], torch.float32)
 
             face = torch.from_numpy(face.astype(np.float32))
             face = face.unsqueeze(0).unsqueeze(0)
+            conv_matrix2d = construct_conv2d_matrix(
+                filter.squeeze(), size[0], size[1], torch.float32)
             res_flat = torch.sparse.mm(
                 conv_matrix2d, face.T.flatten().unsqueeze(-1))
             res_mm = torch.reshape(res_flat,
@@ -80,7 +83,7 @@ def test_conv_matrix_2d():
 
 def test_strided_conv_matrix_2d():
     for filter_shape in [(3, 3)]:
-        for size in [(64, 64)]:
+        for size in [(64, 64), (32, 64), (64, 32)]:
             filter = torch.rand(filter_shape)
             filter = filter.unsqueeze(0).unsqueeze(0)
             face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
@@ -94,8 +97,8 @@ def test_strided_conv_matrix_2d():
             strided_matrix = construct_strided_conv2d_matrix(
                 filter.squeeze(),
                 size[0], size[1], stride=2, dtype=torch.float32)
-            res_flat_stride = torch.mm(strided_matrix.to_dense(),
-                                       face.flatten().unsqueeze(-1))
+            res_flat_stride = torch.sparse.mm(
+                strided_matrix, face.T.flatten().unsqueeze(-1))
             res_mm_stride = np.reshape(
                 res_flat_stride,
                 [(filter_shape[1] + size[1] - 1) // 2,
@@ -106,7 +109,7 @@ def test_strided_conv_matrix_2d():
 
             print(size, filter_shape, 'torch-error %2.2e' % diff_torch,
                   np.allclose(torch_res.numpy(), res_mm_stride.numpy()))
-            # assert np.allclose(res_torch.numpy(), res_mm.numpy())
+            assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
 if __name__ == '__main__':
@@ -114,7 +117,7 @@ if __name__ == '__main__':
     test_strided_conv_matrix_2d()
 
     filter_shape = [3, 3]
-    size = (64, 64)
+    size = (256, 128)
     filter = torch.rand(filter_shape)
     filter = filter.unsqueeze(0).unsqueeze(0)
     face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
@@ -125,16 +128,14 @@ if __name__ == '__main__':
     torch_res = torch.nn.functional.conv2d(
         face, filter.flip(2, 3), padding=2, stride=2)
 
-    conv_matrix2d = construct_conv2d_matrix(
-        filter.squeeze(), size[0], size[1], torch.float32)
     strided_matrix = construct_strided_conv2d_matrix(
         filter.squeeze(),
         size[0], size[1], stride=2, dtype=torch.float32)
-    res_flat_stride = torch.mm(strided_matrix.to_dense(),
-                               face.flatten().unsqueeze(-1))
-    res_mm_stride = np.reshape(res_flat_stride,
-                        [(filter_shape[1] + size[1] - 1) // 2,
-                         (filter_shape[0] + size[0] - 1) // 2]).T
+    res_flat_stride = torch.sparse.mm(
+        strided_matrix, face.T.flatten().unsqueeze(-1))
+    res_mm_stride = np.reshape(
+        res_flat_stride, [(filter_shape[1] + size[1] - 1) // 2,
+                          (filter_shape[0] + size[0] - 1) // 2]).T
 
     diff = torch.abs(torch_res.squeeze() - res_mm_stride) 
     to_plot = torch.cat([torch_res.squeeze(), res_mm_stride, diff], -1)

@@ -78,7 +78,7 @@ def construct_strided_conv2d_matrix(
         dtype=torch.float64):
     filter_shape = filter.shape
     convolution_matrix = construct_conv2d_matrix(
-        filter.T,
+        filter,
         input_rows, input_columns, dtype=dtype)
 
     output_rows = filter_shape[0] + input_rows - 1
@@ -86,7 +86,7 @@ def construct_strided_conv2d_matrix(
     output_elements = output_rows * output_columns
 
     element_numbers = np.arange(output_elements).reshape(
-        output_rows, output_columns).T
+        output_columns, output_rows)
 
     strided_elements = element_numbers[::stride, ::stride].flatten()
     strided_matrix = convolution_matrix.to_dense()[strided_elements, :]
