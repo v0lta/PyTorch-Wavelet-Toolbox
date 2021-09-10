@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def construct_conv2d_matrix(filter: torch.tensor, input_rows: int,
@@ -69,7 +70,25 @@ def construct_conv2d_matrix(filter: torch.tensor, input_rows: int,
     return matrix
 
 
-def construct_stride_conv2d_matrix(
-    filter: torch.tensor, input_rows: int,
-    input_columns: int, dtype=torch.float64):
-    pass
+def construct_strided_conv2d_matrix(
+        filter: torch.tensor,
+        input_rows: int,
+        input_columns: int,
+        stride: int = 2,
+        dtype=torch.float64):
+    filter_shape = filter.shape
+    convolution_matrix = construct_conv2d_matrix(
+        filter.T,
+        input_rows, input_columns, dtype=dtype)
+
+    output_rows = filter_shape[0] + input_rows - 1
+    output_columns = filter_shape[1] + input_columns - 1
+    output_elements = output_rows * output_columns
+
+    element_numbers = np.arange(output_elements).reshape(
+        output_rows, output_columns).T
+
+    strided_elements = element_numbers[::stride, ::stride].flatten()
+    strided_matrix = convolution_matrix.to_dense()[strided_elements, :]
+
+    return strided_matrix.to_sparse()
