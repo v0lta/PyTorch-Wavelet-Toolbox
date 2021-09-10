@@ -88,7 +88,26 @@ def construct_strided_conv2d_matrix(
     element_numbers = np.arange(output_elements).reshape(
         output_columns, output_rows)
 
-    strided_elements = element_numbers[::stride, ::stride].flatten()
-    strided_matrix = convolution_matrix.to_dense()[strided_elements, :]
+    strided_rows = element_numbers[::stride, ::stride].flatten()
+
+    # TODO: finish me!
+    indices = convolution_matrix.coalesce().indices().numpy()
+    values = convolution_matrix.coalesce().values().numpy()
+    mask = []
+    non_zero_row_entries = indices[0, :]
+    # lambda ?
+    for entry in non_zero_row_entries:
+        if entry in strided_rows:
+            mask.append(True)
+        else:
+            mask.append(False)
+    mask = np.array(mask)
+
+    strided_indices = indices[:, mask]
+    strided_values = values[mask]
+    strided_matrix_2 = torch.sparse_coo_tensor(
+        strided_indices, strided_values, dtype=dtype)
+
+    strided_matrix = convolution_matrix.to_dense()[strided_rows, :]
 
     return strided_matrix.to_sparse()

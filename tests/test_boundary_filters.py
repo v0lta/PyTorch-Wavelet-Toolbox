@@ -114,10 +114,10 @@ def test_strided_conv_matrix_2d():
 
 if __name__ == '__main__':
     # test_conv_matrix_2d()
-    test_strided_conv_matrix_2d()
+    # test_strided_conv_matrix_2d()
 
     filter_shape = [3, 3]
-    size = (256, 128)
+    size = (24, 12)
     filter = torch.rand(filter_shape)
     filter = filter.unsqueeze(0).unsqueeze(0)
     face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
