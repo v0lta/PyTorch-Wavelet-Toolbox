@@ -97,14 +97,15 @@ def construct_strided_conv2d_matrix(
     mask = []
     strided_row_indices = []
     non_zero_row_entries = indices[0, :]
-    counter = 0
+    index_counter = 0
     previous_entry = 0
     for entry in non_zero_row_entries:
-        if entry in strided_rows:
+        next_hits = strided_rows[index_counter:(index_counter+2)]
+        if entry in next_hits:
             mask.append(True)
             if previous_entry != entry:
-                counter += 1
-            strided_row_indices.append(counter)
+                index_counter += 1
+            strided_row_indices.append(index_counter)
         else:
             mask.append(False)
         previous_entry = entry
@@ -120,8 +121,9 @@ def construct_strided_conv2d_matrix(
     # strided_matrix_2 = convolution_matrix.to_dense()[strided_rows, :].to_sparse()
 
     # diff = np.abs(
-    #    strided_matrix.to_dense().numpy() - strided_matrix_2.to_dense().numpy())
+    #      strided_matrix.to_dense().numpy() - strided_matrix_2.to_dense().numpy())
     # to_plot = np.concatenate([strided_matrix.to_dense(), strided_matrix_2.to_dense(), diff], 1)
-    # plt.imshow(to_plot); plt.show()
+    # plt.imshow(to_plot)
+    # plt.show()
 
     return strided_matrix

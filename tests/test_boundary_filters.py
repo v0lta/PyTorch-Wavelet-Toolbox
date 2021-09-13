@@ -117,16 +117,16 @@ if __name__ == '__main__':
     # test_strided_conv_matrix_2d()
 
     filter_shape = [3, 3]
-    size = (10, 10)
+    size = (768, 1024)
     filter = torch.rand(filter_shape)
     filter = filter.unsqueeze(0).unsqueeze(0)
-    face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
+    face = misc.face()[:size[0], :size[1]]
     face = np.mean(face, -1)
     face = torch.from_numpy(face.astype(np.float32))
     face = face.unsqueeze(0).unsqueeze(0)
 
     torch_res = torch.nn.functional.conv2d(
-        face, filter.flip(2, 3), padding=2, stride=2)
+        face, filter.flip(2, 3), padding=filter_shape[0]-1, stride=2)
 
     strided_matrix = construct_strided_conv2d_matrix(
         filter.squeeze(),
