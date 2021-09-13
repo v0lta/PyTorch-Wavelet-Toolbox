@@ -117,7 +117,7 @@ if __name__ == '__main__':
     # test_strided_conv_matrix_2d()
 
     filter_shape = [3, 3]
-    size = (13, 25)
+    size = (10, 10)
     filter = torch.rand(filter_shape)
     filter = filter.unsqueeze(0).unsqueeze(0)
     face = misc.face()[256:(256+size[0]), 256:(256+size[1])]

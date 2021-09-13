@@ -88,26 +88,40 @@ def construct_strided_conv2d_matrix(
     element_numbers = np.arange(output_elements).reshape(
         output_columns, output_rows)
 
-    strided_rows = element_numbers[::stride, ::stride].flatten()
+    strided_rows = element_numbers[::stride, ::stride]
+    strided_rows = strided_rows.flatten()
 
     # TODO: finish me!
     indices = convolution_matrix.coalesce().indices().numpy()
     values = convolution_matrix.coalesce().values().numpy()
     mask = []
+    strided_row_indices = []
     non_zero_row_entries = indices[0, :]
-    # lambda ?
+    counter = 0
+    previous_entry = 0
     for entry in non_zero_row_entries:
         if entry in strided_rows:
             mask.append(True)
+            if previous_entry != entry:
+                counter += 1
+            strided_row_indices.append(counter)
         else:
             mask.append(False)
+        previous_entry = entry
     mask = np.array(mask)
 
-    strided_indices = indices[:, mask]
+    strided_row_indices = np.array(strided_row_indices)
+    strided_col_indices = indices[1, mask]
+    strided_indices = np.stack([strided_row_indices, strided_col_indices], 0)
     strided_values = values[mask]
-    strided_matrix_2 = torch.sparse_coo_tensor(
-        strided_indices, strided_values, dtype=dtype)
+    strided_matrix = torch.sparse_coo_tensor(
+        strided_indices, strided_values, dtype=dtype).coalesce()
 
-    strided_matrix = convolution_matrix.to_dense()[strided_rows, :]
+    # strided_matrix_2 = convolution_matrix.to_dense()[strided_rows, :].to_sparse()
 
-    return strided_matrix.to_sparse()
+    # diff = np.abs(
+    #    strided_matrix.to_dense().numpy() - strided_matrix_2.to_dense().numpy())
+    # to_plot = np.concatenate([strided_matrix.to_dense(), strided_matrix_2.to_dense(), diff], 1)
+    # plt.imshow(to_plot); plt.show()
+
+    return strided_matrix
