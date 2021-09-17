@@ -52,11 +52,12 @@ def test_conv_matrix():
 
             def test_padding_case(case: str):
                 conv_matrix_full = construct_conv_matrix(h, len(x), case)
-                mm_conv_res_full = torch.sparse.mm(conv_matrix_full,
-                                                x.unsqueeze(-1)).squeeze()
-
-                conv_res_full = scipy.signal.convolve(x.numpy(), h.numpy(), case)
-                error = np.sum(np.abs(conv_res_full - mm_conv_res_full.numpy()))
+                mm_conv_res_full = torch.sparse.mm(
+                    conv_matrix_full, x.unsqueeze(-1)).squeeze()
+                conv_res_full = scipy.signal.convolve(
+                    x.numpy(), h.numpy(), case)
+                error = np.sum(
+                    np.abs(conv_res_full - mm_conv_res_full.numpy()))
                 print('1d conv matrix error', case, error, len(h), len(x))
                 assert np.allclose(conv_res_full, mm_conv_res_full.numpy())
 

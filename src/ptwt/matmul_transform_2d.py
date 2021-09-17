@@ -19,7 +19,8 @@ def construct_conv_matrix(filter: torch.tensor,
         torch.Tensor: The sparse convolution tensor.
 
     For reference see:
-    https://dsp.stackexchange.com/questions/1774/generate-the-convolution-matrix-of-2d-kernel-for-convolution-shape-of-same
+    https://github.com/RoyiAvital/StackExchangeCodes/blob/\
+        master/StackOverflow/Q2080835/CreateConvMtxSparse.m
     """
     filter_length = len(filter)
 
@@ -52,8 +53,40 @@ def construct_conv_matrix(filter: torch.tensor,
     return torch.sparse_coo_tensor(indices, values)
 
 
-def construct_conv_2d_matrix(filter: torch.tensor, input_rows: int,
-                             input_columns: int, ):
+def construct_conv_2d_matrix(filter: torch.tensor,
+                             input_rows: int,
+                             input_columns: int,
+                             conv_type: str = 'valid') -> torch.Tensor:
+    """
+
+
+    Based on the matlab code at:
+    https://github.com/RoyiAvital/StackExchangeCodes/blob/master/\
+        StackOverflow/Q2080835/CreateConvMtx2DSparse.m
+    """
+
+    kernel_column_number = filter.shape[-1]
+    matrix_block_number = kernel_column_number
+
+    block_matrix_list = []
+    for i in range(block_matrix_list):
+        pass
+
+    if conv_type == 'full':
+        diag_index = 0
+        kronecker_rows = input_columns + kernel_column_number - 1
+    elif conv_type == 'same':
+        diag_index = kernel_column_number // 2
+        kronecker_rows = input_columns
+    elif conv_type == 'valid':
+        diag_index = kernel_column_number - 1
+        kronecker_rows = input_columns - kernel_column_number + 1
+    else:
+        raise ValueError('unknown conv type.')
+
+    diag_values = np.ones(np.min([kronecker_rows, input_columns], 1))
+    sparse_matrix = None
+
     return None
 
 
