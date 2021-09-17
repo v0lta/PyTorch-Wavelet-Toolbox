@@ -179,9 +179,8 @@ def test_strided_conv_matrix_2d():
 
 
 
-
 if __name__ == '__main__':
-    # test_conv_matrix()
-    # test_conv_matrix_2d()
+    test_conv_matrix()
+    test_conv_matrix_2d()
     # test_strided_conv_matrix_2d_valid()
 
