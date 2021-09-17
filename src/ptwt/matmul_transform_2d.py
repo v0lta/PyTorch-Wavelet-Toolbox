@@ -12,14 +12,14 @@ import matplotlib.pyplot as plt
 
 def construct_conv_matrix(filter: torch.tensor,
                           input_columns: int,
-                          conv_type: str = 'valid') -> torch.Tensor:
+                          mode: str = 'valid') -> torch.Tensor:
     """Constructs a convolution matrix,
        full and valid padding are supported.
 
     Args:
         filter (torch.tensor): The 1d-filter to convolve with.
         input_columns (int): The number of columns in the input.
-        conv_type (str): String indetifier for the desired padding.
+        mode (str): String indetifier for the desired padding.
             Defaults to valid.
 
     Returns:
@@ -31,13 +31,13 @@ def construct_conv_matrix(filter: torch.tensor,
     """
     filter_length = len(filter)
 
-    if conv_type == 'full':
+    if mode == 'full':
         start_row = 0
         stop_row = input_columns + filter_length - 1
-    elif conv_type == 'same':
+    elif mode == 'same':
         start_row = filter_length // 2
         stop_row = start_row + input_columns - 1
-    elif conv_type == 'valid':
+    elif mode == 'valid':
         start_row = filter_length - 1
         stop_row = input_columns - 1
     else:
@@ -57,42 +57,48 @@ def construct_conv_matrix(filter: torch.tensor,
     indices = np.stack([row_indices, column_indices])
     values = torch.stack(values)
 
-    return torch.sparse_coo_tensor(indices, values)
+    return torch.sparse_coo_tensor(indices, values, dtype=filter.dtype)
 
 
-def construct_conv_2d_matrix(filter: torch.tensor,
-                             input_rows: int,
-                             input_columns: int,
-                             conv_type: str = 'valid') -> torch.Tensor:
+def construct_conv2d_matrix(filter: torch.tensor,
+                            input_rows: int,
+                            input_columns: int,
+                            mode: str = 'valid') -> torch.Tensor:
+    """ Create a two dimensional convolution matrix.
+        Convolving with this matrix should be equivalent to
+        a call to scipy.signal.convolve2d and a reshape.
+
+    Args:
+        filter (torch.tensor): The filter to convolve with.
+        input_rows (int): The number of rows in the input matrix.
+        input_columns (int): The number of columns in the input matrix.
+        mode: [str] = The desired padding method. Defaults to 'valid'
+            or no padding.
+    Returns:
+        [torch.sparse.FloatTensor]: A sparse convolution matrix.
     """
-
-
-    For reference see also:
-    https://github.com/RoyiAvital/StackExchangeCodes/blob/master/\
-        StackOverflow/Q2080835/CreateConvMtx2DSparse.m
-    """
-
     kernel_column_number = filter.shape[-1]
     matrix_block_number = kernel_column_number
 
     block_matrix_list = []
     for i in range(matrix_block_number):
         block_matrix_list.append(construct_conv_matrix(
-            filter[:, i], input_rows, conv_type))
+            filter[:, i], input_rows, mode))
 
-    if conv_type == 'full':
+    if mode == 'full':
         diag_index = 0
         kronecker_rows = input_columns + kernel_column_number - 1
-    elif conv_type == 'same':
+    elif mode == 'same':
         diag_index = kernel_column_number // 2
         kronecker_rows = input_columns
-    elif conv_type == 'valid':
+    elif mode == 'valid':
         diag_index = kernel_column_number - 1
         kronecker_rows = input_columns - kernel_column_number + 1
     else:
         raise ValueError('unknown conv type.')
 
-    diag_values = np.ones([int(np.min([kronecker_rows, input_columns]))])
+    diag_values = torch.ones([int(np.min([kronecker_rows, input_columns]))],
+                             dtype=filter.dtype)
     diag = sparse_diag(diag_values, diag_index, kronecker_rows, input_columns)
     sparse_conv_matrix = sparse_kron(diag, block_matrix_list[0])
 
@@ -105,85 +111,16 @@ def construct_conv_2d_matrix(filter: torch.tensor,
     return sparse_conv_matrix
 
 
-
-def construct_conv2d_matrix(filter: torch.tensor, input_rows: int,
-                            input_columns: int, dtype=torch.float64):
-    """ Create a two dimensional convolution matrix.
-        Convolving with this matrix should be equivalent to
-        a call to scipy.signal.convolve2d and a reshape.
-
-    Args:
-        filter (torch.tensor): The filter to convolve with.
-        input_rows (int): The number of rows in the input matrix.
-        input_columns (int): The number of columns in the input matrix.
-        dtype (optional): Input data type. Defaults to torch.float64.
-
-    Returns:
-        [torch.sparse.FloatTensor]: A sparse convolution matrix.
-    """
-    filter_rows, filter_columns = filter.shape
-
-    block_height = input_rows + filter_rows - 1
-    # block_width = input_columns
-    block_entries = input_rows*filter_rows
-
-    all_entries = filter_columns*input_columns*block_entries
-
-    sparse_columns = np.zeros([all_entries])
-    sparse_rows = np.zeros([all_entries])
-    sparse_entries = torch.zeros([all_entries])
-
-    # matrix_height = (input_columns + filter_columns - 1)*block_height
-    # matrix_width = input_columns*block_width
-
-    col = np.stack([np.arange(0, input_rows)]*filter_rows)
-    row = col + np.arange(0, filter_rows)[:, np.newaxis]
-    col = col.flatten()
-    row = row.flatten()
-    row = np.stack([row]*input_columns, -1)
-    col = np.stack([col]*input_columns, -1)
-
-    column_offset = np.arange(0, input_columns)*input_rows
-    column_offset = np.stack([column_offset]*(input_rows*filter_rows))
-    column_offset = column_offset + col
-    column_offset = column_offset.T.flatten()
-    row_offset = np.arange(0, input_columns)*block_height
-    row_offset = np.stack([row_offset]*(input_rows*filter_rows))
-    row_offset = row_offset + row
-    row_offset = row_offset.T.flatten()
-
-    for col in range(0, filter_columns):
-        entries = filter[:, col]
-        entries = torch.stack([entries]*input_rows).T.flatten()
-        entries = torch.stack([entries]*input_columns).flatten()
-        start = col*input_columns*block_entries
-        stop = start + input_columns*block_entries
-
-        sparse_rows[start:stop] = row_offset
-        sparse_columns[start:stop] = column_offset
-        sparse_entries[start:stop] = entries
-        row_offset += block_height
-
-    sparse_indices = np.stack([sparse_rows, sparse_columns])
-    # sparse_indices = np.stack([sparse_columns, sparse_rows])
-    matrix = torch.sparse_coo_tensor(sparse_indices,
-                                     sparse_entries, dtype=dtype)
-    # assert (matrix_height, matrix_width) == matrix.shape
-    # plt.imshow(matrix.to_dense()); plt.show()
-    return matrix
-
-
 def construct_strided_conv2d_matrix(
         filter: torch.tensor,
         input_rows: int,
         input_columns: int,
         stride: int = 2,
-        dtype=torch.float64,
         no_padding=False):
     filter_shape = filter.shape
     convolution_matrix = construct_conv2d_matrix(
         filter,
-        input_rows, input_columns, dtype=dtype)
+        input_rows, input_columns, mode='full')
 
     output_rows = filter_shape[0] + input_rows - 1
     output_columns = filter_shape[1] + input_columns - 1
@@ -219,7 +156,7 @@ def construct_strided_conv2d_matrix(
     strided_indices = np.stack([strided_row_indices, strided_col_indices], 0)
     strided_values = values[mask]
     strided_matrix = torch.sparse_coo_tensor(
-        strided_indices, strided_values, dtype=dtype).coalesce()
+        strided_indices, strided_values, dtype=filter.dtype).coalesce()
 
     # strided_matrix_2 = convolution_matrix.to_dense()[strided_rows, :].to_sparse()
 
