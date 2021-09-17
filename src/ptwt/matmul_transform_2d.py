@@ -3,6 +3,62 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def construct_conv_matrix(filter: torch.tensor,
+                          input_columns: int,
+                          conv_type: str = 'valid') -> torch.Tensor:
+    """Constructs a convolution matrix,
+       full and valid padding are supported.
+
+    Args:
+        filter (torch.tensor): The 1d-filter to convolve with.
+        input_columns (int): The number of columns in the input.
+        conv_type (str): String indetifier for the desired padding.
+            Defaults to valid.
+
+    Returns:
+        torch.Tensor: The sparse convolution tensor.
+
+    For reference see:
+    https://dsp.stackexchange.com/questions/1774/generate-the-convolution-matrix-of-2d-kernel-for-convolution-shape-of-same
+    """
+    filter_length = len(filter)
+
+    if conv_type == 'full':
+        start_row = 0
+        stop_row = input_columns + filter_length - 1
+    elif conv_type == 'same':
+        start_row = filter_length // 2
+        stop_row = start_row + input_columns - 1
+    elif conv_type == 'valid':
+        start_row = filter_length - 1
+        stop_row = input_columns - 1
+    else:
+        raise ValueError('unkown padding type.')
+
+    row_indices = []
+    column_indices = []
+    values = []
+
+    for column in range(0, input_columns):
+        for row in range(0, filter_length):
+            check_row = column + row
+            if (check_row >= start_row) and (check_row <= stop_row):
+                row_indices.append(row + column - start_row)
+                column_indices.append(column)
+                values.append(filter[row])
+    indices = np.stack([row_indices, column_indices])
+    values = torch.stack(values)
+
+    return torch.sparse_coo_tensor(indices, values)
+
+
+def construct_conv_2d_matrix(filter: torch.tensor, input_rows: int,
+                             input_columns: int, ):
+    return None
+
+
+
+
 def construct_conv2d_matrix(filter: torch.tensor, input_rows: int,
                             input_columns: int, dtype=torch.float64):
     """ Create a two dimensional convolution matrix.
@@ -75,7 +131,8 @@ def construct_strided_conv2d_matrix(
         input_rows: int,
         input_columns: int,
         stride: int = 2,
-        dtype=torch.float64):
+        dtype=torch.float64,
+        no_padding=False):
     filter_shape = filter.shape
     convolution_matrix = construct_conv2d_matrix(
         filter,
@@ -91,7 +148,6 @@ def construct_strided_conv2d_matrix(
     strided_rows = element_numbers[::stride, ::stride]
     strided_rows = strided_rows.flatten()
 
-    # TODO: finish me!
     indices = convolution_matrix.coalesce().indices().numpy()
     values = convolution_matrix.coalesce().values().numpy()
     mask = []
