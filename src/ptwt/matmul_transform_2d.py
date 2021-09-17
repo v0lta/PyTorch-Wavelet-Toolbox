@@ -116,15 +116,22 @@ def construct_strided_conv2d_matrix(
         input_rows: int,
         input_columns: int,
         stride: int = 2,
-        no_padding=False):
+        mode='full'):
     filter_shape = filter.shape
     convolution_matrix = construct_conv2d_matrix(
         filter,
-        input_rows, input_columns, mode='full')
+        input_rows, input_columns, mode=mode)
 
-    output_rows = filter_shape[0] + input_rows - 1
-    output_columns = filter_shape[1] + input_columns - 1
-    output_elements = output_rows * output_columns
+    if mode == 'full':
+        output_rows = filter_shape[0] + input_rows - 1
+        output_columns = filter_shape[1] + input_columns - 1
+        output_elements = output_rows * output_columns
+    elif mode == 'valid':
+        output_rows = input_rows - filter_shape[0] + 1
+        output_columns = input_columns - filter_shape[1] + 1
+        output_elements = output_rows * output_columns
+    else:
+        raise ValueError("Padding mode not accepted.")
 
     element_numbers = np.arange(output_elements).reshape(
         output_columns, output_rows)

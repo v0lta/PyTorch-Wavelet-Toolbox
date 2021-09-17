@@ -143,72 +143,45 @@ def test_strided_conv_matrix_2d():
             assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
-# def test_strided_conv_matrix_nopad_2d():
+# def test_strided_conv_matrix_2d_valid():
 #     # TODO: add more filter sizes and fix the padding computations.
-#     for filter_shape in [(4, 4), (3, 3)]:
-#         for size in [(10, 10), (32, 64), (64, 32),
-#                      (65, 32), (32, 65), (65, 65)]:
+#     for filter_shape in [(4, 4), (3, 3), (3, 2), (2, 3)]:
+#         for size in [(16, 16), (16, 32), (32, 16),
+#                      (33, 16), (16, 33), (15, 15)]:
 #             filter = torch.rand(filter_shape)
 #             filter = filter.unsqueeze(0).unsqueeze(0)
 #             face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
 #             face = np.mean(face, -1)
 #             face = torch.from_numpy(face.astype(np.float32))
 #             face = face.unsqueeze(0).unsqueeze(0)
-#             ## No - padding 
-#             torch_res_no_padding = torch.nn.functional.conv2d(
-#                 face, filter.flip(2, 3), padding=0, stride=2).squeeze()
-#             strided_matrix_valid = construct_strided_conv2d_matrix(
-#                 filter.squeeze(),
-#                 size[0], size[1], stride=2, dtype=torch.float32,
-#                 no_padding=True)
-#             res_flat_stride = torch.sparse.mm(
-#                 strided_matrix_valid, face.T.flatten().unsqueeze(-1))
-#             res_mm_stride_no_padding = np.reshape(
-#                 res_flat_stride,
-#                 [int(np.ceil((filter_shape[1] + size[1] - 1) / 2)),
-#                  int(np.ceil((filter_shape[0] + size[0] - 1) / 2))]).T
 
-#             diff = np.abs(torch_res_no_padding - res_mm_stride_no_padding)
-#             to_plot = np.concatenate(
-#                 [torch_res_no_padding,
-#                  res_mm_stride_no_padding,
-#                  diff], -1)
-#             print(padding)
-#             print(to_remove)
-#             plt.figure(1)
-#             plt.imshow(torch_res_no_padding)
-#             plt.figure(2)
-#             plt.imshow(res_mm_stride)
-#             plt.figure(3)
-#             plt.imshow(res_mm_stride_no_padding)
-#             plt.imshow(to_plot)
-#             plt.show()
-#             assert np.allclose(torch_res_no_padding.numpy(),
-#                                res_mm_stride_no_padding.numpy())
+#             torch_res = torch.nn.functional.conv2d(
+#                 face, filter.flip(2, 3),
+#                 stride=2).squeeze()
+
+#             strided_matrix = construct_strided_conv2d_matrix(
+#                 filter.squeeze(),
+#                 size[0], size[1], stride=2,
+#                 mode='valid')
+#             res_flat_stride = torch.sparse.mm(
+#                 strided_matrix, face.T.flatten().unsqueeze(-1))
+#             res_mm_stride = np.reshape(
+#                 res_flat_stride,
+#                 [int(np.ceil((size[1] - filter_shape[1] - 1) / 2)),
+#                  int(np.ceil((size[0] - filter_shape[0] - 1) / 2))]).T
+
+#             diff_torch = np.mean(np.abs(torch_res.numpy()
+#                                         - res_mm_stride.numpy()))
+
+#             print(size, filter_shape, 'torch-error %2.2e' % diff_torch,
+#                   np.allclose(torch_res.numpy(), res_mm_stride.numpy()))
+#             assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
+
+
 
 
 if __name__ == '__main__':
     # test_conv_matrix()
     # test_conv_matrix_2d()
-    test_strided_conv_matrix_2d()
-    # test_strided_conv_matrix_nopad_2d()
-
-    filter_shape = [3, 3]
-    size = (5, 5)
-    filter = torch.rand(filter_shape)
-    filter = filter.unsqueeze(0).unsqueeze(0)
-    face = misc.face()[:size[0], :size[1]]
-    face = np.mean(face, -1)
-    face = torch.from_numpy(face.astype(np.float32))
-    face = face.unsqueeze(0).unsqueeze(0)
-
-    torch_res = torch.nn.functional.conv2d(
-        face, filter.flip(2, 3), padding=filter_shape[0]-1, stride=2)
-
-    conv2d_matrix = construct_conv_2d_matrix(
-        filter.squeeze(),  size[0], size[1])
-
-
-
-    print('stop')
+    # test_strided_conv_matrix_2d_valid()
 
