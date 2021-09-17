@@ -15,6 +15,7 @@ from src.ptwt.matmul_transform import (
 from src.ptwt.matmul_transform_2d import (
     construct_conv_matrix,
     construct_conv2d_matrix,
+    construct_conv_2d_matrix,
     construct_strided_conv2d_matrix
 )
 
@@ -191,13 +192,13 @@ def test_strided_conv_matrix_2d():
 
 
 if __name__ == '__main__':
-    test_conv_matrix()
+    # test_conv_matrix()
     # test_conv_matrix_2d()
-    test_strided_conv_matrix_2d()
-    test_strided_conv_matrix_nopad_2d()
+    # test_strided_conv_matrix_2d()
+    # test_strided_conv_matrix_nopad_2d()
 
     filter_shape = [3, 3]
-    size = (768, 1024)
+    size = (5, 5)
     filter = torch.rand(filter_shape)
     filter = filter.unsqueeze(0).unsqueeze(0)
     face = misc.face()[:size[0], :size[1]]
@@ -208,20 +209,10 @@ if __name__ == '__main__':
     torch_res = torch.nn.functional.conv2d(
         face, filter.flip(2, 3), padding=filter_shape[0]-1, stride=2)
 
-    strided_matrix = construct_strided_conv2d_matrix(
-        filter.squeeze(),
-        size[0], size[1], stride=2, dtype=torch.float32)
-    res_flat_stride = torch.sparse.mm(
-        strided_matrix, face.T.flatten().unsqueeze(-1))
-    res_mm_stride = np.reshape(
-        res_flat_stride, [int(np.ceil((filter_shape[1] + size[1] - 1) / 2)),
-                          int(np.ceil((filter_shape[0] + size[0] - 1) / 2))]).T
+    conv2d_matrix = construct_conv_2d_matrix(
+        filter.squeeze(),  size[0], size[1])
 
-    diff = torch.abs(torch_res.squeeze() - res_mm_stride) 
-    to_plot = torch.cat([torch_res.squeeze(), res_mm_stride, diff], -1)
-    print(np.allclose(torch_res.numpy(), res_mm_stride.numpy()))
-    plt.imshow(to_plot.numpy())
-    plt.show()
+
 
     print('stop')
 

@@ -1,5 +1,12 @@
+# Written by moritz ( @ wolter.tech )
+
 import torch
 import numpy as np
+from src.ptwt.sparse_math import (
+    sparse_kron,
+    sparse_diag
+)
+
 import matplotlib.pyplot as plt
 
 
@@ -60,7 +67,7 @@ def construct_conv_2d_matrix(filter: torch.tensor,
     """
 
 
-    Based on the matlab code at:
+    For reference see also:
     https://github.com/RoyiAvital/StackExchangeCodes/blob/master/\
         StackOverflow/Q2080835/CreateConvMtx2DSparse.m
     """
@@ -69,8 +76,9 @@ def construct_conv_2d_matrix(filter: torch.tensor,
     matrix_block_number = kernel_column_number
 
     block_matrix_list = []
-    for i in range(block_matrix_list):
-        pass
+    for i in range(matrix_block_number):
+        block_matrix_list.append(construct_conv_matrix(
+            filter[:, i], input_rows, conv_type))
 
     if conv_type == 'full':
         diag_index = 0
@@ -84,11 +92,17 @@ def construct_conv_2d_matrix(filter: torch.tensor,
     else:
         raise ValueError('unknown conv type.')
 
-    diag_values = np.ones(np.min([kronecker_rows, input_columns], 1))
-    sparse_matrix = None
+    diag_values = np.ones([int(np.min([kronecker_rows, input_columns]))])
+    diag = sparse_diag(diag_values, diag_index, kronecker_rows, input_columns)
+    sparse_conv_matrix = sparse_kron(diag, block_matrix_list[0])
 
-    return None
+    for block_matrix in block_matrix_list[1:]:
+        diag_index -= 1
+        diag = sparse_diag(diag_values, diag_index,
+                           kronecker_rows, input_columns)
+        sparse_conv_matrix += sparse_kron(diag, block_matrix)
 
+    return sparse_conv_matrix
 
 
 
