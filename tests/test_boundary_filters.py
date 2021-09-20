@@ -58,9 +58,9 @@ def test_boundary_transform_1d():
                 for boundary in ['gramschmidt', 'circular']: 
                     data_torch = torch.from_numpy(data.astype(np.float64))
                     wavelet = pywt.Wavelet(wavelet_str)
-                    coeffs, analysis_matrix = matrix_wavedec(
+                    coeffs, _ = matrix_wavedec(
                         data_torch, wavelet, level=level, boundary=boundary)
-                    rec, synthesis_matrix = matrix_waverec(
+                    rec, _ = matrix_waverec(
                         coeffs, wavelet, level=level, boundary=boundary)
                     rec_pywt = pywt.waverec(pywt.wavedec(data_torch.numpy(), wavelet), wavelet)
                     error = np.sum(np.abs(rec_pywt - rec.numpy()))
@@ -209,5 +209,5 @@ def test_strided_conv_matrix_2d_valid():
 
 if __name__ == '__main__':
     # test_boundary_filter_analysis_and_synthethis_matrices()
-    test_boundary_transform_1d()
+    test_strided_conv_matrix_2d_valid()
 

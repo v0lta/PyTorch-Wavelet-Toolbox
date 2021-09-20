@@ -1,11 +1,13 @@
-# Written by moritz ( @ wolter.tech )
+# Written by moritz ( @ wolter.tech ) in 2021
 
 import torch
 import numpy as np
+from torch._C import dtype
 from src.ptwt.sparse_math import (
     sparse_kron,
     sparse_diag
 )
+from src.ptwt.conv_transform import construct_2d_filt, get_filter_tensors
 
 import matplotlib.pyplot as plt
 
@@ -69,7 +71,8 @@ def construct_conv2d_matrix(filter: torch.tensor,
         a call to scipy.signal.convolve2d and a reshape.
 
     Args:
-        filter (torch.tensor): The filter to convolve with.
+        filter (torch.tensor): A filter of shape [height, width] 
+            to convolve with.
         input_rows (int): The number of rows in the input matrix.
         input_columns (int): The number of columns in the input matrix.
         mode: [str] = The desired padding method. Defaults to 'valid'
@@ -168,11 +171,38 @@ def construct_strided_conv2d_matrix(
         strided_indices, strided_values, size=size, dtype=filter.dtype).coalesce()
 
     # strided_matrix_2 = convolution_matrix.to_dense()[strided_rows, :].to_sparse()
-
     # diff = np.abs(
     #      strided_matrix.to_dense().numpy() - strided_matrix_2.to_dense().numpy())
     # to_plot = np.concatenate([strided_matrix.to_dense(), strided_matrix_2.to_dense(), diff], 1)
     # plt.imshow(to_plot)
     # plt.show()
-
     return strided_matrix
+
+
+
+def construct_a_2d(wavelet, height: int, width:int,
+                   device, dtype=torch.float64):
+    dec_lo, dec_hi, _, _ = get_filter_tensors(
+        wavelet, flip=True, device=device, dtype=dtype)
+    dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
+    ll, lh, hl, hh = dec_filt.squeeze(1)
+
+    a_ll = construct_strided_conv2d_matrix(
+        ll, height, width, mode='valid')
+
+    print('stop')
+    pass
+
+
+if __name__ == '__main__':
+    import scipy.misc
+    import pywt
+
+    # single level db2 - 2d
+    face = np.mean(scipy.misc.face()[256:(256+12), 256:(256+12)],
+                        -1).astype(np.float64)
+    pt_face = torch.tensor(face)
+    wavelet = pywt.Wavelet("db2")
+    construct_a_2d(wavelet, pt_face.shape[0], pt_face.shape[1],
+        device=pt_face.device, dtype=pt_face.dtype)
+    print('stop')

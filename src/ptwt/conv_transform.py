@@ -142,7 +142,8 @@ def construct_2d_filt(lo, hi):
         hi (torch.tensor): High-pass input filter
 
     Returns:
-        [torch.tensor]: Stacked 2d filters.
+        [torch.tensor]: Stacked 2d filters of dimension
+            [filt_no, 1, height, width].
     """
     ll = outer(lo, lo)
     lh = outer(hi, lo)
