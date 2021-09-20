@@ -162,8 +162,10 @@ def construct_strided_conv2d_matrix(
     strided_col_indices = indices[1, mask]
     strided_indices = np.stack([strided_row_indices, strided_col_indices], 0)
     strided_values = values[mask]
+    size = (np.max(strided_row_indices) + 1,
+            np.max(indices[1, :]) + 1)
     strided_matrix = torch.sparse_coo_tensor(
-        strided_indices, strided_values, dtype=filter.dtype).coalesce()
+        strided_indices, strided_values, size=size, dtype=filter.dtype).coalesce()
 
     # strided_matrix_2 = convolution_matrix.to_dense()[strided_rows, :].to_sparse()
 
