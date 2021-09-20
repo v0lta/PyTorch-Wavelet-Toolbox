@@ -49,15 +49,19 @@ def test_boundary_transform_1d():
                  np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])]
     wavelet_list = ['haar', 'db2']
     for data in data_list:
-        for wavelet in wavelet_list:
-            data_torch = torch.from_numpy(data.astype(np.float32))
-            wavelet = pywt.Wavelet('db2')
-            coeffs, fwt_matrix = matrix_wavedec(data_torch, wavelet, level=1)
-            rec, ifwt_matrix = matrix_waverec(coeffs, wavelet, level=1)
-            rec_pywt = pywt.waverec(pywt.wavedec(data.astype(np.float32), wavelet), wavelet)
-            error = np.sum(np.abs(rec_pywt - rec.numpy()))
-            print('error {:2.2e}'.format(error))
-            assert np.allclose(rec.numpy(), rec_pywt, atol=1e-05)
+        for wavelet_str in wavelet_list:
+            for level in [1, 2]:
+                data_torch = torch.from_numpy(data.astype(np.float32))
+                wavelet = pywt.Wavelet(wavelet_str)
+                coeffs, fwt_matrix = matrix_wavedec(data_torch, wavelet, level=level)
+                rec, ifwt_matrix = matrix_waverec(coeffs, wavelet, level=level)
+                rec_pywt = pywt.waverec(pywt.wavedec(data.astype(np.float32), wavelet), wavelet)
+                error = np.sum(np.abs(rec_pywt - rec.numpy()))
+                print('wavelet: {},'.format(wavelet_str),
+                      'level: {},'.format(level),
+                      'shape: {},'.format(data.shape[-1]),
+                      'error {:2.2e}'.format(error))
+                assert np.allclose(rec.numpy(), rec_pywt, atol=1e-05)
 
 
 def test_boundary_transform_2d():

@@ -101,17 +101,18 @@ def matrix_wavedec(data, wavelet, level: int = None):
     Args:
         wavelet: A wavelet object.
         data: Batched input data [batch_size, time], should be of even length.
+              WARNING: If the input length is odd a zero will be padded on the
+              right to make it even.
         level: The desired level up to which to compute the fwt.
     Returns: The wavelet coefficients in a single vector.
              As well as the transformation matrices.
     """
-    print('stop matrix_wavedec')
     if len(data.shape) == 1:
         # assume time series
         data = data.unsqueeze(0)
     if data.shape[-1] % 2 != 0:
         # odd length input
-        print('input length odd, padding a zero on the right')
+        # print('input length odd, padding a zero on the right')
         data = torch.nn.functional.pad(data, [0, 1])
 
 
@@ -122,52 +123,29 @@ def matrix_wavedec(data, wavelet, level: int = None):
     filt_len = len(dec_lo)
 
     length = data.shape[1]
+    split_list = [length]
+    fwt_mat_list = []
 
     if level is None:
         level = int(np.log2(length))
     else:
         assert level > 0, "level must be a positive integer."
-    ar = construct_a(wavelet, length, dtype=data.dtype)
-    if level == 1:
-        coefficients = torch.sparse.mm(ar, data.T)
-        return torch.split(coefficients, length // 2), [ar]
-    al2 = construct_a(wavelet, length // 2, dtype=data.dtype)
-    al2 = cat_sparse_identity_matrix(al2, length)
-    if level == 2:
-        coefficients = torch.sparse.mm(al2, torch.sparse.mm(ar, data.T))
-        return torch.split(coefficients, [length // 4, length // 4, length // 2]), [
-            ar,
-            al2,
-        ]
-    ar3 = construct_a(wavelet, length // 4, dtype=data.dtype)
-    ar3 = cat_sparse_identity_matrix(ar3, length)
-    if level == 3:
-        coefficients = torch.sparse.mm(
-            ar3, torch.sparse.mm(al2, torch.sparse.mm(ar, data.T))
-        )
-        return (
-            torch.split(
-                coefficients, [length // 8, length // 8, length // 4, length // 2]
-            ),
-            [ar, al2, ar3],
-        )
-    fwt_mat_lst = [ar, al2, ar3]
-    split_list = [length // 2, length // 4, length // 8]
-    for s in range(4, level + 1):
+
+    for s in range(1, level + 1):
         if split_list[-1] < filt_len:
             break
         an = construct_a(wavelet, split_list[-1], dtype=data.dtype)
-        an = cat_sparse_identity_matrix(an, length)
-        fwt_mat_lst.append(an)
+        if s > 1:
+            an = cat_sparse_identity_matrix(an, length)
+        fwt_mat_list.append(an)
         new_split_size = length // np.power(2, s)
         split_list.append(new_split_size)
     coefficients = data.T
 
-    for fwt_mat in fwt_mat_lst:
+    for fwt_mat in fwt_mat_list:
         coefficients = torch.sparse.mm(fwt_mat, coefficients)
     split_list.append(length // np.power(2, level))
-    print('done')
-    return torch.split(coefficients, split_list[::-1]), fwt_mat_lst
+    return torch.split(coefficients, split_list[1:][::-1]), fwt_mat_list
 
 
 def construct_s(wavelet, length, wrap=True, dtype=torch.float64):
@@ -218,7 +196,7 @@ def clip_and_orthogonalize(matrix, wavelet, length):
 
 
 def construct_boundary_a(wavelet, length):
-    """ Construct a boundary-wavelet filter 1d-analysis matarix.
+    """ Construct a boundary-wavelet filter 1d-analysis matrix.
 
     Args:
         wavelet : The wavelet filter object to use.
