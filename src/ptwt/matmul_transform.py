@@ -93,10 +93,11 @@ def orth_via_gram_schmidt(matrix, filt_len):
         length = np.linalg.norm(orthogonal_row)
         matrix[row_no_to_ortho, :] = orthogonal_row / length
         done.append(row_no_to_ortho)
-    return matrix
+    return matrix.to_sparse()
 
 
-def matrix_wavedec(data, wavelet, level: int = None):
+def matrix_wavedec(data, wavelet, level: int = None,
+    boundary:str = 'circular'):
     """Experimental computation of the sparse matrix fast wavelet transform.
     Args:
         wavelet: A wavelet object.
@@ -104,6 +105,8 @@ def matrix_wavedec(data, wavelet, level: int = None):
               WARNING: If the input length is odd a zero will be padded on the
               right to make it even.
         level: The desired level up to which to compute the fwt.
+        boundary: The desired approach to boundary value treatment.
+            Choose circular or gramschmidt. Defaults to circular.
     Returns: The wavelet coefficients in a single vector.
              As well as the transformation matrices.
     """
@@ -134,7 +137,8 @@ def matrix_wavedec(data, wavelet, level: int = None):
     for s in range(1, level + 1):
         if split_list[-1] < filt_len:
             break
-        an = construct_a(wavelet, split_list[-1], dtype=data.dtype)
+        an = construct_boundary_a(
+            wavelet, split_list[-1], dtype=data.dtype, boundary=boundary)
         if s > 1:
             an = cat_sparse_identity_matrix(an, length)
         fwt_mat_list.append(an)
@@ -182,51 +186,71 @@ def construct_s(wavelet, length, wrap=True, dtype=torch.float64):
     return s_ten
 
 
-def clip_and_orthogonalize(matrix, wavelet, length):
+def clip_and_orthogonalize(matrix, wavelet):
     filt_len = len(wavelet.filter_bank[0])
-    clipl = (filt_len - 2) // 2
-    clipr = (filt_len - 2) // 2
 
-    dense = matrix.to_dense()
-    # plt.spy(a_dense.numpy(), markersize = 5); plt.show()
-    clip = dense[:, (clipl):-(clipr)]
-    # plt.spy(a_clip.numpy(), markersize = 5); plt.show()
-    orth = orth_via_gram_schmidt(clip, filt_len)
-    return orth
+    if filt_len > 2:
+        clipl = (filt_len - 2) // 2
+        clipr = (filt_len - 2) // 2
+        dense = matrix.to_dense()
+        clip = dense[:, (clipl):-(clipr)]
+        orth = orth_via_gram_schmidt(clip, filt_len)
+        return orth
+    else:
+        return matrix
 
 
-def construct_boundary_a(wavelet, length):
+def construct_boundary_a(wavelet, length: int,
+    boundary: str='circular', dtype=torch.float64):
     """ Construct a boundary-wavelet filter 1d-analysis matrix.
 
     Args:
         wavelet : The wavelet filter object to use.
         length (int):  The number of entries in the input signal.
+        boundary (str): A string indicating the desired boundary treatment.
+            Possible options are circular and gramschmidt. Defaults to
+            circular.
 
     Returns:
         [torch.sparse.FloatTensor]: The analysis matrix.
     """
-    a_full = construct_a(wavelet, length, wrap=False)
-    a_orth = clip_and_orthogonalize(a_full, wavelet, length)
-    return a_orth.to_sparse()
+    if boundary == 'circular':
+        return construct_a(wavelet, length, wrap=True, dtype=dtype)
+    elif boundary == 'gramschmidt':
+        a_full = construct_a(wavelet, length, wrap=False, dtype=dtype)
+        a_orth = clip_and_orthogonalize(a_full, wavelet)
+        return a_orth
+    else:
+        raise ValueError("Unknown boundary treatment")
 
 
-def construct_boundary_s(wavelet, length):
+def construct_boundary_s(wavelet, length,
+    boundary: str='circular', dtype=torch.float64):
     """ Construct a boundary-wavelet filter 1d-synthesis matarix.
 
     Args:
         wavelet : The wavelet filter object to use.
         length (int):  The number of entries in the input signal.
+        boundary (str): A string indicating the desired boundary treatment.
+            Possible options are circular and gramschmidt. Defaults to
+            circular.
 
     Returns:
         [torch.sparse.FloatTensor]: The synthesis matrix.
     """
-    s_full = construct_s(wavelet, length, wrap=False)
-    s_orth = clip_and_orthogonalize(
-        s_full.transpose(1, 0), wavelet, length)
-    return s_orth.transpose(1, 0).to_sparse()
+    if boundary == 'circular':
+        return construct_s(wavelet, length, wrap=True, dtype=dtype)
+    elif boundary == 'gramschmidt':
+        s_full = construct_s(wavelet, length, wrap=False, dtype=dtype)
+        s_orth = clip_and_orthogonalize(
+            s_full.transpose(1, 0), wavelet)
+        return s_orth.transpose(1, 0)
+    else:
+        raise ValueError("Unknown boundary treatment")
 
 
-def matrix_waverec(coefficients, wavelet, level: int = None):
+def matrix_waverec(coefficients, wavelet, level: int = None,
+    boundary: str = 'circular'):
     """Experimental matrix based inverse fast wavelet transform.
 
     Args:
@@ -257,7 +281,8 @@ def matrix_waverec(coefficients, wavelet, level: int = None):
     for s in range(1, level + 1):
         if split_lst[-1] < filt_len:
             break
-        sn = construct_s(wavelet, split_lst[-1], dtype=coefficients.dtype)
+        sn = construct_boundary_s(wavelet, split_lst[-1], dtype=coefficients.dtype,
+            boundary=boundary)
         if s > 1:
             sn = cat_sparse_identity_matrix(sn, length)
         ifwt_mat_lst.append(sn)

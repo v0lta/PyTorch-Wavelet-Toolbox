@@ -6,6 +6,8 @@ import numpy as np
 import scipy.signal
 from scipy import misc
 import matplotlib.pyplot as plt
+from torch._C import dtype
+from torch.autograd import backward
 
 from src.ptwt.matmul_transform import (
     construct_boundary_a,
@@ -26,10 +28,12 @@ from src.ptwt.mackey_glass import MackeyGenerator
 @pytest.mark.slow
 def test_boundary_filter_analysis_and_synthethis_matrices():
     for size in [24, 64, 128, 256]:
-        for wavelet in [pywt.Wavelet("db4"),
+        for wavelet in [pywt.Wavelet("db2"), pywt.Wavelet("db4"),
                         pywt.Wavelet("db6"), pywt.Wavelet("db8")]:
-            analysis_matrix = construct_boundary_a(wavelet, size).to_dense()
-            synthesis_matrix = construct_boundary_s(wavelet, size).to_dense()
+            analysis_matrix = construct_boundary_a(wavelet, size,
+                boundary='gramschmidt').to_dense()
+            synthesis_matrix = construct_boundary_s(wavelet, size,
+                boundary='gramschmidt').to_dense()
             # s_db2 = construct_s(pywt.Wavelet("db8"), size)
             # test_eye_inv = torch.sparse.mm(a_db8, s_db2.to_dense()).numpy()
             test_eye_orth = torch.mm(analysis_matrix.transpose(1, 0),
@@ -47,21 +51,24 @@ def test_boundary_filter_analysis_and_synthethis_matrices():
 def test_boundary_transform_1d():
     data_list = [np.array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0]),
                  np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])]
-    wavelet_list = ['haar', 'db2']
+    wavelet_list = ['db2', 'haar', 'db3']
     for data in data_list:
         for wavelet_str in wavelet_list:
             for level in [1, 2]:
-                data_torch = torch.from_numpy(data.astype(np.float32))
-                wavelet = pywt.Wavelet(wavelet_str)
-                coeffs, fwt_matrix = matrix_wavedec(data_torch, wavelet, level=level)
-                rec, ifwt_matrix = matrix_waverec(coeffs, wavelet, level=level)
-                rec_pywt = pywt.waverec(pywt.wavedec(data.astype(np.float32), wavelet), wavelet)
-                error = np.sum(np.abs(rec_pywt - rec.numpy()))
-                print('wavelet: {},'.format(wavelet_str),
-                      'level: {},'.format(level),
-                      'shape: {},'.format(data.shape[-1]),
-                      'error {:2.2e}'.format(error))
-                assert np.allclose(rec.numpy(), rec_pywt, atol=1e-05)
+                for boundary in ['gramschmidt', 'circular']: 
+                    data_torch = torch.from_numpy(data.astype(np.float64))
+                    wavelet = pywt.Wavelet(wavelet_str)
+                    coeffs, analysis_matrix = matrix_wavedec(
+                        data_torch, wavelet, level=level, boundary=boundary)
+                    rec, synthesis_matrix = matrix_waverec(
+                        coeffs, wavelet, level=level, boundary=boundary)
+                    rec_pywt = pywt.waverec(pywt.wavedec(data_torch.numpy(), wavelet), wavelet)
+                    error = np.sum(np.abs(rec_pywt - rec.numpy()))
+                    print('wavelet: {},'.format(wavelet_str),
+                        'level: {},'.format(level),
+                        'shape: {},'.format(data.shape[-1]),
+                        'error {:2.2e}'.format(error))
+                    assert np.allclose(rec.numpy(), rec_pywt, atol=1e-05)
 
 
 def test_boundary_transform_2d():
@@ -201,5 +208,6 @@ def test_strided_conv_matrix_2d_valid():
 
 
 if __name__ == '__main__':
+    # test_boundary_filter_analysis_and_synthethis_matrices()
     test_boundary_transform_1d()
 
