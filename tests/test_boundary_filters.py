@@ -205,9 +205,7 @@ def test_strided_conv_matrix_2d_valid():
             assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
-
-
 if __name__ == '__main__':
-    # test_boundary_filter_analysis_and_synthethis_matrices()
-    test_strided_conv_matrix_2d_valid()
+    test_boundary_filter_analysis_and_synthethis_matrices()
+    # test_strided_conv_matrix_2d_valid()
 

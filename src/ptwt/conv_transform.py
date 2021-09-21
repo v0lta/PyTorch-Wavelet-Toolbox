@@ -93,7 +93,7 @@ def fwt_pad(data, wavelet, level, mode="reflect"):
 def fwt_pad2d(data, wavelet, level, mode="reflect"):
     """Padding for the 2d FWT.
     Args:
-        data (torch.Tensor): Input data with 4 domensions.
+        data (torch.Tensor): Input data with 4 dimensions.
         wavelet (pywt.Wavelet or WaveletFilter): The wavelet used.
         mode (str, optional): The padding mode. Defaults to 'reflect'.
 
