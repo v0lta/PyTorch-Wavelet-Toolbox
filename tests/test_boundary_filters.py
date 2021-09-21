@@ -77,24 +77,28 @@ def test_boundary_transform_2d():
 
 def test_conv_matrix():
     # Test the 1d sparse convolution matrix code.
+    # test_filters = [torch.tensor([1., 2, 3, 4]), torch.tensor([1., 2, 3])]
+    # input_signals = [torch.tensor([1., 2, 3, 4, 5, 6, 7, 8, 9]),
+    #                  torch.tensor([1., 2, 3, 4, 5, 6, 7, 8])]
+
     test_filters = [torch.rand([3]), torch.rand([4])]
     input_signals = [torch.rand([8]), torch.rand([9])]
     for h in test_filters:
         for x in input_signals:
 
             def test_padding_case(case: str):
-                conv_matrix_full = construct_conv_matrix(h, len(x), case)
-                mm_conv_res_full = torch.sparse.mm(
-                    conv_matrix_full, x.unsqueeze(-1)).squeeze()
-                conv_res_full = scipy.signal.convolve(
+                conv_matrix = construct_conv_matrix(h, len(x), case)
+                mm_conv_res = torch.sparse.mm(
+                    conv_matrix, x.unsqueeze(-1)).squeeze()
+                conv_res = scipy.signal.convolve(
                     x.numpy(), h.numpy(), case)
                 error = np.sum(
-                    np.abs(conv_res_full - mm_conv_res_full.numpy()))
+                    np.abs(conv_res - mm_conv_res.numpy()))
                 print('1d conv matrix error', case, error, len(h), len(x))
-                assert np.allclose(conv_res_full, mm_conv_res_full.numpy())
+                assert np.allclose(conv_res, mm_conv_res.numpy())
 
             test_padding_case('full')
-            # test_padding_case('same') # TODO: fix this case.
+            test_padding_case('same')
             test_padding_case('valid')
 
 
@@ -206,6 +210,7 @@ def test_strided_conv_matrix_2d_valid():
 
 
 if __name__ == '__main__':
-    test_boundary_filter_analysis_and_synthethis_matrices()
+    test_conv_matrix()
+    # test_boundary_filter_analysis_and_synthethis_matrices()
     # test_strided_conv_matrix_2d_valid()
 

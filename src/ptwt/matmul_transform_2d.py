@@ -11,7 +11,9 @@ from src.ptwt.conv_transform import (
     flatten_2d_coeff_lst,
     construct_2d_filt,
     get_filter_tensors
-) 
+)
+from src.ptwt.matmul_transform import orth_via_gram_schmidt
+
 import matplotlib.pyplot as plt
 
 
@@ -40,7 +42,9 @@ def construct_conv_matrix(filter: torch.tensor,
         start_row = 0
         stop_row = input_columns + filter_length - 1
     elif mode == 'same':
-        start_row = filter_length // 2
+        filter_offset = filter_length % 2
+        signal_offset = input_columns % 2
+        start_row = filter_length // 2 - 1 + filter_offset
         stop_row = start_row + input_columns - 1
     elif mode == 'valid':
         start_row = filter_length - 1
@@ -182,36 +186,33 @@ def construct_strided_conv2d_matrix(
     return strided_matrix
 
 
-
 def construct_a_2d(wavelet, height: int, width:int,
                    device, dtype=torch.float64):
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype)
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
     ll, lh, hl, hh = dec_filt.squeeze(1)
-
     a_ll = construct_strided_conv2d_matrix(
-        ll, height, width, mode='valid')
+        ll, height, width, mode='full')
     a_lh = construct_strided_conv2d_matrix(
-        lh, height, width, mode='valid')
+        lh, height, width, mode='full')
     a_hl = construct_strided_conv2d_matrix(
-        hl, height, width, mode='valid')
+        hl, height, width, mode='full')
     a_hh = construct_strided_conv2d_matrix(
-        hh, height, width, mode='valid')
+        hh, height, width, mode='full')
     a = torch.cat([a_ll, a_hl, a_lh, a_hh], 0)
-
-    # face = np.mean(scipy.misc.face()[256:(256+12), 256:(256+12)],
-    #                     -1).astype(np.float64)
-    # pt_face = torch.tensor(face)
-    # conv = torch.nn.functional.conv2d(
-    #     pt_face.unsqueeze(0).unsqueeze(0),
-    #     ll.unsqueeze(0).unsqueeze(0), stride=2)
-    # mm_conv = torch.sparse.mm(a_ll, pt_face.flatten().unsqueeze(-1))
-    # mm_conv = torch.reshape(mm_conv, [6, 6])
-    # print(np.abs(conv - mm_conv))
-    # print('stop')
-
     return a
+
+
+def construct_boundary_a2d(
+    wavelet, height: int, width:int,
+    device, dtype=torch.float64):
+
+    a = construct_a_2d(
+        wavelet, height, width, device, dtype=dtype)
+
+    orth_a = orth_via_gram_schmidt(a.to_dense(), len(wavelet))
+    return orth_a
 
 
 def split_coeff_vector(coeff_vector):
@@ -231,6 +232,20 @@ def split_and_reshape_coeff_vector(coeff_vector, input_shape, filter_shape):
     return reshape_list
 
 
+def matrix_fwt_2d(input_signal_2d, wavelet):
+    height, width = input_signal_2d.shape
+    a = construct_boundary_a2d(wavelet, height, width,
+                               device=input_signal_2d.device,
+                               dtype=input_signal_2d.dtype)
+    res_mm = torch.sparse.mm(a, input_signal_2d.flatten().unsqueeze(-1))
+    res_mm_split = split_and_reshape_coeff_vector(
+        res_mm, [height, width], [len(wavelet), len(wavelet)])
+    return res_mm_split
+
+
+
+
+
 if __name__ == '__main__':
     import scipy.misc
     import pywt
@@ -240,14 +255,11 @@ if __name__ == '__main__':
     face = np.mean(scipy.misc.face()[256:(256+12), 256:(256+12)],
                         -1).astype(np.float64)
     pt_face = torch.tensor(face)
-    wavelet = pywt.Wavelet("haar")
+    wavelet = pywt.Wavelet("db2")
     a = construct_a_2d(wavelet, pt_face.shape[0], pt_face.shape[1],
                        device=pt_face.device, dtype=pt_face.dtype)
-
     res_mm = torch.sparse.mm(a, pt_face.flatten().unsqueeze(-1))
-    res_mm_split = split_and_reshape_coeff_vector(
-        res_mm, face.shape, [2, 2])
-
+    res_mm_split = matrix_fwt_2d(pt_face, wavelet)
     res_coeff = wavedec2(pt_face.unsqueeze(0).unsqueeze(0), wavelet, level=1)
     flat_coeff = torch.cat(flatten_2d_coeff_lst(res_coeff), -1)
 

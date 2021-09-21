@@ -187,7 +187,7 @@ def construct_s(wavelet, length, wrap=True, dtype=torch.float64):
 
 
 def clip_and_orthogonalize(matrix, wavelet):
-    filt_len = len(wavelet.filter_bank[0])
+    filt_len = len(wavelet)
 
     if filt_len > 2:
         clipl = (filt_len - 2) // 2
