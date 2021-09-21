@@ -134,14 +134,16 @@ def construct_strided_conv2d_matrix(
     if mode == 'full':
         output_rows = filter_shape[0] + input_rows - 1
         output_columns = filter_shape[1] + input_columns - 1
-        output_elements = output_rows * output_columns
     elif mode == 'valid':
         output_rows = input_rows - filter_shape[0] + 1
         output_columns = input_columns - filter_shape[1] + 1
-        output_elements = output_rows * output_columns
+    elif mode == 'same':
+        output_rows = input_rows
+        output_columns = input_columns
     else:
         raise ValueError("Padding mode not accepted.")
 
+    output_elements = output_rows * output_columns
     element_numbers = np.arange(output_elements).reshape(
         output_columns, output_rows)
 
