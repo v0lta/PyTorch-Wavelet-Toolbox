@@ -77,10 +77,10 @@ def test_boundary_transform_2d():
 
 def test_conv_matrix():
     # Test the 1d sparse convolution matrix code.
+
     # test_filters = [torch.tensor([1., 2, 3, 4]), torch.tensor([1., 2, 3])]
     # input_signals = [torch.tensor([1., 2, 3, 4, 5, 6, 7, 8, 9]),
     #                  torch.tensor([1., 2, 3, 4, 5, 6, 7, 8])]
-
     test_filters = [torch.rand([3]), torch.rand([4])]
     input_signals = [torch.rand([8]), torch.rand([9])]
     for h in test_filters:
@@ -109,38 +109,32 @@ def test_conv_matrix_2d():
     """
     for filter_shape in [(3, 3), (3, 2), (2, 3), (5, 3), (3, 5),
                          (2, 5), (5, 2)]:
-        for size in [(16, 16), (8, 16), (16, 8), (16, 7), (7, 16),
+        for size in [(5, 5), (16, 16), (8, 16), (16, 8), (16, 7), (7, 16),
                      (15, 15)]:
-            filter = torch.rand(filter_shape)
-            filter = filter.unsqueeze(0).unsqueeze(0)
-            face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
-            face = np.mean(face, -1).astype(np.float32)
+            for mode in ['same', 'full', 'valid']:
+                filter = torch.rand(filter_shape)
+                filter = filter.unsqueeze(0).unsqueeze(0)
+                face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
+                face = np.mean(face, -1).astype(np.float32)
 
-            res_scipy = scipy.signal.convolve2d(
-                face, filter.squeeze().numpy(), mode='full')
+                res_scipy = scipy.signal.convolve2d(
+                    face, filter.squeeze().numpy(), mode=mode)
 
-            face = torch.from_numpy(face)
-            face = face.unsqueeze(0).unsqueeze(0)
-            conv_matrix2d = construct_conv2d_matrix(
-                filter.squeeze(), size[0], size[1], mode='full')
-            res_flat = torch.sparse.mm(
-                conv_matrix2d, face.T.flatten().unsqueeze(-1))
-            res_mm = torch.reshape(res_flat,
-                                   [filter_shape[1] + size[1] - 1,
-                                    filter_shape[0] + size[0] - 1]).T
-            res_torch = torch.nn.functional.conv2d(
-                face, filter.flip(2, 3),
-                padding=(filter_shape[0]-1, filter_shape[1]-1))
+                face = torch.from_numpy(face)
+                face = face.unsqueeze(0).unsqueeze(0)
+                conv_matrix2d = construct_conv2d_matrix(
+                    filter.squeeze(), size[0], size[1], mode=mode)
+                res_flat = torch.sparse.mm(
+                    conv_matrix2d, face.T.flatten().unsqueeze(-1))
+                res_mm = torch.reshape(res_flat, [res_scipy.shape[1],
+                                                  res_scipy.shape[0]]).T
 
-            diff_scipy = np.mean(np.abs(res_scipy - res_mm.numpy()))
-            diff_torch = np.mean(np.abs(res_torch.numpy() - res_mm.numpy()))
+                diff_scipy = np.mean(np.abs(res_scipy - res_mm.numpy()))
 
-            print(size, filter_shape, 'scipy-error %2.2e' % diff_scipy,
-                  np.allclose(res_scipy, res_mm.numpy()),
-                  'torch-error %2.2e' % diff_torch, np.allclose(
-                      res_torch.numpy(), res_mm.numpy()))
-            assert np.allclose(res_scipy, res_mm)
-            assert np.allclose(res_torch.numpy(), res_mm.numpy())
+                print(str(size).center(8), filter_shape, mode.center(5),
+                      'scipy-error %2.2e' % diff_scipy,
+                      np.allclose(res_scipy, res_mm.numpy()))
+                assert np.allclose(res_scipy, res_mm)
 
 
 def test_strided_conv_matrix_2d():
@@ -179,7 +173,7 @@ def test_strided_conv_matrix_2d():
 
 
 def test_strided_conv_matrix_2d_valid():
-    """ Test strided 2d-convolution matrices with no or valid padding. """     
+    """ Test strided 2d-convolution matrices with no or valid padding. """
     for filter_shape in [(4, 4), (3, 3), (3, 2), (2, 3)]:
         for size in [(8, 8), (8, 16), (16, 8),
                      (17, 8), (8, 17), (7, 7)]:
@@ -200,8 +194,8 @@ def test_strided_conv_matrix_2d_valid():
                 strided_matrix, face.T.flatten().unsqueeze(-1))
             res_mm_stride = np.reshape(
                 res_flat_stride,
-                [(size[1] - (filter_shape[1] ) ) // 2 + 1,
-                 (size[0] - (filter_shape[0] ) ) // 2 + 1]).T
+                [(size[1] - (filter_shape[1])) // 2 + 1,
+                 (size[0] - (filter_shape[0])) // 2 + 1]).T
             diff_torch = np.mean(np.abs(torch_res.numpy()
                                         - res_mm_stride.numpy()))
             print(size, filter_shape, 'torch-error %2.2e' % diff_torch,
@@ -210,7 +204,7 @@ def test_strided_conv_matrix_2d_valid():
 
 
 if __name__ == '__main__':
-    test_conv_matrix()
+    test_conv_matrix_2d()
     # test_boundary_filter_analysis_and_synthethis_matrices()
     # test_strided_conv_matrix_2d_valid()
 

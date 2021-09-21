@@ -43,7 +43,7 @@ def construct_conv_matrix(filter: torch.tensor,
         stop_row = input_columns + filter_length - 1
     elif mode == 'same':
         filter_offset = filter_length % 2
-        signal_offset = input_columns % 2
+        # signal_offset = input_columns % 2
         start_row = filter_length // 2 - 1 + filter_offset
         stop_row = start_row + input_columns - 1
     elif mode == 'valid':
@@ -55,7 +55,6 @@ def construct_conv_matrix(filter: torch.tensor,
     row_indices = []
     column_indices = []
     values = []
-
     for column in range(0, input_columns):
         for row in range(0, filter_length):
             check_row = column + row
@@ -65,7 +64,6 @@ def construct_conv_matrix(filter: torch.tensor,
                 values.append(filter[row])
     indices = np.stack([row_indices, column_indices])
     values = torch.stack(values)
-
     return torch.sparse_coo_tensor(indices, values, dtype=filter.dtype)
 
 
@@ -78,7 +76,7 @@ def construct_conv2d_matrix(filter: torch.tensor,
         a call to scipy.signal.convolve2d and a reshape.
 
     Args:
-        filter (torch.tensor): A filter of shape [height, width] 
+        filter (torch.tensor): A filter of shape [height, width]
             to convolve with.
         input_rows (int): The number of rows in the input matrix.
         input_columns (int): The number of columns in the input matrix.
@@ -99,7 +97,8 @@ def construct_conv2d_matrix(filter: torch.tensor,
         diag_index = 0
         kronecker_rows = input_columns + kernel_column_number - 1
     elif mode == 'same':
-        diag_index = kernel_column_number // 2
+        filter_offset = kernel_column_number % 2
+        diag_index = kernel_column_number // 2 - 1 + filter_offset
         kronecker_rows = input_columns
     elif mode == 'valid':
         diag_index = kernel_column_number - 1
@@ -175,31 +174,35 @@ def construct_strided_conv2d_matrix(
     size = (np.max(strided_row_indices) + 1,
             np.max(indices[1, :]) + 1)
     strided_matrix = torch.sparse_coo_tensor(
-        strided_indices, strided_values, size=size, dtype=filter.dtype).coalesce()
+        strided_indices, strided_values,
+        size=size, dtype=filter.dtype).coalesce()
 
-    # strided_matrix_2 = convolution_matrix.to_dense()[strided_rows, :].to_sparse()
+    # strided_matrix_2 = convolution_matrix.to_dense()[
+    #   strided_rows, :].to_sparse()
     # diff = np.abs(
-    #      strided_matrix.to_dense().numpy() - strided_matrix_2.to_dense().numpy())
-    # to_plot = np.concatenate([strided_matrix.to_dense(), strided_matrix_2.to_dense(), diff], 1)
+    #      strided_matrix.to_dense().numpy()
+    #      - strided_matrix_2.to_dense().numpy())
+    # to_plot = np.concatenate(
+    #   [strided_matrix.to_dense(), strided_matrix_2.to_dense(), diff], 1)
     # plt.imshow(to_plot)
     # plt.show()
     return strided_matrix
 
 
-def construct_a_2d(wavelet, height: int, width:int,
+def construct_a_2d(wavelet, height: int, width: int,
                    device, dtype=torch.float64):
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype)
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
     ll, lh, hl, hh = dec_filt.squeeze(1)
     a_ll = construct_strided_conv2d_matrix(
-        ll, height, width, mode='full')
+        ll, height, width, mode='same')
     a_lh = construct_strided_conv2d_matrix(
-        lh, height, width, mode='full')
+        lh, height, width, mode='same')
     a_hl = construct_strided_conv2d_matrix(
-        hl, height, width, mode='full')
+        hl, height, width, mode='same')
     a_hh = construct_strided_conv2d_matrix(
-        hh, height, width, mode='full')
+        hh, height, width, mode='same')
     a = torch.cat([a_ll, a_hl, a_lh, a_hh], 0)
     return a
 
@@ -243,9 +246,6 @@ def matrix_fwt_2d(input_signal_2d, wavelet):
     return res_mm_split
 
 
-
-
-
 if __name__ == '__main__':
     import scipy.misc
     import pywt
@@ -253,7 +253,7 @@ if __name__ == '__main__':
 
     # single level db2 - 2d
     face = np.mean(scipy.misc.face()[256:(256+12), 256:(256+12)],
-                        -1).astype(np.float64)
+                   -1).astype(np.float64)
     pt_face = torch.tensor(face)
     wavelet = pywt.Wavelet("db2")
     a = construct_a_2d(wavelet, pt_face.shape[0], pt_face.shape[1],
@@ -266,5 +266,4 @@ if __name__ == '__main__':
     plt.plot(res_mm, '.')
     plt.plot(flat_coeff, '.')
     plt.show()
-
     print('stop')

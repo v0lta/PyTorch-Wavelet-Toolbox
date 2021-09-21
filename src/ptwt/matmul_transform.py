@@ -97,7 +97,7 @@ def orth_via_gram_schmidt(matrix, filt_len):
 
 
 def matrix_wavedec(data, wavelet, level: int = None,
-    boundary:str = 'circular'):
+                   boundary: str = 'circular'):
     """Experimental computation of the sparse matrix fast wavelet transform.
     Args:
         wavelet: A wavelet object.
@@ -117,7 +117,6 @@ def matrix_wavedec(data, wavelet, level: int = None,
         # odd length input
         # print('input length odd, padding a zero on the right')
         data = torch.nn.functional.pad(data, [0, 1])
-
 
     dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
     assert len(dec_lo) == len(dec_hi), "All filters hast have the same length."

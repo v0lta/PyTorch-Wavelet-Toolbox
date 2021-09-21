@@ -32,9 +32,20 @@ def sparse_diag(diagonal: torch.Tensor,
         diag_indices[1] += col_offset
     if col_offset < 0:
         diag_indices[0] += abs(col_offset)
+
+    if torch.max(diag_indices[0]) >= rows:
+        mask = diag_indices[0] < rows
+        diag_indices = diag_indices[:, mask]
+        diagonal = diagonal[mask]
+    if torch.max(diag_indices[1]) >= cols:
+        mask = diag_indices[1] < cols
+        diag_indices = diag_indices[:, mask]
+        diagonal = diagonal[mask]
+
     diag = torch.sparse_coo_tensor(diag_indices, diagonal,
                                    size=(rows, cols),
                                    dtype=diagonal.dtype)
+
     return diag
 
 
