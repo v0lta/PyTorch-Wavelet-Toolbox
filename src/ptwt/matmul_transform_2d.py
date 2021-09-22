@@ -180,12 +180,12 @@ def construct_strided_conv2d_matrix(
         size=size, dtype=filter.dtype).coalesce()
 
     # strided_matrix_2 = convolution_matrix.to_dense()[
-    #   strided_rows, :].to_sparse()
+    #    strided_rows, :].to_sparse()
     # diff = np.abs(
-    #      strided_matrix.to_dense().numpy()
-    #      - strided_matrix_2.to_dense().numpy())
+    #       strided_matrix.to_dense().numpy()
+    #       - strided_matrix_2.to_dense().numpy())
     # to_plot = np.concatenate(
-    #   [strided_matrix.to_dense(), strided_matrix_2.to_dense(), diff], 1)
+    #    [strided_matrix.to_dense(), strided_matrix_2.to_dense(), diff], 1)
     # plt.imshow(to_plot)
     # plt.show()
     return strided_matrix

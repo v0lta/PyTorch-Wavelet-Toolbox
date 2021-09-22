@@ -55,19 +55,20 @@ def test_boundary_transform_1d():
     for data in data_list:
         for wavelet_str in wavelet_list:
             for level in [1, 2]:
-                for boundary in ['gramschmidt', 'circular']: 
+                for boundary in ['gramschmidt', 'circular']:
                     data_torch = torch.from_numpy(data.astype(np.float64))
                     wavelet = pywt.Wavelet(wavelet_str)
                     coeffs, _ = matrix_wavedec(
                         data_torch, wavelet, level=level, boundary=boundary)
                     rec, _ = matrix_waverec(
                         coeffs, wavelet, level=level, boundary=boundary)
-                    rec_pywt = pywt.waverec(pywt.wavedec(data_torch.numpy(), wavelet), wavelet)
+                    rec_pywt = pywt.waverec(
+                        pywt.wavedec(data_torch.numpy(), wavelet), wavelet)
                     error = np.sum(np.abs(rec_pywt - rec.numpy()))
                     print('wavelet: {},'.format(wavelet_str),
-                        'level: {},'.format(level),
-                        'shape: {},'.format(data.shape[-1]),
-                        'error {:2.2e}'.format(error))
+                          'level: {},'.format(level),
+                          'shape: {},'.format(data.shape[-1]),
+                          'error {:2.2e}'.format(error))
                     assert np.allclose(rec.numpy(), rec_pywt, atol=1e-05)
 
 
@@ -134,11 +135,12 @@ def test_conv_matrix_2d():
                 assert np.allclose(res_scipy, res_mm)
 
 
+@pytest.mark.slow
 def test_strided_conv_matrix_2d():
-    """ Test strided convolution matrices with full padding."""
+    """ Test strided convolution matrices with full and valid padding."""
     for filter_shape in [(3, 3), (2, 2), (4, 4), (3, 2), (2, 3)]:
         for size in [(14, 14), (8, 16), (16, 8),
-                     (17, 8), (8, 17), (7, 7)]:
+                     (17, 8), (8, 17), (7, 7), (7, 8), (8, 7)]:
             for mode in ['full', 'valid']:
                 filter = torch.rand(filter_shape)
                 filter = filter.unsqueeze(0).unsqueeze(0)
@@ -182,47 +184,56 @@ def test_strided_conv_matrix_2d():
 
 
 def test_strided_conv_matrix_2d_same():
-    pass
+    """ Test strided conv matrix with same padding. """
+    for filter_shape in [(3, 3), (4, 4), (4, 3), (3, 4)]:
+        for size in [(7, 8), (8, 7), (7, 7), (8, 8), (16, 16),
+                     (8, 16), (16, 8)]:
+            stride = 2
+            filter = torch.rand(filter_shape)
+            filter = filter.unsqueeze(0).unsqueeze(0)
+            face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
+            face = np.mean(face, -1)
+            face = torch.from_numpy(face.astype(np.float32))
+            face = face.unsqueeze(0).unsqueeze(0)
+            padding = get_2d_same_padding(filter_shape, size)
+            face_pad = torch.nn.functional.pad(face, padding)
+            torch_res = torch.nn.functional.conv2d(
+                face_pad, filter.flip(2, 3),
+                stride=stride).squeeze()
+            strided_matrix = construct_strided_conv2d_matrix(
+                filter.squeeze(), face.shape[-2],
+                face.shape[-1], stride=stride, mode='same')
+            res_flat_stride = torch.sparse.mm(
+                strided_matrix, face.T.flatten().unsqueeze(-1))
+            output_shape = torch_res.shape
+            res_mm_stride = np.reshape(
+                res_flat_stride, (output_shape[1], output_shape[0])).T
+            diff_torch = np.mean(np.abs(torch_res.numpy()
+                                        - res_mm_stride.numpy()))
+            print(str(size).center(8), filter_shape, tuple(output_shape),
+                  'torch-error %2.2e' % diff_torch,
+                  np.allclose(torch_res.numpy(), res_mm_stride.numpy()))
+
+            # diff = np.abs(torch_res - res_mm_stride.numpy())
+            # plot = np.concatenate([torch_res.numpy(),
+            #                     res_mm_stride.numpy(),
+            #                     diff], -1)
+            # plt.imshow(plot)
+            # plt.show()
+            # print('stop')
+
+
+def get_2d_same_padding(filter_shape, input_size):
+    height_offset = input_size[0] % 2
+    width_offset = input_size[1] % 2
+    padding = (filter_shape[1] // 2,
+               filter_shape[1] // 2 - 1 + width_offset,
+               filter_shape[0] // 2,
+               filter_shape[0] // 2 - 1 + height_offset)
+    return padding
 
 
 if __name__ == '__main__':
     # test_conv_matrix_2d()
     # test_boundary_filter_analysis_and_synthethis_matrices()
-    # test_strided_conv_matrix_2d()
-    filter_shape = (4, 4)
-    size = (56, 56)
-    filter = torch.rand(filter_shape)
-    filter = filter.unsqueeze(0).unsqueeze(0)
-    face = misc.face()[256:(256+size[0]), 256:(256+size[1])]
-    face = np.mean(face, -1)
-    face = torch.from_numpy(face.astype(np.float32))
-    face = face.unsqueeze(0).unsqueeze(0)
-    padding = ((filter_shape[0]-1) // 2,
-               (filter_shape[0]-1) // 2,
-               (filter_shape[0]-1) // 2,
-               (filter_shape[0]-1) // 2)
-    face_pad = torch.nn.functional.pad(face, padding)
-    torch_res = torch.nn.functional.conv2d(
-        face_pad, filter.flip(2, 3),
-        stride=2).squeeze()
-    strided_matrix = construct_strided_conv2d_matrix(
-        filter.squeeze(), face.shape[-1],
-        face.shape[-1], stride=2, mode='same')
-    res_flat_stride = torch.sparse.mm(
-        strided_matrix, face.T.flatten().unsqueeze(-1))
-    output_shape = torch_res.shape
-    res_mm_stride = np.reshape(
-        res_flat_stride, output_shape).T
-    diff_torch = np.mean(np.abs(torch_res.numpy()
-                                - res_mm_stride.numpy()))
-    print(str(size).center(8), filter_shape,
-          'torch-error %2.2e' % diff_torch,
-          np.allclose(torch_res.numpy(), res_mm_stride.numpy()))
-
-    diff = np.abs(torch_res - res_mm_stride.numpy())
-    plot = np.concatenate([torch_res.numpy(),
-                           res_mm_stride.numpy(),
-                           diff], -1)
-    plt.imshow(plot)
-    plt.show()
-    print('stop')
+    test_strided_conv_matrix_2d_same()
