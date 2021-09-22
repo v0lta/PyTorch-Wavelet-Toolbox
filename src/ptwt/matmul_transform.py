@@ -207,7 +207,8 @@ def clip_and_orthogonalize(matrix, wavelet):
 
 
 def construct_boundary_a(wavelet, length: int,
-    boundary: str='circular', dtype=torch.float64):
+                         boundary: str = 'circular',
+                         dtype=torch.float64):
     """ Construct a boundary-wavelet filter 1d-analysis matrix.
 
     Args:
@@ -231,7 +232,8 @@ def construct_boundary_a(wavelet, length: int,
 
 
 def construct_boundary_s(wavelet, length,
-    boundary: str='circular', dtype=torch.float64):
+                         boundary: str = 'circular',
+                         dtype=torch.float64):
     """ Construct a boundary-wavelet filter 1d-synthesis matarix.
 
     Args:
@@ -255,8 +257,9 @@ def construct_boundary_s(wavelet, length,
         raise ValueError("Unknown boundary treatment")
 
 
-def matrix_waverec(coefficients, wavelet, level: int = None,
-    boundary: str = 'circular'):
+def matrix_waverec(
+        coefficients, wavelet, level: int = None,
+        boundary: str = 'circular'):
     """Experimental matrix based inverse fast wavelet transform.
 
     Args:
@@ -287,7 +290,8 @@ def matrix_waverec(coefficients, wavelet, level: int = None,
     for s in range(1, level + 1):
         if split_lst[-1] < filt_len:
             break
-        sn = construct_boundary_s(wavelet, split_lst[-1], dtype=coefficients.dtype,
+        sn = construct_boundary_s(
+            wavelet, split_lst[-1], dtype=coefficients.dtype,
             boundary=boundary)
         if s > 1:
             sn = cat_sparse_identity_matrix(sn, length)

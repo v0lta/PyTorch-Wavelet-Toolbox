@@ -71,7 +71,7 @@ def construct_conv2d_matrix(filter: torch.tensor,
                             input_rows: int,
                             input_columns: int,
                             mode: str = 'valid') -> torch.Tensor:
-    """ Create a two dimensional convolution matrix.
+    """ Create a two dimensional sparse convolution matrix.
         Convolving with this matrix should be equivalent to
         a call to scipy.signal.convolve2d and a reshape.
 
@@ -80,8 +80,8 @@ def construct_conv2d_matrix(filter: torch.tensor,
             to convolve with.
         input_rows (int): The number of rows in the input matrix.
         input_columns (int): The number of columns in the input matrix.
-        mode: [str] = The desired padding method. Defaults to 'valid'
-            or no padding.
+        mode: [str] = The desired padding method. Options are
+            full, same and valid. Defaults to 'valid' or no padding.
     Returns:
         [torch.sparse.FloatTensor]: A sparse convolution matrix.
     """
@@ -126,6 +126,26 @@ def construct_strided_conv2d_matrix(
         input_columns: int,
         stride: int = 2,
         mode='full'):
+    """ Create a strided sparse two dimensional convolution
+       matrix.
+
+    Args:
+        filter (torch.tensor): The two dimensional convolution filter.
+        input_rows (int): The number of rows in the 2d-input matrix.
+        input_columns (int): The number of columns in the 2d- input matrix.
+        stride (int, optional): The stride between the filter positions.
+            Defaults to 2.
+        mode (str, optional): The convolution type.
+            Options are 'full', 'valid', 'same' and 'sameshift'.
+            Defaults to 'full'.
+
+    Raises:
+        ValueError: Raised if an unknown convolution string is
+            provided.
+
+    Returns:
+        [torch.Tensor]: The sparse convolution tensor.
+    """
     filter_shape = filter.shape
     convolution_matrix = construct_conv2d_matrix(
         filter,
@@ -287,6 +307,10 @@ def matrix_fwt_2d(input_signal_2d, wavelet):
     return res_mm_split
 
 
+def matrix_ifwt_2d(input_coefficients, wavelet):
+    pass
+
+
 if __name__ == '__main__':
     import scipy.misc
     import pywt
@@ -305,7 +329,7 @@ if __name__ == '__main__':
     plt.figure()
     plt.imshow(test_inv)
     plt.title('aa')
-    test_eye = torch.sparse.mm(s,a)
+    test_eye = torch.sparse.mm(s, a)
     plt.figure()
     plt.imshow(test_eye.to_dense())
     plt.title('sa')
@@ -315,7 +339,7 @@ if __name__ == '__main__':
     res_coeff = wavedec2(pt_face.unsqueeze(0).unsqueeze(0), wavelet, level=1)
     flat_coeff = torch.cat(flatten_2d_coeff_lst(res_coeff), -1)
 
-    plt.plot(res_mm, '.')
-    plt.plot(flat_coeff, '.')
+    plt.plot(res_mm, 'o')
+    plt.plot(flat_coeff, '*')
     plt.show()
     print('stop')
