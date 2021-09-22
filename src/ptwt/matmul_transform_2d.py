@@ -2,7 +2,7 @@
 
 import torch
 import numpy as np
-from torch._C import dtype
+
 from src.ptwt.sparse_math import (
     sparse_kron,
     sparse_diag
@@ -197,21 +197,51 @@ def construct_a_2d(wavelet, height: int, width: int,
         wavelet, flip=False, device=device, dtype=dtype)
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
     ll, lh, hl, hh = dec_filt.squeeze(1)
-    a_ll = construct_strided_conv2d_matrix(
-        ll, height, width, mode='same')
-    a_lh = construct_strided_conv2d_matrix(
-        lh, height, width, mode='same')
-    a_hl = construct_strided_conv2d_matrix(
-        hl, height, width, mode='same')
-    a_hh = construct_strided_conv2d_matrix(
-        hh, height, width, mode='same')
-    a = torch.cat([a_ll, a_hl, a_lh, a_hh], 0)
-    return a
+    analysis_ll = construct_strided_conv2d_matrix(
+        ll, height, width, mode='valid')
+    analysis_lh = construct_strided_conv2d_matrix(
+        lh, height, width, mode='valid')
+    analysis_hl = construct_strided_conv2d_matrix(
+        hl, height, width, mode='valid')
+    analysis_hh = construct_strided_conv2d_matrix(
+        hh, height, width, mode='valid')
+    analysis = torch.cat([analysis_ll, analysis_hl,
+                          analysis_lh, analysis_hh], 0)
+
+    # a_ll_valid = construct_strided_conv2d_matrix(
+    #    ll, height, width, mode='valid')
+
+    return analysis
+
+
+def construct_s_2d(wavelet, height: int, width: int,
+                   device, dtype=torch.float64):
+    _, _, rec_lo, rec_hi = get_filter_tensors(
+        wavelet, flip=True, device=device, dtype=dtype)
+    dec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
+    ll, lh, hl, hh = dec_filt.squeeze(1)
+    synthesis_ll = construct_strided_conv2d_matrix(
+        ll, height, width, mode='valid')
+    synthesis_lh = construct_strided_conv2d_matrix(
+        lh, height, width, mode='valid')
+    synthesis_hl = construct_strided_conv2d_matrix(
+        hl, height, width, mode='valid')
+    synthesis_hh = construct_strided_conv2d_matrix(
+        hh, height, width, mode='valid')
+    synthesis = torch.cat([synthesis_ll, synthesis_hl,
+                           synthesis_lh, synthesis_hh], 0).coalesce()
+    indices = synthesis.indices()
+    shape = synthesis.shape
+    transpose_indices = torch.stack([indices[1, :], indices[0, :]])
+    transpose_synthesis = torch.sparse_coo_tensor(transpose_indices,
+                                                  synthesis.values(),
+                                                  size=(shape[1], shape[0]))
+    return transpose_synthesis
 
 
 def construct_boundary_a2d(
-    wavelet, height: int, width:int,
-    device, dtype=torch.float64):
+        wavelet, height: int, width: int,
+        device, dtype=torch.float64):
 
     a = construct_a_2d(
         wavelet, height, width, device, dtype=dtype)
@@ -254,12 +284,16 @@ if __name__ == '__main__':
     from src.ptwt.conv_transform import wavedec2
 
     # single level db2 - 2d
-    face = np.mean(scipy.misc.face()[256:(256+12), 256:(256+12)],
+    face = np.mean(scipy.misc.face()[256:(256+8), 256:(256+8)],
                    -1).astype(np.float64)
     pt_face = torch.tensor(face)
-    wavelet = pywt.Wavelet("db2")
+    wavelet = pywt.Wavelet("haar")
     a = construct_a_2d(wavelet, pt_face.shape[0], pt_face.shape[1],
                        device=pt_face.device, dtype=pt_face.dtype)
+    s = construct_s_2d(wavelet, pt_face.shape[0], pt_face.shape[1],
+                       device=pt_face.device, dtype=pt_face.dtype)
+    test_eye = torch.sparse.mm(a,s)
+    plt.imshow(test_eye.to_dense()); plt.show()
     res_mm = torch.sparse.mm(a, pt_face.flatten().unsqueeze(-1))
     res_mm_split = matrix_fwt_2d(pt_face, wavelet)
     res_coeff = wavedec2(pt_face.unsqueeze(0).unsqueeze(0), wavelet, level=1)
