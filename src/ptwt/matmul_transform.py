@@ -1,12 +1,13 @@
 # Created by moritz (wolter@cs.uni-bonn.de) at 14.04.20
 """
-This module implements matrix based fwt and ifwt 
+This module implements matrix based fwt and ifwt
 based on the description in Strang Nguyen (p. 32).
-As well as the description of boundary filters in 
+As well as the description of boundary filters in
 "Ripples in Mathematics" section 10.3 .
 """
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
 
 
 def cat_sparse_identity_matrix(sparse_matrix, new_length):
@@ -14,7 +15,7 @@ def cat_sparse_identity_matrix(sparse_matrix, new_length):
     Args:
         sparse_matrix: The input matrix.
         new_length: The length up to which the diagonal should be elongated.
-    
+
     Returns:
         Square [input, eye] matrix of size [new_length, new_length]
     """
@@ -22,13 +23,17 @@ def cat_sparse_identity_matrix(sparse_matrix, new_length):
     assert (
         sparse_matrix.shape[0] == sparse_matrix.shape[1]
     ), "wavelet matrices are square"
-    assert new_length > sparse_matrix.shape[0], "cant add negatively many entries."
+    assert new_length > sparse_matrix.shape[0],\
+        "cant add negatively many entries."
     x = torch.arange(sparse_matrix.shape[0], new_length)
     y = torch.arange(sparse_matrix.shape[0], new_length)
     extra_indices = torch.stack([x, y])
-    extra_values = torch.ones([new_length - sparse_matrix.shape[0]], dtype=sparse_matrix.dtype)
-    new_indices = torch.cat([sparse_matrix.coalesce().indices(), extra_indices], -1)
-    new_values = torch.cat([sparse_matrix.coalesce().values(), extra_values], -1)
+    extra_values = torch.ones(
+        [new_length - sparse_matrix.shape[0]], dtype=sparse_matrix.dtype)
+    new_indices = torch.cat(
+        [sparse_matrix.coalesce().indices(), extra_indices], -1)
+    new_values = torch.cat(
+        [sparse_matrix.coalesce().values(), extra_values], -1)
     new_matrix = torch.sparse.FloatTensor(new_indices, new_values)
     return new_matrix
 
@@ -71,15 +76,17 @@ def construct_a(wavelet, length, wrap=True, dtype=torch.float64):
 
 
 def orth_via_gram_schmidt(matrix, filt_len):
+    # TODO: Write sparse version!!
     row_count = matrix.shape[0]
     to_orthogonalize = []
     done = []
     for current_row in range(row_count):
-        non_zero_elements = torch.sum((matrix[current_row, :] != 0).type(torch.float32))
+        non_zero_elements = torch.sum(
+            (matrix[current_row, :] != 0).type(torch.float32))
         if non_zero_elements < filt_len:
             to_orthogonalize.append(current_row)
         # else:
-        #    done.append(current_row)
+        #     done.append(current_row)
 
     # loop over the rows we want to orthogonalize
     for row_no_to_ortho in to_orthogonalize:

@@ -41,7 +41,7 @@ def construct_conv_matrix(filter: torch.tensor,
     if mode == 'full':
         start_row = 0
         stop_row = input_columns + filter_length - 1
-    elif mode == 'same':
+    elif mode == 'same' or mode == 'sameshift':
         filter_offset = filter_length % 2
         # signal_offset = input_columns % 2
         start_row = filter_length // 2 - 1 + filter_offset
@@ -96,7 +96,7 @@ def construct_conv2d_matrix(filter: torch.tensor,
     if mode == 'full':
         diag_index = 0
         kronecker_rows = input_columns + kernel_column_number - 1
-    elif mode == 'same':
+    elif mode == 'same' or mode == 'sameshift':
         filter_offset = kernel_column_number % 2
         diag_index = kernel_column_number // 2 - 1 + filter_offset
         kronecker_rows = input_columns
@@ -137,7 +137,7 @@ def construct_strided_conv2d_matrix(
     elif mode == 'valid':
         output_rows = input_rows - filter_shape[0] + 1
         output_columns = input_columns - filter_shape[1] + 1
-    elif mode == 'same':
+    elif mode == 'same' or mode == 'sameshift':
         output_rows = input_rows
         output_columns = input_columns
     else:
@@ -147,7 +147,11 @@ def construct_strided_conv2d_matrix(
     element_numbers = np.arange(output_elements).reshape(
         output_columns, output_rows)
 
-    strided_rows = element_numbers[::stride, ::stride]
+    start = 0
+    if mode == 'sameshift':
+        start += 1
+
+    strided_rows = element_numbers[start::stride, start::stride]
     strided_rows = strided_rows.flatten()
 
     indices = convolution_matrix.coalesce().indices().numpy()
@@ -156,7 +160,7 @@ def construct_strided_conv2d_matrix(
     strided_row_indices = []
     non_zero_row_entries = indices[0, :]
     index_counter = 0
-    previous_entry = 0
+    previous_entry = strided_rows[0]
     for entry in non_zero_row_entries:
         next_hits = strided_rows[index_counter:(index_counter+2)]
         if entry in next_hits:
@@ -164,9 +168,9 @@ def construct_strided_conv2d_matrix(
             if previous_entry != entry:
                 index_counter += 1
             strided_row_indices.append(index_counter)
+            previous_entry = entry
         else:
             mask.append(False)
-        previous_entry = entry
     mask = np.array(mask)
 
     strided_row_indices = np.array(strided_row_indices)
@@ -198,19 +202,15 @@ def construct_a_2d(wavelet, height: int, width: int,
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
     ll, lh, hl, hh = dec_filt.squeeze(1)
     analysis_ll = construct_strided_conv2d_matrix(
-        ll, height, width, mode='valid')
+        ll, height, width, mode='sameshift')
     analysis_lh = construct_strided_conv2d_matrix(
-        lh, height, width, mode='valid')
+        lh, height, width, mode='sameshift')
     analysis_hl = construct_strided_conv2d_matrix(
-        hl, height, width, mode='valid')
+        hl, height, width, mode='sameshift')
     analysis_hh = construct_strided_conv2d_matrix(
-        hh, height, width, mode='valid')
+        hh, height, width, mode='sameshift')
     analysis = torch.cat([analysis_ll, analysis_hl,
                           analysis_lh, analysis_hh], 0)
-
-    # a_ll_valid = construct_strided_conv2d_matrix(
-    #    ll, height, width, mode='valid')
-
     return analysis
 
 
@@ -221,13 +221,13 @@ def construct_s_2d(wavelet, height: int, width: int,
     dec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
     ll, lh, hl, hh = dec_filt.squeeze(1)
     synthesis_ll = construct_strided_conv2d_matrix(
-        ll, height, width, mode='valid')
+        ll, height, width, mode='sameshift')
     synthesis_lh = construct_strided_conv2d_matrix(
-        lh, height, width, mode='valid')
+        lh, height, width, mode='sameshift')
     synthesis_hl = construct_strided_conv2d_matrix(
-        hl, height, width, mode='valid')
+        hl, height, width, mode='sameshift')
     synthesis_hh = construct_strided_conv2d_matrix(
-        hh, height, width, mode='valid')
+        hh, height, width, mode='sameshift')
     synthesis = torch.cat([synthesis_ll, synthesis_hl,
                            synthesis_lh, synthesis_hh], 0).coalesce()
     indices = synthesis.indices()
@@ -242,12 +242,21 @@ def construct_s_2d(wavelet, height: int, width: int,
 def construct_boundary_a2d(
         wavelet, height: int, width: int,
         device, dtype=torch.float64):
-
     a = construct_a_2d(
         wavelet, height, width, device, dtype=dtype)
-
-    orth_a = orth_via_gram_schmidt(a.to_dense(), len(wavelet))
+    orth_a = orth_via_gram_schmidt(
+        a.to_dense(), len(wavelet)*len(wavelet))
     return orth_a
+
+
+def construct_boundary_s2d(
+        wavelet, height: int, width: int,
+        device, dtype=torch.float64):
+    s = construct_s_2d(
+        wavelet, height, width, device, dtype=dtype)
+    orth_s = orth_via_gram_schmidt(
+        s.to_dense().T, len(wavelet)*len(wavelet)).to_dense().T.to_sparse()
+    return orth_s
 
 
 def split_coeff_vector(coeff_vector):
@@ -261,8 +270,8 @@ def split_and_reshape_coeff_vector(coeff_vector, input_shape, filter_shape):
     reshape_list = []
     for split in split_coeffs:
         reshape_list.append(torch.reshape(
-             split, [(input_shape[1] - (filter_shape[1])) // 2 + 1,
-                     (input_shape[0] - (filter_shape[0])) // 2 + 1])
+             split, [(input_shape[1]) // 2,
+                     (input_shape[0]) // 2])
         )
     return reshape_list
 
@@ -284,16 +293,23 @@ if __name__ == '__main__':
     from src.ptwt.conv_transform import wavedec2
 
     # single level db2 - 2d
-    face = np.mean(scipy.misc.face()[256:(256+8), 256:(256+8)],
+    face = np.mean(scipy.misc.face()[256:(256+32), 256:(256+32)],
                    -1).astype(np.float64)
     pt_face = torch.tensor(face)
-    wavelet = pywt.Wavelet("haar")
-    a = construct_a_2d(wavelet, pt_face.shape[0], pt_face.shape[1],
-                       device=pt_face.device, dtype=pt_face.dtype)
-    s = construct_s_2d(wavelet, pt_face.shape[0], pt_face.shape[1],
-                       device=pt_face.device, dtype=pt_face.dtype)
-    test_eye = torch.sparse.mm(a,s)
-    plt.imshow(test_eye.to_dense()); plt.show()
+    wavelet = pywt.Wavelet("db2")
+    a = construct_boundary_a2d(wavelet, pt_face.shape[0], pt_face.shape[1],
+                               device=pt_face.device, dtype=pt_face.dtype)
+    s = construct_boundary_s2d(wavelet, pt_face.shape[0], pt_face.shape[1],
+                               device=pt_face.device, dtype=pt_face.dtype)
+    test_inv = torch.mm(a.to_dense().T, a.to_dense())
+    plt.figure()
+    plt.imshow(test_inv)
+    plt.title('aa')
+    test_eye = torch.sparse.mm(s,a)
+    plt.figure()
+    plt.imshow(test_eye.to_dense())
+    plt.title('sa')
+    plt.show()
     res_mm = torch.sparse.mm(a, pt_face.flatten().unsqueeze(-1))
     res_mm_split = matrix_fwt_2d(pt_face, wavelet)
     res_coeff = wavedec2(pt_face.unsqueeze(0).unsqueeze(0), wavelet, level=1)

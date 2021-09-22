@@ -82,7 +82,7 @@ def test_conv_matrix():
     # test_filters = [torch.tensor([1., 2, 3, 4]), torch.tensor([1., 2, 3])]
     # input_signals = [torch.tensor([1., 2, 3, 4, 5, 6, 7, 8, 9]),
     #                  torch.tensor([1., 2, 3, 4, 5, 6, 7, 8])]
-    test_filters = [torch.rand([3]), torch.rand([4])]
+    test_filters = [torch.rand([2]), torch.rand([3]), torch.rand([4])]
     input_signals = [torch.rand([8]), torch.rand([9])]
     for h in test_filters:
         for x in input_signals:
@@ -107,7 +107,7 @@ def test_conv_matrix_2d():
     """ Test the validity of the 2d convolution matrix code.
         It should be equivalent to signal convolve2d.
     """
-    for filter_shape in [(3, 3), (3, 2), (2, 3), (5, 3), (3, 5),
+    for filter_shape in [(2, 2), (3, 3), (3, 2), (2, 3), (5, 3), (3, 5),
                          (2, 5), (5, 2)]:
         for size in [(5, 5), (16, 16), (8, 16), (16, 8), (16, 7), (7, 16),
                      (15, 15)]:
@@ -234,6 +234,7 @@ def get_2d_same_padding(filter_shape, input_size):
 
 
 if __name__ == '__main__':
-    # test_conv_matrix_2d()
-    # test_boundary_filter_analysis_and_synthethis_matrices()
-    test_strided_conv_matrix_2d_same()
+    test_boundary_filter_analysis_and_synthethis_matrices()
+    test_conv_matrix()
+    test_conv_matrix_2d()
+    # test_strided_conv_matrix_2d_same()
