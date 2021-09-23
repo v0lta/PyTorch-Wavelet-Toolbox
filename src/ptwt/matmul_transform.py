@@ -126,9 +126,9 @@ def matrix_wavedec(data, wavelet, level: int = None,
         data = torch.nn.functional.pad(data, [0, 1])
 
     dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
-    assert len(dec_lo) == len(dec_hi), "All filters hast have the same length."
-    assert len(dec_hi) == len(rec_lo), "All filters hast have the same length."
-    assert len(rec_lo) == len(rec_hi), "All filters hast have the same length."
+    assert len(dec_lo) == len(dec_hi), "All filters must have the same length."
+    assert len(dec_hi) == len(rec_lo), "All filters must have the same length."
+    assert len(rec_lo) == len(rec_hi), "All filters must have the same length."
     filt_len = len(dec_lo)
 
     length = data.shape[1]

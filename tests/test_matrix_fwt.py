@@ -133,7 +133,8 @@ def test_fwt_ifwt_mackey_haar():
     test_lst = []
     for test_no in range(9):
         test_lst.append(
-            np.sum(np.abs(coeffs_max[test_no] - coeffs_mat_max[test_no].T.numpy()))
+            np.sum(np.abs(coeffs_max[test_no]
+                          - coeffs_mat_max[test_no].T.numpy()))
             < 0.001
         )
     print(test_lst)
@@ -141,7 +142,8 @@ def test_fwt_ifwt_mackey_haar():
     print("time_sparse_wt", time_sparse_fwt)
 
     # test the inverse fwt.
-    reconstructed_data, ifwt_mat_lst = matrix_waverec(coeffs_mat_max, wavelet, 9)
+    reconstructed_data, ifwt_mat_lst = matrix_waverec(
+        coeffs_mat_max, wavelet, 9)
     err1 = torch.mean(torch.abs(pt_data - reconstructed_data))
     print("abs ifwt reconstruction error", err1)
     assert err1 < 1e-6

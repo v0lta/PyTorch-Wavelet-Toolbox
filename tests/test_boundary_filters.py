@@ -6,23 +6,35 @@ import numpy as np
 import scipy.signal
 from scipy import misc
 import matplotlib.pyplot as plt
-from torch._C import dtype
-from torch.autograd import backward
 
 from src.ptwt.matmul_transform import (
     construct_boundary_a,
     construct_boundary_s,
     matrix_wavedec,
-    matrix_waverec
+    matrix_waverec,
 )
+
+from src.ptwt.conv_transform import flatten_2d_coeff_lst
+
 
 from src.ptwt.matmul_transform_2d import (
     construct_conv_matrix,
     construct_conv2d_matrix,
-    construct_strided_conv2d_matrix
+    construct_strided_conv2d_matrix,
+    construct_boundary_a2d,
+    construct_boundary_s2d,
+    MatrixFWT2d
 )
 
-from src.ptwt.mackey_glass import MackeyGenerator
+
+def _get_2d_same_padding(filter_shape, input_size):
+    height_offset = input_size[0] % 2
+    width_offset = input_size[1] % 2
+    padding = (filter_shape[1] // 2,
+               filter_shape[1] // 2 - 1 + width_offset,
+               filter_shape[0] // 2,
+               filter_shape[0] // 2 - 1 + height_offset)
+    return padding
 
 
 @pytest.mark.slow
@@ -195,7 +207,7 @@ def test_strided_conv_matrix_2d_same():
             face = np.mean(face, -1)
             face = torch.from_numpy(face.astype(np.float32))
             face = face.unsqueeze(0).unsqueeze(0)
-            padding = get_2d_same_padding(filter_shape, size)
+            padding = _get_2d_same_padding(filter_shape, size)
             face_pad = torch.nn.functional.pad(face, padding)
             torch_res = torch.nn.functional.conv2d(
                 face_pad, filter.flip(2, 3),
@@ -214,23 +226,54 @@ def test_strided_conv_matrix_2d_same():
                   'torch-error %2.2e' % diff_torch,
                   np.allclose(torch_res.numpy(), res_mm_stride.numpy()))
 
-            # diff = np.abs(torch_res - res_mm_stride.numpy())
-            # plot = np.concatenate([torch_res.numpy(),
-            #                     res_mm_stride.numpy(),
-            #                     diff], -1)
-            # plt.imshow(plot)
-            # plt.show()
-            # print('stop')
+
+def test_analysis_synthesis_matrices():
+    # test the 2d analysis and synthesis matrices for various wavelets.
+    for size in [(16, 16), (16, 8), (8, 16)]:
+        for wavelet_str in ['db1', 'db2', 'db3', 'db4', 'db5']:
+            wavelet = pywt.Wavelet(wavelet_str)
+            a = construct_boundary_a2d(wavelet, size[0], size[1],
+                                       device=torch.device('cpu'),
+                                       dtype=torch.float64)
+            s = construct_boundary_s2d(wavelet, size[0], size[1],
+                                       device=torch.device('cpu'),
+                                       dtype=torch.float64)
+            test_inv = torch.sparse.mm(s, a)
+            assert test_inv.shape[0] == test_inv.shape[1], \
+                'the diagonal matrix must be square.'
+            test_eye = torch.eye(test_inv.shape[0])
+            err_mat = test_eye - test_inv
+            err = torch.sum(torch.abs(err_mat.flatten()))
+            print(size, wavelet_str, err.item(),
+                  np.allclose(test_inv.to_dense().numpy(), test_eye.numpy()))
 
 
-def get_2d_same_padding(filter_shape, input_size):
-    height_offset = input_size[0] % 2
-    width_offset = input_size[1] % 2
-    padding = (filter_shape[1] // 2,
-               filter_shape[1] // 2 - 1 + width_offset,
-               filter_shape[0] // 2,
-               filter_shape[0] // 2 - 1 + height_offset)
-    return padding
+@pytest.mark.slow
+def test_matrix_analysis_fwt_2d_haar():
+    """ Test the fwt-2d matrix-haar transform,
+        the coefficients should be equal to the pywt result. """
+
+    for size in ((15, 16), (16, 15), (16, 16)):
+        for level in (1, 2, 3):
+            face = np.mean(scipy.misc.face()[256:(256+size[0]),
+                                             256:(256+size[1])],
+                           -1).astype(np.float64)
+            pt_face = torch.tensor(face)
+            wavelet = pywt.Wavelet("haar")
+            matrixfwt = MatrixFWT2d(wavelet, level=level)
+            mat_coeff = matrixfwt(pt_face)
+            conv_coeff = pywt.wavedec2(face, wavelet, level=level,
+                                       mode='zero')
+            flat_mat_coeff = torch.cat(flatten_2d_coeff_lst(mat_coeff), -1)
+            flat_conv_coeff = np.concatenate(
+                flatten_2d_coeff_lst(conv_coeff), -1)
+
+            err = np.sum(np.abs(flat_mat_coeff.numpy() - flat_conv_coeff))
+            test = np.allclose(flat_mat_coeff.numpy(), flat_conv_coeff)
+            test2 = np.allclose(mat_coeff[0].numpy(), conv_coeff[0])
+            test3 = np.allclose(mat_coeff[1][0].numpy(), conv_coeff[1][0])
+            print(size, level, err, test, test2, test3)
+            assert test and test2 and test3
 
 
 if __name__ == '__main__':

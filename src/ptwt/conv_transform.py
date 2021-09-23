@@ -116,7 +116,18 @@ def outer(a, b):
     return a_mul * b_mul
 
 
-def flatten_2d_coeff_lst(coeff_lst_2d, flatten_tensors=True):
+def flatten_2d_coeff_lst(coeff_lst_2d: list,
+                         flatten_tensors: bool = True) -> list:
+    """ Flattens a list of lists into a single list
+
+    Args:
+        coeff_lst_2d (list): A pywt-style coeffcient list.
+        flatten_tensors (bool, optional): If true,
+             2d tensors are flattened. Defaults to True.
+
+    Returns:
+        [list]: A single 1-d list with all original elements.
+    """
     flat_coeff_lst = []
     for coeff in coeff_lst_2d:
         if type(coeff) is tuple:

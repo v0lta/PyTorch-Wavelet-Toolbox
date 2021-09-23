@@ -12,7 +12,10 @@ from src.ptwt.conv_transform import (
     construct_2d_filt,
     get_filter_tensors
 )
-from src.ptwt.matmul_transform import orth_via_gram_schmidt
+from src.ptwt.matmul_transform import (
+    orth_via_gram_schmidt,
+    cat_sparse_identity_matrix
+)
 
 import matplotlib.pyplot as plt
 
@@ -203,15 +206,6 @@ def construct_strided_conv2d_matrix(
         strided_indices, strided_values,
         size=size, dtype=filter.dtype).coalesce()
 
-    # strided_matrix_2 = convolution_matrix.to_dense()[
-    #    strided_rows, :].to_sparse()
-    # diff = np.abs(
-    #       strided_matrix.to_dense().numpy()
-    #       - strided_matrix_2.to_dense().numpy())
-    # to_plot = np.concatenate(
-    #    [strided_matrix.to_dense(), strided_matrix_2.to_dense(), diff], 1)
-    # plt.imshow(to_plot)
-    # plt.show()
     return strided_matrix
 
 
@@ -261,7 +255,25 @@ def construct_s_2d(wavelet, height: int, width: int,
 
 def construct_boundary_a2d(
         wavelet, height: int, width: int,
-        device, dtype=torch.float64):
+        device: torch.device, dtype: torch.dtype = torch.float64):
+    """ Construct a boundary fwt matrix for the input wavelet.
+
+    Args:
+        wavelet: The input wavelet, either a
+            pywt.Wavelet or a ptwt.WaveletFilter.
+        height (int): The height of the input matrix.
+            Should be divisible by two.
+        width (int): The width of the input matrix.
+            Should be divisible by two.
+        device (torch.device): Where to place the matrix. Either on
+            the CPU or GPU.
+        dtype ([type], optional): The desired data-type for the matrix.
+            Defaults to torch.float64.
+
+    Returns:
+        [torch.Tensor]: A sparse fwt matrix, with orthogonalized boundary
+            wavelets.
+    """
     a = construct_a_2d(
         wavelet, height, width, device, dtype=dtype)
     orth_a = orth_via_gram_schmidt(
@@ -279,67 +291,76 @@ def construct_boundary_s2d(
     return orth_s
 
 
-def split_coeff_vector(coeff_vector):
-    vector_length = len(coeff_vector)
-    split_coeffs = torch.split(coeff_vector, vector_length // 4)
-    return split_coeffs
+class MatrixFWT2d(object):
+    def __init__(self, wavelet, level):
+        dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
+        assert len(dec_lo) == len(dec_hi),\
+            "All filters must have the same length."
+        assert len(dec_hi) == len(rec_lo),\
+            "All filters must have the same length."
+        assert len(rec_lo) == len(rec_hi),\
+            "All filters must have the same length."
+        self.level = level
+        self.wavelet = wavelet
+        self.fwt_matrix = None
 
+    def __call__(self, input_signal):
+        filt_len = len(self.wavelet)
 
-def split_and_reshape_coeff_vector(coeff_vector, input_shape, filter_shape):
-    split_coeffs = split_coeff_vector(coeff_vector)
-    reshape_list = []
-    for split in split_coeffs:
-        reshape_list.append(torch.reshape(
-             split, [(input_shape[1]) // 2,
-                     (input_shape[0]) // 2])
-        )
-    return reshape_list
+        if input_signal.shape[-1] % 2 != 0:
+            # odd length input
+            # print('input length odd, padding a zero on the right')
+            input_signal = torch.nn.functional.pad(input_signal, [0, 1])
+        if input_signal.shape[-2] % 2 != 0:
+            # odd length input
+            # print('input length odd, padding a zero on the right')
+            input_signal = torch.nn.functional.pad(
+                input_signal, [0, 0, 0, 1])
+        height, width = input_signal.shape
 
+        if self.fwt_matrix is None:
+            size_list = [(height, width)]
+            fwt_mat_list = []
+            if self.level is None:
+                self.level = int(np.min(
+                    [np.log2(height), np.log2(width)]))
+            else:
+                assert self.level > 0, "level must be a positive integer."
 
-def matrix_fwt_2d(input_signal_2d, wavelet):
-    height, width = input_signal_2d.shape
-    a = construct_boundary_a2d(wavelet, height, width,
-                               device=input_signal_2d.device,
-                               dtype=input_signal_2d.dtype)
-    res_mm = torch.sparse.mm(a, input_signal_2d.flatten().unsqueeze(-1))
-    res_mm_split = split_and_reshape_coeff_vector(
-        res_mm, [height, width], [len(wavelet), len(wavelet)])
-    return res_mm_split
+            for s in range(1, self.level + 1):
+                current_height, current_width = size_list[-1]
+                if current_height < filt_len or current_width < filt_len:
+                    break
+                analysis_matrix = construct_boundary_a2d(
+                    self.wavelet, current_height, current_width,
+                    dtype=input_signal.dtype, device=input_signal.device)
+                if s > 1:
+                    analysis_matrix = cat_sparse_identity_matrix(
+                        analysis_matrix, height*width)
+                fwt_mat_list.append(analysis_matrix)
+                size_list.append((height // np.power(2, s),
+                                  width // np.power(2, s)))
 
+            self.fwt_matrix = fwt_mat_list[0]
+            for fwt_mat in fwt_mat_list[1:]:
+                self.fwt_matrix = torch.sparse.mm(fwt_mat, self.fwt_matrix)
+            self.size_list = size_list
 
-def matrix_ifwt_2d(input_coefficients, wavelet):
-    pass
+        coefficients = torch.sparse.mm(
+            self.fwt_matrix, input_signal.flatten().unsqueeze(-1))
+
+        split_list = []
+        next_to_split = coefficients
+        for size in size_list[1:]:
+            split_size = int(np.prod(size))
+            four_split = torch.split(next_to_split, split_size)
+            next_to_split = four_split[0]
+            reshaped = tuple(torch.reshape(el, size) for el in four_split[1:])
+            split_list.append(reshaped)
+        split_list.append(torch.reshape(next_to_split, size))
+
+        return split_list[::-1]
 
 
 if __name__ == '__main__':
-    import scipy.misc
-    import pywt
-    from src.ptwt.conv_transform import wavedec2
-
-    # single level db2 - 2d
-    face = np.mean(scipy.misc.face()[256:(256+32), 256:(256+32)],
-                   -1).astype(np.float64)
-    pt_face = torch.tensor(face)
-    wavelet = pywt.Wavelet("db2")
-    a = construct_boundary_a2d(wavelet, pt_face.shape[0], pt_face.shape[1],
-                               device=pt_face.device, dtype=pt_face.dtype)
-    s = construct_boundary_s2d(wavelet, pt_face.shape[0], pt_face.shape[1],
-                               device=pt_face.device, dtype=pt_face.dtype)
-    test_inv = torch.mm(a.to_dense().T, a.to_dense())
-    plt.figure()
-    plt.imshow(test_inv)
-    plt.title('aa')
-    test_eye = torch.sparse.mm(s, a)
-    plt.figure()
-    plt.imshow(test_eye.to_dense())
-    plt.title('sa')
-    plt.show()
-    res_mm = torch.sparse.mm(a, pt_face.flatten().unsqueeze(-1))
-    res_mm_split = matrix_fwt_2d(pt_face, wavelet)
-    res_coeff = wavedec2(pt_face.unsqueeze(0).unsqueeze(0), wavelet, level=1)
-    flat_coeff = torch.cat(flatten_2d_coeff_lst(res_coeff), -1)
-
-    plt.plot(res_mm, 'o')
-    plt.plot(flat_coeff, '*')
-    plt.show()
-    print('stop')
+    print('done')
