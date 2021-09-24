@@ -282,7 +282,7 @@ def test_boundary_matrix_fwt_2d():
             for size in ((16,16), (15,15), (16,15), (15,16)):
                 face = np.mean(scipy.misc.face()[256:(256+size[0]),
                                                  256:(256+size[1])],
-                            -1).astype(np.float64)
+                               -1).astype(np.float64)
                 pt_face = torch.tensor(face)
                 wavelet = pywt.Wavelet(wavelet_str)
                 matrixfwt = MatrixWavedec2d(wavelet, level=level)
@@ -306,6 +306,6 @@ def test_boundary_matrix_fwt_2d():
 
 if __name__ == '__main__':
     test_boundary_filter_analysis_and_synthethis_matrices()
-    test_conv_matrix()
-    test_conv_matrix_2d()
+    # test_conv_matrix()
+    # test_conv_matrix_2d()
     # test_strided_conv_matrix_2d_same()

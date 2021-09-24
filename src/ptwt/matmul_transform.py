@@ -91,10 +91,10 @@ def orth_via_gram_schmidt(matrix, filt_len):
 
     # loop over the rows we want to orthogonalize
     for row_no_to_ortho in to_orthogonalize:
-        current_row = matrix[row_no_to_ortho, :]
+        current_row = matrix.select(0, row_no_to_ortho) # matrix[row_no_to_ortho, :]
         sum = torch.zeros(current_row.shape, dtype=matrix.dtype)
         for done_row_no in done:
-            done_row = matrix[done_row_no, :]
+            done_row = matrix.select(0, done_row_no) # matrix[done_row_no, :]
             non_orthogonal = torch.sum(current_row*done_row)
             sum += (non_orthogonal)*done_row
         orthogonal_row = current_row - sum
