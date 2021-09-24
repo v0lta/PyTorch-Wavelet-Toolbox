@@ -286,6 +286,7 @@ def construct_boundary_s2d(
         device, dtype=torch.float64):
     s = construct_s_2d(
         wavelet, height, width, device, dtype=dtype)
+    # TODO: Use only the sparse format!!
     orth_s = orth_via_gram_schmidt(
         s.to_dense().T, len(wavelet)*len(wavelet)).to_dense().T.to_sparse()
     return orth_s
@@ -419,14 +420,12 @@ class MatrixWaverec2d(object):
 
 
 
-
-
 if __name__ == '__main__':
     import scipy
     from scipy import misc
     import pywt
     size = 64, 64
-    level = 4
+    level = 3
     wavelet_str = 'db3'
     face = np.mean(scipy.misc.face()[256:(256+size[0]),
                                      256:(256+size[1])],

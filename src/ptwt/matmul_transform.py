@@ -82,7 +82,8 @@ def orth_via_gram_schmidt(matrix, filt_len):
     done = []
     for current_row in range(row_count):
         non_zero_elements = torch.sum(
-            (matrix[current_row, :] != 0).type(torch.float32))
+            (matrix.select(0, current_row) != 0).type(torch.float32))
+        # non_zero_elements = len(matrix.select(0, current_row).coalesce().values())
         if non_zero_elements < filt_len:
             to_orthogonalize.append(current_row)
         # else:

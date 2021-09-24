@@ -5,7 +5,16 @@ import matplotlib.pyplot as plt
 
 def sparse_kron(sparse_tensor_a: torch.Tensor,
                 sparse_tensor_b: torch.Tensor) -> torch.Tensor:
-    """ A sparse kronecker product."""
+    """ A sparse kronecker product. As defined at:
+        https://en.wikipedia.org/wiki/Kronecker_product
+
+    Args:
+        sparse_tensor_a (torch.Tensor): Sparse 2d-Tensor a of shape [m, n].
+        sparse_tensor_b (torch.Tensor): Sparse 2d-Tensor b of shape [p, q].
+
+    Returns:
+        torch.Tensor: The resulting [mp, nq] tensor.
+    """
     sparse_tensor_ac = sparse_tensor_a.coalesce()
     sparse_tensor_bc = sparse_tensor_b.coalesce()
     kron_result = []
