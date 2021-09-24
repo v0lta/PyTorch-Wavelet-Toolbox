@@ -288,7 +288,7 @@ def construct_boundary_s2d(
         wavelet, height, width, device, dtype=dtype)
     # TODO: Use only the sparse format!!
     orth_s = orth_via_gram_schmidt(
-        s.to_dense().T, len(wavelet)*len(wavelet)).to_dense().T.to_sparse()
+        s.to_dense().T, len(wavelet)*len(wavelet)).transpose(1, 0)
     return orth_s
 
 
