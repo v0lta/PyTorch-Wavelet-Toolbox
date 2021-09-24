@@ -271,13 +271,11 @@ def matrix_waverec(
     Returns:
         The input signal reconstruction.
     """
-    _, _, rec_lo, rec_hi = wavelet.filter_bank
-
     # if the coefficients come in a list concatenate!
     if type(coefficients) is tuple:
         coefficients = torch.cat(coefficients, 0)
 
-    filt_len = len(rec_lo)
+    filt_len = len(wavelet)
     length = coefficients.shape[0]
 
     if level is None:

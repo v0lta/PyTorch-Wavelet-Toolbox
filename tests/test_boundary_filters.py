@@ -18,12 +18,14 @@ from src.ptwt.conv_transform import flatten_2d_coeff_lst
 
 
 from src.ptwt.matmul_transform_2d import (
+    MatrixWaverec2d,
     construct_conv_matrix,
     construct_conv2d_matrix,
     construct_strided_conv2d_matrix,
     construct_boundary_a2d,
     construct_boundary_s2d,
-    MatrixFWT2d
+    MatrixWavedec2d,
+    MatrixWaverec2d
 )
 
 
@@ -83,9 +85,6 @@ def test_boundary_transform_1d():
                           'error {:2.2e}'.format(error))
                     assert np.allclose(rec.numpy(), rec_pywt, atol=1e-05)
 
-
-def test_boundary_transform_2d():
-    pass
 
 
 def test_conv_matrix():
@@ -260,7 +259,7 @@ def test_matrix_analysis_fwt_2d_haar():
                            -1).astype(np.float64)
             pt_face = torch.tensor(face)
             wavelet = pywt.Wavelet("haar")
-            matrixfwt = MatrixFWT2d(wavelet, level=level)
+            matrixfwt = MatrixWavedec2d(wavelet, level=level)
             mat_coeff = matrixfwt(pt_face)
             conv_coeff = pywt.wavedec2(face, wavelet, level=level,
                                        mode='zero')
@@ -274,6 +273,35 @@ def test_matrix_analysis_fwt_2d_haar():
             test3 = np.allclose(mat_coeff[1][0].numpy(), conv_coeff[1][0])
             print(size, level, err, test, test2, test3)
             assert test and test2 and test3
+
+
+@pytest.mark.slow
+def test_boundary_matrix_fwt_2d():
+    for wavelet_str in ('haar', 'db2', 'db3', 'db4'):
+        for level in (1, 2, 3, 4, None):
+            for size in ((16,16), (15,15), (16,15), (15,16)):
+                face = np.mean(scipy.misc.face()[256:(256+size[0]),
+                                                 256:(256+size[1])],
+                            -1).astype(np.float64)
+                pt_face = torch.tensor(face)
+                wavelet = pywt.Wavelet(wavelet_str)
+                matrixfwt = MatrixWavedec2d(wavelet, level=level)
+                mat_coeff = matrixfwt(pt_face)
+                matrixifwt = MatrixWaverec2d(wavelet)
+                reconstruction = matrixifwt(mat_coeff)
+                # remove the padding
+                if size[0] % 2 != 0:
+                    reconstruction = reconstruction[:-1, :]
+                if size[1] % 2 != 0:
+                    reconstruction = reconstruction[:, :-1]
+                err = np.sum(np.abs(reconstruction.numpy() - face))
+                print(size, str(level).center(4),
+                      wavelet_str, "error {:3.3e}".format(err), 
+                      np.allclose(reconstruction.numpy(), face))
+                assert np.allclose(reconstruction.numpy(), face)
+
+
+
 
 
 if __name__ == '__main__':
