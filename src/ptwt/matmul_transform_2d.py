@@ -465,8 +465,8 @@ if __name__ == '__main__':
     import scipy.misc
     import pywt
     import time
-    # size = 768, 1024
-    size = 32, 32
+    size = 768, 1024
+    # size = 32, 32
     level = 3
     wavelet_str = 'db2'
     face = np.mean(scipy.misc.face()[:size[0],

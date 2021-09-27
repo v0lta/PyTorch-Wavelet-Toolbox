@@ -8,7 +8,10 @@ As well as the description of boundary filters in
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from src.ptwt.sparse_math import sparse_replace_row
+from src.ptwt.sparse_math import (
+    sparse_replace_row,
+    sparse_matmul_select
+)
 
 
 def cat_sparse_identity_matrix(sparse_matrix, new_length):
@@ -81,6 +84,12 @@ def construct_a(wavelet, length, wrap=True, dtype=torch.float64):
     return a_ten
 
 
+def _get_to_orthogonalize(matrix, filt_len):
+    unique, count = torch.unique_consecutive(
+        matrix.coalesce().indices()[0, :], return_counts=True)
+    return unique[count != filt_len]
+
+
 def orth_via_gram_schmidt(matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
     """ Gram-Schmidt orthogonalization for sparse filter matrices.
 
@@ -91,27 +100,26 @@ def orth_via_gram_schmidt(matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
     Returns:
         torch.Tensor: Orthogonal sparse transform matrix.
     """
-    # row_count = matrix.shape[0]
-    to_orthogonalize = []
     done = []
-
-    # TODO: is this too slow?
-    unique, count = torch.unique_consecutive(
-        matrix.coalesce().indices()[0, :], return_counts=True)
-    to_orthogonalize = unique[count != filt_len]
+    to_orthogonalize = _get_to_orthogonalize(matrix, filt_len)
 
     # loop over the rows we want to orthogonalize
     for row_no_to_ortho in to_orthogonalize:
         current_row = matrix.select(
-            0, row_no_to_ortho).to_dense()  # matrix[row_no_to_ortho, :]
-        sum = torch.zeros(current_row.shape, dtype=matrix.dtype,
-                          device=matrix.device)
+            0, row_no_to_ortho).unsqueeze(0)  # matrix[row_no_to_ortho, :]
+        # current_row = sparse_matmul_select(matrix, row_no_to_ortho)
+        sum = torch.zeros_like(current_row)
         for done_row_no in done:
-            done_row = matrix.select(0, done_row_no).to_dense()
-            non_orthogonal = torch.sum((current_row*done_row))
-            sum += (non_orthogonal)*done_row
+            done_row = matrix.select(0, done_row_no).unsqueeze(0)
+            # compute the scalar product
+            non_orthogonal = torch.sparse.mm(current_row,
+                                             done_row.transpose(1, 0))
+            # extract the scalar
+            non_orthogonal = non_orthogonal.coalesce().values().item()
+            sum += non_orthogonal*done_row
         orthogonal_row = current_row - sum
-        length = torch.linalg.norm(orthogonal_row)
+        # length = torch.linalg.norm(orthogonal_row)
+        length = torch.native_norm(orthogonal_row)
         orthonormal_row = orthogonal_row / length
         # matrix[row_no_to_ortho, :] = orthonormal_row
         matrix = sparse_replace_row(

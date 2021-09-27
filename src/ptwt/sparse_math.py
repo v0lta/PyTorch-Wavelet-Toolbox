@@ -64,6 +64,15 @@ def sparse_diag(diagonal: torch.Tensor,
     return diag
 
 
+def sparse_matmul_select(matrix, row):
+    selection_matrix = torch.sparse_coo_tensor(
+        torch.stack([torch.tensor(0, device=row.device), row]).unsqueeze(-1),
+        torch.tensor(1.), device=matrix.device,
+        dtype=matrix.dtype, size=(1, matrix.shape[0])
+    )
+    return torch.sparse.mm(selection_matrix, matrix)
+
+
 def sparse_replace_row(matrix: torch.Tensor, row_index: int,
                        row: torch.Tensor) -> torch.Tensor:
     """Replace a row within a sparse [rows, cols] matrix,
@@ -80,9 +89,8 @@ def sparse_replace_row(matrix: torch.Tensor, row_index: int,
     """
     if not matrix.is_coalesced():
         matrix = matrix.coalesce()
-    assert matrix.shape[-1] == row.shape[0], \
+    assert matrix.shape[-1] == row.shape[-1], \
         "matrix and replacement-row must share the same column number."
-    row = row.unsqueeze(0)
 
     # delete existing indices we dont want
     diag_indices = torch.arange(matrix.shape[0])
@@ -94,9 +102,11 @@ def sparse_replace_row(matrix: torch.Tensor, row_index: int,
         dtype=matrix.dtype
     )
     addition_matrix = torch.sparse_coo_tensor(
-        torch.stack([torch.ones(row.shape[-1])*row_index,
-                     torch.arange(row.shape[-1])], 0),
-        row.squeeze(),
+        torch.stack([torch.ones(row.shape[-1],
+                     device=matrix.device)*row_index,
+                     torch.arange(row.shape[-1],
+                     device=matrix.device)], 0),
+        row.to_dense().squeeze(),
         size=matrix.shape, device=matrix.device,
         dtype=matrix.dtype
     )
