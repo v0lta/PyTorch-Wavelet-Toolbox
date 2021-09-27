@@ -1,5 +1,7 @@
 # Written by moritz ( @ wolter.tech ) 17.09.21
+from numpy.core.numeric import indices
 import torch
+import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -58,15 +60,57 @@ def sparse_diag(diagonal: torch.Tensor,
     return diag
 
 
+def sparse_replace_row(matrix: torch.Tensor, row_index: int,
+                       row: torch.Tensor) -> torch.Tensor:
+    """Replace a row within a sparse [rows, cols] matrix,
+       I.e. matrix[row_no, :] = row.
+
+    Args:
+        matrix (torch.Tensor): A sparse two dimensional matrix.
+        row_index (int): The row to replace.
+        row (torch.Tensor): The row to insert into the sparse matrix.
+
+    Returns:
+        [torch.Tensor]: A sparse matrix, with the new row inserted at
+        row_index.
+    """
+    if not matrix.is_coalesced():
+        matrix = matrix.coalesce()
+    assert matrix.shape[-1] == row.shape[0], \
+        "matrix and replacement-row must share the same column number."
+    row = row.unsqueeze(0)
+    if not row.is_sparse:
+        row = row.to_sparse()
+    if not row.is_coalesced():
+        row = row.coalesce()
+
+    # delete existing we dont want!
+    new_indices = matrix.indices()[
+        :, matrix.coalesce().indices().numpy()[0, :] != row_index]
+    new_values = matrix.values()[
+        matrix.coalesce().indices().numpy()[0, :] != row_index]
+
+    replacement_row_indices = torch.stack(
+        [torch.tensor(row_index)]*len(row.values()))
+    replacement_indices = torch.stack([replacement_row_indices,
+                                       row.indices()[1, :]])
+    new_indices = torch.cat([new_indices, replacement_indices], -1)
+    new_values = torch.cat([new_values, row.values()], -1)
+    new_matrix = torch.sparse_coo_tensor(
+        new_indices, new_values, size=matrix.shape,
+        dtype=matrix.dtype, device=matrix.device)
+    return new_matrix
+
+
 if __name__ == '__main__':
     a = torch.tensor([[1, 2], [3, 2], [5, 6]]).to_sparse()
     b = torch.tensor([[7, 8], [9, 0]]).to_sparse()
-
-    print(torch.kron(a.to_dense(), b.to_dense()))
-    err = torch.sum(torch.abs(sparse_kron(a, b).to_dense() -
+    sparse_result = sparse_kron(a, b)
+    err = torch.sum(torch.abs(sparse_result.to_dense() -
                     torch.kron(a.to_dense(), b.to_dense())))
     print(err)
-
-    import matplotlib.pyplot as plt
-    plt.imshow(sparse_diag(torch.ones([5]), 0, 7, 5).to_dense())
-    plt.show()
+    print(sparse_result.to_dense())
+    new_matrix = sparse_replace_row(sparse_result, 1,
+                                    torch.tensor([1., 2, 3, 4]))
+    print(new_matrix.to_dense())
+    print('stop')

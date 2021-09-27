@@ -8,6 +8,7 @@ As well as the description of boundary filters in
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+from src.ptwt.sparse_math import sparse_replace_row
 
 
 def cat_sparse_identity_matrix(sparse_matrix, new_length):
@@ -75,15 +76,25 @@ def construct_a(wavelet, length, wrap=True, dtype=torch.float64):
     return a_ten
 
 
-def orth_via_gram_schmidt(matrix, filt_len):
-    # TODO: Write sparse version!!
+def orth_via_gram_schmidt(matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
+    """ Gram-Schmidt orthogonalization for sparse filter matrices.
+
+    Args:
+        matrix (torch.Tensor): The filter matrix to orthogonalize.
+        filt_len (int): The length of the wavelet filter coefficients.
+
+    Returns:
+        torch.Tensor: Orthogonal transform matrix.
+    """
     row_count = matrix.shape[0]
     to_orthogonalize = []
     done = []
     for current_row in range(row_count):
         non_zero_elements = torch.sum(
-            (matrix.select(0, current_row) != 0).type(torch.float32))
-        # non_zero_elements = len(matrix.select(0, current_row).coalesce().values())
+             (matrix.select(0, current_row).to_dense()
+              != 0).type(torch.float32))
+        # non_zero_elements = len(
+        #         matrix.select(0, current_row).coalesce().values())
         if non_zero_elements < filt_len:
             to_orthogonalize.append(current_row)
         # else:
@@ -91,17 +102,22 @@ def orth_via_gram_schmidt(matrix, filt_len):
 
     # loop over the rows we want to orthogonalize
     for row_no_to_ortho in to_orthogonalize:
-        current_row = matrix.select(0, row_no_to_ortho) # matrix[row_no_to_ortho, :]
+        current_row = matrix.select(
+            0, row_no_to_ortho).to_dense()  # matrix[row_no_to_ortho, :]
         sum = torch.zeros(current_row.shape, dtype=matrix.dtype)
         for done_row_no in done:
-            done_row = matrix.select(0, done_row_no) # matrix[done_row_no, :]
-            non_orthogonal = torch.sum(current_row*done_row)
+            done_row = matrix.select(0, done_row_no).to_dense()
+            non_orthogonal = torch.sum((current_row*done_row))
             sum += (non_orthogonal)*done_row
         orthogonal_row = current_row - sum
-        length = np.linalg.norm(orthogonal_row)
-        matrix[row_no_to_ortho, :] = orthogonal_row / length
+        length = torch.linalg.norm(orthogonal_row)
+        orthonormal_row = orthogonal_row / length
+        # matrix[row_no_to_ortho, :] = orthonormal_row
+        matrix = sparse_replace_row(
+            matrix, row_no_to_ortho,
+            orthonormal_row)
         done.append(row_no_to_ortho)
-    return matrix.to_sparse()
+    return matrix
 
 
 def matrix_wavedec(data, wavelet, level: int = None,
@@ -200,7 +216,7 @@ def clip_and_orthogonalize(matrix, wavelet):
         clipl = (filt_len - 2) // 2
         clipr = (filt_len - 2) // 2
         dense = matrix.to_dense()
-        clip = dense[:, (clipl):-(clipr)]
+        clip = dense[:, (clipl):-(clipr)].to_sparse()
         orth = orth_via_gram_schmidt(clip, filt_len)
         return orth
     else:

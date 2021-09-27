@@ -44,9 +44,11 @@ def test_boundary_filter_analysis_and_synthethis_matrices():
     for size in [24, 64, 128, 256]:
         for wavelet in [pywt.Wavelet("db2"), pywt.Wavelet("db4"),
                         pywt.Wavelet("db6"), pywt.Wavelet("db8")]:
-            analysis_matrix = construct_boundary_a(wavelet, size,
+            analysis_matrix = construct_boundary_a(
+                wavelet, size,
                 boundary='gramschmidt').to_dense()
-            synthesis_matrix = construct_boundary_s(wavelet, size,
+            synthesis_matrix = construct_boundary_s(
+                wavelet, size,
                 boundary='gramschmidt').to_dense()
             # s_db2 = construct_s(pywt.Wavelet("db8"), size)
             # test_eye_inv = torch.sparse.mm(a_db8, s_db2.to_dense()).numpy()
@@ -55,7 +57,6 @@ def test_boundary_filter_analysis_and_synthethis_matrices():
             test_eye_inv = torch.mm(analysis_matrix, synthesis_matrix).numpy()
             err_inv = np.mean(np.abs(test_eye_inv - np.eye(size)))
             err_orth = np.mean(np.abs(test_eye_orth - np.eye(size)))
-
             print(wavelet.name, "orthogonal error", err_orth, 'size', size)
             print(wavelet.name, "inverse error", err_inv,  'size', size)
             assert err_orth < 1e-8
@@ -84,7 +85,6 @@ def test_boundary_transform_1d():
                           'shape: {},'.format(data.shape[-1]),
                           'error {:2.2e}'.format(error))
                     assert np.allclose(rec.numpy(), rec_pywt, atol=1e-05)
-
 
 
 def test_conv_matrix():
@@ -279,7 +279,7 @@ def test_matrix_analysis_fwt_2d_haar():
 def test_boundary_matrix_fwt_2d():
     for wavelet_str in ('haar', 'db2', 'db3', 'db4'):
         for level in (1, 2, 3, 4, None):
-            for size in ((16,16), (15,15), (16,15), (15,16)):
+            for size in ((16, 16), (15, 15), (16, 15), (15, 16)):
                 face = np.mean(scipy.misc.face()[256:(256+size[0]),
                                                  256:(256+size[1])],
                                -1).astype(np.float64)
@@ -301,11 +301,9 @@ def test_boundary_matrix_fwt_2d():
                 assert np.allclose(reconstruction.numpy(), face)
 
 
-
-
-
 if __name__ == '__main__':
-    test_boundary_filter_analysis_and_synthethis_matrices()
+    # test_boundary_filter_analysis_and_synthethis_matrices()
+    test_boundary_matrix_fwt_2d()
     # test_conv_matrix()
     # test_conv_matrix_2d()
     # test_strided_conv_matrix_2d_same()

@@ -17,8 +17,6 @@ from src.ptwt.matmul_transform import (
     cat_sparse_identity_matrix
 )
 
-import matplotlib.pyplot as plt
-
 
 def construct_conv_matrix(filter: torch.tensor,
                           input_columns: int,
@@ -124,11 +122,11 @@ def construct_conv2d_matrix(filter: torch.tensor,
 
 
 def construct_strided_conv2d_matrix(
-        filter: torch.tensor,
+        filter: torch.Tensor,
         input_rows: int,
         input_columns: int,
         stride: int = 2,
-        mode='full'):
+        mode='full') -> torch.Tensor:
     """ Create a strided sparse two dimensional convolution
        matrix.
 
@@ -255,7 +253,8 @@ def construct_s_2d(wavelet, height: int, width: int,
 
 def construct_boundary_a2d(
         wavelet, height: int, width: int,
-        device: torch.device, dtype: torch.dtype = torch.float64):
+        device: torch.device,
+        dtype: torch.dtype = torch.float64) -> torch.Tensor:
     """ Construct a boundary fwt matrix for the input wavelet.
 
     Args:
@@ -277,18 +276,32 @@ def construct_boundary_a2d(
     a = construct_a_2d(
         wavelet, height, width, device, dtype=dtype)
     orth_a = orth_via_gram_schmidt(
-        a.to_dense(), len(wavelet)*len(wavelet))
+        a, len(wavelet)*len(wavelet))
     return orth_a
 
 
 def construct_boundary_s2d(
         wavelet, height: int, width: int,
-        device, dtype=torch.float64):
+        device, dtype=torch.float64) -> torch.Tensor:
+    """ Construct a 2d-fwt matrix, with boundary wavelets.
+
+    Args:
+        wavelet: A pywt wavelet.
+        height (int): The original height of the input matrix.
+        width (int): The width of the original input matrix.
+        device (torch.device): Choose CPU or GPU.
+        dtype (torch.dtype, optional): The data-type of the
+            sparse matrix, choose float32 or 64.
+            Defaults to torch.float64.
+
+    Returns:
+        torch.Tensor: The synthesis matrix, used to compute the
+            inverse fast wavelet transform.
+    """
     s = construct_s_2d(
         wavelet, height, width, device, dtype=dtype)
-    # TODO: Use only the sparse format!!
     orth_s = orth_via_gram_schmidt(
-        s.to_dense().T, len(wavelet)*len(wavelet)).transpose(1, 0)
+        s.to_dense().T.to_sparse(), len(wavelet)*len(wavelet)).transpose(1, 0)
     return orth_s
 
 
@@ -376,7 +389,6 @@ class MatrixWavedec2d(object):
 
 
 class MatrixWaverec2d(object):
-    
     def __init__(self, wavelet):
         self.wavelet = wavelet
         self.ifwt_matrix = None
@@ -419,7 +431,6 @@ class MatrixWaverec2d(object):
         return reconstruction.reshape(shape)
 
 
-
 if __name__ == '__main__':
     import scipy
     from scipy import misc
@@ -443,6 +454,6 @@ if __name__ == '__main__':
         reconstruction = reconstruction[:, :-1]
     err = np.sum(np.abs(reconstruction.numpy() - face))
     print(size, str(level).center(4),
-          wavelet_str, "error {:3.3e}".format(err), 
+          wavelet_str, "error {:3.3e}".format(err),
           np.allclose(reconstruction.numpy(), face))
     assert np.allclose(reconstruction.numpy(), face)
