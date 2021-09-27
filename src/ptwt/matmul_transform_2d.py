@@ -308,7 +308,8 @@ def construct_boundary_s2d(
 class MatrixWavedec2d(object):
     """ Sparse matrix 2d wavelet transform.
         Constructing the sparse fwt-matrix is expensive.
-        The matrix is therefore stored in this object.
+        The matrix is therefore constructed only once and
+        stored in this object for future use.
     """
     def __init__(self, wavelet, level: int):
         """ Creates a new matrix fwt object.
@@ -480,7 +481,7 @@ if __name__ == '__main__':
     import scipy
     from scipy import misc
     import pywt
-    size = 64, 64
+    size = 128, 128
     level = 3
     wavelet_str = 'db3'
     face = np.mean(scipy.misc.face()[256:(256+size[0]),
@@ -490,6 +491,7 @@ if __name__ == '__main__':
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2d(wavelet, level=level)
     mat_coeff = matrixfwt(pt_face)
+    print("analysis transform len", len(mat_coeff))
     matrixifwt = MatrixWaverec2d(wavelet)
     reconstruction = matrixifwt(mat_coeff)
     # remove the padding
