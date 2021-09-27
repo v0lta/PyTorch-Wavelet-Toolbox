@@ -177,39 +177,17 @@ def construct_strided_conv2d_matrix(
 
     strided_rows = element_numbers[start::stride, start::stride]
     strided_rows = strided_rows.flatten()
-
-    indices = convolution_matrix.coalesce().indices()
-    values = convolution_matrix.coalesce().values()
-    mask = []
-    strided_row_indices = []
-    non_zero_row_entries = indices[0, :]
-    index_counter = 0
-    previous_entry = strided_rows[0]
-    for entry in non_zero_row_entries:
-        next_hits = strided_rows[index_counter:(index_counter+2)]
-        if entry in next_hits:
-            mask.append(True)
-            if previous_entry != entry:
-                index_counter += 1
-            strided_row_indices.append(index_counter)
-            previous_entry = entry
-        else:
-            mask.append(False)
-    mask = torch.tensor(mask)
-
-    strided_row_indices = torch.tensor(strided_row_indices,
-                                       device=filter.device)
-    strided_col_indices = indices[1, mask]
-    strided_indices = torch.stack([strided_row_indices,
-                                   strided_col_indices], 0)
-    strided_values = values[mask]
-    size = (torch.max(strided_row_indices) + 1,
-            torch.max(indices[1, :]) + 1)
-    strided_matrix = torch.sparse_coo_tensor(
-        strided_indices, strided_values,
-        size=size, dtype=filter.dtype).coalesce()
-
-    return strided_matrix
+    selection_eye = torch.sparse_coo_tensor(
+        torch.stack([torch.arange(len(strided_rows),
+                                  device=convolution_matrix.device),
+                     strided_rows],
+                    0),
+        torch.ones(len(strided_rows)),
+        dtype=convolution_matrix.dtype,
+        device=convolution_matrix.device,
+        size=[len(strided_rows), convolution_matrix.shape[0]])
+    # return convolution_matrix.index_select(0, strided_rows)
+    return torch.sparse.mm(selection_eye, convolution_matrix)
 
 
 def construct_a_2d(wavelet, height: int, width: int,
@@ -367,9 +345,9 @@ class MatrixWavedec2d(object):
         else:
             # if the input shape changed the matrix has to be
             # constructed again.
-            if self.input_signal_shape[0] != input_signal[0]:
+            if self.input_signal_shape[0] != input_signal.shape[0]:
                 re_build = True
-            if self.input_signal_shape[1] != input_signal[1]:
+            if self.input_signal_shape[1] != input_signal.shape[1]:
                 re_build = True
 
         if self.fwt_matrix is None or re_build:
@@ -405,7 +383,7 @@ class MatrixWavedec2d(object):
 
         split_list = []
         next_to_split = coefficients
-        for size in size_list[1:]:
+        for size in self.size_list[1:]:
             split_size = int(np.prod(size))
             four_split = torch.split(next_to_split, split_size)
             next_to_split = four_split[0]
@@ -484,21 +462,29 @@ class MatrixWaverec2d(object):
 
 if __name__ == '__main__':
     import scipy
-    from scipy import misc
+    import scipy.misc
     import pywt
+    import time
     size = 32, 32
     level = 3
     wavelet_str = 'db3'
-    face = np.mean(scipy.misc.face()[256:(256+size[0]),
-                                     256:(256+size[1])],
-                -1).astype(np.float64)
+    face = np.mean(scipy.misc.face()[:size[0],
+                                     :size[1]],
+                   -1).astype(np.float64)
     pt_face = torch.tensor(face).cuda()
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2d(wavelet, level=level)
+    start_time = time.time()
     mat_coeff = matrixfwt(pt_face)
-    print("analysis transform len", len(mat_coeff))
+    total = time.time() - start_time
+    print("runtime: {:2.2f}".format(total))
+    start_time_2 = time.time()
+    mat_coeff2 = matrixfwt(pt_face)
+    total_2 = time.time() - start_time_2
+    print("runtime: {:2.2f}".format(total_2))
     matrixifwt = MatrixWaverec2d(wavelet)
     reconstruction = matrixifwt(mat_coeff)
+    reconstruction2 = matrixifwt(mat_coeff)
     # remove the padding
     if size[0] % 2 != 0:
         reconstruction = reconstruction[:-1, :]
