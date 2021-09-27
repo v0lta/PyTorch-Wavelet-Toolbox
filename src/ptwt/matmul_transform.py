@@ -91,18 +91,14 @@ def orth_via_gram_schmidt(matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
     Returns:
         torch.Tensor: Orthogonal sparse transform matrix.
     """
-    row_count = matrix.shape[0]
+    # row_count = matrix.shape[0]
     to_orthogonalize = []
     done = []
 
-    for current_row in range(row_count):
-        # non_zero_elements = torch.sum(
-        #      (matrix.select(0, current_row).to_dense()
-        #       != 0).type(torch.float32))
-        non_zero_elements = len(
-                matrix.select(0, current_row).coalesce().values())
-        if non_zero_elements < filt_len:
-            to_orthogonalize.append(current_row)
+    # TODO: is this too slow?
+    unique, count = torch.unique_consecutive(
+        matrix.coalesce().indices()[0, :], return_counts=True)
+    to_orthogonalize = unique[count != filt_len]
 
     # loop over the rows we want to orthogonalize
     for row_no_to_ortho in to_orthogonalize:
