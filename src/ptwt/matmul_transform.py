@@ -80,11 +80,11 @@ def orth_via_gram_schmidt(matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
     """ Gram-Schmidt orthogonalization for sparse filter matrices.
 
     Args:
-        matrix (torch.Tensor): The filter matrix to orthogonalize.
+        matrix (torch.Tensor): The sparse filter matrix to orthogonalize.
         filt_len (int): The length of the wavelet filter coefficients.
 
     Returns:
-        torch.Tensor: Orthogonal transform matrix.
+        torch.Tensor: Orthogonal sparse transform matrix.
     """
     row_count = matrix.shape[0]
     to_orthogonalize = []

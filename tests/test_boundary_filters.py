@@ -277,7 +277,7 @@ def test_matrix_analysis_fwt_2d_haar():
 
 @pytest.mark.slow
 def test_boundary_matrix_fwt_2d():
-    for wavelet_str in ('haar', 'db2', 'db3', 'db4'):
+    for wavelet_str in ('db2', 'db3', 'db4', 'haar'):
         for level in (1, 2, 3, 4, None):
             for size in ((16, 16), (15, 15), (16, 15), (15, 16)):
                 face = np.mean(scipy.misc.face()[256:(256+size[0]),
@@ -296,7 +296,7 @@ def test_boundary_matrix_fwt_2d():
                     reconstruction = reconstruction[:, :-1]
                 err = np.sum(np.abs(reconstruction.numpy() - face))
                 print(size, str(level).center(4),
-                      wavelet_str, "error {:3.3e}".format(err), 
+                      wavelet_str, "error {:3.3e}".format(err),
                       np.allclose(reconstruction.numpy(), face))
                 assert np.allclose(reconstruction.numpy(), face)
 

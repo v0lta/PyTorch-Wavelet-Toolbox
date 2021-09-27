@@ -301,12 +301,22 @@ def construct_boundary_s2d(
     s = construct_s_2d(
         wavelet, height, width, device, dtype=dtype)
     orth_s = orth_via_gram_schmidt(
-        s.to_dense().T.to_sparse(), len(wavelet)*len(wavelet)).transpose(1, 0)
+        s.transpose(1, 0), len(wavelet)*len(wavelet)).transpose(1, 0)
     return orth_s
 
 
 class MatrixWavedec2d(object):
-    def __init__(self, wavelet, level):
+    """ Sparse matrix 2d wavelet transform.
+        Constructing the sparse fwt-matrix is expensive.
+        The matrix is therefore stored in this object.
+    """
+    def __init__(self, wavelet, level: int):
+        """ Creates a new matrix fwt object.
+
+        Args:
+            wavelet: A pywt wavelet.
+            level (int): The level up to which to compute the fwt.
+        """
         dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
         assert len(dec_lo) == len(dec_hi),\
             "All filters must have the same length."
@@ -319,7 +329,19 @@ class MatrixWavedec2d(object):
         self.fwt_matrix = None
         self.input_signal_shape = None
 
-    def __call__(self, input_signal):
+    def __call__(self, input_signal: torch.Tensor) -> list:
+        """ Compute the fwt for the given input signal.
+            The fwt matrix is set up during the first call
+            and stored for future use.
+
+        Args:
+            input_signal (torch.Tensor): An input signal of shape
+                [height, width]
+
+        Returns:
+            [list]: The resulting coefficients per level stored in
+            a pywt style list.
+        """
         filt_len = len(self.wavelet)
 
         if input_signal.shape[-1] % 2 != 0:
@@ -389,12 +411,35 @@ class MatrixWavedec2d(object):
 
 
 class MatrixWaverec2d(object):
+    """ Synthesis or inverse matrix based-fast wavelet
+        transformation operation object.
+        Constructing the fwt matrix is expensive.
+        The matrix is, therefore, constructed only
+        once and stored for later use.
+    """
+
     def __init__(self, wavelet):
+        """ Create the inverse matrix based fast wavelet
+           transformation.
+
+        Args:
+            wavelet: A pywt.Wavelet compatible wavelet object.
+        """
         self.wavelet = wavelet
         self.ifwt_matrix = None
         self.level = None
 
-    def __call__(self, coefficients):
+    def __call__(self, coefficients: list) -> torch.Tensor:
+        """ Compute the inverse matrix 2d fast wavelet transform.
+
+        Args:
+            coefficients (list): The coefficient list as returned
+            by the MatrixWavedec2d-Object.
+
+        Returns:
+            torch.Tensor: The  original signal reconstruction of
+            shape [height, width].
+        """
         level = len(coefficients) - 1
         re_build = False
         if self.level is None:
