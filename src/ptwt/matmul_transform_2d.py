@@ -2,6 +2,8 @@
 
 import torch
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 from src.ptwt.sparse_math import (
     sparse_kron,
@@ -481,7 +483,7 @@ if __name__ == '__main__':
     import scipy
     from scipy import misc
     import pywt
-    size = 128, 128
+    size = 32, 32
     level = 3
     wavelet_str = 'db3'
     face = np.mean(scipy.misc.face()[256:(256+size[0]),

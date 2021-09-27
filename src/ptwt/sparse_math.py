@@ -23,8 +23,11 @@ def sparse_kron(sparse_tensor_a: torch.Tensor,
     for row in range(sparse_tensor_a.shape[0]):
         new_kron_col = []
         for col in range(sparse_tensor_a.shape[1]):
-            new_kron_col.append(
-                sparse_tensor_bc * sparse_tensor_ac[row, col])
+            if sparse_tensor_ac[row, col] != 0:
+                new_kron_col.append(
+                    sparse_tensor_bc * sparse_tensor_ac[row, col])
+            else:
+                new_kron_col.append(torch.empty_like(sparse_tensor_bc))
         kron_result.append(torch.cat(new_kron_col, -1))
     kron_result = torch.cat(kron_result)
     return kron_result
@@ -84,11 +87,11 @@ def sparse_replace_row(matrix: torch.Tensor, row_index: int,
     if not row.is_coalesced():
         row = row.coalesce()
 
-    # delete existing we dont want!
+    # delete existing indices we dont want!
     new_indices = matrix.indices()[
-        :, matrix.coalesce().indices().numpy()[0, :] != row_index]
+        :, matrix.indices().numpy()[0, :] != row_index]
     new_values = matrix.values()[
-        matrix.coalesce().indices().numpy()[0, :] != row_index]
+        matrix.indices().numpy()[0, :] != row_index]
 
     replacement_row_indices = torch.stack(
         [torch.tensor(row_index)]*len(row.values()))
