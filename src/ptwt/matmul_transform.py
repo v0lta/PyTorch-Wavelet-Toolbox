@@ -26,16 +26,21 @@ def cat_sparse_identity_matrix(sparse_matrix, new_length):
     ), "wavelet matrices are square"
     assert new_length > sparse_matrix.shape[0],\
         "cant add negatively many entries."
-    x = torch.arange(sparse_matrix.shape[0], new_length)
-    y = torch.arange(sparse_matrix.shape[0], new_length)
+    x = torch.arange(sparse_matrix.shape[0], new_length,
+                     dtype=sparse_matrix.dtype,
+                     device=sparse_matrix.device)
+    y = torch.arange(sparse_matrix.shape[0], new_length,
+                     dtype=sparse_matrix.dtype,
+                     device=sparse_matrix.device)
     extra_indices = torch.stack([x, y])
     extra_values = torch.ones(
-        [new_length - sparse_matrix.shape[0]], dtype=sparse_matrix.dtype)
+        [new_length - sparse_matrix.shape[0]], dtype=sparse_matrix.dtype,
+        device=sparse_matrix.device)
     new_indices = torch.cat(
         [sparse_matrix.coalesce().indices(), extra_indices], -1)
     new_values = torch.cat(
         [sparse_matrix.coalesce().values(), extra_values], -1)
-    new_matrix = torch.sparse.FloatTensor(new_indices, new_values)
+    new_matrix = torch.sparse_coo_tensor(new_indices, new_values)
     return new_matrix
 
 
@@ -104,7 +109,8 @@ def orth_via_gram_schmidt(matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
     for row_no_to_ortho in to_orthogonalize:
         current_row = matrix.select(
             0, row_no_to_ortho).to_dense()  # matrix[row_no_to_ortho, :]
-        sum = torch.zeros(current_row.shape, dtype=matrix.dtype)
+        sum = torch.zeros(current_row.shape, dtype=matrix.dtype,
+                          device=matrix.device)
         for done_row_no in done:
             done_row = matrix.select(0, done_row_no).to_dense()
             non_orthogonal = torch.sum((current_row*done_row))

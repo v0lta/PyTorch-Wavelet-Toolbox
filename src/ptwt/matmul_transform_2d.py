@@ -167,7 +167,8 @@ def construct_strided_conv2d_matrix(
         raise ValueError("Padding mode not accepted.")
 
     output_elements = output_rows * output_columns
-    element_numbers = np.arange(output_elements).reshape(
+    element_numbers = torch.arange(output_elements,
+                                   device=filter.device).reshape(
         output_columns, output_rows)
 
     start = 0
@@ -177,8 +178,8 @@ def construct_strided_conv2d_matrix(
     strided_rows = element_numbers[start::stride, start::stride]
     strided_rows = strided_rows.flatten()
 
-    indices = convolution_matrix.coalesce().indices().numpy()
-    values = convolution_matrix.coalesce().values().numpy()
+    indices = convolution_matrix.coalesce().indices()
+    values = convolution_matrix.coalesce().values()
     mask = []
     strided_row_indices = []
     non_zero_row_entries = indices[0, :]
@@ -194,14 +195,16 @@ def construct_strided_conv2d_matrix(
             previous_entry = entry
         else:
             mask.append(False)
-    mask = np.array(mask)
+    mask = torch.tensor(mask)
 
-    strided_row_indices = np.array(strided_row_indices)
+    strided_row_indices = torch.tensor(strided_row_indices,
+                                       device=filter.device)
     strided_col_indices = indices[1, mask]
-    strided_indices = np.stack([strided_row_indices, strided_col_indices], 0)
+    strided_indices = torch.stack([strided_row_indices,
+                                   strided_col_indices], 0)
     strided_values = values[mask]
-    size = (np.max(strided_row_indices) + 1,
-            np.max(indices[1, :]) + 1)
+    size = (torch.max(strided_row_indices) + 1,
+            torch.max(indices[1, :]) + 1)
     strided_matrix = torch.sparse_coo_tensor(
         strided_indices, strided_values,
         size=size, dtype=filter.dtype).coalesce()
@@ -489,7 +492,7 @@ if __name__ == '__main__':
     face = np.mean(scipy.misc.face()[256:(256+size[0]),
                                      256:(256+size[1])],
                 -1).astype(np.float64)
-    pt_face = torch.tensor(face)
+    pt_face = torch.tensor(face).cuda()
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2d(wavelet, level=level)
     mat_coeff = matrixfwt(pt_face)
@@ -501,8 +504,8 @@ if __name__ == '__main__':
         reconstruction = reconstruction[:-1, :]
     if size[1] % 2 != 0:
         reconstruction = reconstruction[:, :-1]
-    err = np.sum(np.abs(reconstruction.numpy() - face))
+    err = np.sum(np.abs(reconstruction.cpu().numpy() - face))
     print(size, str(level).center(4),
           wavelet_str, "error {:3.3e}".format(err),
-          np.allclose(reconstruction.numpy(), face))
-    assert np.allclose(reconstruction.numpy(), face)
+          np.allclose(reconstruction.cpu().numpy(), face))
+    assert np.allclose(reconstruction.cpu().numpy(), face)

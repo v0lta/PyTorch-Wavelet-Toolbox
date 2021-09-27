@@ -27,7 +27,8 @@ def sparse_kron(sparse_tensor_a: torch.Tensor,
                 new_kron_col.append(
                     sparse_tensor_bc * sparse_tensor_ac[row, col])
             else:
-                new_kron_col.append(torch.empty_like(sparse_tensor_bc))
+                new_kron_col.append(
+                    torch.empty_like(sparse_tensor_bc))
         kron_result.append(torch.cat(new_kron_col, -1))
     kron_result = torch.cat(kron_result)
     return kron_result
@@ -37,11 +38,11 @@ def sparse_diag(diagonal: torch.Tensor,
                 col_offset: int,
                 rows: int, cols: int) -> torch.Tensor:
     """ creates an rows-by-cols sparse matrix
-        S by taking the columns of Bin and 
+        S by taking the columns of Bin and
         placing them along the diagonal specified by col_offset"""
     diag_indices = torch.stack(
-        [torch.arange(len(diagonal)),
-         torch.arange(len(diagonal))])
+        [torch.arange(len(diagonal), device=diagonal.device),
+         torch.arange(len(diagonal), device=diagonal.device)])
     if col_offset > 0:
         diag_indices[1] += col_offset
     if col_offset < 0:
@@ -89,12 +90,12 @@ def sparse_replace_row(matrix: torch.Tensor, row_index: int,
 
     # delete existing indices we dont want!
     new_indices = matrix.indices()[
-        :, matrix.indices().numpy()[0, :] != row_index]
+        :, matrix.indices()[0, :] != row_index]
     new_values = matrix.values()[
-        matrix.indices().numpy()[0, :] != row_index]
+        matrix.indices()[0, :] != row_index]
 
     replacement_row_indices = torch.stack(
-        [torch.tensor(row_index)]*len(row.values()))
+        [torch.tensor(row_index, device=matrix.device)]*len(row.values()))
     replacement_indices = torch.stack([replacement_row_indices,
                                        row.indices()[1, :]])
     new_indices = torch.cat([new_indices, replacement_indices], -1)
@@ -106,14 +107,14 @@ def sparse_replace_row(matrix: torch.Tensor, row_index: int,
 
 
 if __name__ == '__main__':
-    a = torch.tensor([[1, 2], [3, 2], [5, 6]]).to_sparse()
-    b = torch.tensor([[7, 8], [9, 0]]).to_sparse()
+    a = torch.tensor([[1, 2], [3, 2], [5, 6]]).to_sparse().cuda()
+    b = torch.tensor([[7, 8], [9, 0]]).to_sparse().cuda()
     sparse_result = sparse_kron(a, b)
     err = torch.sum(torch.abs(sparse_result.to_dense() -
                     torch.kron(a.to_dense(), b.to_dense())))
     print(err)
     print(sparse_result.to_dense())
     new_matrix = sparse_replace_row(sparse_result, 1,
-                                    torch.tensor([1., 2, 3, 4]))
+                                    torch.tensor([1., 2, 3, 4]).cuda())
     print(new_matrix.to_dense())
     print('stop')
