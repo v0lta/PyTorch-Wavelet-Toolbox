@@ -83,28 +83,26 @@ def sparse_replace_row(matrix: torch.Tensor, row_index: int,
     assert matrix.shape[-1] == row.shape[0], \
         "matrix and replacement-row must share the same column number."
     row = row.unsqueeze(0)
-    if not row.is_sparse:
-        row = row.to_sparse()
-    if not row.is_coalesced():
-        row = row.coalesce()
 
     # delete existing indices we dont want
-
-    new_indices = matrix.indices()[
-        :, matrix.indices()[0, :] != row_index]
-    new_values = matrix.values()[
-        matrix.indices()[0, :] != row_index]
-
-    replacement_row_indices = torch.stack(
-        [torch.tensor(row_index, device=matrix.device)]*len(row.values()))
-    replacement_indices = torch.stack([replacement_row_indices,
-                                       row.indices()[1, :]])
-    new_indices = torch.cat([new_indices, replacement_indices], -1)
-    new_values = torch.cat([new_values, row.values()], -1)
-    new_matrix = torch.sparse_coo_tensor(
-        new_indices, new_values, size=matrix.shape,
-        dtype=matrix.dtype, device=matrix.device)
-    return new_matrix
+    diag_indices = torch.arange(matrix.shape[0])
+    diag = torch.ones_like(diag_indices)
+    diag[row_index] = 0
+    removal_matrix = torch.sparse_coo_tensor(
+        torch.stack([diag_indices]*2, 0), diag,
+        size=matrix.shape, device=matrix.device,
+        dtype=matrix.dtype
+    )
+    addition_matrix = torch.sparse_coo_tensor(
+        torch.stack([torch.ones(row.shape[-1])*row_index,
+                     torch.arange(row.shape[-1])], 0),
+        row.squeeze(),
+        size=matrix.shape, device=matrix.device,
+        dtype=matrix.dtype
+    )
+    result = torch.sparse.mm(removal_matrix, matrix) \
+        + addition_matrix
+    return result
 
 
 if __name__ == '__main__':

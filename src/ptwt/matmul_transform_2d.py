@@ -186,8 +186,8 @@ def construct_strided_conv2d_matrix(
         dtype=convolution_matrix.dtype,
         device=convolution_matrix.device,
         size=[len(strided_rows), convolution_matrix.shape[0]])
-    # return convolution_matrix.index_select(0, strided_rows)
-    return torch.sparse.mm(selection_eye, convolution_matrix)
+    # return convolution_matrix.index_select(0, strided_rows)  # slow
+    return torch.sparse.mm(selection_eye, convolution_matrix)  # fast
 
 
 def construct_a_2d(wavelet, height: int, width: int,
@@ -465,9 +465,9 @@ if __name__ == '__main__':
     import scipy.misc
     import pywt
     import time
-    size = 32, 32
+    size = 768, 1024
     level = 3
-    wavelet_str = 'db3'
+    wavelet_str = 'db2'
     face = np.mean(scipy.misc.face()[:size[0],
                                      :size[1]],
                    -1).astype(np.float64)
