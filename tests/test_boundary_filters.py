@@ -277,7 +277,7 @@ def test_matrix_analysis_fwt_2d_haar():
 
 @pytest.mark.slow
 def test_boundary_matrix_fwt_2d():
-    for wavelet_str in ('db2', 'db3', 'db4', 'haar'):
+    for wavelet_str in ('haar', 'db2', 'db3', 'db4'):
         for level in (1, 2, 3, 4, None):
             for size in ((16, 16), (15, 15), (16, 15), (15, 16)):
                 face = np.mean(scipy.misc.face()[256:(256+size[0]),
@@ -302,8 +302,9 @@ def test_boundary_matrix_fwt_2d():
 
 
 if __name__ == '__main__':
+    test_matrix_analysis_fwt_2d_haar()
     # test_boundary_filter_analysis_and_synthethis_matrices()
     # test_boundary_matrix_fwt_2d()
     # test_conv_matrix()
     # test_conv_matrix_2d()
-    test_strided_conv_matrix_2d_same()
+    # test_strided_conv_matrix_2d_same()

@@ -15,7 +15,7 @@ from src.ptwt.conv_transform import (
     get_filter_tensors
 )
 from src.ptwt.matmul_transform import (
-    orth_via_gram_schmidt,
+    orthogonalize,
     cat_sparse_identity_matrix
 )
 
@@ -258,7 +258,7 @@ def construct_boundary_a2d(
     """
     a = construct_a_2d(
         wavelet, height, width, device, dtype=dtype)
-    orth_a = orth_via_gram_schmidt(
+    orth_a = orthogonalize(
         a, len(wavelet)*len(wavelet))
     return orth_a
 
@@ -283,7 +283,7 @@ def construct_boundary_s2d(
     """
     s = construct_s_2d(
         wavelet, height, width, device, dtype=dtype)
-    orth_s = orth_via_gram_schmidt(
+    orth_s = orthogonalize(
         s.transpose(1, 0), len(wavelet)*len(wavelet)).transpose(1, 0)
     return orth_s
 
@@ -465,8 +465,8 @@ if __name__ == '__main__':
     import scipy.misc
     import pywt
     import time
-    size = 768, 1024
-    # size = 32, 32
+    # size = 768, 1024
+    size = 8, 8
     level = 3
     wavelet_str = 'db2'
     face = np.mean(scipy.misc.face()[:size[0],

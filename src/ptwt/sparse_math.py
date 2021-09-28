@@ -101,18 +101,106 @@ def sparse_replace_row(matrix: torch.Tensor, row_index: int,
         size=matrix.shape, device=matrix.device,
         dtype=matrix.dtype
     )
+    if not row.is_coalesced():
+        row = row.coalesce()
+
     addition_matrix = torch.sparse_coo_tensor(
-        torch.stack([torch.ones(row.shape[-1],
-                     device=matrix.device)*row_index,
-                     torch.arange(row.shape[-1],
-                     device=matrix.device)], 0),
-        row.to_dense().squeeze(),
+        torch.stack((row.indices()[0, :] + row_index,
+                     row.indices()[1, :]), 0),
+        row.values(),
         size=matrix.shape, device=matrix.device,
         dtype=matrix.dtype
     )
     result = torch.sparse.mm(removal_matrix, matrix) \
         + addition_matrix
     return result
+
+
+def _orth_by_qr(matrix: torch.Tensor,
+                rows_to_orthogonalize: torch.Tensor) -> torch.Tensor:
+    """ Orthogonalize a wavelet matrix through qr decomposition.
+    A dense qr-decomposition is used for gpu-efficiency reasons.
+    If memory becomes a constraint choose _orth_by_gram_schmidt
+    instead, which is implemented using only sparse function calls.
+
+    Args:
+        matrix (torch.Tensor): The matrix to orthogonalize.
+        rows_to_orthogonalize (torch.Tensor): The matrix rows, which need work.
+
+    Returns:
+        torch.Tensor: The corrected sparse matrix.
+    """
+    selection_indices = torch.stack(
+        [torch.arange(len(rows_to_orthogonalize), device=matrix.device),
+         rows_to_orthogonalize], 0)
+    selection_matrix = torch.sparse_coo_tensor(
+        selection_indices,
+        torch.ones_like(rows_to_orthogonalize),
+        dtype=matrix.dtype, device=matrix.device
+    )
+
+    sel = torch.sparse.mm(selection_matrix, matrix)
+    q, _ = torch.linalg.qr(sel.to_dense().T)
+    q_rows = q.T.to_sparse()
+
+    diag_indices = torch.arange(matrix.shape[0])
+    diag = torch.ones_like(diag_indices)
+    diag[rows_to_orthogonalize] = 0
+    removal_matrix = torch.sparse_coo_tensor(
+        torch.stack([diag_indices]*2, 0), diag,
+        size=matrix.shape, device=matrix.device,
+        dtype=matrix.dtype
+    )
+    result = torch.sparse.mm(removal_matrix, matrix)
+    for pos, row in enumerate(q_rows):
+        row = row.unsqueeze(0).coalesce()
+        addition_matrix = torch.sparse_coo_tensor(
+            torch.stack((row.indices()[0, :] + rows_to_orthogonalize[pos],
+                         row.indices()[1, :]), 0),
+            row.values(),
+            size=matrix.shape, device=matrix.device,
+            dtype=matrix.dtype
+        )
+        result += addition_matrix
+    return result.coalesce()
+
+
+def _orth_by_gram_schmidt(
+        matrix: torch.Tensor, to_orthogonalize: torch.Tensor) -> torch.Tensor:
+    """ Orthogonalize by using a sparse implementation of the Gram-Schmidt
+        method. This function is memory efficient but slow.
+
+    Args:
+        matrix (torch.Tensor): The sparse matrix to work on.
+        to_orthogonalize (torch.Tensor): The matrix rows, which need work.
+
+    Returns:
+        torch.Tensor: The orthogonalized sparse matrix.
+    """
+    done = []
+    # loop over the rows we want to orthogonalize
+    for row_no_to_ortho in to_orthogonalize:
+        current_row = matrix.select(
+            0, row_no_to_ortho).unsqueeze(0)
+        sum = torch.zeros_like(current_row)
+        for done_row_no in done:
+            done_row = matrix.select(0, done_row_no).unsqueeze(0)
+            non_orthogonal = torch.sparse.mm(current_row,
+                                             done_row.transpose(1, 0))
+            non_orthogonal_values = non_orthogonal.coalesce().values()
+            if len(non_orthogonal_values) == 0:
+                non_orthogonal_item = 0
+            else:
+                non_orthogonal_item = non_orthogonal_values.item()
+            sum += non_orthogonal_item*done_row
+        orthogonal_row = current_row - sum
+        length = torch.native_norm(orthogonal_row)
+        orthonormal_row = orthogonal_row / length
+        matrix = sparse_replace_row(
+            matrix, row_no_to_ortho,
+            orthonormal_row)
+        done.append(row_no_to_ortho)
+    return matrix
 
 
 if __name__ == '__main__':

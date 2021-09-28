@@ -7,10 +7,9 @@ As well as the description of boundary filters in
 """
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 from src.ptwt.sparse_math import (
-    sparse_replace_row,
-    sparse_matmul_select
+    _orth_by_qr,
+    _orth_by_gram_schmidt
 )
 
 
@@ -84,48 +83,46 @@ def construct_a(wavelet, length, wrap=True, dtype=torch.float64):
     return a_ten
 
 
-def _get_to_orthogonalize(matrix, filt_len):
+def _get_to_orthogonalize(
+        matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
+    """Find matrix rows with fewer entries than filt_len.
+       These rows will need to be orthogonalized.
+
+    Args:
+        matrix (torch.Tensor): The wavelet matrix under consideration.
+        filt_len (int): The number of entries we would expect per row.
+
+    Returns:
+        torch.Tensor: The row indices with too few entries.
+    """
     unique, count = torch.unique_consecutive(
         matrix.coalesce().indices()[0, :], return_counts=True)
     return unique[count != filt_len]
 
 
-def orth_via_gram_schmidt(matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
-    """ Gram-Schmidt orthogonalization for sparse filter matrices.
+def orthogonalize(matrix: torch.Tensor, filt_len: int,
+                  method: str = 'qr') -> torch.Tensor:
+    """ Orthogonalization for sparse filter matrices.
 
     Args:
         matrix (torch.Tensor): The sparse filter matrix to orthogonalize.
         filt_len (int): The length of the wavelet filter coefficients.
+        method (str): The orthogonalization method to use. Choose qr
+            or gramschmidt. The dense qr code will run much faster
+            than sparse gramschidt. Choose gramschmidt if qr fails.
+            Defaults to qr.
 
     Returns:
-        torch.Tensor: Orthogonal sparse transform matrix.
+        torch.Tensor: Orthogonal sparse transformation matrix.
     """
-    done = []
     to_orthogonalize = _get_to_orthogonalize(matrix, filt_len)
 
-    # loop over the rows we want to orthogonalize
-    for row_no_to_ortho in to_orthogonalize:
-        current_row = matrix.select(
-            0, row_no_to_ortho).unsqueeze(0)  # matrix[row_no_to_ortho, :]
-        # current_row = sparse_matmul_select(matrix, row_no_to_ortho)
-        sum = torch.zeros_like(current_row)
-        for done_row_no in done:
-            done_row = matrix.select(0, done_row_no).unsqueeze(0)
-            # compute the scalar product
-            non_orthogonal = torch.sparse.mm(current_row,
-                                             done_row.transpose(1, 0))
-            # extract the scalar
-            non_orthogonal = non_orthogonal.coalesce().values().item()
-            sum += non_orthogonal*done_row
-        orthogonal_row = current_row - sum
-        # length = torch.linalg.norm(orthogonal_row)
-        length = torch.native_norm(orthogonal_row)
-        orthonormal_row = orthogonal_row / length
-        # matrix[row_no_to_ortho, :] = orthonormal_row
-        matrix = sparse_replace_row(
-            matrix, row_no_to_ortho,
-            orthonormal_row)
-        done.append(row_no_to_ortho)
+    if len(to_orthogonalize) > 0:
+        if method == 'qr':
+            matrix = _orth_by_qr(matrix, to_orthogonalize)
+        else:
+            matrix = _orth_by_gram_schmidt(matrix, to_orthogonalize)
+
     return matrix
 
 
@@ -226,7 +223,7 @@ def clip_and_orthogonalize(matrix, wavelet):
         clipr = (filt_len - 2) // 2
         dense = matrix.to_dense()
         clip = dense[:, (clipl):-(clipr)].to_sparse()
-        orth = orth_via_gram_schmidt(clip, filt_len)
+        orth = orthogonalize(clip, filt_len)
         return orth
     else:
         return matrix
