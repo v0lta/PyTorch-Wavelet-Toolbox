@@ -47,14 +47,17 @@ def test_conv_fwt_haar_lvl2():
     assert len(coeffs) == len(coeffs2)
 
     pywt_coeffs = np.concatenate(coeffs)
-    ptwt_coeffs = torch.cat(coeffs2, -1).squeeze().numpy() 
+    ptwt_coeffs = torch.cat(coeffs2, -1).squeeze().numpy()
     err = np.mean(np.abs(pywt_coeffs - ptwt_coeffs))
-    print("haar coefficient error scale 2", err, ["ok" if err < 1e-6 else "failed!"])
+    print("haar coefficient error scale 2", err,
+          ["ok" if err < 1e-6 else "failed!"])
     assert np.allclose(pywt_coeffs, ptwt_coeffs)
     rec = waverec(coeffs2, wavelet).squeeze().numpy()
     err = np.mean(np.abs((data - rec)))
-    print("haar reconstruction error scale 2", err, ["ok" if err < 1e-6 else "failed!"])
+    print("haar reconstruction error scale 2", err,
+          ["ok" if err < 1e-6 else "failed!"])
     assert np.allclose(data, rec)
+
 
 def test_conv_fwt_haar_lvl2_odd():
     data = [
@@ -98,12 +101,15 @@ def test_conv_fwt_haar_lvl4():
     ptwt_coeff = torch.cat(ptcoeff, -1)[0, :].numpy()
     pywt_coeff = np.concatenate(pycoeff)
     err = np.mean(np.abs(pywt_coeff - ptwt_coeff))
-    print("haar coefficient error scale 4:", err, ["ok" if err < 1e-4 else "failed!"])
+    print("haar coefficient error scale 4:", err,
+          ["ok" if err < 1e-4 else "failed!"])
     assert np.allclose(pywt_coeff, ptwt_coeff, atol=1e-06)
 
-    reconstruction = waverec(wavedec(mackey_data_1.unsqueeze(1), wavelet), wavelet)
+    reconstruction = waverec(
+        wavedec(mackey_data_1.unsqueeze(1), wavelet), wavelet)
     err = torch.mean(torch.abs(mackey_data_1 - reconstruction)).numpy()
-    print("haar reconstruction error scale 4:", err, ["ok" if err < 1e-4 else "failed!"])
+    print("haar reconstruction error scale 4:",
+          err, ["ok" if err < 1e-4 else "failed!"])
     assert np.allclose(reconstruction.numpy(), mackey_data_1.numpy())
 
 
@@ -135,16 +141,19 @@ def test_conv_fwt_db2_lvl1():
     ccoeffs = np.concatenate(coeffs, -1)
     ccoeffs2 = torch.cat(coeffs2, -1).numpy()
     err = np.mean(np.abs(ccoeffs - ccoeffs2))
-    print("db2 coefficient error scale 1:", err, ["ok" if err < 1e-4 else "failed!"])
+    print("db2 coefficient error scale 1:",
+          err, ["ok" if err < 1e-4 else "failed!"])
     assert np.allclose(ccoeffs, ccoeffs2, atol=1e-6)
     rec = waverec(coeffs2, wavelet)
     err = np.mean(np.abs(npdata - rec.numpy()))
-    print("db2 reconstruction error scale 1:", err, ["ok" if err < 1e-4 else "failed!"])
+    print("db2 reconstruction error scale 1:",
+          err, ["ok" if err < 1e-4 else "failed!"])
     assert np.allclose(npdata, rec.numpy())
 
 
 def test_conv_fwt_db5_lvl3():
-    generator = MackeyGenerator(batch_size=2, tmax=128, delta_t=1, device="cpu")
+    generator = MackeyGenerator(
+        batch_size=2, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
     wavelet = pywt.Wavelet("db5")

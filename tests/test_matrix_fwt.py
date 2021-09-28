@@ -18,7 +18,8 @@ from src.ptwt.mackey_glass import MackeyGenerator
 def test_analysis_and_synthethis_matrices_db1():
     a_db1 = construct_a(pywt.Wavelet("db1"), 8)
     s_db1 = construct_s(pywt.Wavelet("db1"), 8)
-    err = np.mean(np.abs(torch.sparse.mm(a_db1, s_db1.to_dense()).numpy() - np.eye(8)))
+    err = np.mean(
+        np.abs(torch.sparse.mm(a_db1, s_db1.to_dense()).numpy() - np.eye(8)))
     print("db1 8 inverse error", err)
     assert err < 1e-6
 
@@ -153,7 +154,8 @@ def test_fwt_ifwt_mackey_haar():
     inv_operator_mat = ifwt_mat_lst[0].to_dense()
     for mat_no in range(1, len(mat_lst)):  # mat_lst[1:]:
         operator_mat = torch.sparse.mm(mat_lst[mat_no], operator_mat)
-        inv_operator_mat = torch.sparse.mm(ifwt_mat_lst[mat_no], inv_operator_mat)
+        inv_operator_mat = torch.sparse.mm(
+            ifwt_mat_lst[mat_no], inv_operator_mat)
 
     coeff = torch.sparse.mm(operator_mat, pt_data.T)
     data_rec = torch.sparse.mm(inv_operator_mat, coeff).T

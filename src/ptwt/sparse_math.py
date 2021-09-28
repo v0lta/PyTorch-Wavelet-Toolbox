@@ -198,7 +198,7 @@ def _orth_by_qr(matrix: torch.Tensor,
 def _orth_by_gram_schmidt(
         matrix: torch.Tensor, to_orthogonalize: torch.Tensor) -> torch.Tensor:
     """ Orthogonalize by using a sparse implementation of the Gram-Schmidt
-        method. This function is memory efficient but slow.
+        method. This function is very memory efficient and very slow.
 
     Args:
         matrix (torch.Tensor): The sparse matrix to work on.

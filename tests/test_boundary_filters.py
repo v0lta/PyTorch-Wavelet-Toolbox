@@ -41,6 +41,7 @@ def _get_2d_same_padding(filter_shape, input_size):
 
 @pytest.mark.slow
 def test_boundary_filter_analysis_and_synthethis_matrices():
+    """ check 1d the 1d-fwt matrices for orthogonality and invertability. """
     for size in [24, 64, 128, 256]:
         for wavelet in [pywt.Wavelet("db2"), pywt.Wavelet("db4"),
                         pywt.Wavelet("db6"), pywt.Wavelet("db8")]:
@@ -64,6 +65,7 @@ def test_boundary_filter_analysis_and_synthethis_matrices():
 
 
 def test_boundary_transform_1d():
+    """ ensure matrix fwt reconstructions are pywt compatible. """
     data_list = [np.array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0]),
                  np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])]
     wavelet_list = ['db2', 'haar', 'db3']
@@ -88,11 +90,7 @@ def test_boundary_transform_1d():
 
 
 def test_conv_matrix():
-    # Test the 1d sparse convolution matrix code.
-
-    # test_filters = [torch.tensor([1., 2, 3, 4]), torch.tensor([1., 2, 3])]
-    # input_signals = [torch.tensor([1., 2, 3, 4, 5, 6, 7, 8, 9]),
-    #                  torch.tensor([1., 2, 3, 4, 5, 6, 7, 8])]
+    """ Test the 1d sparse convolution matrix code. """
     test_filters = [torch.rand([2]), torch.rand([3]), torch.rand([4])]
     input_signals = [torch.rand([8]), torch.rand([9])]
     for h in test_filters:
@@ -227,7 +225,7 @@ def test_strided_conv_matrix_2d_same():
 
 
 def test_analysis_synthesis_matrices():
-    # test the 2d analysis and synthesis matrices for various wavelets.
+    """ test the 2d analysis and synthesis matrices for various wavelets. """
     for size in [(16, 16), (16, 8), (8, 16)]:
         for wavelet_str in ['db1', 'db2', 'db3', 'db4', 'db5']:
             wavelet = pywt.Wavelet(wavelet_str)
@@ -251,7 +249,6 @@ def test_analysis_synthesis_matrices():
 def test_matrix_analysis_fwt_2d_haar():
     """ Test the fwt-2d matrix-haar transform,
         the coefficients should be equal to the pywt result. """
-
     for size in ((15, 16), (16, 15), (16, 16)):
         for level in (1, 2, 3):
             face = np.mean(scipy.misc.face()[256:(256+size[0]),
@@ -277,6 +274,7 @@ def test_matrix_analysis_fwt_2d_haar():
 
 @pytest.mark.slow
 def test_boundary_matrix_fwt_2d():
+    """ Ensure the boundary matrix fwt is invertable."""
     for wavelet_str in ('haar', 'db2', 'db3', 'db4'):
         for level in (1, 2, 3, 4, None):
             for size in ((16, 16), (15, 15), (16, 15), (15, 16)):

@@ -2,7 +2,6 @@
 
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 from src.ptwt.sparse_math import (
@@ -474,14 +473,13 @@ if __name__ == '__main__':
     import scipy.misc
     import pywt
     import time
-    # size = 768, 1024
-    size = 512, 512
+    size = 128, 128
     level = 3
     wavelet_str = 'db2'
     face = np.mean(scipy.misc.face()[:size[0],
                                      :size[1]],
                    -1).astype(np.float64)
-    pt_face = torch.tensor(face)
+    pt_face = torch.tensor(face).cuda()
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2d(wavelet, level=level)
     start_time = time.time()

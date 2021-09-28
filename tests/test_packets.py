@@ -23,7 +23,8 @@ def test_packet_harbo_lvl3():
                 [1 / 2.0, -1 / 2.0],
             )
 
-    wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=MyHaarFilterBank())
+    wavelet = pywt.Wavelet(
+        "unscaled Haar Wavelet", filter_bank=MyHaarFilterBank())
     data = torch.tensor(w)
     twp = WaveletPacket(data, wavelet, mode="reflect")
     nodes = twp.get_level(3)
@@ -106,4 +107,3 @@ def test_2d_packets():
                 ["ok" if abs_err < 1e-4 else "failed!"],
             )
             assert abs_err < 1e-4
-

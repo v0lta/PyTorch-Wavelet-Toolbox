@@ -30,7 +30,7 @@ class WaveletFilter(ABC):
     # def parameters(self):
     #     raise NotImplementedError
 
-    def pf_alias_cancellation_loss(self) -> [torch.Tensor, torch.Tensor, torch.Tensor]:
+    def pf_alias_cancellation_loss(self) -> list:
         """Strang+Nguyen 105: F0(z) = H1(-z); F1(z) = -H0(-z)
         Alternating sign convention from 0 to N see Strang overview
         on the back of the cover.
@@ -88,7 +88,7 @@ class WaveletFilter(ABC):
         errs = (p_test - zeros) * (p_test - zeros)
         return torch.sum(errs), p_test, zeros
 
-    def perfect_reconstruction_loss(self) -> [torch.Tensor, torch.Tensor, torch.Tensor]:
+    def perfect_reconstruction_loss(self) -> list:
         """Strang 107: Assuming alias cancellation holds:
         P(z) = F(z)H(z)
         Product filter P(z) + P(-z) = 2.
