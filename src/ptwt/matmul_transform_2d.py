@@ -4,17 +4,17 @@ import torch
 import numpy as np
 
 
-from src.ptwt.sparse_math import (
+from .sparse_math import (
     sparse_kron,
     sparse_diag,
     _dense_kron
 )
-from src.ptwt.conv_transform import (
+from .conv_transform import (
     flatten_2d_coeff_lst,
     construct_2d_filt,
     get_filter_tensors
 )
-from src.ptwt.matmul_transform import (
+from .matmul_transform import (
     orthogonalize,
     cat_sparse_identity_matrix
 )

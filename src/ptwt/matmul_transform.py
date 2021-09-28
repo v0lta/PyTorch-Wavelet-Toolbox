@@ -7,7 +7,7 @@ As well as the description of boundary filters in
 """
 import numpy as np
 import torch
-from src.ptwt.sparse_math import (
+from .sparse_math import (
     _orth_by_qr,
     _orth_by_gram_schmidt
 )

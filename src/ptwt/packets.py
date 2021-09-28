@@ -5,7 +5,7 @@ import collections
 import pywt
 import torch
 
-from src.ptwt.conv_transform import wavedec, wavedec2
+from .conv_transform import wavedec, wavedec2
 
 
 class WaveletPacket(collections.UserDict):
