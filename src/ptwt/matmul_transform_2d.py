@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 
 from src.ptwt.sparse_math import (
     sparse_kron,
-    sparse_diag
+    sparse_diag,
+    _dense_kron
 )
 from src.ptwt.conv_transform import (
     flatten_2d_coeff_lst,
@@ -73,7 +74,8 @@ def construct_conv_matrix(filter: torch.tensor,
 def construct_conv2d_matrix(filter: torch.tensor,
                             input_rows: int,
                             input_columns: int,
-                            mode: str = 'valid') -> torch.Tensor:
+                            mode: str = 'valid',
+                            fully_sparse: bool = True) -> torch.Tensor:
     """ Create a two dimensional sparse convolution matrix.
         Convolving with this matrix should be equivalent to
         a call to scipy.signal.convolve2d and a reshape.
@@ -83,11 +85,18 @@ def construct_conv2d_matrix(filter: torch.tensor,
             to convolve with.
         input_rows (int): The number of rows in the input matrix.
         input_columns (int): The number of columns in the input matrix.
-        mode: [str] = The desired padding method. Options are
+        mode: (str) = The desired padding method. Options are
             full, same and valid. Defaults to 'valid' or no padding.
+        fully_sparse (bool): Use a sparse implementation of the Kronecker
+            to save memory. Defaults to True.
     Returns:
         [torch.sparse.FloatTensor]: A sparse convolution matrix.
     """
+    if fully_sparse:
+        kron = sparse_kron
+    else:
+        kron = _dense_kron
+
     kernel_column_number = filter.shape[-1]
     matrix_block_number = kernel_column_number
 
@@ -110,15 +119,15 @@ def construct_conv2d_matrix(filter: torch.tensor,
         raise ValueError('unknown conv type.')
 
     diag_values = torch.ones([int(np.min([kronecker_rows, input_columns]))],
-                             dtype=filter.dtype)
+                             dtype=filter.dtype, device=filter.device)
     diag = sparse_diag(diag_values, diag_index, kronecker_rows, input_columns)
-    sparse_conv_matrix = sparse_kron(diag, block_matrix_list[0])
+    sparse_conv_matrix = kron(diag, block_matrix_list[0])
 
     for block_matrix in block_matrix_list[1:]:
         diag_index -= 1
         diag = sparse_diag(diag_values, diag_index,
                            kronecker_rows, input_columns)
-        sparse_conv_matrix += sparse_kron(diag, block_matrix)
+        sparse_conv_matrix += kron(diag, block_matrix)
 
     return sparse_conv_matrix
 
@@ -466,7 +475,7 @@ if __name__ == '__main__':
     import pywt
     import time
     # size = 768, 1024
-    size = 8, 8
+    size = 128, 128
     level = 3
     wavelet_str = 'db2'
     face = np.mean(scipy.misc.face()[:size[0],

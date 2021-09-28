@@ -1,14 +1,21 @@
 # Written by moritz ( @ wolter.tech ) 17.09.21
-from numpy.core.numeric import indices
 import torch
-import numpy as np
-import matplotlib.pyplot as plt
+
+
+def _dense_kron(sparse_tensor_a: torch.Tensor,
+                sparse_tensor_b: torch.Tensor) -> torch.Tensor:
+    """ Faster than sparse_kron, but limited to resolutions
+        of approximately 128x128 pixels by memory on my machine."""
+    return torch.kron(sparse_tensor_a.to_dense(),
+                      sparse_tensor_b.to_dense()).to_sparse()
 
 
 def sparse_kron(sparse_tensor_a: torch.Tensor,
                 sparse_tensor_b: torch.Tensor) -> torch.Tensor:
     """ A sparse kronecker product. As defined at:
         https://en.wikipedia.org/wiki/Kronecker_product
+        Adapted from:
+        https://github.com/scipy/scipy/blob/v1.7.1/scipy/sparse/construct.py#L274-L357
 
     Args:
         sparse_tensor_a (torch.Tensor): Sparse 2d-Tensor a of shape [m, n].
@@ -17,21 +24,44 @@ def sparse_kron(sparse_tensor_a: torch.Tensor,
     Returns:
         torch.Tensor: The resulting [mp, nq] tensor.
     """
-    sparse_tensor_ac = sparse_tensor_a.coalesce()
-    sparse_tensor_bc = sparse_tensor_b.coalesce()
-    kron_result = []
-    for row in range(sparse_tensor_a.shape[0]):
-        new_kron_col = []
-        for col in range(sparse_tensor_a.shape[1]):
-            if sparse_tensor_ac[row, col] != 0:
-                new_kron_col.append(
-                    sparse_tensor_bc * sparse_tensor_ac[row, col])
-            else:
-                new_kron_col.append(
-                    torch.zeros_like(sparse_tensor_bc))
-        kron_result.append(torch.cat(new_kron_col, -1))
-    kron_result = torch.cat(kron_result)
-    return kron_result
+    if not sparse_tensor_a.is_coalesced():
+        sparse_tensor_a = sparse_tensor_a.coalesce()
+    if not sparse_tensor_b.is_coalesced():
+        sparse_tensor_b = sparse_tensor_b.coalesce()
+    output_shape = (sparse_tensor_a.shape[0]
+                    * sparse_tensor_b.shape[0],
+                    sparse_tensor_a.shape[1]
+                    * sparse_tensor_b.shape[1])
+    nzz_a = len(sparse_tensor_a.values())
+    nzz_b = len(sparse_tensor_b.values())
+
+    # take care of the zero case.
+    if nzz_a == 0 or nzz_b == 0:
+        return torch.sparse_coo_tensor(
+            torch.zeros([2, 1]), torch.zeros([1]),
+            size=output_shape)
+
+    # expand A's entries into blocks
+    row = sparse_tensor_a.indices()[0, :].repeat_interleave(nzz_b)
+    col = sparse_tensor_a.indices()[1, :].repeat_interleave(nzz_b)
+    data = sparse_tensor_a.values().repeat_interleave(nzz_b)
+    row *= sparse_tensor_b.shape[0]
+    col *= sparse_tensor_b.shape[1]
+
+    # increment block indices
+    row, col = row.reshape(-1, nzz_b), col.reshape(-1, nzz_b)
+    row += sparse_tensor_b.indices()[0, :]
+    col += sparse_tensor_b.indices()[1, :]
+    row, col = row.reshape(-1), col.reshape(-1)
+
+    # compute block entries
+    data = data.reshape(-1, nzz_b) * sparse_tensor_b.values()
+    data = data.reshape(-1)
+    result = torch.sparse_coo_tensor(
+        torch.stack([row, col], 0),
+        data, size=output_shape)
+
+    return result
 
 
 def sparse_diag(diagonal: torch.Tensor,
@@ -204,14 +234,10 @@ def _orth_by_gram_schmidt(
 
 
 if __name__ == '__main__':
-    a = torch.tensor([[1, 2], [3, 2], [5, 6]]).to_sparse().cuda()
-    b = torch.tensor([[7, 8], [9, 0]]).to_sparse().cuda()
-    sparse_result = sparse_kron(a, b)
-    err = torch.sum(torch.abs(sparse_result.to_dense() -
-                    torch.kron(a.to_dense(), b.to_dense())))
-    print(err)
+
     print(sparse_result.to_dense())
-    new_matrix = sparse_replace_row(sparse_result, 1,
-                                    torch.tensor([1., 2, 3, 4]).cuda())
+    new_matrix = sparse_replace_row(
+        sparse_result, 1,
+        torch.tensor([1., 2, 3, 4]).unsqueeze(0).cuda())
     print(new_matrix.to_dense())
     print('stop')
