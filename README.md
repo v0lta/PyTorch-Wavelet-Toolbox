@@ -66,24 +66,7 @@ print(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2))
 print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2), wavelet))
 ```
 
-#### Unit Tests
-
-The `tests` folder contains multiple tests to allow independent verification of this toolbox. After cloning the
-repository, and moving into the main directory, and installing `tox` with `pip install tox` run:
-
-```shell
-$ tox -e py
-```
-
-#### Adaptive Wavelets (experimental)
-
-Code to train an adaptive wavelet layer in PyTorch is available in the `examples` folder. In addition to static wavelets
-from pywt,
-
-- Adaptive product-filters
-- and optimizable orthogonal-wavelets are supported.
-
-#### Sparse-Matrix-multiplication Transform (experimental).
+#### Sparse-Matrix-multiplication Transform.
 
 In addition to convolution-based fwt implementations matrix-based code is available. Continuing the example above try:
 
@@ -95,7 +78,26 @@ print(coeff)
 rec, ifwt_matrix = ptwt.matrix_waverec(coeff, wavelet, level=2)
 print(rec)
 ```
-  
+
+#### Adaptive Wavelets (experimental)
+
+Code to train an adaptive wavelet layer in PyTorch is available in the `examples` folder. In addition to static wavelets
+from pywt,
+
+- Adaptive product-filters
+- and optimizable orthogonal-wavelets are supported.
+
+
+#### Unit Tests
+
+The `tests` folder contains multiple tests to allow independent verification of this toolbox. After cloning the
+repository, and moving into the main directory, and installing `tox` with `pip install tox` run:
+
+```shell
+$ tox -e py
+```
+
+
 #### 📖 Citation
 If you find this work useful please consider citing:
 ```
