@@ -24,15 +24,16 @@
 
 Welcome to the PyTorch (adaptive) wavelet toolbox. This package implements:
 
-- the fast wavelet transform (fwt) (wavedec)
-- the inverse fwt (waverec)
-- the 2d fwt wavedec2
-- the inverse 2d fwt waverec2.
+- the fast wavelet transform (fwt) implemented in ```wavedec```.
+- the inverse fwt can be used by calling ```waverec```.
+- the 2d fwt is called ```wavedec2```
+- and inverse 2d fwt ```waverec2```.
 - single and two-dimensional wavelet packet forward transforms.
+- 1d sparse-matrix fast wavelet transforms with boundary filters.
 - adaptive wavelet support (experimental).
-- sparse matrix fast wavelet transforms (experimental).
+- 2d boundary filters (experimental).
 
-This toolbox is developed with pywt compatibility in mind. 
+This toolbox supports pywt-wavelets. 
   
 #### Installation
 
