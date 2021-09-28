@@ -19,7 +19,8 @@ class WaveletFilter(ABC):
 
     @abstractmethod
     def wavelet_loss(self):
-        return self.alias_cancellation_loss() + self.perfect_reconstruction_loss()
+        return self.alias_cancellation_loss() \
+               + self.perfect_reconstruction_loss()
 
     @abstractmethod
     def __len__(self):
@@ -29,7 +30,7 @@ class WaveletFilter(ABC):
     # def parameters(self):
     #     raise NotImplementedError
 
-    def pf_alias_cancellation_loss(self) -> [torch.Tensor, torch.Tensor, torch.Tensor]:
+    def pf_alias_cancellation_loss(self) -> list:
         """Strang+Nguyen 105: F0(z) = H1(-z); F1(z) = -H0(-z)
         Alternating sign convention from 0 to N see Strang overview
         on the back of the cover.
@@ -82,11 +83,12 @@ class WaveletFilter(ABC):
         )
 
         p_test = p_lo + p_hi
-        zeros = torch.zeros(p_test.shape, device=p_test.device, dtype=p_test.dtype)
+        zeros = torch.zeros(
+            p_test.shape, device=p_test.device, dtype=p_test.dtype)
         errs = (p_test - zeros) * (p_test - zeros)
         return torch.sum(errs), p_test, zeros
 
-    def perfect_reconstruction_loss(self) -> [torch.Tensor, torch.Tensor, torch.Tensor]:
+    def perfect_reconstruction_loss(self) -> list:
         """Strang 107: Assuming alias cancellation holds:
         P(z) = F(z)H(z)
         Product filter P(z) + P(-z) = 2.
@@ -154,7 +156,8 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
         return self.dec_lo.shape[-1]
 
     def product_filter_loss(self):
-        return self.perfect_reconstruction_loss()[0] + self.alias_cancellation_loss()[0]
+        return self.perfect_reconstruction_loss()[0] \
+               + self.alias_cancellation_loss()[0]
 
     def wavelet_loss(self):
         return self.product_filter_loss()
@@ -218,7 +221,8 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
 class HardOrthogonalWavelet(WaveletFilter, torch.nn.Module):
     def __init__(self, init_tensor: torch.Tensor):
         self.dec_lo = torch.nn.Parameter(init_tensor)
-        m1 = torch.tensor([-1], device=self.dec_lo.device, dtype=self.dec_lo.dtype)
+        m1 = torch.tensor(
+            [-1], device=self.dec_lo.device, dtype=self.dec_lo.dtype)
         length = self.dec_lo.shape[0]
         self.mask = torch.tensor(
             [torch.pow(m1, n) for n in range(length)][::-1],
