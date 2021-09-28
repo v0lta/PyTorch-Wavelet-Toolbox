@@ -66,9 +66,9 @@ print(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2))
 print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2), wavelet))
 ```
 
-#### Sparse-Matrix-multiplication Transform.
+#### Transform by Sparse-Matrix-multiplication:
 
-In addition to convolution-based fwt implementations matrix-based code is available. Continuing the example above try:
+In additionally sparse-matrix-based code is available. Continuing the example above try:
 
 ```python
 # forward
