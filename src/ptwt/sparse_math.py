@@ -234,10 +234,9 @@ def _orth_by_gram_schmidt(
 
 
 if __name__ == '__main__':
-
-    print(sparse_result.to_dense())
+    test_matrix = torch.ones([4, 4]).to_sparse()
     new_matrix = sparse_replace_row(
-        sparse_result, 1,
-        torch.tensor([1., 2, 3, 4]).unsqueeze(0).cuda())
+        test_matrix, 1,
+        torch.tensor([1., 2, 3, 4]).unsqueeze(0).to_sparse())
     print(new_matrix.to_dense())
     print('stop')

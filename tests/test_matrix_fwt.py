@@ -1,3 +1,4 @@
+# Written by moritz ( @ wolter.tech ) in 2021
 import numpy as np
 import pywt
 import time

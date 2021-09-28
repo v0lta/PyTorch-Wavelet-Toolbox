@@ -475,13 +475,13 @@ if __name__ == '__main__':
     import pywt
     import time
     # size = 768, 1024
-    size = 128, 128
+    size = 512, 512
     level = 3
     wavelet_str = 'db2'
     face = np.mean(scipy.misc.face()[:size[0],
                                      :size[1]],
                    -1).astype(np.float64)
-    pt_face = torch.tensor(face).cuda()
+    pt_face = torch.tensor(face)
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2d(wavelet, level=level)
     start_time = time.time()

@@ -1,3 +1,4 @@
+# Written by moritz ( @ wolter.tech ) in 2021
 import torch
 import numpy as np
 from src.ptwt.sparse_math import sparse_kron
