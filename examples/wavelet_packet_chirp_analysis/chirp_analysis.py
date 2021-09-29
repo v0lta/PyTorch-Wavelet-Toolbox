@@ -4,7 +4,8 @@ import numpy as np
 import scipy.signal
 import matplotlib.pyplot as plt
 
-from src.ptwt.packets import WaveletPacket
+# use from src.ptwt.packets if you cloned the repo instead of using pip.
+from ptwt import WaveletPacket
 
 t = np.linspace(0, 10, 1500)
 w = scipy.signal.chirp(t, f0=1, f1=50, t1=10, method='linear')
