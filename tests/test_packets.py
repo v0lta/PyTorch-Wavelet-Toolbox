@@ -46,7 +46,7 @@ def test_packet_harbo_lvl3():
 
 @pytest.mark.slow
 def test_2d_packets():
-    for max_lev in [2, 3, 4]:
+    for max_lev in [1, 2, 3, 4]:
         for wavelet_str in ["db2", "db3", "db4", "db5", "db6", "db7", "db8"]:
             face = misc.face()[256:(512+64), 256:(512+64)]
             wavelet = pywt.Wavelet(wavelet_str)
@@ -56,7 +56,7 @@ def test_2d_packets():
                 mode="reflect",
             )
             # Get the full decomposition
-            wp_keys = list(product(["a", "d", "h", "v"], repeat=max_lev))
+            wp_keys = list(product(["a", "h", "v", "d"], repeat=max_lev))
             count = 0
             img_rows = None
             img = []
