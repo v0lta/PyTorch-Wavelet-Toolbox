@@ -194,8 +194,8 @@ def construct_strided_conv2d_matrix(
         dtype=convolution_matrix.dtype,
         device=convolution_matrix.device,
         size=[len(strided_rows), convolution_matrix.shape[0]])
-    # return convolution_matrix.index_select(0, strided_rows)  # slow
-    return torch.sparse.mm(selection_eye, convolution_matrix)  # fast
+    # return convolution_matrix.index_select(0, strided_rows) 
+    return torch.sparse.mm(selection_eye, convolution_matrix)
 
 
 def construct_a_2d(wavelet, height: int, width: int,
@@ -328,7 +328,7 @@ class MatrixWavedec2d(object):
 
         Args:
             input_signal (torch.Tensor): An input signal of shape
-                [height, width]
+                [batch_size, height, width]
 
         Returns:
             [list]: The resulting coefficients per level stored in
@@ -345,17 +345,18 @@ class MatrixWavedec2d(object):
             # print('input length odd, padding a zero on the right')
             input_signal = torch.nn.functional.pad(
                 input_signal, [0, 0, 0, 1])
-        height, width = input_signal.shape
+        batch_size, height, width = input_signal.shape
+        
 
         re_build = False
         if self.input_signal_shape is None:
-            self.input_signal_shape = input_signal.shape
+            self.input_signal_shape = input_signal.shape[-2:]
         else:
             # if the input shape changed the matrix has to be
             # constructed again.
-            if self.input_signal_shape[0] != input_signal.shape[0]:
+            if self.input_signal_shape[0] != height:
                 re_build = True
-            if self.input_signal_shape[1] != input_signal.shape[1]:
+            if self.input_signal_shape[1] != width:
                 re_build = True
 
         if self.fwt_matrix is None or re_build:
@@ -387,7 +388,7 @@ class MatrixWavedec2d(object):
             self.size_list = size_list
 
         coefficients = torch.sparse.mm(
-            self.fwt_matrix, input_signal.flatten().unsqueeze(-1))
+            self.fwt_matrix, input_signal.reshape([input_signal.shape[0], -1]).T)
 
         split_list = []
         next_to_split = coefficients
@@ -395,7 +396,7 @@ class MatrixWavedec2d(object):
             split_size = int(np.prod(size))
             four_split = torch.split(next_to_split, split_size)
             next_to_split = four_split[0]
-            reshaped = tuple(torch.reshape(el, size) for el in four_split[1:])
+            reshaped = tuple(torch.reshape(el.T, (batch_size, size[0], size[1])) for el in four_split[1:])
             split_list.append(reshaped)
         split_list.append(torch.reshape(next_to_split, size))
 
@@ -430,7 +431,7 @@ class MatrixWaverec2d(object):
 
         Returns:
             torch.Tensor: The  original signal reconstruction of
-            shape [height, width].
+            shape [batch_size, height, width].
         """
         level = len(coefficients) - 1
         re_build = False
@@ -483,11 +484,11 @@ if __name__ == '__main__':
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2d(wavelet, level=level)
     start_time = time.time()
-    mat_coeff = matrixfwt(pt_face)
+    mat_coeff = matrixfwt(pt_face.unsqueeze(0))
     total = time.time() - start_time
     print("runtime: {:2.2f}".format(total))
     start_time_2 = time.time()
-    mat_coeff2 = matrixfwt(pt_face)
+    mat_coeff2 = matrixfwt(pt_face.unsqueeze(0))
     total_2 = time.time() - start_time_2
     print("runtime: {:2.2f}".format(total_2))
     matrixifwt = MatrixWaverec2d(wavelet)

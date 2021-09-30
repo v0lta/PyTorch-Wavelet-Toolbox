@@ -32,7 +32,6 @@ def test_packet_harbo_lvl3():
     for node in nodes:
         twp_lst.append(torch.squeeze(twp[node]))
     res = torch.stack(twp_lst).numpy()
-
     wp = pywt.WaveletPacket(data=np.array(w), wavelet=wavelet, mode="reflect")
     nodes = [node.path for node in wp.get_level(3, "freq")]
     np_lst = []
@@ -80,7 +79,7 @@ def test_2d_packets():
                 data=pt_data, wavelet=wavelet, mode="reflect"
             )
 
-            # get the pytorch decomposition
+            # get the PyTorch decomposition
             count = 0
             img_pt = []
             img_rows_pt = None
@@ -107,3 +106,8 @@ def test_2d_packets():
                 ["ok" if abs_err < 1e-4 else "failed!"],
             )
             assert abs_err < 1e-4
+
+
+if __name__ == '__main__':
+    test_packet_harbo_lvl3()
+    test_2d_packets()
