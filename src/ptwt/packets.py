@@ -20,7 +20,6 @@ class WaveletPacket(collections.UserDict):
         self.input_data = data
         self.wavelet = wavelet
         self.mode = mode
-        self.nodes = {}
         self.data = None
         self._wavepacketdec(self.input_data, wavelet, mode=mode)
 
@@ -74,12 +73,8 @@ class WaveletPacket2D(collections.UserDict):
             self.mode = "constant"
         else:
             self.mode = mode
-        self.nodes = {}
         self.data = None
         self._wavepacketdec2d(self.input_data, wavelet, mode=self.mode)
-
-    def get_level(self, level):
-        return self.get_graycode_order(level)
 
     def _wavepacketdec2d(self, data, wavelet, mode, max_level=None):
         self.data = {}

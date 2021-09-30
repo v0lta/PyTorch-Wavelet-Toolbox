@@ -117,7 +117,7 @@ def test_conv_matrix_2d():
         It should be equivalent to signal convolve2d.
     """
     for filter_shape in [(2, 2), (3, 3), (3, 2), (2, 3), (5, 3), (3, 5),
-                         (2, 5), (5, 2)]:
+                         (2, 5), (5, 2), (4, 4)]:
         for size in [(5, 5), (16, 16), (8, 16), (16, 8), (16, 7), (7, 16),
                      (15, 15)]:
             for mode in ['same', 'full', 'valid']:
@@ -300,9 +300,9 @@ def test_boundary_matrix_fwt_2d():
 
 
 if __name__ == '__main__':
-    test_matrix_analysis_fwt_2d_haar()
+    # test_matrix_analysis_fwt_2d_haar()
     # test_boundary_filter_analysis_and_synthethis_matrices()
     # test_boundary_matrix_fwt_2d()
     # test_conv_matrix()
     # test_conv_matrix_2d()
-    # test_strided_conv_matrix_2d_same()
+    test_strided_conv_matrix_2d_same()

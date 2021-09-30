@@ -116,7 +116,6 @@ def orthogonalize(matrix: torch.Tensor, filt_len: int,
         torch.Tensor: Orthogonal sparse transformation matrix.
     """
     to_orthogonalize = _get_to_orthogonalize(matrix, filt_len)
-
     if len(to_orthogonalize) > 0:
         if method == 'qr':
             matrix = _orth_by_qr(matrix, to_orthogonalize)
