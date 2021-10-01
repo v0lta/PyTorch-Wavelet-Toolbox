@@ -123,6 +123,13 @@ def get_freq_order(level: int):
     """ Get the frequency order for a given packet decomposition level.
         Adapted from:
         https://github.com/PyWavelets/pywt/blob/master/pywt/_wavelet_packets.py
+
+        The code elements denote the filter application order. The filters
+        are named following the pywt convention as:
+        a - LL, low-low coefficients
+        h - LH, low-high coefficients
+        v - HL, high-low coefficients
+        d - HH, high-high coefficients
     """
     wp_natural_path = list(product(["a", "h", "v", "d"], repeat=level))
 
