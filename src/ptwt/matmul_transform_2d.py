@@ -162,6 +162,9 @@ class MatrixWavedec2d(object):
             # print('input length odd, padding a zero on the right')
             input_signal = torch.nn.functional.pad(
                 input_signal, [0, 0, 0, 1])
+
+        if input_signal.shape[1] == 1:
+            input_signal = input_signal.squeeze(1)
         batch_size, height, width = input_signal.shape
         
 

@@ -67,7 +67,7 @@ class WaveletPacket2D(collections.UserDict):
                                  of shape [batch_size, height, width]
             wavelet (Wavelet Object): A named wavelet tuple.
             mode (str): A string indicating the desired padding mode,
-            i.e. zero or reflect.
+            choose zero or reflect.
         """
         self.input_data = torch.unsqueeze(data, 1)
         self.wavelet = wavelet
@@ -89,6 +89,7 @@ class WaveletPacket2D(collections.UserDict):
 
     def _get_wavedec(self, shape):
         if self.mode == 'boundary':
+            shape = tuple(shape)
             if not shape in self.matrix_wavedec2_dict.keys():
                 self.matrix_wavedec2_dict[shape] = MatrixWavedec2d(
                     self.wavelet, level=1
