@@ -32,7 +32,6 @@ def test_packet_harbo_lvl3():
     for node in nodes:
         twp_lst.append(torch.squeeze(twp[node]))
     res = torch.stack(twp_lst).numpy()
-
     wp = pywt.WaveletPacket(data=np.array(w), wavelet=wavelet, mode="reflect")
     nodes = [node.path for node in wp.get_level(3, "freq")]
     np_lst = []
@@ -44,19 +43,18 @@ def test_packet_harbo_lvl3():
     assert err < 1e-8
 
 
-@pytest.mark.slow
-def test_2d_packets():
-    for max_lev in [1, 2, 3, 4]:
-        for wavelet_str in ["db2", "db3", "db4", "db5", "db6", "db7", "db8"]:
-            face = misc.face()[256:(512+64), 256:(512+64)]
+
+def _compare_trees(wavelet_str: str, max_lev: int, pywt_boundary:str = 'zero',
+                  ptwt_boundary: str = 'zero'):
+            face = misc.face()[256:512, 256:512]
             wavelet = pywt.Wavelet(wavelet_str)
             wp_tree = pywt.WaveletPacket2D(
-                data=np.mean(face, axis=-1).astype(np.float32),
+                data=np.mean(face, axis=-1).astype(np.float64),
                 wavelet=wavelet,
-                mode="reflect",
+                mode=pywt_boundary,
             )
             # Get the full decomposition
-            wp_keys = list(product(["a", "h", "v", "d"], repeat=max_lev))
+            wp_keys = list(product(["a", "v", "d", "h"], repeat=max_lev))
             count = 0
             img_rows = None
             img = []
@@ -74,13 +72,13 @@ def test_2d_packets():
 
             img_pywt = np.concatenate(img, axis=0)
             pt_data = torch.unsqueeze(
-                torch.from_numpy(np.mean(face, axis=-1).astype(np.float32)), 0
+                torch.from_numpy(np.mean(face, axis=-1).astype(np.float64)), 0
             )
             ptwt_wp_tree = WaveletPacket2D(
-                data=pt_data, wavelet=wavelet, mode="reflect"
+                data=pt_data, wavelet=wavelet, mode=ptwt_boundary
             )
 
-            # get the pytorch decomposition
+            # get the PyTorch decomposition
             count = 0
             img_pt = []
             img_rows_pt = None
@@ -106,4 +104,28 @@ def test_2d_packets():
                 abs_err,
                 ["ok" if abs_err < 1e-4 else "failed!"],
             )
-            assert abs_err < 1e-4
+            assert np.allclose(img_pt, img_pywt)
+
+
+@pytest.mark.slow
+def test_2d_packets():
+    "ensure pywt and ptwt produce equivalent wavelet packet trees."
+    for max_lev in [1, 2, 3, 4]:
+        for wavelet_str in ["haar", "db2", "db3", "db4", "db5", "db6", "db7", "db8"]:
+            for boundary in ['zero', 'reflect']:
+                _compare_trees(wavelet_str, max_lev,
+                    pywt_boundary=boundary, ptwt_boundary=boundary)
+
+
+@pytest.mark.slow
+def test_boundary_matrix_packets():
+    """ Ensure the sparse matrix haar tree and pywt-tree are the same."""
+    for max_lev in [1, 2, 3, 4]:
+        _compare_trees('db1', max_lev, 'zero', 'boundary')
+
+
+
+if __name__ == '__main__':
+    # test_packet_harbo_lvl3()
+    # test_2d_packets()
+    test_boundary_matrix_packets()

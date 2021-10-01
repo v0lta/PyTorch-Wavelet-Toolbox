@@ -394,7 +394,7 @@ def test_2d_wavedec_rec():
     # ensure pywt.wavedec2 and ptwt.wavedec2 produce the same
     # coefficients and ensure wavedec2 and waverec2 invert each other.
     for level in [1, 2, 3, 4, 5, None]:
-        for wavelet_str in ["db2", "db3", "db4", "db5"]:
+        for wavelet_str in ["haar", "db2", "db3", "db4", "db5"]:
             face = np.transpose(scipy.misc.face()[256:(512+64), 256:(512+64)],
                                 [2, 0, 1]).astype(np.float64)
             pt_face = torch.tensor(face).unsqueeze(1)
@@ -413,10 +413,10 @@ def test_2d_wavedec_rec():
                     assert (
                         coeffs.shape == torch.squeeze(coeff2d[pos], 1).shape
                     ), "pywt and ptwt should produce the same shapes."
-            flat_list_pywt = np.concatenate(
+            flat_coeff_list_pywt = np.concatenate(
                 flatten_2d_coeff_lst(pywt_coeff2d), -1)
-            flat_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
-            cerr = np.mean(np.abs(flat_list_pywt - flat_list_ptwt.numpy()))
+            flat_coeff_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
+            cerr = np.mean(np.abs(flat_coeff_list_pywt - flat_coeff_list_ptwt.numpy()))
             print(
                 "wavelet",
                 wavelet_str,
@@ -426,7 +426,7 @@ def test_2d_wavedec_rec():
                 cerr,
                 ["ok" if cerr < 1e-4 else "failed!"],
             )
-            assert np.allclose(flat_list_pywt, flat_list_ptwt.numpy())
+            assert np.allclose(flat_coeff_list_pywt, flat_coeff_list_ptwt.numpy())
             rec = waverec2(coeff2d, wavelet)
             rec = rec.numpy().squeeze()
             err_img = np.abs(face - rec)

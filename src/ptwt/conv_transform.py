@@ -317,7 +317,6 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
         dtype=coeffs[-1].dtype
     )
     filt_len = rec_lo.shape[-1]
-
     filt = torch.stack([rec_lo, rec_hi], 0)
 
     res_lo = coeffs[0]
