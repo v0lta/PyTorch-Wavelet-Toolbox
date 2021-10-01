@@ -257,7 +257,7 @@ def test_matrix_analysis_fwt_2d_haar():
             pt_face = torch.tensor(face)
             wavelet = pywt.Wavelet("haar")
             matrixfwt = MatrixWavedec2d(wavelet, level=level)
-            mat_coeff = matrixfwt(pt_face)
+            mat_coeff = matrixfwt(pt_face.unsqueeze(0))
             conv_coeff = pywt.wavedec2(face, wavelet, level=level,
                                        mode='zero')
             flat_mat_coeff = torch.cat(flatten_2d_coeff_lst(mat_coeff), -1)
@@ -284,9 +284,9 @@ def test_boundary_matrix_fwt_2d():
                 pt_face = torch.tensor(face)
                 wavelet = pywt.Wavelet(wavelet_str)
                 matrixfwt = MatrixWavedec2d(wavelet, level=level)
-                mat_coeff = matrixfwt(pt_face)
+                mat_coeff = matrixfwt(pt_face.unsqueeze(0))
                 matrixifwt = MatrixWaverec2d(wavelet)
-                reconstruction = matrixifwt(mat_coeff)
+                reconstruction = matrixifwt(mat_coeff).squeeze(0)
                 # remove the padding
                 if size[0] % 2 != 0:
                     reconstruction = reconstruction[:-1, :]
@@ -302,7 +302,7 @@ def test_boundary_matrix_fwt_2d():
 if __name__ == '__main__':
     # test_matrix_analysis_fwt_2d_haar()
     # test_boundary_filter_analysis_and_synthethis_matrices()
-    # test_boundary_matrix_fwt_2d()
+    test_boundary_matrix_fwt_2d()
     # test_conv_matrix()
     # test_conv_matrix_2d()
-    test_strided_conv_matrix_2d_same()
+    # test_strided_conv_matrix_2d_same()

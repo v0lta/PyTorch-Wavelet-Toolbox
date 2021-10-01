@@ -398,7 +398,7 @@ class MatrixWavedec2d(object):
             next_to_split = four_split[0]
             reshaped = tuple(torch.reshape(el.T, (batch_size, size[0], size[1])) for el in four_split[1:])
             split_list.append(reshaped)
-        split_list.append(torch.reshape(next_to_split, size))
+        split_list.append(torch.reshape(next_to_split, (batch_size, size[0], size[1])))
 
         return split_list[::-1]
 
@@ -442,9 +442,11 @@ class MatrixWaverec2d(object):
                 self.level = level
                 re_build = True
 
-        coeff_vec = torch.cat(flatten_2d_coeff_lst(coefficients))
-        shape = tuple(c*2 for c in coefficients[-1][0].shape)
-        current_height, current_width = shape
+        height, width = tuple(c*2 for c in coefficients[-1][0].shape[-2:])
+        current_height, current_width = height, width
+        batch_size = coefficients[-1][0].shape[0]
+        flat_coefficient_list = flatten_2d_coeff_lst(coefficients, flatten_tensors=False)
+        coefficient_vectors = torch.cat([c.reshape(batch_size, -1) for c in flat_coefficient_list], -1)
         ifwt_mat_list = []
         if self.ifwt_matrix is None or re_build:
             for s in range(0, self.level):
@@ -454,7 +456,7 @@ class MatrixWaverec2d(object):
                     device=coefficients[-1][0].device)
                 if s >= 1:
                     synthesis_matrix_2d = cat_sparse_identity_matrix(
-                        synthesis_matrix_2d, len(coeff_vec))
+                        synthesis_matrix_2d, coefficient_vectors.shape[-1])
                 current_height = current_height // 2
                 current_width = current_width // 2
                 ifwt_mat_list.append(synthesis_matrix_2d)
@@ -464,9 +466,9 @@ class MatrixWaverec2d(object):
                 self.ifwt_matrix = torch.sparse.mm(ifwt_mat, self.ifwt_matrix)
 
         reconstruction = torch.sparse.mm(
-            self.ifwt_matrix, coeff_vec.unsqueeze(-1))
+            self.ifwt_matrix, coefficient_vectors.T)
 
-        return reconstruction.reshape(shape)
+        return reconstruction.reshape((batch_size, height, width))
 
 
 if __name__ == '__main__':
