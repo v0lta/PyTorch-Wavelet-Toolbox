@@ -5,6 +5,7 @@ import collections
 import pywt
 import torch
 from functools import partial
+from itertools import product
 
 from .conv_transform import wavedec, wavedec2
 from .matmul_transform_2d import MatrixWavedec2d
@@ -116,6 +117,46 @@ class WaveletPacket2D(collections.UserDict):
             )
         else:
             self.data[path] = torch.squeeze(data)
+
+
+def get_freq_order(level: int):
+    """ Get the frequency order for a given packet decomposition level.
+        Adapted from:
+        https://github.com/PyWavelets/pywt/blob/master/pywt/_wavelet_packets.py
+    """
+    wp_natural_path = list(product(["a", "h", "v", "d"], repeat=level))
+
+    def get_graycode_order(level, x='a', y='d'):
+        graycode_order = [x, y]
+        for i in range(level - 1):
+            graycode_order = [x + path for path in graycode_order] + \
+                            [y + path for path in graycode_order[::-1]]
+        return graycode_order
+
+    def expand_2d_path(path):
+        expanded_paths = {
+            'd': 'hh',
+            'h': 'hl',
+            'v': 'lh',
+            'a': 'll'
+        }
+        return (''.join([expanded_paths[p][0] for p in path]),
+                ''.join([expanded_paths[p][1] for p in path]))
+
+    nodes = {}
+    for (row_path, col_path), node in [
+        (expand_2d_path(node), node) for node in wp_natural_path
+    ]:
+        nodes.setdefault(row_path, {})[col_path] = node
+    graycode_order = get_graycode_order(level, x='l', y='h')
+    nodes = [nodes[path] for path in graycode_order if path in nodes]
+    result = []
+    for row in nodes:
+        result.append(
+            [row[path] for path in graycode_order if path in row]
+        )
+    # print(result)
+    return result
 
 
 if __name__ == "__main__":

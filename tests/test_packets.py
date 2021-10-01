@@ -5,7 +5,11 @@ import pywt
 import torch
 from itertools import product
 from scipy import misc
-from ptwt.packets import WaveletPacket, WaveletPacket2D
+from ptwt.packets import (
+    WaveletPacket,
+    WaveletPacket2D,
+    get_freq_order
+)
 
 
 def test_packet_harbo_lvl3():
@@ -122,6 +126,29 @@ def test_boundary_matrix_packets():
     """ Ensure the sparse matrix haar tree and pywt-tree are the same."""
     for max_lev in [1, 2, 3, 4]:
         _compare_trees('db1', max_lev, 'zero', 'boundary')
+
+
+def test_freq_order():
+    for level in [1, 2, 3, 4]:
+
+        wavelet_str = 'db2'
+        pywt_boundary = 'zero'
+
+        face = misc.face()
+        wavelet = pywt.Wavelet(wavelet_str)
+        wp_tree = pywt.WaveletPacket2D(
+            data=np.mean(face, axis=-1).astype(np.float64),
+            wavelet=wavelet,
+            mode=pywt_boundary,
+        )
+        # Get the full decomposition
+        freq_tree = wp_tree.get_level(level, 'freq')
+        freq_order = get_freq_order(level)
+
+        for order_list, tree_list in zip(freq_tree, freq_order):
+            for order_el, tree_el in zip(order_list, tree_list):
+                print(level, order_el.path, "".join(tree_el), order_el.path == "".join(tree_el))
+                assert order_el.path == "".join(tree_el)
 
 
 
