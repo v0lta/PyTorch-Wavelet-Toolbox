@@ -6,7 +6,6 @@ import torch
 from itertools import product
 from scipy import misc
 from ptwt.packets import WaveletPacket, WaveletPacket2D
-import matplotlib.pyplot as plt
 
 
 def test_packet_harbo_lvl3():
@@ -45,7 +44,7 @@ def test_packet_harbo_lvl3():
 
 
 
-def compare_trees(wavelet_str: str, max_lev: int, pywt_boundary:str = 'zero',
+def _compare_trees(wavelet_str: str, max_lev: int, pywt_boundary:str = 'zero',
                   ptwt_boundary: str = 'zero'):
             face = misc.face()[256:512, 256:512]
             wavelet = pywt.Wavelet(wavelet_str)
@@ -110,17 +109,19 @@ def compare_trees(wavelet_str: str, max_lev: int, pywt_boundary:str = 'zero',
 
 @pytest.mark.slow
 def test_2d_packets():
+    "ensure pywt and ptwt produce equivalent wavelet packet trees."
     for max_lev in [1, 2, 3, 4]:
-        for wavelet_str in ["db2", "db3", "db4", "db5", "db6", "db7", "db8"]:
+        for wavelet_str in ["haar", "db2", "db3", "db4", "db5", "db6", "db7", "db8"]:
             for boundary in ['zero', 'reflect']:
-                compare_trees(wavelet_str, max_lev,
+                _compare_trees(wavelet_str, max_lev,
                     pywt_boundary=boundary, ptwt_boundary=boundary)
 
 
 @pytest.mark.slow
 def test_boundary_matrix_packets():
+    """ Ensure the sparse matrix haar tree and pywt-tree are the same."""
     for max_lev in [1, 2, 3, 4]:
-        compare_trees('db1', max_lev, 'zero', 'boundary')
+        _compare_trees('db1', max_lev, 'zero', 'boundary')
 
 
 
