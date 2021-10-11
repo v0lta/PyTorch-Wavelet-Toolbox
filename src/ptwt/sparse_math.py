@@ -1,7 +1,7 @@
 # Written by moritz ( @ wolter.tech ) 17.09.21
 import torch
 import numpy as np
-import pytest
+# import pytest
 
 
 def _dense_kron(sparse_tensor_a: torch.Tensor,
@@ -96,7 +96,16 @@ def sparse_diag(diagonal: torch.Tensor,
     return diag
 
 
-def sparse_matmul_select(matrix, row):
+def sparse_matmul_select(matrix: torch.tensor, row: int) -> torch.tensor:
+    """ Select a sparse tensor row by matrix multiplication.
+
+    Args:
+        matrix (torch.tensor): The sparse matrix from which to select.
+        row (int): The row to return.
+
+    Returns:
+        [torch.tensor]: The selected row.
+    """
     selection_matrix = torch.sparse_coo_tensor(
         torch.stack([torch.tensor(0, device=row.device), row]).unsqueeze(-1),
         torch.tensor(1.), device=matrix.device,
@@ -233,7 +242,6 @@ def _orth_by_gram_schmidt(
             orthonormal_row)
         done.append(row_no_to_ortho)
     return matrix
-
 
 
 def construct_conv_matrix(filter: torch.tensor,
@@ -410,9 +418,8 @@ def construct_strided_conv2d_matrix(
         dtype=convolution_matrix.dtype,
         device=convolution_matrix.device,
         size=[len(strided_rows), convolution_matrix.shape[0]])
-    # return convolution_matrix.index_select(0, strided_rows) 
+    # return convolution_matrix.index_select(0, strided_rows)
     return torch.sparse.mm(selection_eye, convolution_matrix)
-
 
 
 if __name__ == '__main__':
