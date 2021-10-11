@@ -47,7 +47,8 @@ def cat_sparse_identity_matrix(sparse_matrix, new_length):
 
 
 # construct the FWT analysis matrix.
-def construct_a(wavelet, length, wrap=True, dtype=torch.float64):
+def construct_a(wavelet, length, wrap=True,
+                dtype=torch.float64) -> torch.tensor:
     """Constructs the sparse analysis matrix to compute a matrix based fwt.
     Following page 31 of the Strang Nguyen Wavelets and Filter Banks book.
     Args:
@@ -93,7 +94,7 @@ def _get_to_orthogonalize(
         filt_len (int): The number of entries we would expect per row.
 
     Returns:
-        torch.Tensor: The row indices with too few entries.
+        torch.Tensor (torch.tensor): The row indices with too few entries.
     """
     unique, count = torch.unique_consecutive(
         matrix.coalesce().indices()[0, :], return_counts=True)
