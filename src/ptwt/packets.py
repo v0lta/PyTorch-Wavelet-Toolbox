@@ -74,7 +74,7 @@ class WaveletPacket2D(collections.UserDict):
         self.wavelet = wavelet
         self.mode = mode
         if mode == "zero":
-            # translate pywt to PyTorch 
+            # translate pywt to PyTorch
             self.mode = "constant"
 
         self.max_level = max_level
@@ -87,11 +87,10 @@ class WaveletPacket2D(collections.UserDict):
         self._recursive_dwt2d(
             self.input_data, level=0, path="")
 
-
     def _get_wavedec(self, shape):
         if self.mode == 'boundary':
             shape = tuple(shape)
-            if not shape in self.matrix_wavedec2_dict.keys():
+            if shape not in self.matrix_wavedec2_dict.keys():
                 self.matrix_wavedec2_dict[shape] = MatrixWavedec2d(
                     self.wavelet, level=1
                 )
@@ -101,14 +100,14 @@ class WaveletPacket2D(collections.UserDict):
             return partial(wavedec2, wavelet=self.wavelet,
                            level=1, mode=self.mode)
 
-
     def _recursive_dwt2d(self, data, level, path):
         self.data[path] = data
         if level < self.max_level:
             # resa, (resh, resv, resd) = self.wavedec2(
             #    data, self.wavelet, level=1, mode=self.mode
             # )
-            result_a, (result_h, result_v, result_d) = self._get_wavedec(data.shape)(data)
+            result_a, (result_h, result_v, result_d) = \
+                self._get_wavedec(data.shape)(data)
             return (
                 self._recursive_dwt2d(result_a, level + 1, path + "a"),
                 self._recursive_dwt2d(result_h, level + 1, path + "h"),
@@ -168,16 +167,17 @@ def get_freq_order(level: int):
 
 if __name__ == "__main__":
     import numpy as np
-    import matplotlib.pyplot as plt
-    import scipy.signal as signal
-    from itertools import product
+    # import matplotlib.pyplot as plt
+    # import scipy.signal as signal
+    # from itertools import product
 
     from scipy import misc
 
     face = misc.face()[:128, :128]
     wavelet = pywt.Wavelet("haar")
     wp_tree = pywt.WaveletPacket2D(
-        data=np.mean(face, axis=-1).astype(np.float32), wavelet=wavelet, mode="zero"
+        data=np.mean(face, axis=-1).astype(np.float32),
+        wavelet=wavelet, mode="zero"
     )
 
     # Get the full decomposition
@@ -204,7 +204,8 @@ if __name__ == "__main__":
         torch.from_numpy(np.mean(face, axis=-1).astype(np.float32)), 0
     )
     pt_data = torch.cat([pt_data, pt_data], 0)
-    ptwt_wp_tree = WaveletPacket2D(data=pt_data, wavelet=wavelet, mode="boundary")
+    ptwt_wp_tree = WaveletPacket2D(data=pt_data,
+                                   wavelet=wavelet, mode="boundary")
 
     # get the PyTorch decomposition
     count = 0
@@ -231,17 +232,21 @@ if __name__ == "__main__":
 
     print(
         "a",
-        np.mean(np.abs(wp_tree["a"].data - torch.squeeze(ptwt_wp_tree["a"][0]).numpy())),
+        np.mean(np.abs(wp_tree["a"].data
+                - torch.squeeze(ptwt_wp_tree["a"][0]).numpy())),
     )
     print(
         "h",
-        np.mean(np.abs(wp_tree["h"].data - torch.squeeze(ptwt_wp_tree["h"][0]).numpy())),
+        np.mean(np.abs(wp_tree["h"].data
+                - torch.squeeze(ptwt_wp_tree["h"][0]).numpy())),
     )
     print(
         "v",
-        np.mean(np.abs(wp_tree["v"].data - torch.squeeze(ptwt_wp_tree["v"][0]).numpy())),
+        np.mean(np.abs(wp_tree["v"].data
+                - torch.squeeze(ptwt_wp_tree["v"][0]).numpy())),
     )
     print(
         "d",
-        np.mean(np.abs(wp_tree["d"].data - torch.squeeze(ptwt_wp_tree["d"][0]).numpy())),
+        np.mean(np.abs(wp_tree["d"].data
+                - torch.squeeze(ptwt_wp_tree["d"][0]).numpy())),
     )

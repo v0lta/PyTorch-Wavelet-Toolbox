@@ -5,7 +5,7 @@ import pywt
 import torch
 from itertools import product
 from scipy import misc
-from ptwt.packets import (
+from src.ptwt.packets import (
     WaveletPacket,
     WaveletPacket2D,
     get_freq_order
@@ -47,78 +47,75 @@ def test_packet_harbo_lvl3():
     assert err < 1e-8
 
 
-
-def _compare_trees(wavelet_str: str, max_lev: int, pywt_boundary:str = 'zero',
-                  ptwt_boundary: str = 'zero'):
-            face = misc.face()[256:512, 256:512]
-            wavelet = pywt.Wavelet(wavelet_str)
-            wp_tree = pywt.WaveletPacket2D(
-                data=np.mean(face, axis=-1).astype(np.float64),
-                wavelet=wavelet,
-                mode=pywt_boundary,
-            )
-            # Get the full decomposition
-            wp_keys = list(product(["a", "v", "d", "h"], repeat=max_lev))
+def _compare_trees(wavelet_str: str, max_lev: int, pywt_boundary: str = 'zero',
+                   ptwt_boundary: str = 'zero'):
+    face = misc.face()[256:512, 256:512]
+    wavelet = pywt.Wavelet(wavelet_str)
+    wp_tree = pywt.WaveletPacket2D(
+        data=np.mean(face, axis=-1).astype(np.float64),
+        wavelet=wavelet,
+        mode=pywt_boundary,
+    )
+    # Get the full decomposition
+    wp_keys = list(product(["a", "v", "d", "h"], repeat=max_lev))
+    count = 0
+    img_rows = None
+    img = []
+    for node in wp_keys:
+        packet = np.squeeze(wp_tree["".join(node)].data)
+        if img_rows is not None:
+            img_rows = np.concatenate([img_rows, packet], axis=1)
+        else:
+            img_rows = packet
+        count += 1
+        if count >= np.sqrt(len(wp_keys)):
             count = 0
+            img.append(img_rows)
             img_rows = None
-            img = []
-            for node in wp_keys:
-                packet = np.squeeze(wp_tree["".join(node)].data)
-                if img_rows is not None:
-                    img_rows = np.concatenate([img_rows, packet], axis=1)
-                else:
-                    img_rows = packet
-                count += 1
-                if count >= np.sqrt(len(wp_keys)):
-                    count = 0
-                    img.append(img_rows)
-                    img_rows = None
-
-            img_pywt = np.concatenate(img, axis=0)
-            pt_data = torch.unsqueeze(
-                torch.from_numpy(np.mean(face, axis=-1).astype(np.float64)), 0
-            )
-            ptwt_wp_tree = WaveletPacket2D(
-                data=pt_data, wavelet=wavelet, mode=ptwt_boundary
-            )
-
-            # get the PyTorch decomposition
+    img_pywt = np.concatenate(img, axis=0)
+    pt_data = torch.unsqueeze(
+        torch.from_numpy(np.mean(face, axis=-1).astype(np.float64)), 0
+    )
+    ptwt_wp_tree = WaveletPacket2D(
+        data=pt_data, wavelet=wavelet, mode=ptwt_boundary
+    )
+    # get the PyTorch decomposition
+    count = 0
+    img_pt = []
+    img_rows_pt = None
+    for node in wp_keys:
+        packet = torch.squeeze(ptwt_wp_tree["".join(node)])
+        if img_rows_pt is not None:
+            img_rows_pt = torch.cat([img_rows_pt, packet], axis=1)
+        else:
+            img_rows_pt = packet
+        count += 1
+        if count >= np.sqrt(len(wp_keys)):
             count = 0
-            img_pt = []
+            img_pt.append(img_rows_pt)
             img_rows_pt = None
-            for node in wp_keys:
-                packet = torch.squeeze(ptwt_wp_tree["".join(node)])
-                if img_rows_pt is not None:
-                    img_rows_pt = torch.cat([img_rows_pt, packet], axis=1)
-                else:
-                    img_rows_pt = packet
-                count += 1
-                if count >= np.sqrt(len(wp_keys)):
-                    count = 0
-                    img_pt.append(img_rows_pt)
-                    img_rows_pt = None
-
-            img_pt = torch.cat(img_pt, axis=0).numpy()
-            abs_err_img = np.abs(img_pt - img_pywt)
-            abs_err = np.mean(abs_err_img)
-            print(
-                wavelet_str,
-                max_lev,
-                "total error",
-                abs_err,
-                ["ok" if abs_err < 1e-4 else "failed!"],
-            )
-            assert np.allclose(img_pt, img_pywt)
+    img_pt = torch.cat(img_pt, axis=0).numpy()
+    abs_err_img = np.abs(img_pt - img_pywt)
+    abs_err = np.mean(abs_err_img)
+    print(
+        wavelet_str,
+        max_lev,
+        "total error",
+        abs_err,
+        ["ok" if abs_err < 1e-4 else "failed!"],
+    )
+    assert np.allclose(img_pt, img_pywt)
 
 
 @pytest.mark.slow
 def test_2d_packets():
     "ensure pywt and ptwt produce equivalent wavelet packet trees."
     for max_lev in [1, 2, 3, 4]:
-        for wavelet_str in ["haar", "db2", "db3", "db4", "db5", "db6", "db7", "db8"]:
+        for wavelet_str in ["haar", "db2", "db3", "db4",
+                            "db5", "db6", "db7", "db8"]:
             for boundary in ['zero', 'reflect']:
                 _compare_trees(wavelet_str, max_lev,
-                    pywt_boundary=boundary, ptwt_boundary=boundary)
+                               pywt_boundary=boundary, ptwt_boundary=boundary)
 
 
 @pytest.mark.slow
@@ -130,7 +127,6 @@ def test_boundary_matrix_packets():
 
 def test_freq_order():
     for level in [1, 2, 3, 4]:
-
         wavelet_str = 'db2'
         pywt_boundary = 'zero'
 
@@ -147,9 +143,9 @@ def test_freq_order():
 
         for order_list, tree_list in zip(freq_tree, freq_order):
             for order_el, tree_el in zip(order_list, tree_list):
-                print(level, order_el.path, "".join(tree_el), order_el.path == "".join(tree_el))
+                print(level, order_el.path, "".join(tree_el),
+                      order_el.path == "".join(tree_el))
                 assert order_el.path == "".join(tree_el)
-
 
 
 if __name__ == '__main__':

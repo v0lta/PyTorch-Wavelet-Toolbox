@@ -4,7 +4,7 @@ import torch
 import pytest
 import numpy as np
 import scipy.signal
-from scipy import misc
+# from scipy import misc
 
 
 from src.ptwt.matmul_transform import (
@@ -16,9 +16,7 @@ from src.ptwt.matmul_transform import (
 
 from src.ptwt.conv_transform import flatten_2d_coeff_lst
 
-
 from src.ptwt.matmul_transform_2d import (
-    MatrixWaverec2d,
     construct_boundary_a2d,
     construct_boundary_s2d,
     MatrixWavedec2d,
@@ -74,6 +72,7 @@ def test_boundary_transform_1d():
                           'shape: {},'.format(data.shape[-1]),
                           'error {:2.2e}'.format(error))
                     assert np.allclose(rec.numpy(), rec_pywt, atol=1e-05)
+
 
 def test_analysis_synthesis_matrices():
     """ test the 2d analysis and synthesis matrices for various wavelets. """
@@ -160,7 +159,7 @@ def test_batched_2d_matrix_fwt_ifwt():
                    -1).astype(np.float64)
     pt_face = torch.stack([torch.tensor(face),
                            torch.tensor(face),
-                           torch.tensor(face) ])
+                           torch.tensor(face)])
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2d(wavelet, level=level)
     mat_coeff = matrixfwt(pt_face)
@@ -168,7 +167,7 @@ def test_batched_2d_matrix_fwt_ifwt():
     reconstruction = matrixifwt(mat_coeff)
     err = np.sum(np.abs(reconstruction[0].numpy() - face
                         + reconstruction[1].numpy() - face
-                        + reconstruction[2].numpy() - face ))
+                        + reconstruction[2].numpy() - face))
     print(size, str(level).center(4),
           wavelet_str, "error {:3.3e}".format(err),
           np.allclose(reconstruction.numpy(), face))
@@ -183,4 +182,5 @@ if __name__ == '__main__':
     # test_conv_matrix()
     # test_conv_matrix_2d()
     # test_strided_conv_matrix_2d_same()
-    test_batched_2d_matrix_fwt_ifwt()
+    # test_batched_2d_matrix_fwt_ifwt()
+    test_analysis_synthesis_matrices()

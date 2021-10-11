@@ -15,8 +15,25 @@ from .matmul_transform import (
 )
 
 
-def construct_a_2d(wavelet, height: int, width: int,
-                   device, dtype=torch.float64):
+def _construct_a_2d(wavelet, height: int, width: int,
+                    device: torch.device, dtype=torch.float64) -> torch.tensor:
+    """ Construct a raw two dimensional analysis fast wavelet transformation
+        matrix.
+        The construced matrix is NOT necessary orthogonal.
+        In most cases construct_boundary_a2d should be used instead.
+
+    Args:
+        wavelet (pywt.Wavelet): The wavelet to use.
+        height (int): The Height of the input image.
+        width (int): The Widht of the input image.
+        device ([torch.device]): Where to place to matrix, either cpu or gpu.
+        dtype ([type], optional): Desired matrix data-type.
+            Defaults to torch.float64.
+
+    Returns:
+        [torch.tensor]: A sparse fwt analysis matrix.
+    """
+
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype)
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
@@ -34,8 +51,26 @@ def construct_a_2d(wavelet, height: int, width: int,
     return analysis
 
 
-def construct_s_2d(wavelet, height: int, width: int,
-                   device, dtype=torch.float64):
+def _construct_s_2d(wavelet, height: int, width: int,
+                    device, dtype=torch.float64) -> torch.tensor:
+    """ Construct a raw fast wavelet transformation synthesis matrix.
+        The construced matrix is NOT necessary orthogonal.
+        In most cases construct_boundary_s2d should be used instead.
+
+    Args:
+        wavelet (pywt.Wavelet): The wavelet to use.
+        height (int): The height of the input image, which was originally
+            transformed.
+        width (int): The width of the input image, which was originally
+            transformed.
+        device ([type]): Where to place the synthesis matrix,
+            usually cpu or gpu.
+        dtype ([type], optional): The data-type the matrix should have.
+            Defaults to torch.float64.
+
+    Returns:
+        [torch.tensor]: The generated fast wavelet synthesis matrix.
+    """
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype)
     dec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
@@ -81,7 +116,7 @@ def construct_boundary_a2d(
         [torch.Tensor]: A sparse fwt matrix, with orthogonalized boundary
             wavelets.
     """
-    a = construct_a_2d(
+    a = _construct_a_2d(
         wavelet, height, width, device, dtype=dtype)
     orth_a = orthogonalize(
         a, len(wavelet)*len(wavelet))
@@ -106,7 +141,7 @@ def construct_boundary_s2d(
         torch.Tensor: The synthesis matrix, used to compute the
             inverse fast wavelet transform.
     """
-    s = construct_s_2d(
+    s = _construct_s_2d(
         wavelet, height, width, device, dtype=dtype)
     orth_s = orthogonalize(
         s.transpose(1, 0), len(wavelet)*len(wavelet)).transpose(1, 0)
@@ -166,7 +201,6 @@ class MatrixWavedec2d(object):
         if input_signal.shape[1] == 1:
             input_signal = input_signal.squeeze(1)
         batch_size, height, width = input_signal.shape
-        
 
         re_build = False
         if self.input_signal_shape is None:
@@ -208,7 +242,8 @@ class MatrixWavedec2d(object):
             self.size_list = size_list
 
         coefficients = torch.sparse.mm(
-            self.fwt_matrix, input_signal.reshape([input_signal.shape[0], -1]).T)
+            self.fwt_matrix, input_signal.reshape(
+                [input_signal.shape[0], -1]).T)
 
         split_list = []
         next_to_split = coefficients
@@ -216,9 +251,12 @@ class MatrixWavedec2d(object):
             split_size = int(np.prod(size))
             four_split = torch.split(next_to_split, split_size)
             next_to_split = four_split[0]
-            reshaped = tuple((el.T.reshape(batch_size, size[0], size[1])) for el in four_split[1:])
+            reshaped = tuple(
+                (el.T.reshape(batch_size, size[0], size[1]))
+                for el in four_split[1:])
             split_list.append(reshaped)
-        split_list.append(next_to_split.T.reshape(batch_size, size[0], size[1]))
+        split_list.append(
+            next_to_split.T.reshape(batch_size, size[0], size[1]))
 
         return split_list[::-1]
 
@@ -265,8 +303,10 @@ class MatrixWaverec2d(object):
         height, width = tuple(c*2 for c in coefficients[-1][0].shape[-2:])
         current_height, current_width = height, width
         batch_size = coefficients[-1][0].shape[0]
-        flat_coefficient_list = flatten_2d_coeff_lst(coefficients, flatten_tensors=False)
-        coefficient_vectors = torch.cat([c.reshape(batch_size, -1) for c in flat_coefficient_list], -1)
+        flat_coefficient_list = flatten_2d_coeff_lst(
+            coefficients, flatten_tensors=False)
+        coefficient_vectors = torch.cat(
+            [c.reshape(batch_size, -1) for c in flat_coefficient_list], -1)
         ifwt_mat_list = []
         if self.ifwt_matrix is None or re_build:
             for s in range(0, self.level):
