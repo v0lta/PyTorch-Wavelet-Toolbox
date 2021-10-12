@@ -7,6 +7,7 @@ from scipy import misc
 from src.ptwt.sparse_math import (
     sparse_kron,
     construct_conv_matrix,
+    construct_strided_conv_matrix,
     construct_strided_conv2d_matrix,
     construct_conv2d_matrix
 )
@@ -48,6 +49,36 @@ def test_conv_matrix():
             test_padding_case('full')
             test_padding_case('same')
             test_padding_case('valid')
+
+
+def test_strided_conv_matrix():
+    """ Test the strided 1d sparse convolution matrix code."""
+    test_filters = [torch.tensor([1., 0]), torch.rand([2]),
+                    torch.rand([3]), torch.rand([4])]
+    input_signals = [torch.tensor([0., 1, 2, 3, 4, 5, 6, 7]),
+                     torch.rand([8]),
+                     torch.rand([9])]
+    for h in test_filters:
+        for x in input_signals:
+            for mode in ['valid', 'same']:
+                strided_conv_matrix = construct_strided_conv_matrix(
+                    h, len(x), 2, mode)
+                mm_conv_res = torch.sparse.mm(
+                    strided_conv_matrix, x.unsqueeze(-1)).squeeze()
+                if mode == 'same':
+                    height_offset = len(x) % 2
+                    padding = (len(h) // 2,
+                               len(h) // 2 - 1 + height_offset)
+                    x = torch.nn.functional.pad(x, padding)
+
+                torch_conv_res = torch.nn.functional.conv1d(
+                    x.unsqueeze(0).unsqueeze(0),
+                    h.flip(0).unsqueeze(0).unsqueeze(0), stride=2).squeeze()
+                error = torch.sum(torch.abs(mm_conv_res - torch_conv_res))
+                print("filter shape {:2}".format(tuple(h.shape)[0]),
+                      "signal shape {:2}".format(tuple(x.shape)[0]),
+                      "error {:2.2e}".format(error.item()))
+                assert np.allclose(mm_conv_res.numpy(), torch_conv_res.numpy())
 
 
 def test_conv_matrix_2d():
@@ -162,7 +193,6 @@ def test_strided_conv_matrix_2d_same():
                   np.allclose(torch_res.numpy(), res_mm_stride.numpy()))
 
 
-
 def _get_2d_same_padding(filter_shape, input_size):
     height_offset = input_size[0] % 2
     width_offset = input_size[1] % 2
@@ -173,6 +203,5 @@ def _get_2d_same_padding(filter_shape, input_size):
     return padding
 
 
-
 if __name__ == '__main__':
-    test_kron()
+    test_strided_conv_matrix()

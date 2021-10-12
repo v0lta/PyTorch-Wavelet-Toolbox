@@ -245,14 +245,14 @@ def _orth_by_gram_schmidt(
 
 
 def construct_conv_matrix(filter: torch.tensor,
-                          input_columns: int,
+                          input_rows: int,
                           mode: str = 'valid') -> torch.Tensor:
     """Constructs a convolution matrix,
        full and valid padding are supported.
 
     Args:
         filter (torch.tensor): The 1d-filter to convolve with.
-        input_columns (int): The number of columns in the input.
+        input_rows (int): The number of columns in the input.
         mode (str): String indetifier for the desired padding.
             Defaults to valid.
 
@@ -267,22 +267,22 @@ def construct_conv_matrix(filter: torch.tensor,
 
     if mode == 'full':
         start_row = 0
-        stop_row = input_columns + filter_length - 1
+        stop_row = input_rows + filter_length - 1
     elif mode == 'same' or mode == 'sameshift':
         filter_offset = filter_length % 2
-        # signal_offset = input_columns % 2
+        # signal_offset = input_rows % 2
         start_row = filter_length // 2 - 1 + filter_offset
-        stop_row = start_row + input_columns - 1
+        stop_row = start_row + input_rows - 1
     elif mode == 'valid':
         start_row = filter_length - 1
-        stop_row = input_columns - 1
+        stop_row = input_rows - 1
     else:
         raise ValueError('unkown padding type.')
 
     row_indices = []
     column_indices = []
     values = []
-    for column in range(0, input_columns):
+    for column in range(0, input_rows):
         for row in range(0, filter_length):
             check_row = column + row
             if (check_row >= start_row) and (check_row <= stop_row):
@@ -355,12 +355,42 @@ def construct_conv2d_matrix(filter: torch.tensor,
     return sparse_conv_matrix
 
 
+def construct_strided_conv_matrix(
+            filter: torch.Tensor,
+            input_rows: int,
+            stride: int,
+            mode: str
+        ) -> torch.Tensor:
+    """ Construct a strided convolution matrix.
+
+    Args:
+        filter (torch.Tensor): The filter coefficients to convolve with.
+        input_rows (int): The number of rows in the input vector.
+        stride (int): The step size of the convolution.
+        mode (str): Choose 'valid' or 'same'.
+
+    Returns:
+        torch.Tensor: The strided sparse convolution matrix.
+    """
+    conv_matrix = construct_conv_matrix(filter, input_rows, mode)
+    # find conv_matrix[:stride, :] sparsely
+    select_rows = torch.arange(0, conv_matrix.shape[0], stride)
+    selection_matrix = torch.sparse_coo_tensor(
+        torch.stack([torch.arange(0, len(select_rows)),
+                     select_rows]),
+        torch.ones_like(select_rows),
+        size=[len(select_rows), conv_matrix.shape[0]],
+        dtype=conv_matrix.dtype
+    )
+    return torch.sparse.mm(selection_matrix, conv_matrix)
+
+
 def construct_strided_conv2d_matrix(
         filter: torch.Tensor,
         input_rows: int,
         input_columns: int,
         stride: int = 2,
-        mode='full') -> torch.Tensor:
+        mode: str = 'full') -> torch.Tensor:
     """ Create a strided sparse two dimensional convolution
        matrix.
 

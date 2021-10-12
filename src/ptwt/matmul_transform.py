@@ -46,7 +46,6 @@ def cat_sparse_identity_matrix(sparse_matrix, new_length):
     return new_matrix
 
 
-# construct the FWT analysis matrix.
 def construct_a(wavelet, length, wrap=True,
                 dtype=torch.float64) -> torch.tensor:
     """Constructs the sparse analysis matrix to compute a matrix based fwt.
@@ -132,7 +131,7 @@ def matrix_wavedec(data, wavelet, level: int = None,
     Args:
         wavelet: A wavelet object.
         data: Batched input data [batch_size, time], should be of even length.
-              WARNING: If the input length is odd a zero will be padded on the
+              WARNING: If the input length is odd it will be padded on the
               right to make it even.
         level: The desired level up to which to compute the fwt.
         boundary: The desired approach to boundary value treatment.
