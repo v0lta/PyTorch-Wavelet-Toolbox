@@ -359,7 +359,7 @@ def construct_strided_conv_matrix(
             filter: torch.Tensor,
             input_rows: int,
             stride: int,
-            mode: str
+            mode: str = 'valid'
         ) -> torch.Tensor:
     """ Construct a strided convolution matrix.
 
@@ -367,14 +367,19 @@ def construct_strided_conv_matrix(
         filter (torch.Tensor): The filter coefficients to convolve with.
         input_rows (int): The number of rows in the input vector.
         stride (int): The step size of the convolution.
-        mode (str): Choose 'valid' or 'same'.
+        mode (str): Choose 'valid', 'same' or 'sameshift'.
+            Defaults to 'valid'.
 
     Returns:
         torch.Tensor: The strided sparse convolution matrix.
     """
     conv_matrix = construct_conv_matrix(filter, input_rows, mode)
-    # find conv_matrix[1:stride, :] sparsely
-    select_rows = torch.arange(1, conv_matrix.shape[0], stride)
+    if mode == "sameshift":
+        # find conv_matrix[1:stride, :] sparsely
+        select_rows = torch.arange(1, conv_matrix.shape[0], stride)
+    else:
+        # find conv_matrix[:stride, :] sparsely
+        select_rows = torch.arange(0, conv_matrix.shape[0], stride)
     selection_matrix = torch.sparse_coo_tensor(
         torch.stack([torch.arange(0, len(select_rows)),
                      select_rows]),
