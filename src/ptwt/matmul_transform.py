@@ -9,8 +9,11 @@ import numpy as np
 import torch
 from .sparse_math import (
     _orth_by_qr,
-    _orth_by_gram_schmidt
+    _orth_by_gram_schmidt,
+    construct_strided_conv_matrix
 )
+
+from .conv_transform import get_filter_tensors
 
 
 def cat_sparse_identity_matrix(sparse_matrix, new_length):
@@ -81,6 +84,19 @@ def construct_a(wavelet, length, wrap=True,
     a_ten = torch.sparse.FloatTensor(a_indices, a_entries).coalesce()
     # left hand filtering and decimation matrix
     return a_ten
+
+
+def construct_a2(wavelet, length: int,
+                 device: torch.device,
+                 dtype=torch.float64) -> torch.tensor:
+    dec_lo, dec_hi, _, _ = get_filter_tensors(
+        wavelet, flip=False, device=device, dtype=dtype)
+    analysis_lo = construct_strided_conv_matrix(
+        dec_lo.squeeze(), length, 2, 'same')
+    analysis_hi = construct_strided_conv_matrix(
+        dec_hi.squeeze(), length, 2, 'same')
+    analysis = torch.cat([analysis_lo, analysis_hi])
+    return analysis
 
 
 def _get_to_orthogonalize(
@@ -322,3 +338,10 @@ def matrix_waverec(
     for ifwt_mat in ifwt_mat_lst[::-1]:
         reconstruction = torch.sparse.mm(ifwt_mat, reconstruction)
     return reconstruction.T, ifwt_mat_lst[::-1]
+
+
+if __name__ == '__main__':
+    import pywt
+    import torch
+    a = construct_a2(pywt.Wavelet("db2"), 20,
+                     torch.device('cpu'))
