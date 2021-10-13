@@ -97,6 +97,7 @@ def _construct_s_2d(wavelet, height: int, width: int,
 def construct_boundary_a2d(
         wavelet, height: int, width: int,
         device: torch.device,
+        boundary: str = 'qr',
         dtype: torch.dtype = torch.float64) -> torch.Tensor:
     """ Construct a boundary fwt matrix for the input wavelet.
 
@@ -109,7 +110,9 @@ def construct_boundary_a2d(
             Should be divisible by two.
         device (torch.device): Where to place the matrix. Either on
             the CPU or GPU.
-        dtype ([type], optional): The desired data-type for the matrix.
+        boundary (str): The method to use for matrix orthogonalization.
+            Choose qr or gramschmidt. Defaults to qr.
+        dtype (torch.dtype, optional): The desired data-type for the matrix.
             Defaults to torch.float64.
 
     Returns:
@@ -119,13 +122,15 @@ def construct_boundary_a2d(
     a = _construct_a_2d(
         wavelet, height, width, device, dtype=dtype)
     orth_a = orthogonalize(
-        a, len(wavelet)*len(wavelet))
+        a, len(wavelet)*len(wavelet), method=boundary)
     return orth_a
 
 
 def construct_boundary_s2d(
         wavelet, height: int, width: int,
-        device, dtype=torch.float64) -> torch.Tensor:
+        device: torch.device,
+        boundary: str = 'qr',
+        dtype=torch.float64) -> torch.Tensor:
     """ Construct a 2d-fwt matrix, with boundary wavelets.
 
     Args:
@@ -133,6 +138,8 @@ def construct_boundary_s2d(
         height (int): The original height of the input matrix.
         width (int): The width of the original input matrix.
         device (torch.device): Choose CPU or GPU.
+        boundary (str): The method to use for matrix orthogonalization.
+            Choose qr or gramschmidt. Defaults to qr.
         dtype (torch.dtype, optional): The data-type of the
             sparse matrix, choose float32 or 64.
             Defaults to torch.float64.
@@ -144,7 +151,9 @@ def construct_boundary_s2d(
     s = _construct_s_2d(
         wavelet, height, width, device, dtype=dtype)
     orth_s = orthogonalize(
-        s.transpose(1, 0), len(wavelet)*len(wavelet)).transpose(1, 0)
+        s.transpose(1, 0),
+        len(wavelet)*len(wavelet),
+        method=boundary).transpose(1, 0)
     return orth_s
 
 

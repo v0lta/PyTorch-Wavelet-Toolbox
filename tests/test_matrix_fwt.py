@@ -6,8 +6,8 @@ import torch
 import pytest
 
 from src.ptwt.matmul_transform import (
-    construct_a,
-    construct_s,
+    _construct_a,
+    _construct_s,
     matrix_wavedec,
     matrix_waverec,
 )
@@ -16,8 +16,8 @@ from src.ptwt.mackey_glass import MackeyGenerator
 
 # ----------------------- matrix construction tests ----------------------#
 def test_analysis_and_synthethis_matrices_db1():
-    a_db1 = construct_a(pywt.Wavelet("db1"), 8)
-    s_db1 = construct_s(pywt.Wavelet("db1"), 8)
+    a_db1 = _construct_a(pywt.Wavelet("db1"), 8)
+    s_db1 = _construct_s(pywt.Wavelet("db1"), 8)
     err = np.mean(
         np.abs(torch.sparse.mm(a_db1, s_db1.to_dense()).numpy() - np.eye(8)))
     print("db1 8 inverse error", err)

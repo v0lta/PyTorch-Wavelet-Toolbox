@@ -81,6 +81,8 @@ def _construct_s(wavelet, length: int,
                  device: torch.device = torch.device("cpu"),
                  dtype=torch.float64) -> torch.tensor:
     """ Create a raw synthesis matrix.
+        The construced matrix is NOT necessary orthogonal.
+        In most cases construct_boundary_s should be used instead.
 
     Args:
         wavelet (pywt.Wavelet): The wavelet object to use.
@@ -203,7 +205,7 @@ def matrix_wavedec(data, wavelet, level: int = None,
 
 def construct_boundary_a(wavelet, length: int,
                          device: torch.device = torch.device("cpu"),
-                         boundary: str = 'gramschmidt',
+                         boundary: str = 'qr',
                          dtype: torch.dtype = torch.float64):
     """ Construct a boundary-wavelet filter 1d-analysis matrix.
 
@@ -212,7 +214,7 @@ def construct_boundary_a(wavelet, length: int,
         length (int):  The number of entries in the input signal.
         boundary (str): A string indicating the desired boundary treatment.
             Possible options are qr and gramschmidt. Defaults to
-            gramschmidt.
+            qr.
 
     Returns:
         [torch.sparse.FloatTensor]: The analysis matrix.
@@ -224,7 +226,7 @@ def construct_boundary_a(wavelet, length: int,
 
 def construct_boundary_s(wavelet, length,
                          device: torch.device = torch.device('cpu'),
-                         boundary: str = 'gramschmidt',
+                         boundary: str = 'qr',
                          dtype=torch.float64):
     """ Construct a boundary-wavelet filter 1d-synthesis matarix.
 
@@ -233,7 +235,7 @@ def construct_boundary_s(wavelet, length,
         length (int):  The number of entries in the input signal.
         boundary (str): A string indicating the desired boundary treatment.
             Possible options are qr and gramschmidt. Defaults to
-            gramschmidt.
+            qr.
 
     Returns:
         [torch.sparse.FloatTensor]: The synthesis matrix.
@@ -294,8 +296,8 @@ if __name__ == '__main__':
     import torch
     import matplotlib.pyplot as plt
     a = _construct_a(pywt.Wavelet("haar"), 20,
-                    torch.device('cpu'))
+                     torch.device('cpu'))
     s = _construct_s(pywt.Wavelet("haar"), 20,
-                    torch.device('cpu'))
+                     torch.device('cpu'))
     plt.spy(torch.sparse.mm(s, a).to_dense(), marker='.')
     plt.show()
