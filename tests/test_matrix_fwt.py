@@ -70,7 +70,7 @@ def test_fwt_ifwt_level_3():
     wavelet = pywt.Wavelet("haar")
     data2 = np.array([1., 2., 3., 4., 5., 6., 7., 8., 9., 10.,
                       11., 12., 13., 14., 15., 16.])
-    pt_data = torch.from_numpy(data2.astype(np.float32)).unsqueeze(0)
+    pt_data = torch.from_numpy(data2).unsqueeze(0)
     coeffs3 = pywt.wavedec(data2, wavelet, level=3)
     matrix_wavedec = MatrixWavedec(wavelet, 3)
     coeffsmat3, mat_3_lst = matrix_wavedec(pt_data)

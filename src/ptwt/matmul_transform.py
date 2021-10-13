@@ -207,25 +207,30 @@ class MatrixWavedec(object):
         else:
             assert self.level > 0, "level must be a positive integer."
 
-        # re_build = False
+        re_build = False
 
-        for s in range(1, self.level + 1):
-            if split_list[-1] < filt_len:
-                break
-            an = construct_boundary_a(
-                self.wavelet, split_list[-1],
-                dtype=data.dtype, boundary=self.boundary,
-                device=data.device)
-            if s > 1:
-                an = cat_sparse_identity_matrix(an, length)
-            fwt_mat_list.append(an)
-            new_split_size = length // np.power(2, s)
-            split_list.append(new_split_size)
-        coefficients = data.T
+        if self.fwt_matrix is None or re_build:
+            for s in range(1, self.level + 1):
+                if split_list[-1] < filt_len:
+                    break
+                an = construct_boundary_a(
+                    self.wavelet, split_list[-1],
+                    dtype=data.dtype, boundary=self.boundary,
+                    device=data.device)
+                if s > 1:
+                    an = cat_sparse_identity_matrix(an, length)
+                fwt_mat_list.append(an)
+                new_split_size = length // np.power(2, s)
+                split_list.append(new_split_size)
 
-        for fwt_mat in fwt_mat_list:
-            coefficients = torch.sparse.mm(fwt_mat, coefficients)
-        split_list.append(length // np.power(2, self.level))
+            self.fwt_matrix = fwt_mat_list[0]
+            for fwt_mat in fwt_mat_list[1:]:
+                self.fwt_matrix = torch.sparse.mm(
+                    fwt_mat, self.fwt_matrix)
+            split_list.append(length // np.power(2, self.level))
+
+        coefficients = torch.sparse.mm(
+            self.fwt_matrix, data.T)
         return torch.split(coefficients, split_list[1:][::-1]), fwt_mat_list
 
 
