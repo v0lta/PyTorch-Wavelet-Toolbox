@@ -49,9 +49,24 @@ def cat_sparse_identity_matrix(sparse_matrix, new_length):
     return new_matrix
 
 
-def construct_a(wavelet, length: int,
-                device: torch.device = torch.device("cpu"),
-                dtype=torch.float64) -> torch.tensor:
+def _construct_a(wavelet, length: int,
+                 device: torch.device = torch.device("cpu"),
+                 dtype=torch.float64) -> torch.tensor:
+    """ Construct a raw analysis matrix.
+        The resulting matrix will only be orthogonal in the Haar case,
+        in most cases you will want to use construct_boundary_a instead.
+
+    Args:
+        wavelet (pywt.Wavelet): The wavelet filter to use.
+        length (int): The length of the input signal to transfrom.
+        device (torch.device, optional): Where to create the matrix.
+            Choose cpu or GPU Defaults to torch.device("cpu").
+        dtype (optional): The desired torch datatype. Choose torch.float32
+            or torch.float64. Defaults to torch.float64.
+
+    Returns:
+        torch.tensor: The sparse raw analysis matrix.
+    """
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype)
     analysis_lo = construct_strided_conv_matrix(
@@ -62,9 +77,22 @@ def construct_a(wavelet, length: int,
     return analysis
 
 
-def construct_s(wavelet, length: int,
-                device: torch.device = torch.device("cpu"),
-                dtype=torch.float64) -> torch.tensor:
+def _construct_s(wavelet, length: int,
+                 device: torch.device = torch.device("cpu"),
+                 dtype=torch.float64) -> torch.tensor:
+    """ Create a raw synthesis matrix.
+
+    Args:
+        wavelet (pywt.Wavelet): The wavelet object to use.
+        length (int): The lenght of the originally transformed signal.
+        device (torch.device, optional): Choose cuda or cpu.
+            Defaults to torch.device("cpu").
+        dtype ([type], optional): The desired data type. Choose torch.float32
+            or torch.float64. Defaults to torch.float64.
+
+    Returns:
+        torch.tensor: The raw sparse synthesis matrix.
+    """
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype)
     synthesis_lo = construct_strided_conv_matrix(
@@ -189,7 +217,7 @@ def construct_boundary_a(wavelet, length: int,
     Returns:
         [torch.sparse.FloatTensor]: The analysis matrix.
     """
-    a_full = construct_a(wavelet, length, dtype=dtype, device=device)
+    a_full = _construct_a(wavelet, length, dtype=dtype, device=device)
     a_orth = orthogonalize(a_full, len(wavelet), method=boundary)
     return a_orth
 
@@ -210,7 +238,7 @@ def construct_boundary_s(wavelet, length,
     Returns:
         [torch.sparse.FloatTensor]: The synthesis matrix.
     """
-    s_full = construct_s(wavelet, length, dtype=dtype, device=device)
+    s_full = _construct_s(wavelet, length, dtype=dtype, device=device)
     s_orth = orthogonalize(
         s_full.transpose(1, 0), len(wavelet), method=boundary)
     return s_orth.transpose(1, 0)
@@ -265,9 +293,9 @@ if __name__ == '__main__':
     import pywt
     import torch
     import matplotlib.pyplot as plt
-    a = construct_a(pywt.Wavelet("haar"), 20,
+    a = _construct_a(pywt.Wavelet("haar"), 20,
                     torch.device('cpu'))
-    s = construct_s(pywt.Wavelet("haar"), 20,
+    s = _construct_s(pywt.Wavelet("haar"), 20,
                     torch.device('cpu'))
     plt.spy(torch.sparse.mm(s, a).to_dense(), marker='.')
     plt.show()
