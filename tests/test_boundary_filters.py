@@ -61,10 +61,10 @@ def test_boundary_transform_1d():
                     wavelet = pywt.Wavelet(wavelet_str)
                     matrix_wavedec = MatrixWavedec(
                         wavelet, level=level, boundary=boundary)
-                    coeffs, _ = matrix_wavedec(data_torch)
+                    coeffs = matrix_wavedec(data_torch)
                     matrix_waverec = MatrixWaverec(
                         wavelet, level=level, boundary=boundary)
-                    rec, _ = matrix_waverec(coeffs)
+                    rec = matrix_waverec(coeffs)
                     rec_pywt = pywt.waverec(
                         pywt.wavedec(data_torch.numpy(), wavelet), wavelet)
                     error = np.sum(np.abs(rec_pywt - rec.numpy()))
