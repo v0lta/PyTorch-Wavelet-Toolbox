@@ -56,7 +56,7 @@ def test_boundary_transform_1d():
     for data in data_list:
         for wavelet_str in wavelet_list:
             for level in [1, 2]:
-                for boundary in ['gramschmidt', 'circular']:
+                for boundary in ['gramschmidt', 'qr']:
                     data_torch = torch.from_numpy(data.astype(np.float64))
                     wavelet = pywt.Wavelet(wavelet_str)
                     matrix_wavedec = MatrixWavedec(

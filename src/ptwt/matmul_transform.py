@@ -199,9 +199,7 @@ class MatrixWavedec(object):
             # print('input length odd, padding a zero on the right')
             data = torch.nn.functional.pad(data, [0, 1])
 
-        dec_lo, dec_hi, _, _ = self.wavelet.filter_bank
-        filt_len = len(dec_lo)
-
+        filt_len = len(self.wavelet)
         length = data.shape[1]
         split_list = [length]
         fwt_mat_list = []
