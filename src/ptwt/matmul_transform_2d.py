@@ -182,6 +182,7 @@ class MatrixWavedec2d(object):
         self.wavelet = wavelet
         self.fwt_matrix = None
         self.input_signal_shape = None
+        self.boundary = boundary
 
     def __call__(self, input_signal: torch.Tensor) -> list:
         """ Compute the fwt for the given input signal.
@@ -238,7 +239,8 @@ class MatrixWavedec2d(object):
                     break
                 analysis_matrix_2d = construct_boundary_a2d(
                     self.wavelet, current_height, current_width,
-                    dtype=input_signal.dtype, device=input_signal.device)
+                    dtype=input_signal.dtype, device=input_signal.device,
+                    boundary=self.boundary)
                 if s > 1:
                     analysis_matrix_2d = cat_sparse_identity_matrix(
                         analysis_matrix_2d, height*width)
@@ -279,7 +281,7 @@ class MatrixWaverec2d(object):
         once and stored for later use.
     """
 
-    def __init__(self, wavelet):
+    def __init__(self, wavelet, boundary: str = 'qr'):
         """ Create the inverse matrix based fast wavelet
            transformation.
 
