@@ -147,60 +147,86 @@ def orthogonalize(matrix: torch.Tensor, filt_len: int,
     return matrix
 
 
-def matrix_wavedec(data, wavelet, level: int = None,
-                   boundary: str = 'qr'):
-    """Experimental computation of the sparse matrix fast wavelet transform.
-    Args:
-        wavelet: A wavelet object.
-        data: Batched input data [batch_size, time], should be of even length.
-              WARNING: If the input length is odd it will be padded on the
-              right to make it even.
-        level: The desired level up to which to compute the fwt.
-        boundary: The desired approach to boundary value treatment.
-            Choose qr or gramschmidt. Defaults to qr.
-    Returns: The wavelet coefficients in a single vector.
-             As well as the transformation matrices.
+class MatrixWavedec(object):
+    """Compute the sparse matrix fast wavelet transform.
     """
-    if len(data.shape) == 1:
-        # assume time series
-        data = data.unsqueeze(0)
-    if data.shape[-1] % 2 != 0:
-        # odd length input
-        # print('input length odd, padding a zero on the right')
-        data = torch.nn.functional.pad(data, [0, 1])
+    def __init__(self, wavelet, level: int = None,
+                 boundary: str = 'qr'):
+        """Create a matrix-fwt object.
 
-    dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
-    assert len(dec_lo) == len(dec_hi), "All filters must have the same length."
-    assert len(dec_hi) == len(rec_lo), "All filters must have the same length."
-    assert len(rec_lo) == len(rec_hi), "All filters must have the same length."
-    filt_len = len(dec_lo)
+        Args:
+            wavelet: A wavelet object.
+            level: The desired level up to which to compute the fwt.
+            boundary: The desired approach to boundary value treatment.
+                Choose qr or gramschmidt. Defaults to qr.
 
-    length = data.shape[1]
-    split_list = [length]
-    fwt_mat_list = []
+        Example:
+            TODO
+        """
+        self.wavelet = wavelet
+        self.level = level
+        self.boundary = boundary
+        dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
+        assert len(dec_lo) == len(dec_hi),\
+            "All filters must have the same length."
+        assert len(dec_hi) == len(rec_lo),\
+            "All filters must have the same length."
+        assert len(rec_lo) == len(rec_hi),\
+            "All filters must have the same length."
+        self.fwt_matrix = None
 
-    if level is None:
-        level = int(np.log2(length))
-    else:
-        assert level > 0, "level must be a positive integer."
+    def __call__(self, data) -> list:
+        """ Compute the matrix fwt.
 
-    for s in range(1, level + 1):
-        if split_list[-1] < filt_len:
-            break
-        an = construct_boundary_a(
-            wavelet, split_list[-1], dtype=data.dtype, boundary=boundary,
-            device=data.device)
-        if s > 1:
-            an = cat_sparse_identity_matrix(an, length)
-        fwt_mat_list.append(an)
-        new_split_size = length // np.power(2, s)
-        split_list.append(new_split_size)
-    coefficients = data.T
+        Args:
+            data: Batched input data [batch_size, time],
+                  should be of even length.
+                  WARNING: If the input length is odd it will be padded on the
+                  right to make it even.
 
-    for fwt_mat in fwt_mat_list:
-        coefficients = torch.sparse.mm(fwt_mat, coefficients)
-    split_list.append(length // np.power(2, level))
-    return torch.split(coefficients, split_list[1:][::-1]), fwt_mat_list
+        Returns:
+            list: A list with the coefficients for each scale.
+        """
+        if len(data.shape) == 1:
+            # assume time series
+            data = data.unsqueeze(0)
+        if data.shape[-1] % 2 != 0:
+            # odd length input
+            # print('input length odd, padding a zero on the right')
+            data = torch.nn.functional.pad(data, [0, 1])
+
+        dec_lo, dec_hi, _, _ = self.wavelet.filter_bank
+        filt_len = len(dec_lo)
+
+        length = data.shape[1]
+        split_list = [length]
+        fwt_mat_list = []
+
+        if self.level is None:
+            self.level = int(np.log2(length))
+        else:
+            assert self.level > 0, "level must be a positive integer."
+
+        # re_build = False
+
+        for s in range(1, self.level + 1):
+            if split_list[-1] < filt_len:
+                break
+            an = construct_boundary_a(
+                self.wavelet, split_list[-1],
+                dtype=data.dtype, boundary=self.boundary,
+                device=data.device)
+            if s > 1:
+                an = cat_sparse_identity_matrix(an, length)
+            fwt_mat_list.append(an)
+            new_split_size = length // np.power(2, s)
+            split_list.append(new_split_size)
+        coefficients = data.T
+
+        for fwt_mat in fwt_mat_list:
+            coefficients = torch.sparse.mm(fwt_mat, coefficients)
+        split_list.append(length // np.power(2, self.level))
+        return torch.split(coefficients, split_list[1:][::-1]), fwt_mat_list
 
 
 def construct_boundary_a(wavelet, length: int,
@@ -246,49 +272,64 @@ def construct_boundary_s(wavelet, length,
     return s_orth.transpose(1, 0)
 
 
-def matrix_waverec(
-        coefficients, wavelet, level: int = None,
-        boundary: str = 'qr'):
+class MatrixWaverec(object):
     """Experimental matrix based inverse fast wavelet transform.
-
-    Args:
-        coefficients: The coefficients produced by the forward transform.
-        wavelet: The wavelet used to compute the forward transform.
-        level (int, optional): The level up to which the coefficients
-            have been computed.
-
-    Returns:
-        The input signal reconstruction.
     """
-    # if the coefficients come in a list concatenate!
-    if type(coefficients) is tuple:
-        coefficients = torch.cat(coefficients, 0)
+    def __init__(self, wavelet, level: int = None,
+                 boundary: str = 'qr'):
+        """Create an analysis transformation object.
 
-    filt_len = len(wavelet)
-    length = coefficients.shape[0]
+        Args:
+            wavelet (pywt.Wavelet):  The wavelet used to compute
+                the forward transform.
+            level (int, optional): The level up to which the coefficients
+                have been computed. Defaults to None.
+            boundary (str, optional): The boundary treatment method.
+                Chosse 'gramschmidt' or 'qr'. Defaults to 'qr'.
+        """
+        self.wavelet = wavelet
+        self.level = level
+        self.boundary = boundary
+        self.ifwt_mat = None
 
-    if level is None:
-        level = int(np.log2(length))
-    else:
-        assert level > 0, "level must be a positive integer."
+    def __call__(self, coefficients: list) -> torch.Tensor:
+        """ Run the synthesis or inverse matrix fwt.
 
-    ifwt_mat_lst = []
-    split_lst = [length]
-    for s in range(1, level + 1):
-        if split_lst[-1] < filt_len:
-            break
-        sn = construct_boundary_s(
-            wavelet, split_lst[-1], dtype=coefficients.dtype,
-            boundary=boundary, device=coefficients.device)
-        if s > 1:
-            sn = cat_sparse_identity_matrix(sn, length)
-        ifwt_mat_lst.append(sn)
-        new_split_size = length // np.power(2, s)
-        split_lst.append(new_split_size)
-    reconstruction = coefficients
-    for ifwt_mat in ifwt_mat_lst[::-1]:
-        reconstruction = torch.sparse.mm(ifwt_mat, reconstruction)
-    return reconstruction.T, ifwt_mat_lst[::-1]
+        Args:
+            coefficients: The coefficients produced by the forward transform.
+
+        Returns:
+            torch.Tensor: The input signal reconstruction.
+        """
+        # if the coefficients come in a tuple or list concatenate!
+        if (type(coefficients) is tuple) or (type(coefficients) is list):
+            coefficients = torch.cat(coefficients, 0)
+
+        filt_len = len(self.wavelet)
+        length = coefficients.shape[0]
+
+        if self.level is None:
+            self.level = int(np.log2(length))
+        else:
+            assert self.level > 0, "level must be a positive integer."
+
+        ifwt_mat_lst = []
+        split_lst = [length]
+        for s in range(1, self.level + 1):
+            if split_lst[-1] < filt_len:
+                break
+            sn = construct_boundary_s(
+                self.wavelet, split_lst[-1], dtype=coefficients.dtype,
+                boundary=self.boundary, device=coefficients.device)
+            if s > 1:
+                sn = cat_sparse_identity_matrix(sn, length)
+            ifwt_mat_lst.append(sn)
+            new_split_size = length // np.power(2, s)
+            split_lst.append(new_split_size)
+        reconstruction = coefficients
+        for ifwt_mat in ifwt_mat_lst[::-1]:
+            reconstruction = torch.sparse.mm(ifwt_mat, reconstruction)
+        return reconstruction.T, ifwt_mat_lst[::-1]
 
 
 if __name__ == '__main__':

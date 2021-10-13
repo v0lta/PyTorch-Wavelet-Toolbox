@@ -163,7 +163,8 @@ class MatrixWavedec2d(object):
         The matrix is therefore constructed only once and
         stored in this object for future use.
     """
-    def __init__(self, wavelet, level: int):
+    def __init__(self, wavelet, level: int,
+                 boundary: str = 'qr'):
         """ Creates a new matrix fwt object.
 
         Args:
