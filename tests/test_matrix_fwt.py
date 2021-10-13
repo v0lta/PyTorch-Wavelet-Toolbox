@@ -24,32 +24,6 @@ def test_analysis_and_synthethis_matrices_db1():
     assert err < 1e-6
 
 
-def test_analysis_and_synthethis_matrices_db2():
-    a_db2 = construct_a(pywt.Wavelet("db2"), 64, wrap=True)
-    s_db2 = construct_s(pywt.Wavelet("db2"), 64, wrap=True)
-    test_eye = torch.sparse.mm(a_db2, s_db2.to_dense()).numpy()
-    err = np.mean(np.abs(test_eye - np.eye(64)))
-    print("db2 64 inverse error", err)
-    assert err < 1e-6
-
-
-def test_analysis_and_synthethis_matrices_db2_66():
-    a_db2_66 = construct_a(pywt.Wavelet("db2"), 66, wrap=True)
-    s_db2_66 = construct_s(pywt.Wavelet("db2"), 66, wrap=True)
-    test_eye = torch.sparse.mm(a_db2_66, s_db2_66.to_dense()).numpy()
-    err = np.mean(np.abs(test_eye - np.eye(66)))
-    print("db2 66 inverse error", err)
-    assert err < 1e-6
-
-
-def test_analysis_and_synthethis_matrices_db8():
-    a_db2 = construct_a(pywt.Wavelet("db8"), 128)
-    s_db2 = construct_s(pywt.Wavelet("db8"), 128)
-    test_eye = torch.sparse.mm(a_db2, s_db2.to_dense()).numpy()
-    err = np.mean(np.abs(test_eye - np.eye(128)))
-    print("db8 128 inverse error", err)
-
-
 # ------------------------- Haar fwt-ifwt tests ----------------
 def test_fwt_ifwt_level_1():
     wavelet = pywt.Wavelet("haar")

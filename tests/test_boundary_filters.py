@@ -178,7 +178,7 @@ def test_batched_2d_matrix_fwt_ifwt():
 
 if __name__ == '__main__':
     # test_matrix_analysis_fwt_2d_haar()
-    # test_boundary_filter_analysis_and_synthethis_matrices()
+    test_boundary_filter_analysis_and_synthethis_matrices()
     # test_conv_matrix()
     # test_conv_matrix_2d()
     # test_strided_conv_matrix_2d_same()
