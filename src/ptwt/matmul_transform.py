@@ -9,8 +9,11 @@ import numpy as np
 import torch
 from .sparse_math import (
     _orth_by_qr,
-    _orth_by_gram_schmidt
+    _orth_by_gram_schmidt,
+    construct_strided_conv_matrix
 )
+
+from .conv_transform import get_filter_tensors
 
 
 def cat_sparse_identity_matrix(sparse_matrix, new_length):
@@ -46,41 +49,60 @@ def cat_sparse_identity_matrix(sparse_matrix, new_length):
     return new_matrix
 
 
-def construct_a(wavelet, length, wrap=True,
-                dtype=torch.float64) -> torch.tensor:
-    """Constructs the sparse analysis matrix to compute a matrix based fwt.
-    Following page 31 of the Strang Nguyen Wavelets and Filter Banks book.
+def _construct_a(wavelet, length: int,
+                 device: torch.device = torch.device("cpu"),
+                 dtype=torch.float64) -> torch.tensor:
+    """ Construct a raw analysis matrix.
+        The resulting matrix will only be orthogonal in the Haar case,
+        in most cases you will want to use construct_boundary_a instead.
+
     Args:
-        wavelet: The wavelet coefficients stored in a wavelet object.
-        length: The number of entries in the input signal.
-        wrap: Filter wrap around produces square matrices.
-        dtype: The datatype to use. Defaults to torch.float64.
+        wavelet (pywt.Wavelet): The wavelet filter to use.
+        length (int): The length of the input signal to transfrom.
+        device (torch.device, optional): Where to create the matrix.
+            Choose cpu or GPU Defaults to torch.device("cpu").
+        dtype (optional): The desired torch datatype. Choose torch.float32
+            or torch.float64. Defaults to torch.float64.
+
     Returns:
-        The sparse fwt matrix A.
+        torch.tensor: The sparse raw analysis matrix.
     """
-    dec_lo, dec_hi, _, _ = wavelet.filter_bank
-    filt_len = len(dec_lo)
-    # right hand filtering and decimation matrix
-    # set up the indices.
+    dec_lo, dec_hi, _, _ = get_filter_tensors(
+        wavelet, flip=False, device=device, dtype=dtype)
+    analysis_lo = construct_strided_conv_matrix(
+        dec_lo.squeeze(), length, 2, 'sameshift')
+    analysis_hi = construct_strided_conv_matrix(
+        dec_hi.squeeze(), length, 2, 'sameshift')
+    analysis = torch.cat([analysis_lo, analysis_hi])
+    return analysis
 
-    h = length // 2
-    w = length
 
-    xl = np.stack([np.arange(0, h)] * filt_len).T.flatten()
-    yl = np.concatenate([np.arange(0, filt_len)] * h) + 2 * xl
-    xb = xl + h
-    yb = yl
-    x = np.concatenate([xl, xb])
-    y = np.concatenate([yl, yb])
-    if wrap:
-        y = y % w
-    a_indices = torch.from_numpy(np.stack([x, y]).astype(int))
-    al_entries = torch.tensor([dec_lo[::-1]] * h).flatten().type(dtype)
-    ab_entries = torch.tensor([dec_hi[::-1]] * h).flatten().type(dtype)
-    a_entries = torch.cat([al_entries, ab_entries])
-    a_ten = torch.sparse.FloatTensor(a_indices, a_entries).coalesce()
-    # left hand filtering and decimation matrix
-    return a_ten
+def _construct_s(wavelet, length: int,
+                 device: torch.device = torch.device("cpu"),
+                 dtype=torch.float64) -> torch.tensor:
+    """ Create a raw synthesis matrix.
+        The construced matrix is NOT necessary orthogonal.
+        In most cases construct_boundary_s should be used instead.
+
+    Args:
+        wavelet (pywt.Wavelet): The wavelet object to use.
+        length (int): The lenght of the originally transformed signal.
+        device (torch.device, optional): Choose cuda or cpu.
+            Defaults to torch.device("cpu").
+        dtype ([type], optional): The desired data type. Choose torch.float32
+            or torch.float64. Defaults to torch.float64.
+
+    Returns:
+        torch.tensor: The raw sparse synthesis matrix.
+    """
+    _, _, rec_lo, rec_hi = get_filter_tensors(
+        wavelet, flip=True, device=device, dtype=dtype)
+    synthesis_lo = construct_strided_conv_matrix(
+        rec_lo.squeeze(), length, 2, 'sameshift')
+    synthesis_hi = construct_strided_conv_matrix(
+        rec_hi.squeeze(), length, 2, 'sameshift')
+    synthesis = torch.cat([synthesis_lo, synthesis_hi])
+    return synthesis.transpose(0, 1)
 
 
 def _get_to_orthogonalize(
@@ -125,136 +147,121 @@ def orthogonalize(matrix: torch.Tensor, filt_len: int,
     return matrix
 
 
-def matrix_wavedec(data, wavelet, level: int = None,
-                   boundary: str = 'circular'):
-    """Experimental computation of the sparse matrix fast wavelet transform.
-    Args:
-        wavelet: A wavelet object.
-        data: Batched input data [batch_size, time], should be of even length.
-              WARNING: If the input length is odd it will be padded on the
-              right to make it even.
-        level: The desired level up to which to compute the fwt.
-        boundary: The desired approach to boundary value treatment.
-            Choose circular or gramschmidt. Defaults to circular.
-    Returns: The wavelet coefficients in a single vector.
-             As well as the transformation matrices.
+class MatrixWavedec(object):
+    """Compute the sparse matrix fast wavelet transform.
     """
-    if len(data.shape) == 1:
-        # assume time series
-        data = data.unsqueeze(0)
-    if data.shape[-1] % 2 != 0:
-        # odd length input
-        # print('input length odd, padding a zero on the right')
-        data = torch.nn.functional.pad(data, [0, 1])
+    def __init__(self, wavelet, level: int = None,
+                 boundary: str = 'qr'):
+        """Create a matrix-fwt object.
 
-    dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
-    assert len(dec_lo) == len(dec_hi), "All filters must have the same length."
-    assert len(dec_hi) == len(rec_lo), "All filters must have the same length."
-    assert len(rec_lo) == len(rec_hi), "All filters must have the same length."
-    filt_len = len(dec_lo)
+        Args:
+            wavelet: A wavelet object.
+            level: The desired level up to which to compute the fwt.
+            boundary: The desired approach to boundary value treatment.
+                Choose qr or gramschmidt. Defaults to qr.
 
-    length = data.shape[1]
-    split_list = [length]
-    fwt_mat_list = []
+        Example:
+            TODO
+        """
+        self.wavelet = wavelet
+        self.level = level
+        self.boundary = boundary
+        dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
+        assert len(dec_lo) == len(dec_hi),\
+            "All filters must have the same length."
+        assert len(dec_hi) == len(rec_lo),\
+            "All filters must have the same length."
+        assert len(rec_lo) == len(rec_hi),\
+            "All filters must have the same length."
+        assert self.level > 0, "level must be a positive integer."
 
-    if level is None:
-        level = int(np.log2(length))
-    else:
-        assert level > 0, "level must be a positive integer."
+        self.fwt_matrix = None
+        self.split_list = []
+        self.input_length = None
 
-    for s in range(1, level + 1):
-        if split_list[-1] < filt_len:
-            break
-        an = construct_boundary_a(
-            wavelet, split_list[-1], dtype=data.dtype, boundary=boundary)
-        if s > 1:
-            an = cat_sparse_identity_matrix(an, length)
-        fwt_mat_list.append(an)
-        new_split_size = length // np.power(2, s)
-        split_list.append(new_split_size)
-    coefficients = data.T
+    def __call__(self, data) -> list:
+        """ Compute the matrix fwt.
 
-    for fwt_mat in fwt_mat_list:
-        coefficients = torch.sparse.mm(fwt_mat, coefficients)
-    split_list.append(length // np.power(2, level))
-    return torch.split(coefficients, split_list[1:][::-1]), fwt_mat_list
+        Args:
+            data: Batched input data [batch_size, time],
+                  should be of even length.
+                  WARNING: If the input length is odd it will be padded on the
+                  right to make it even.
 
+        Returns:
+            list: A list with the coefficients for each scale.
+        """
+        if len(data.shape) == 1:
+            # assume time series
+            data = data.unsqueeze(0)
+        if data.shape[-1] % 2 != 0:
+            # odd length input
+            # print('input length odd, padding a zero on the right')
+            data = torch.nn.functional.pad(data, [0, 1])
 
-def construct_s(wavelet, length, wrap=True, dtype=torch.float64):
-    """Construct the sparse synthesis matrix used to invert the
-        fwt.
-    Args:
-        wavelet: The wavelet coefficients stored in a wavelet object.
-        length: The number of entries in the input signal.
-        wrap: Filter wrap around produces square matrices.
-    Returns:
-        The signal reconstruction.
-    """
-    # construct the FWT synthesis matrix.
-    _, _, rec_lo, rec_hi = wavelet.filter_bank
-    filt_len = len(rec_lo)
-    # right hand filtering and decimation matrix
-    # set up the indices.
-    h = length // 2
-    w = length
-    yl = np.stack([np.arange(0, h)] * filt_len).T.flatten()
-    xl = np.concatenate([np.arange(0, filt_len)] * h) + 2 * yl
-    xb = xl
-    yb = yl + h
-    x = np.concatenate([xl, xb])
-    y = np.concatenate([yl, yb])
-    if wrap:
-        x = x % w
-    s_indices = torch.from_numpy(np.stack([x, y]).astype(int))
-    sl_entries = torch.tensor([rec_lo] * h).flatten().type(dtype)
-    sb_entries = torch.tensor([rec_hi] * h).flatten().type(dtype)
-    s_entries = torch.cat([sl_entries, sb_entries])
-    s_ten = torch.sparse.FloatTensor(s_indices, s_entries)
-    # left hand filtering and decimation matrix
-    return s_ten
+        filt_len = len(self.wavelet)
+        length = data.shape[1]
+        split_list = [length]
+        fwt_mat_list = []
 
+        re_build = False
+        if self.level is None:
+            self.level = int(np.log2(length))
+            re_build = True
 
-def clip_and_orthogonalize(matrix, wavelet):
-    filt_len = len(wavelet)
+        if self.input_length != length:
+            re_build = True
 
-    if filt_len > 2:
-        clipl = (filt_len - 2) // 2
-        clipr = (filt_len - 2) // 2
-        dense = matrix.to_dense()
-        clip = dense[:, (clipl):-(clipr)].to_sparse()
-        orth = orthogonalize(clip, filt_len)
-        return orth
-    else:
-        return matrix
+        if self.fwt_matrix is None or re_build:
+            for s in range(1, self.level + 1):
+                if split_list[-1] < filt_len:
+                    break
+                an = construct_boundary_a(
+                    self.wavelet, split_list[-1],
+                    dtype=data.dtype, boundary=self.boundary,
+                    device=data.device)
+                if s > 1:
+                    an = cat_sparse_identity_matrix(an, length)
+                fwt_mat_list.append(an)
+                new_split_size = length // np.power(2, s)
+                split_list.append(new_split_size)
+
+            self.fwt_matrix = fwt_mat_list[0]
+            for fwt_mat in fwt_mat_list[1:]:
+                self.fwt_matrix = torch.sparse.mm(
+                    fwt_mat, self.fwt_matrix)
+            split_list.append(length // np.power(2, self.level))
+            self.split_list = split_list
+
+        coefficients = torch.sparse.mm(
+            self.fwt_matrix, data.T)
+        return torch.split(coefficients, self.split_list[1:][::-1])
 
 
 def construct_boundary_a(wavelet, length: int,
-                         boundary: str = 'circular',
-                         dtype=torch.float64):
+                         device: torch.device = torch.device("cpu"),
+                         boundary: str = 'qr',
+                         dtype: torch.dtype = torch.float64):
     """ Construct a boundary-wavelet filter 1d-analysis matrix.
 
     Args:
         wavelet : The wavelet filter object to use.
         length (int):  The number of entries in the input signal.
         boundary (str): A string indicating the desired boundary treatment.
-            Possible options are circular and gramschmidt. Defaults to
-            circular.
+            Possible options are qr and gramschmidt. Defaults to
+            qr.
 
     Returns:
         [torch.sparse.FloatTensor]: The analysis matrix.
     """
-    if boundary == 'circular':
-        return construct_a(wavelet, length, wrap=True, dtype=dtype)
-    elif boundary == 'gramschmidt':
-        a_full = construct_a(wavelet, length, wrap=False, dtype=dtype)
-        a_orth = clip_and_orthogonalize(a_full, wavelet)
-        return a_orth
-    else:
-        raise ValueError("Unknown boundary treatment")
+    a_full = _construct_a(wavelet, length, dtype=dtype, device=device)
+    a_orth = orthogonalize(a_full, len(wavelet), method=boundary)
+    return a_orth
 
 
 def construct_boundary_s(wavelet, length,
-                         boundary: str = 'circular',
+                         device: torch.device = torch.device('cpu'),
+                         boundary: str = 'qr',
                          dtype=torch.float64):
     """ Construct a boundary-wavelet filter 1d-synthesis matarix.
 
@@ -262,63 +269,92 @@ def construct_boundary_s(wavelet, length,
         wavelet : The wavelet filter object to use.
         length (int):  The number of entries in the input signal.
         boundary (str): A string indicating the desired boundary treatment.
-            Possible options are circular and gramschmidt. Defaults to
-            circular.
+            Possible options are qr and gramschmidt. Defaults to
+            qr.
 
     Returns:
         [torch.sparse.FloatTensor]: The synthesis matrix.
     """
-    if boundary == 'circular':
-        return construct_s(wavelet, length, wrap=True, dtype=dtype)
-    elif boundary == 'gramschmidt':
-        s_full = construct_s(wavelet, length, wrap=False, dtype=dtype)
-        s_orth = clip_and_orthogonalize(
-            s_full.transpose(1, 0), wavelet)
-        return s_orth.transpose(1, 0)
-    else:
-        raise ValueError("Unknown boundary treatment")
+    s_full = _construct_s(wavelet, length, dtype=dtype, device=device)
+    s_orth = orthogonalize(
+        s_full.transpose(1, 0), len(wavelet), method=boundary)
+    return s_orth.transpose(1, 0)
 
 
-def matrix_waverec(
-        coefficients, wavelet, level: int = None,
-        boundary: str = 'circular'):
-    """Experimental matrix based inverse fast wavelet transform.
-
-    Args:
-        coefficients: The coefficients produced by the forward transform.
-        wavelet: The wavelet used to compute the forward transform.
-        level (int, optional): The level up to which the coefficients
-            have been computed.
-
-    Returns:
-        The input signal reconstruction.
+class MatrixWaverec(object):
+    """ Matrix based inverse fast wavelet transform.
     """
-    # if the coefficients come in a list concatenate!
-    if type(coefficients) is tuple:
-        coefficients = torch.cat(coefficients, 0)
+    def __init__(self, wavelet, level: int = None,
+                 boundary: str = 'qr'):
+        """Create an analysis transformation object.
 
-    filt_len = len(wavelet)
-    length = coefficients.shape[0]
+        Args:
+            wavelet (pywt.Wavelet):  The wavelet used to compute
+                the forward transform.
+            level (int, optional): The level up to which the coefficients
+                have been computed. Defaults to None.
+            boundary (str, optional): The boundary treatment method.
+                Choose 'gramschmidt' or 'qr'. Defaults to 'qr'.
+        """
+        self.wavelet = wavelet
+        self.level = level
+        self.boundary = boundary
+        self.ifwt_matrix = None
+        assert self.level > 0, "level must be a positive integer."
 
-    if level is None:
-        level = int(np.log2(length))
-    else:
-        assert level > 0, "level must be a positive integer."
+    def __call__(self, coefficients: list) -> torch.Tensor:
+        """ Run the synthesis or inverse matrix fwt.
 
-    ifwt_mat_lst = []
-    split_lst = [length]
-    for s in range(1, level + 1):
-        if split_lst[-1] < filt_len:
-            break
-        sn = construct_boundary_s(
-            wavelet, split_lst[-1], dtype=coefficients.dtype,
-            boundary=boundary)
-        if s > 1:
-            sn = cat_sparse_identity_matrix(sn, length)
-        ifwt_mat_lst.append(sn)
-        new_split_size = length // np.power(2, s)
-        split_lst.append(new_split_size)
-    reconstruction = coefficients
-    for ifwt_mat in ifwt_mat_lst[::-1]:
-        reconstruction = torch.sparse.mm(ifwt_mat, reconstruction)
-    return reconstruction.T, ifwt_mat_lst[::-1]
+        Args:
+            coefficients: The coefficients produced by the forward transform.
+
+        Returns:
+            torch.Tensor: The input signal reconstruction.
+        """
+        # if the coefficients come in a tuple or list concatenate!
+        if (type(coefficients) is tuple) or (type(coefficients) is list):
+            coefficients = torch.cat(coefficients, 0)
+
+        filt_len = len(self.wavelet)
+        length = coefficients.shape[0]
+
+        re_build = False
+        if self.level is None:
+            self.level = int(np.log2(length))
+        else:
+            if self.level != int(np.log2(length)):
+                re_build = True
+
+        if self.ifwt_matrix is None or re_build:
+            ifwt_mat_lst = []
+            split_lst = [length]
+            for s in range(1, self.level + 1):
+                if split_lst[-1] < filt_len:
+                    break
+                sn = construct_boundary_s(
+                    self.wavelet, split_lst[-1], dtype=coefficients.dtype,
+                    boundary=self.boundary, device=coefficients.device)
+                if s > 1:
+                    sn = cat_sparse_identity_matrix(sn, length)
+                ifwt_mat_lst.append(sn)
+                new_split_size = length // np.power(2, s)
+                split_lst.append(new_split_size)
+
+            self.ifwt_matrix = ifwt_mat_lst[-1]
+            for ifwt_mat in ifwt_mat_lst[:-1][::-1]:
+                self.ifwt_matrix = torch.sparse.mm(ifwt_mat, self.ifwt_matrix)
+
+        reconstruction = torch.sparse.mm(self.ifwt_matrix, coefficients)
+        return reconstruction.T
+
+
+if __name__ == '__main__':
+    import pywt
+    import torch
+    import matplotlib.pyplot as plt
+    a = _construct_a(pywt.Wavelet("haar"), 20,
+                     torch.device('cpu'))
+    s = _construct_s(pywt.Wavelet("haar"), 20,
+                     torch.device('cpu'))
+    plt.spy(torch.sparse.mm(s, a).to_dense(), marker='.')
+    plt.show()

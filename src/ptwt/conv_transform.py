@@ -169,7 +169,8 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
     """Non seperated two dimensional wavelet transform.
 
     Args:
-        data (torch.tensor): [batch_size, 1, height, width]
+        data (torch.tensor): The input data tensor of shape
+            [batch_size, 1, height, width].
         wavelet ([type]): The transformation wavelet.
         level (int, optional): The number of desired scales.
             Defaults to None.
@@ -202,8 +203,8 @@ def waverec2(coeffs, wavelet):
 
     Args:
         coeffs (list): The wavelet coefficient list produced by wavedec2.
-        wavelet (learnable_wavelets.WaveletFilter): The wavelet object
-            used to compute the forward transform.
+        wavelet (pywt.Wavelet or learnable_wavelets.WaveletFilter):
+            The wavelet object used to compute the forward transform.
 
     Returns:
         torch.tensor: The reconstructed signal.

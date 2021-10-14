@@ -6,12 +6,11 @@ import numpy as np
 import scipy.signal
 # from scipy import misc
 
-
 from src.ptwt.matmul_transform import (
     construct_boundary_a,
     construct_boundary_s,
-    matrix_wavedec,
-    matrix_waverec,
+    MatrixWavedec,
+    MatrixWaverec,
 )
 
 from src.ptwt.conv_transform import flatten_2d_coeff_lst
@@ -57,13 +56,15 @@ def test_boundary_transform_1d():
     for data in data_list:
         for wavelet_str in wavelet_list:
             for level in [1, 2]:
-                for boundary in ['gramschmidt', 'circular']:
+                for boundary in ['gramschmidt', 'qr']:
                     data_torch = torch.from_numpy(data.astype(np.float64))
                     wavelet = pywt.Wavelet(wavelet_str)
-                    coeffs, _ = matrix_wavedec(
-                        data_torch, wavelet, level=level, boundary=boundary)
-                    rec, _ = matrix_waverec(
-                        coeffs, wavelet, level=level, boundary=boundary)
+                    matrix_wavedec = MatrixWavedec(
+                        wavelet, level=level, boundary=boundary)
+                    coeffs = matrix_wavedec(data_torch)
+                    matrix_waverec = MatrixWaverec(
+                        wavelet, level=level, boundary=boundary)
+                    rec = matrix_waverec(coeffs)
                     rec_pywt = pywt.waverec(
                         pywt.wavedec(data_torch.numpy(), wavelet), wavelet)
                     error = np.sum(np.abs(rec_pywt - rec.numpy()))
@@ -178,7 +179,8 @@ def test_batched_2d_matrix_fwt_ifwt():
 
 if __name__ == '__main__':
     # test_matrix_analysis_fwt_2d_haar()
-    # test_boundary_filter_analysis_and_synthethis_matrices()
+    test_boundary_filter_analysis_and_synthethis_matrices()
+    test_boundary_transform_1d()
     # test_conv_matrix()
     # test_conv_matrix_2d()
     # test_strided_conv_matrix_2d_same()

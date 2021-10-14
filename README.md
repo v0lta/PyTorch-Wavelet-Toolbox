@@ -68,16 +68,25 @@ print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2), wave
 
 #### Transform by Sparse-Matrix-multiplication:
 
-In additionally sparse-matrix-based code is available. Continuing the example above try:
+In additionally sparse-matrix-based code is available.
+Generate 1d sparse matrix forward and backward transforms with the
+`MatrixWavedec` and `MatrixWaverec` classes.
+Continuing the example above try for example:
 
 ```python
 # forward
-coeff, fwt_matrix = ptwt.matrix_wavedec(data_torch, wavelet, level=2)
+matrix_wavedec = ptwt.MatrixWavedec(wavelet, level=2)
+coeff = matrix_wavedec(data_torch)
 print(coeff)
 # backward 
-rec, ifwt_matrix = ptwt.matrix_waverec(coeff, wavelet, level=2)
+matrix_waverec = ptwt.MatrixWaverec(wavelet, level=2)
+rec = matrix_waverec(coeff)
 print(rec)
 ```
+
+The process for the 2d transforms `MatrixWavedec2d`, `MatrixWaverec2d`,
+works similarly.
+
 
 #### Adaptive Wavelets (experimental)
 
