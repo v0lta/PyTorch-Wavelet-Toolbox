@@ -167,11 +167,10 @@ class MatrixWavedec2d(object):
         >>> import ptwt, torch, pywt
         >>> import numpy as np
         >>> import scipy.misc
-        >>> face = scipy.misc.face().astype(np.float32)
+        >>> face = scipy.misc.face()[:256, :256, :].astype(np.float32)
         >>> pt_face = torch.tensor(face).permute([2, 0, 1])
         >>> matrixfwt = ptwt.MatrixWavedec2d(pywt.Wavelet("haar"), level=2)
         >>> mat_coeff = matrixfwt(pt_face)
-
     """
     def __init__(self, wavelet, level: int,
                  boundary: str = 'qr'):
@@ -183,8 +182,10 @@ class MatrixWavedec2d(object):
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's
                 dense qr implementation, it is fast but memory hungry.
-                The gramschmidt code is sparse, memory efficient,
+                The 'gramschmidt' option is sparse, memory efficient,
                 and slow.
+                Choose 'gramschmidt' if 'qr' runs out of memory.
+                Defaults to 'qr'.
         """
         dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
         assert len(dec_lo) == len(dec_hi),\
@@ -296,8 +297,15 @@ class MatrixWaverec2d(object):
         once and stored for later use.
 
     Example:
-        TODO
-
+        >>> import ptwt, torch, pywt
+        >>> import numpy as np
+        >>> import scipy.misc
+        >>> face = scipy.misc.face()[:256, :256, :].astype(np.float32)
+        >>> pt_face = torch.tensor(face).permute([2, 0, 1])
+        >>> matrixfwt = ptwt.MatrixWavedec2d(pywt.Wavelet("haar"), level=2)
+        >>> mat_coeff = matrixfwt(pt_face)
+        >>> matrixifwt = ptwt.MatrixWaverec2d(pywt.Wavelet("haar"))
+        >>> reconstruction = matrixifwt(mat_coeff)
     """
 
     def __init__(self, wavelet, boundary: str = 'qr'):
@@ -306,10 +314,13 @@ class MatrixWaverec2d(object):
 
         Args:
             wavelet: A pywt.Wavelet compatible wavelet object.
+            boundary: The method used to treat the boundary cases.
+                Chosse 'qr' or 'gramschmidt'. Defaults to 'qr'.
         """
         self.wavelet = wavelet
         self.ifwt_matrix = None
         self.level = None
+        self.boundary = boundary
 
     def __call__(self, coefficients: list) -> torch.Tensor:
         """ Compute the inverse matrix 2d fast wavelet transform.
@@ -344,7 +355,8 @@ class MatrixWaverec2d(object):
                 synthesis_matrix_2d = construct_boundary_s2d(
                     self.wavelet, current_height, current_width,
                     dtype=coefficients[-1][0].dtype,
-                    device=coefficients[-1][0].device)
+                    device=coefficients[-1][0].device,
+                    boundary=self.boundary)
                 if s >= 1:
                     synthesis_matrix_2d = cat_sparse_identity_matrix(
                         synthesis_matrix_2d, coefficient_vectors.shape[-1])
