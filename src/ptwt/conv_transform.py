@@ -182,7 +182,7 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
     Returns:
         [list]: A list containing the wavelet coefficients.
 
-    Example:
+    Example::
         >>> import torch
         >>> import ptwt, pywt
         >>> import numpy as np
