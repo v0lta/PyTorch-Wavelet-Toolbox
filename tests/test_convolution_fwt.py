@@ -7,16 +7,16 @@ import scipy.misc
 import torch
 
 sys.path.append('./src')
-from ptwt.conv_transform import (
+from src.ptwt.conv_transform import (
     flatten_2d_coeff_lst,
-    outer,
+    _outer,
     wavedec,
     wavedec2,
     waverec,
     waverec2,
 )
-from ptwt.learnable_wavelets import SoftOrthogonalWavelet
-from ptwt.mackey_glass import MackeyGenerator
+from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
+from src.ptwt._mackey_glass import MackeyGenerator
 
 
 def test_conv_fwt_haar_lvl2():
@@ -385,7 +385,7 @@ def test_2d_haar_multi():
 def test_outer():
     a = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
     b = torch.tensor([6.0, 7.0, 8.0, 9.0, 10.0])
-    res_t = outer(a, b)
+    res_t = _outer(a, b)
     res_np = np.outer(a.numpy(), b.numpy())
     assert np.allclose(res_t.numpy(), res_np)
 
