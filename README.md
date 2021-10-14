@@ -1,4 +1,5 @@
-## Pytorch Wavelet Toolbox (`ptwt`)
+Pytorch Wavelet Toolbox (`ptwt`)
+--------------------------------
 
 <p align="center">
   <a href="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml">
