@@ -96,7 +96,7 @@ def sparse_diag(diagonal: torch.Tensor,
         cols (int): The number of columns in the final matrix.
 
     Returns:
-        (torch.Tensor): A sparse matrix with a shifted diaginal.
+        torch.Tensor: A sparse matrix with a shifted diaginal.
 
     """
     diag_indices = torch.stack(
@@ -131,7 +131,7 @@ def sparse_matmul_select(matrix: torch.tensor, row: int) -> torch.Tensor:
         row (int): The row to return.
 
     Returns:
-        [torch.tensor]: The selected row.
+        torch.Tensor: The selected row.
     """
     selection_matrix = torch.sparse_coo_tensor(
         torch.stack([torch.tensor(0, device=row.device), row]).unsqueeze(-1),
@@ -351,7 +351,7 @@ def construct_conv2d_matrix(filter: torch.tensor,
             to save memory. Defaults to True.
 
     Returns:
-        [torch.sparse.FloatTensor]: A sparse convolution matrix.
+        torch.Tensor: A sparse convolution matrix.
 
     Raises:
         ValueError: If the padding mode is neither full, same or valid.
@@ -440,7 +440,7 @@ def construct_strided_conv2d_matrix(
     """Create a strided sparse two dimensional convolution matrix.
 
     Args:
-        filter (torch.tensor): The two dimensional convolution filter.
+        filter (torch.Tensor): The two dimensional convolution filter.
         input_rows (int): The number of rows in the 2d-input matrix.
         input_columns (int): The number of columns in the 2d- input matrix.
         stride (int): The stride between the filter positions.
@@ -454,7 +454,7 @@ def construct_strided_conv2d_matrix(
             provided.
 
     Returns:
-        [torch.Tensor]: The sparse convolution tensor.
+        torch.Tensor: The sparse convolution tensor.
     """
     filter_shape = filter.shape
     convolution_matrix = construct_conv2d_matrix(

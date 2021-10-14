@@ -3,20 +3,18 @@
 # based on https://github.com/pytorch/examples/blob/master/mnist/main.py
 
 import argparse
-import datetime
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import collections
-import pywt
 import matplotlib.pyplot as plt
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 from wavelet_linear import WaveletLayer
 from torch.utils.tensorboard.writer import SummaryWriter
-from src.ptwt.learnable_wavelets import ProductFilter
+from src.ptwt.wavelets_learnable import ProductFilter
 
 
 def compute_parameter_total(net):
@@ -26,7 +24,6 @@ def compute_parameter_total(net):
             print(p.shape)
             total += np.prod(p.shape)
     return total
-
 
 
 class Net(nn.Module):
@@ -43,7 +40,8 @@ class Net(nn.Module):
             self.fc2 = torch.nn.Linear(500, 10)
         elif compression == 'Wavelet':
             assert wavelet is not None, 'initial wavelet must be set.'
-            self.fc1 = WaveletLayer(init_wavelet=wavelet, scales=6, depth=800, p_drop=wave_dropout)
+            self.fc1 = WaveletLayer(init_wavelet=wavelet,
+                                    scales=6, depth=800, p_drop=wave_dropout)
             self.fc2 = torch.nn.Linear(800, 10)
             self.do_dropout = False
         else:

@@ -12,14 +12,6 @@ ptwt.conv\_transform module
    :undoc-members:
    :show-inheritance:
 
-ptwt.learnable\_wavelets module
--------------------------------
-
-.. automodule:: ptwt.learnable_wavelets
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 ptwt.matmul\_transform module
 -----------------------------
 
@@ -56,6 +48,14 @@ ptwt.version module
 -------------------
 
 .. automodule:: ptwt.version
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ptwt.wavelets\_learnable module
+-------------------------------
+
+.. automodule:: ptwt.wavelets_learnable
    :members:
    :undoc-members:
    :show-inheritance:
