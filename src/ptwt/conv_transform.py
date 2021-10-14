@@ -5,6 +5,7 @@ import torch
 
 def get_filter_tensors(wavelet, flip, device, dtype=torch.float32):
     """Convert input wavelet to filter tensors.
+
     Args:
         wavelet: Wavelet object, assmuing ptwt-like
                  field names.
@@ -16,6 +17,7 @@ def get_filter_tensors(wavelet, flip, device, dtype=torch.float32):
     Returns:
         Tuple containing the four filter tensors
         dec_lo, dec_hi, rec_lo, rec_hi
+
     """
 
     def create_tensor(filter):
@@ -180,7 +182,7 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
     Returns:
         [list]: A list containing the wavelet coefficients.
 
-    Examples:
+    Example:
         >>> import torch
         >>> import ptwt, pywt
         >>> import numpy as np

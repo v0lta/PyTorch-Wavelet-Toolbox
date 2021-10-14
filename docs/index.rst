@@ -10,7 +10,7 @@ Welcome to PyTorch-Wavelet-Toolbox's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   readme
+   readme_link
    modules
    
 
