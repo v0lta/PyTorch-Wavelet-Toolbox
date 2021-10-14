@@ -1,3 +1,4 @@
+"""Efficiently construct fwt operations using sparse matrices."""
 # Written by moritz ( @ wolter.tech ) 17.09.21
 import torch
 import numpy as np
@@ -6,18 +7,31 @@ import numpy as np
 
 def _dense_kron(sparse_tensor_a: torch.Tensor,
                 sparse_tensor_b: torch.Tensor) -> torch.Tensor:
-    """ Faster than sparse_kron, but limited to resolutions
-        of approximately 128x128 pixels by memory on my machine."""
+    """Faster than sparse_kron.
+
+    Limited to resolutions of approximately 128x128 pixels
+    by memory on my machine.
+
+    Args:
+        sparse_tensor_a (torch.Tensor): Sparse 2d-Tensor a of shape [m, n].
+        sparse_tensor_b (torch.Tensor): Sparse 2d-Tensor b of shape [p, q].
+
+    Returns:
+        torch.Tensor: The resulting [mp, nq] tensor.
+
+    """
     return torch.kron(sparse_tensor_a.to_dense(),
                       sparse_tensor_b.to_dense()).to_sparse()
 
 
 def sparse_kron(sparse_tensor_a: torch.Tensor,
                 sparse_tensor_b: torch.Tensor) -> torch.Tensor:
-    """ A sparse kronecker product. As defined at:
-        https://en.wikipedia.org/wiki/Kronecker_product
-        Adapted from:
-        https://github.com/scipy/scipy/blob/v1.7.1/scipy/sparse/construct.py#L274-L357
+    """Compute a sparse kronecker product.
+
+    As defined at:
+    https://en.wikipedia.org/wiki/Kronecker_product
+    Adapted from:
+    https://github.com/scipy/scipy/blob/v1.7.1/scipy/sparse/construct.py#L274-L357
 
     Args:
         sparse_tensor_a (torch.Tensor): Sparse 2d-Tensor a of shape [m, n].
@@ -69,9 +83,22 @@ def sparse_kron(sparse_tensor_a: torch.Tensor,
 def sparse_diag(diagonal: torch.Tensor,
                 col_offset: int,
                 rows: int, cols: int) -> torch.Tensor:
-    """ creates an rows-by-cols sparse matrix
-        S by taking the columns of Bin and
-        placing them along the diagonal specified by col_offset"""
+    """Create a rows-by-cols sparse diagnoal-matrix.
+
+    The matrix is construced by taking the columns of Bin and
+    placing them along the diagonal specified by col_offset.
+
+    Args:
+        diagonal (torch.Tensor): The values for the diagonal.
+        col_offset (int): Move the diagonal to the right by
+            offset columns.
+        rows (int): The number of rows in the final matrix.
+        cols (int): The number of columns in the final matrix.
+
+    Returns:
+        (torch.Tensor): A sparse matrix with a shifted diaginal.
+
+    """
     diag_indices = torch.stack(
         [torch.arange(len(diagonal), device=diagonal.device),
          torch.arange(len(diagonal), device=diagonal.device)])
@@ -97,7 +124,7 @@ def sparse_diag(diagonal: torch.Tensor,
 
 
 def sparse_matmul_select(matrix: torch.tensor, row: int) -> torch.tensor:
-    """ Select a sparse tensor row by matrix multiplication.
+    """Select a sparse tensor row by matrix multiplication.
 
     Args:
         matrix (torch.tensor): The sparse matrix from which to select.
@@ -116,8 +143,9 @@ def sparse_matmul_select(matrix: torch.tensor, row: int) -> torch.tensor:
 
 def sparse_replace_row(matrix: torch.Tensor, row_index: int,
                        row: torch.Tensor) -> torch.Tensor:
-    """Replace a row within a sparse [rows, cols] matrix,
-       I.e. matrix[row_no, :] = row.
+    """Replace a row within a sparse [rows, cols] matrix.
+
+    I.e. matrix[row_no, :] = row.
 
     Args:
         matrix (torch.Tensor): A sparse two dimensional matrix.
@@ -159,7 +187,8 @@ def sparse_replace_row(matrix: torch.Tensor, row_index: int,
 
 def _orth_by_qr(matrix: torch.Tensor,
                 rows_to_orthogonalize: torch.Tensor) -> torch.Tensor:
-    """ Orthogonalize a wavelet matrix through qr decomposition.
+    """Orthogonalize a wavelet matrix through qr decomposition.
+
     A dense qr-decomposition is used for gpu-efficiency reasons.
     If memory becomes a constraint choose _orth_by_gram_schmidt
     instead, which is implemented using only sparse function calls.
@@ -208,8 +237,9 @@ def _orth_by_qr(matrix: torch.Tensor,
 
 def _orth_by_gram_schmidt(
         matrix: torch.Tensor, to_orthogonalize: torch.Tensor) -> torch.Tensor:
-    """ Orthogonalize by using a sparse implementation of the Gram-Schmidt
-        method. This function is very memory efficient and very slow.
+    """Orthogonalize by using sparse Gram-Schmidt.
+
+    This function is very memory efficient and very slow.
 
     Args:
         matrix (torch.Tensor): The sparse matrix to work on.
@@ -247,21 +277,27 @@ def _orth_by_gram_schmidt(
 def construct_conv_matrix(filter: torch.tensor,
                           input_rows: int,
                           mode: str = 'valid') -> torch.Tensor:
-    """Constructs a convolution matrix,
-       full and valid padding are supported.
+    """Construct a convolution matrix.
+
+    Full, valid and same, padding are supported.
 
     Args:
         filter (torch.tensor): The 1d-filter to convolve with.
         input_rows (int): The number of columns in the input.
         mode (str): String indetifier for the desired padding.
+            Choose 'full', 'valid' or 'same'.
             Defaults to valid.
 
     Returns:
         torch.Tensor: The sparse convolution tensor.
 
-    For reference see:
-    https://github.com/RoyiAvital/StackExchangeCodes/blob/\
-        master/StackOverflow/Q2080835/CreateConvMtxSparse.m
+    Raises:
+        ValueError: If the padding is not 'full', 'same' or 'valid'.
+
+    Note:
+        For reference see:
+        https://github.com/RoyiAvital/StackExchangeCodes/blob/\
+            master/StackOverflow/Q2080835/CreateConvMtxSparse.m
     """
     filter_length = len(filter)
 
@@ -299,9 +335,10 @@ def construct_conv2d_matrix(filter: torch.tensor,
                             input_columns: int,
                             mode: str = 'valid',
                             fully_sparse: bool = True) -> torch.Tensor:
-    """ Create a two dimensional sparse convolution matrix.
-        Convolving with this matrix should be equivalent to
-        a call to scipy.signal.convolve2d and a reshape.
+    """Create a two dimensional sparse convolution matrix.
+
+    Convolving with this matrix should be equivalent to
+    a call to scipy.signal.convolve2d and a reshape.
 
     Args:
         filter (torch.tensor): A filter of shape [height, width]
@@ -312,8 +349,12 @@ def construct_conv2d_matrix(filter: torch.tensor,
             full, same and valid. Defaults to 'valid' or no padding.
         fully_sparse (bool): Use a sparse implementation of the Kronecker
             to save memory. Defaults to True.
+
     Returns:
         [torch.sparse.FloatTensor]: A sparse convolution matrix.
+
+    Raises:
+        ValueError: If the padding mode is neither full, same or valid.
     """
     if fully_sparse:
         kron = sparse_kron
@@ -361,7 +402,7 @@ def construct_strided_conv_matrix(
             stride: int,
             mode: str = 'valid'
         ) -> torch.Tensor:
-    """ Construct a strided convolution matrix.
+    """Construct a strided convolution matrix.
 
     Args:
         filter (torch.Tensor): The filter coefficients to convolve with.
@@ -396,16 +437,15 @@ def construct_strided_conv2d_matrix(
         input_columns: int,
         stride: int = 2,
         mode: str = 'full') -> torch.Tensor:
-    """ Create a strided sparse two dimensional convolution
-       matrix.
+    """Create a strided sparse two dimensional convolution matrix.
 
     Args:
         filter (torch.tensor): The two dimensional convolution filter.
         input_rows (int): The number of rows in the 2d-input matrix.
         input_columns (int): The number of columns in the 2d- input matrix.
-        stride (int, optional): The stride between the filter positions.
+        stride (int): The stride between the filter positions.
             Defaults to 2.
-        mode (str, optional): The convolution type.
+        mode (str): The convolution type.
             Options are 'full', 'valid', 'same' and 'sameshift'.
             Defaults to 'full'.
 

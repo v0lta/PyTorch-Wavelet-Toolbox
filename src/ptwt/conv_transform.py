@@ -1,3 +1,4 @@
+"""Fast wavelet transformation code with edge-padding."""
 # Created by moritz wolter, 14.04.20
 import pywt
 import torch
@@ -42,15 +43,15 @@ def get_filter_tensors(wavelet, flip, device, dtype=torch.float32):
     return dec_lo, dec_hi, rec_lo, rec_hi
 
 
-def get_pad(data_len, filt_len, level):
+def get_pad(data_len: int, filt_len: int) -> tuple:
     """Compute the required padding.
 
     Args:
-        data: The input tensor.
-        wavelet: The wavelet filters used.
+        data_len (int): The length of the input vector.
+        filt_len (int): The length of the used filter.
 
     Returns:
-        The numbers to attach on the edges of the input.
+        tuple: The numbers to attach on the edges of the input.
 
     """
     # pad to ensure we see all filter positions and
@@ -82,6 +83,8 @@ def fwt_pad(data, wavelet, level, mode="reflect"):
     Args:
         data: Input data [batch_size, 1, time]
         wavelet: The input wavelet following the pywt wavelet format.
+        level: The degree of the transform.
+        mode: The desired way to pad.
 
     Returns:
         A pytorch tensor with the padded input data
@@ -91,32 +94,33 @@ def fwt_pad(data, wavelet, level, mode="reflect"):
         # convert pywt to pytorch convention.
         mode = "constant"
 
-    padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo), level)
+    padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo))
     data_pad = torch.nn.functional.pad(data, [padl, padr], mode=mode)
     return data_pad
 
 
 def fwt_pad2d(data, wavelet, level, mode="reflect"):
-    """Padding for the 2d FWT.
+    """Pad data for the 2d FWT.
 
     Args:
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (pywt.Wavelet or WaveletFilter): The wavelet used.
+        level: The number of scales in the transform.
         mode (str, optional): The padding mode. Defaults to 'reflect'.
 
     Returns:
         The padded output tensor.
 
     """
-    padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo), level)
-    padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo), level)
+    padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo))
+    padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo))
     data_pad = torch.nn.functional.pad(
         data, [padl, padr, padt, padb], mode=mode)
     return data_pad
 
 
-def outer(a, b):
-    """ Torch implementation of numpy's outer for vectors."""
+def _outer(a, b):
+    """Torch implementation of numpy's outer for vectors."""
     a_flat = torch.reshape(a, [-1])
     b_flat = torch.reshape(b, [-1])
     a_mul = torch.unsqueeze(a_flat, dim=-1)
@@ -126,15 +130,15 @@ def outer(a, b):
 
 def flatten_2d_coeff_lst(coeff_lst_2d: list,
                          flatten_tensors: bool = True) -> list:
-    """ Flattens a list of lists into a single list
+    """Flattens a list of lists into a single list.
 
     Args:
         coeff_lst_2d (list): A pywt-style coeffcient list.
-        flatten_tensors (bool, optional): If true,
+        flatten_tensors (bool): If true,
              2d tensors are flattened. Defaults to True.
 
     Returns:
-        [list]: A single 1-d list with all original elements.
+        (list): A single 1-d list with all original elements.
 
     """
     flat_coeff_lst = []
@@ -154,8 +158,7 @@ def flatten_2d_coeff_lst(coeff_lst_2d: list,
 
 
 def construct_2d_filt(lo, hi):
-    """Construct two dimensional filters using outer
-       products.
+    """Construct two dimensional filters using outer products.
 
     Args:
         lo (torch.tensor): Low-pass input filter.
@@ -166,10 +169,10 @@ def construct_2d_filt(lo, hi):
             [filt_no, 1, height, width].
 
     """
-    ll = outer(lo, lo)
-    lh = outer(hi, lo)
-    hl = outer(lo, hi)
-    hh = outer(hi, hi)
+    ll = _outer(lo, lo)
+    lh = _outer(hi, lo)
+    hl = _outer(lo, hi)
+    hh = _outer(hi, hi)
     filt = torch.stack([ll, lh, hl, hh], 0)
     filt = filt.unsqueeze(1)
     return filt
@@ -179,16 +182,16 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
     """Non seperated two dimensional wavelet transform.
 
     Args:
-        data (torch.tensor): The input data tensor of shape
+        data (torch.Tensor): The input data tensor of shape
             [batch_size, 1, height, width].
-        wavelet ([type]): The transformation wavelet.
-        level (int, optional): The number of desired scales.
+        wavelet: The transformation wavelet.
+        level (int): The number of desired scales.
             Defaults to None.
-        mode (str, optinal): The padding mode, i.e. zero or reflect.
+        mode (str): The padding mode, i.e. zero or reflect.
             Defaults to reflect.
 
     Returns:
-        [list]: A list containing the wavelet coefficients.
+        (list): A list containing the wavelet coefficients.
 
     Examples::
         >>> import torch
@@ -293,22 +296,22 @@ def waverec2(coeffs, wavelet):
 
 
 def wavedec(data, wavelet, level: int = None, mode="reflect") -> list:
-    """Compute the analysis (forward) 1d fast wavelet transform."
+    """Compute the analysis (forward) 1d fast wavelet transform.
 
     Args:
         data (torch.tensor): Input time series of shape [batch_size, 1, time]
                              1d inputs are interpreted as [time],
                              2d inputs are interpreted as [batch_size, time].
         wavelet (learnable_wavelets.WaveletFilter): The wavelet object to use.
-        level (int, optional): The scale level to be computed.
+        level (int): The scale level to be computed.
                                Defaults to None.
-        mode (str, optional): The padding mode i.e. zero or reflect.
+        mode (str): The padding mode i.e. zero or reflect.
                               Defaults to reflect.
 
     Returns:
-        [list]: A list containing the wavelet coefficients.
+        (list): A list containing the wavelet coefficients.
 
-    Examples::
+    Examples:
         >>> import torch
         >>> import ptwt, pywt
         >>> import numpy as np
