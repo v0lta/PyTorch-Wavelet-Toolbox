@@ -2,29 +2,25 @@
 Pytorch Wavelet Toolbox (`ptwt`)
 ********************************
 
-.. raw:: html
+.. image:: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml
+:target: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml/badge.svg
+:alt: GitHub Actions
 
-  <p align="center">
-    <a href="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml">
-      <img src="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml/badge.svg"
-           alt="GitHub Actions">
-    </a>
-    <a href="https://pypi.org/project/ptwt/">
-      <img src="https://img.shields.io/pypi/pyversions/ptwt"
-           alt="PyPI Versions">
-    </a>
-      <a href="https://pypi.org/project/ptwt/">
-      <img src="https://img.shields.io/pypi/v/ptwt"
-           alt="PyPI - Project">
-    </a>
-    <a href="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/blob/main/LICENSE">
-      <img alt="PyPI - License" src="https://img.shields.io/pypi/l/ptwt">
-    </a>
-    <a href='https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/?badge=latest'>
-      <img src='https://readthedocs.org/projects/pytorch-wavelet-toolbox/badge/?version=latest' alt='Documentation Status' />
-    </a>
-  </p>
+.. image:: https://pypi.org/project/ptwt/
+:target: https://img.shields.io/pypi/pyversions/ptwt
+:alt: PyPI Versions
 
+.. image:: https://pypi.org/project/ptwt/
+:target: https://img.shields.io/pypi/v/ptwt
+:alt: PyPI - Project
+
+.. image:: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/blob/main/LICENSE
+:target: https://img.shields.io/pypi/l/ptwt
+:alt: PyPI - License
+
+.. image:: https://readthedocs.org/projects/pytorch-wavelet-toolbox/badge/?version=latest
+:target: https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/?badge=latest
+:alt: Documentation Status
 
 
 Welcome to the PyTorch (adaptive) wavelet toolbox. This package implements:
