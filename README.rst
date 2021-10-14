@@ -1,5 +1,6 @@
+********************************
 Pytorch Wavelet Toolbox (`ptwt`)
---------------------------------
+********************************
 
 .. raw:: html
 
@@ -25,10 +26,10 @@ Pytorch Wavelet Toolbox (`ptwt`)
 
 Welcome to the PyTorch (adaptive) wavelet toolbox. This package implements:
 
-- the fast wavelet transform (fwt) implemented in ```wavedec```.
-- the inverse fwt can be used by calling ```waverec```.
-- the 2d fwt is called ```wavedec2```
-- and inverse 2d fwt ```waverec2```.
+- the fast wavelet transform (fwt) implemented in ``wavedec``.
+- the inverse fwt can be used by calling ``waverec``.
+- the 2d fwt is called ``wavedec2``
+- and inverse 2d fwt ``waverec2``.
 - 1d sparse-matrix fast wavelet transforms with boundary filters.
 - 2d sparse-matrix transforms with boundary filters (experimental).
 - single and two-dimensional wavelet packet forward transforms.
@@ -39,7 +40,7 @@ This toolbox supports pywt-wavelets.
 Installation
 """"""""""""
 
-Install the toolbox via pip or clone this repository. In order to use `pip`, type:
+Install the toolbox via pip or clone this repository. In order to use ``pip``, type:
 
 .. code-block:: sh
 
