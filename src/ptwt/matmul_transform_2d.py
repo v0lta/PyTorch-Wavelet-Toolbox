@@ -162,6 +162,16 @@ class MatrixWavedec2d(object):
         Constructing the sparse fwt-matrix is expensive.
         The matrix is therefore constructed only once and
         stored in this object for future use.
+
+    Example:
+        >>> import ptwt, torch, pywt
+        >>> import numpy as np
+        >>> import scipy.misc
+        >>> face = scipy.misc.face().astype(np.float32)
+        >>> pt_face = torch.tensor(face).permute([2, 0, 1])
+        >>> matrixfwt = ptwt.MatrixWavedec2d(pywt.Wavelet("haar"), level=2)
+        >>> mat_coeff = matrixfwt(pt_face)
+
     """
     def __init__(self, wavelet, level: int,
                  boundary: str = 'qr'):
@@ -170,6 +180,11 @@ class MatrixWavedec2d(object):
         Args:
             wavelet: A pywt wavelet.
             level (int): The level up to which to compute the fwt.
+            boundary (str): The method used for boundary filter treatment.
+                Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's
+                dense qr implementation, it is fast but memory hungry.
+                The gramschmidt code is sparse, memory efficient,
+                and slow.
         """
         dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
         assert len(dec_lo) == len(dec_hi),\
@@ -279,6 +294,10 @@ class MatrixWaverec2d(object):
         Constructing the fwt matrix is expensive.
         The matrix is, therefore, constructed only
         once and stored for later use.
+
+    Example:
+        TODO
+
     """
 
     def __init__(self, wavelet, boundary: str = 'qr'):

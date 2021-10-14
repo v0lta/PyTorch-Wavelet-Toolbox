@@ -155,26 +155,24 @@ def test_batched_2d_matrix_fwt_ifwt():
     wavelet_str = 'db2'
     level = 3
     size = (16, 16)
-    face = np.mean(scipy.misc.face()[256:(256+size[0]),
-                                     256:(256+size[1])],
-                   -1).astype(np.float64)
-    pt_face = torch.stack([torch.tensor(face),
-                           torch.tensor(face),
-                           torch.tensor(face)])
+    face = scipy.misc.face()[256:(256+size[0]),
+                             256:(256+size[1])
+                             ].astype(np.float64)
+    pt_face = torch.tensor(face).permute([2, 0, 1])
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2d(wavelet, level=level)
     mat_coeff = matrixfwt(pt_face)
     matrixifwt = MatrixWaverec2d(wavelet)
     reconstruction = matrixifwt(mat_coeff)
-    err = np.sum(np.abs(reconstruction[0].numpy() - face
-                        + reconstruction[1].numpy() - face
-                        + reconstruction[2].numpy() - face))
+    err = np.sum(np.abs(reconstruction[0].numpy() - face[:, :, 0]
+                        + reconstruction[1].numpy() - face[:, :, 1]
+                        + reconstruction[2].numpy() - face[:, :, 2]))
     print(size, str(level).center(4),
           wavelet_str, "error {:3.3e}".format(err),
-          np.allclose(reconstruction.numpy(), face))
-    assert np.allclose(reconstruction[0].numpy(), face) \
-        and np.allclose(reconstruction[1].numpy(), face) \
-        and np.allclose(reconstruction[2].numpy(), face)
+          np.allclose(reconstruction.permute(1, 2, 0).numpy(), face))
+    assert np.allclose(reconstruction[0].numpy(), face[:, :, 0]) \
+        and np.allclose(reconstruction[1].numpy(), face[:, :, 1]) \
+        and np.allclose(reconstruction[2].numpy(), face[:, :, 2])
 
 
 if __name__ == '__main__':
@@ -184,5 +182,5 @@ if __name__ == '__main__':
     # test_conv_matrix()
     # test_conv_matrix_2d()
     # test_strided_conv_matrix_2d_same()
-    # test_batched_2d_matrix_fwt_ifwt()
-    test_analysis_synthesis_matrices()
+    test_batched_2d_matrix_fwt_ifwt()
+    # test_analysis_synthesis_matrices()
