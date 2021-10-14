@@ -149,6 +149,16 @@ def orthogonalize(matrix: torch.Tensor, filt_len: int,
 
 class MatrixWavedec(object):
     """Compute the sparse matrix fast wavelet transform.
+
+    Example:
+        >>> import ptwt, torch, pywt
+        >>> import numpy as np
+        >>> # generate an input of even length.
+        >>> data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
+        >>> data_torch = torch.from_numpy(data.astype(np.float32))
+        >>> matrix_wavedec = ptwt.MatrixWavedec(
+                pywt.Wavelet('haar'), level=2)
+        >>> coefficients = matrix_wavedec(data_torch)
     """
     def __init__(self, wavelet, level: int = None,
                  boundary: str = 'qr'):
@@ -159,9 +169,6 @@ class MatrixWavedec(object):
             level: The desired level up to which to compute the fwt.
             boundary: The desired approach to boundary value treatment.
                 Choose qr or gramschmidt. Defaults to qr.
-
-        Example:
-            TODO
         """
         self.wavelet = wavelet
         self.level = level
@@ -283,6 +290,19 @@ def construct_boundary_s(wavelet, length,
 
 class MatrixWaverec(object):
     """ Matrix based inverse fast wavelet transform.
+
+    Example:
+        >>> import ptwt, torch, pywt
+        >>> import numpy as np
+        >>> # generate an input of even length.
+        >>> data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
+        >>> data_torch = torch.from_numpy(data.astype(np.float32))
+        >>> matrix_wavedec = ptwt.MatrixWavedec(
+                pywt.Wavelet('haar'), level=2)
+        >>> coefficients = matrix_wavedec(data_torch)
+        >>> matrix_waverec = ptwt.MatrixWaverec(
+                pywt.Wavelet('haar'), level=2)
+        >>> reconstruction = matrix_waverec(coefficients)
     """
     def __init__(self, wavelet, level: int = None,
                  boundary: str = 'qr'):

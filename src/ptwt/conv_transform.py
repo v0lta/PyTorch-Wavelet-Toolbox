@@ -186,10 +186,10 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
         >>> import numpy as np
         >>> import scipy.misc
         >>> face = np.transpose(scipy.misc.face(),
-        >>>                     [2, 0, 1]).astype(np.float64)
+                                [2, 0, 1]).astype(np.float64)
         >>> pytorch_face = torch.tensor(face).unsqueeze(1)
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
-                                    level=2, mode="constant")
+                                         level=2, mode="constant")
     """
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype)
