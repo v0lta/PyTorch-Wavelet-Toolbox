@@ -36,9 +36,9 @@ Welcome to the PyTorch (adaptive) wavelet toolbox. This package implements:
 - adaptive wavelet support (experimental).
 
 This toolbox supports pywt-wavelets. 
-  
-Installation
-""""""""""""
+
+
+**Installation**
 
 Install the toolbox via pip or clone this repository. In order to use ``pip``, type:
 
@@ -47,7 +47,7 @@ Install the toolbox via pip or clone this repository. In order to use ``pip``, t
     $ pip install ptwt
   
 
-You can remove it later by typing `pip uninstall ptwt`.
+You can remove it later by typing ``pip uninstall ptwt``.
 
 Example usage:
 """"""""""""""
@@ -72,10 +72,10 @@ Example usage:
   print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2), wavelet))
 
 
-Transform by Sparse-Matrix-multiplication:
-""""""""""""""""""""""""""""""""""""""""""
+**Sparse-Matrices**
 
-In additionally sparse-matrix-based code is available.
+In addition to convolution and padding approaches,
+sparse-matrix-based code with boundary wavelet support is available.
 Generate 1d sparse matrix forward and backward transforms with the
 `MatrixWavedec` and `MatrixWaverec` classes.
 Continuing the example above try for example:
@@ -96,10 +96,9 @@ The process for the 2d transforms `MatrixWavedec2d`, `MatrixWaverec2d`,
 works similarly.
 
 
-Adaptive Wavelets (experimental)
-""""""""""""""""""""""""""""""""
+**Adaptive** **Wavelets**
 
-Code to train an adaptive wavelet layer in PyTorch is available in the `examples` folder. In addition to static wavelets
+Experimental code to train an adaptive wavelet layer in PyTorch is available in the `examples` folder. In addition to static wavelets
 from pywt,
 
 - Adaptive product-filters
