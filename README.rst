@@ -2,25 +2,25 @@
 Pytorch Wavelet Toolbox (`ptwt`)
 ********************************
 
-.. image:: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml
-:target: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml/badge.svg
-:alt: GitHub Actions
+.. image:: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml/badge.svg 
+    :target: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml
+    :alt: GitHub Actions
 
-.. image:: https://pypi.org/project/ptwt/
-:target: https://img.shields.io/pypi/pyversions/ptwt
-:alt: PyPI Versions
+.. image:: https://img.shields.io/pypi/pyversions/ptwt
+    :target: https://pypi.org/project/ptwt/
+    :alt: PyPI Versions
 
-.. image:: https://pypi.org/project/ptwt/
-:target: https://img.shields.io/pypi/v/ptwt
-:alt: PyPI - Project
+.. image:: https://img.shields.io/pypi/v/ptwt
+    :target: https://pypi.org/project/ptwt/
+    :alt: PyPI - Project
 
-.. image:: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/blob/main/LICENSE
-:target: https://img.shields.io/pypi/l/ptwt
-:alt: PyPI - License
+.. image:: https://img.shields.io/pypi/l/ptwt
+    :target: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/blob/main/LICENSE
+    :alt: PyPI - License
 
 .. image:: https://readthedocs.org/projects/pytorch-wavelet-toolbox/badge/?version=latest
-:target: https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/?badge=latest
-:alt: Documentation Status
+    :target: https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 
 Welcome to the PyTorch (adaptive) wavelet toolbox. This package implements:
