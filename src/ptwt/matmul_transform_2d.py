@@ -161,7 +161,7 @@ class MatrixWavedec2d(object):
     """ Sparse matrix 2d wavelet transform.
         Constructing the sparse fwt-matrix is expensive.
         The matrix is therefore constructed only once and
-        stored in this object for future use.
+        stored in this objects fwt_matrix variable for future use.
 
     Example:
         >>> import ptwt, torch, pywt
