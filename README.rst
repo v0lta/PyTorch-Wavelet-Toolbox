@@ -104,6 +104,8 @@ from pywt,
 - Adaptive product-filters
 - and optimizable orthogonal-wavelets are supported.
 
+See https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples a complete implementation.
+
 
 **Testing**
 
