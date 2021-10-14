@@ -299,14 +299,18 @@ def waverec2(coeffs, wavelet):
     return res_ll
 
 
-def wavedec(data, wavelet, level: int = None, mode="reflect") -> list:
+def wavedec(data: torch.Tensor,
+            wavelet: pywt.Wavelet,
+            level: int = None,
+            mode: str = "reflect") -> list:
     """Compute the analysis (forward) 1d fast wavelet transform.
 
     Args:
-        data (torch.tensor): Input time series of shape [batch_size, 1, time]
+        data (torch.Tensor): Input time series of shape [batch_size, 1, time]
                              1d inputs are interpreted as [time],
                              2d inputs are interpreted as [batch_size, time].
-        wavelet (learnable_wavelets.WaveletFilter): The wavelet object to use.
+        wavelet (learnable_wavelets.WaveletFilter or pywt.Wavelet):
+            The wavelet object to use.
         level (int): The scale level to be computed.
                                Defaults to None.
         mode (str): The padding mode i.e. zero or reflect.
@@ -355,16 +359,16 @@ def wavedec(data, wavelet, level: int = None, mode="reflect") -> list:
     return result_lst[::-1]
 
 
-def waverec(coeffs: list, wavelet) -> torch.tensor:
+def waverec(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
         coeffs (list): The wavelet coefficient list produced by wavedec.
-        wavelet (learnable_wavelets.WaveletFilter): The wavelet object
-            used to compute the forward transform.
+        wavelet (learnable_wavelets.WaveletFilter or pywt.Wavelet):
+            The wavelet object used to compute the forward transform.
 
     Returns:
-        torch.tensor: The reconstructed signal.
+        (torch.Tensor): The reconstructed signal.
 
     Examples::
         >>> import torch

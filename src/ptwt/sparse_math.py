@@ -123,7 +123,7 @@ def sparse_diag(diagonal: torch.Tensor,
     return diag
 
 
-def sparse_matmul_select(matrix: torch.tensor, row: int) -> torch.tensor:
+def sparse_matmul_select(matrix: torch.tensor, row: int) -> torch.Tensor:
     """Select a sparse tensor row by matrix multiplication.
 
     Args:
