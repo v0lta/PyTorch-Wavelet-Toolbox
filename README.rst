@@ -105,8 +105,7 @@ from pywt,
 - and optimizable orthogonal-wavelets are supported.
 
 
-Unit Tests
-""""""""""
+**Testing**
 
 The `tests` folder contains multiple tests to allow independent verification of this toolbox. After cloning the
 repository, and moving into the main directory, and installing `tox` with `pip install tox` run:
