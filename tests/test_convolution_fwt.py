@@ -207,15 +207,16 @@ def test_conv_fwt():
         batch_size=2, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
-    for level in [1, 2, 3, 4, 5, 6, None]:
+    for level in [1, 2, 3, None]:
         for wavelet_string in ["db1", "db2", "db3", "db4", "db5"]:
             for mode in ["reflect", "zero"]:
-                wavelet = pywt.Wavelet("db5")
+                wavelet = pywt.Wavelet(wavelet_string)
                 ptcoeff = wavedec(
-                    mackey_data_1.unsqueeze(1), wavelet, level=3, mode=mode
+                    mackey_data_1.unsqueeze(1), wavelet, level=level, mode=mode
                 )
                 pycoeff = pywt.wavedec(
-                    mackey_data_1[0, :].numpy(), wavelet, level=3, mode=mode
+                    mackey_data_1[0, :].numpy(), wavelet,
+                    level=level, mode=mode
                 )
                 cptcoeff = torch.cat(ptcoeff, -1)[0, :]
                 cpycoeff = np.concatenate(pycoeff, -1)
@@ -416,7 +417,8 @@ def test_2d_wavedec_rec():
             flat_coeff_list_pywt = np.concatenate(
                 flatten_2d_coeff_lst(pywt_coeff2d), -1)
             flat_coeff_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
-            cerr = np.mean(np.abs(flat_coeff_list_pywt - flat_coeff_list_ptwt.numpy()))
+            cerr = np.mean(
+                np.abs(flat_coeff_list_pywt - flat_coeff_list_ptwt.numpy()))
             print(
                 "wavelet",
                 wavelet_str,
@@ -426,7 +428,8 @@ def test_2d_wavedec_rec():
                 cerr,
                 ["ok" if cerr < 1e-4 else "failed!"],
             )
-            assert np.allclose(flat_coeff_list_pywt, flat_coeff_list_ptwt.numpy())
+            assert np.allclose(
+                flat_coeff_list_pywt, flat_coeff_list_ptwt.numpy())
             rec = waverec2(coeff2d, wavelet)
             rec = rec.numpy().squeeze()
             err_img = np.abs(face - rec)

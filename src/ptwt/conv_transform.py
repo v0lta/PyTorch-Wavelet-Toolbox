@@ -178,7 +178,7 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
             Defaults to reflect.
 
     Returns:
-        [list]: List containing the wavelet coefficients.
+        [list]: A list containing the wavelet coefficients.
     """
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype)
@@ -273,7 +273,6 @@ def wavedec(data, wavelet, level: int = None, mode="reflect") -> list:
 
     Returns:
         [list]: A list containing the wavelet coefficients.
-
 
     Example:
         >>> import torch
