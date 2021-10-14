@@ -158,7 +158,9 @@ def construct_boundary_s2d(
 
 
 class MatrixWavedec2d(object):
-    """ Sparse matrix 2d wavelet transform.
+    """Sparse matrix 2d wavelet transform.
+
+    Note:
         Constructing the sparse fwt-matrix is expensive.
         For longer wavelets, high level transforms, and large
         input images this may take a while.
@@ -173,7 +175,9 @@ class MatrixWavedec2d(object):
         >>> pt_face = torch.tensor(face).permute([2, 0, 1])
         >>> matrixfwt = ptwt.MatrixWavedec2d(pywt.Wavelet("haar"), level=2)
         >>> mat_coeff = matrixfwt(pt_face)
+
     """
+
     def __init__(self, wavelet, level: int,
                  boundary: str = 'qr'):
         """ Creates a new matrix fwt object.

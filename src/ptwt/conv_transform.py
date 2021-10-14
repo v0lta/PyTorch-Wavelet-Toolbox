@@ -44,12 +44,14 @@ def get_filter_tensors(wavelet, flip, device, dtype=torch.float32):
 
 def get_pad(data_len, filt_len, level):
     """Compute the required padding.
+
     Args:
         data: The input tensor.
         wavelet: The wavelet filters used.
 
     Returns:
         The numbers to attach on the edges of the input.
+
     """
     # pad to ensure we see all filter positions and
     # for pywt compatability.
@@ -76,12 +78,14 @@ def get_pad(data_len, filt_len, level):
 
 def fwt_pad(data, wavelet, level, mode="reflect"):
     """Pad the input signal to make the fwt matrix work.
+
     Args:
         data: Input data [batch_size, 1, time]
         wavelet: The input wavelet following the pywt wavelet format.
 
     Returns:
         A pytorch tensor with the padded input data
+
     """
     if mode == "zero":
         # convert pywt to pytorch convention.
@@ -94,6 +98,7 @@ def fwt_pad(data, wavelet, level, mode="reflect"):
 
 def fwt_pad2d(data, wavelet, level, mode="reflect"):
     """Padding for the 2d FWT.
+
     Args:
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (pywt.Wavelet or WaveletFilter): The wavelet used.
@@ -101,6 +106,7 @@ def fwt_pad2d(data, wavelet, level, mode="reflect"):
 
     Returns:
         The padded output tensor.
+
     """
     padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo), level)
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo), level)
@@ -129,6 +135,7 @@ def flatten_2d_coeff_lst(coeff_lst_2d: list,
 
     Returns:
         [list]: A single 1-d list with all original elements.
+
     """
     flat_coeff_lst = []
     for coeff in coeff_lst_2d:
@@ -157,6 +164,7 @@ def construct_2d_filt(lo, hi):
     Returns:
         [torch.tensor]: Stacked 2d filters of dimension
             [filt_no, 1, height, width].
+
     """
     ll = outer(lo, lo)
     lh = outer(hi, lo)
@@ -182,7 +190,7 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
     Returns:
         [list]: A list containing the wavelet coefficients.
 
-    Example::
+    Examples::
         >>> import torch
         >>> import ptwt, pywt
         >>> import numpy as np
@@ -192,6 +200,7 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
         >>> pytorch_face = torch.tensor(face).unsqueeze(1)
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
                                          level=2, mode="constant")
+
     """
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype)
@@ -222,7 +231,7 @@ def waverec2(coeffs, wavelet):
     Returns:
         torch.tensor: The reconstructed signal.
 
-    Examples:
+    Examples::
         >>> import ptwt, pywt, torch
         >>> import numpy as np
         >>> import scipy.misc
@@ -232,6 +241,7 @@ def waverec2(coeffs, wavelet):
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
                                          level=2, mode="constant")
         >>> reconstruction = ptwt.waverec2(coefficients, pywt.Wavelet("haar"))
+
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=False, device=coeffs[0].device,
@@ -298,7 +308,7 @@ def wavedec(data, wavelet, level: int = None, mode="reflect") -> list:
     Returns:
         [list]: A list containing the wavelet coefficients.
 
-    Example:
+    Examples::
         >>> import torch
         >>> import ptwt, pywt
         >>> import numpy as np
@@ -308,6 +318,7 @@ def wavedec(data, wavelet, level: int = None, mode="reflect") -> list:
         >>> # compute the forward fwt coefficients
         >>> ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
                          mode='zero', level=2)
+
     """
     if len(data.shape) == 1:
         # assume time series
@@ -348,7 +359,7 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
     Returns:
         torch.tensor: The reconstructed signal.
 
-    Examples:
+    Examples::
         >>> import torch
         >>> import ptwt, pywt
         >>> import numpy as np
@@ -359,6 +370,7 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
         >>> ptwt.waverec(ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
                                       mode='zero', level=2),
                          pywt.Wavelet('haar'))
+
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=False, device=coeffs[-1].device,
