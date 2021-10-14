@@ -1,6 +1,6 @@
-#
+"""Compute analysis wavelet packet representations."""
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
-#
+
 import collections
 import pywt
 import torch
@@ -12,13 +12,17 @@ from .matmul_transform_2d import MatrixWavedec2d
 
 
 class WaveletPacket(collections.UserDict):
+    """One dimensional wavelet packets."""
+
     def __init__(self, data: torch.tensor, wavelet, mode: str = "reflect"):
         """Create a wavelet packet decomposition object.
-           The decompositions will rely on padded fast wavelet transforms.
+
+        The decompositions will rely on padded fast wavelet transforms.
+
         Args:
             data (np.array): The input data array of shape [time].
             wavelet (pywt.Wavelet or WaveletFilter): The wavelet to use.
-            mode ([str]): The desired padding method.
+            mode (str): The desired padding method.
         """
         self.input_data = data
         self.wavelet = wavelet
@@ -26,10 +30,18 @@ class WaveletPacket(collections.UserDict):
         self.data = None
         self._wavepacketdec(self.input_data, wavelet)
 
-    def get_level(self, level):
-        return self.get_graycode_order(level)
+    def get_level(self, level: int):
+        """Return the graycode ordered paths to the filter tree nodes.
 
-    def get_graycode_order(self, level, x="a", y="d"):
+        Args:
+            level (int): The depth of the tree.
+
+        Returns:
+            list: A list with the paths to each node.
+        """
+        return self._get_graycode_order(level)
+
+    def _get_graycode_order(self, level, x="a", y="d"):
         graycode_order = [x, y]
         for i in range(level - 1):
             graycode_order = [x + path for path in graycode_order] + [
@@ -65,10 +77,11 @@ class WaveletPacket2D(collections.UserDict):
 
         Args:
             data (torch.tensor): The input data array
-                                 of shape [batch_size, height, width]
+                of shape [batch_size, height, width]
             wavelet (Wavelet Object): A named wavelet tuple.
             mode (str): A string indicating the desired padding mode,
-            choose zero or reflect.
+                choose zero or reflect.
+            max_level (int): The highest decomposition level.
         """
         self.input_data = torch.unsqueeze(data, 1)
         self.wavelet = wavelet
@@ -118,8 +131,16 @@ class WaveletPacket2D(collections.UserDict):
             self.data[path] = torch.squeeze(data)
 
 
-def get_freq_order(level: int):
-    """ Get the frequency order for a given packet decomposition level.
+def get_freq_order(level: int) -> list:
+    """Get the frequency order for a given packet decomposition level.
+
+    Args:
+        level (int): The number of decomposition scales.
+
+    Returns:
+        list: A list with the tree nodes in frequency order.
+
+    Note:
         Adapted from:
         https://github.com/PyWavelets/pywt/blob/master/pywt/_wavelet_packets.py
 
@@ -132,7 +153,7 @@ def get_freq_order(level: int):
     """
     wp_natural_path = list(product(["a", "h", "v", "d"], repeat=level))
 
-    def get_graycode_order(level, x='a', y='d'):
+    def _get_graycode_order(level, x='a', y='d'):
         graycode_order = [x, y]
         for i in range(level - 1):
             graycode_order = [x + path for path in graycode_order] + \
@@ -154,7 +175,7 @@ def get_freq_order(level: int):
         (expand_2d_path(node), node) for node in wp_natural_path
     ]:
         nodes.setdefault(row_path, {})[col_path] = node
-    graycode_order = get_graycode_order(level, x='l', y='h')
+    graycode_order = _get_graycode_order(level, x='l', y='h')
     nodes = [nodes[path] for path in graycode_order if path in nodes]
     result = []
     for row in nodes:

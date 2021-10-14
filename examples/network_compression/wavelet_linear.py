@@ -75,9 +75,9 @@ class WaveletLayer(torch.nn.Module):
     def wavelet_reconstruction(self, x):
         """Reconstruction from a tensor input.
         Args:
-            x (torch.tensor): Analysis coefficient tensor.
+            x (torch.Tensor): Analysis coefficient tensor.
         Returns:
-            torch.tensor: Input reconstruction.
+            torch.Tensor: Input reconstruction.
         """
         coeff_lst = []
         start = 0
@@ -113,8 +113,9 @@ class WaveletLayer(torch.nn.Module):
         """ Returns the wavelet loss for the wavelet in the layer.
             This value must be added to the cost for the wavelet learning to
             work.
+
         Returns:
-            torch.tensor: The wavelet loss scalar.
+            torch.Tensor: The wavelet loss scalar.
         """
         prl, _, _ = self.wavelet.perfect_reconstruction_loss()
         acl, _, _ = self.wavelet.alias_cancellation_loss()

@@ -1,10 +1,10 @@
+"""Implement matrix based fwt and ifwt.
+
+The implementation is based on the description
+in Strang Nguyen (p. 32), as well as the description
+of boundary filters in "Ripples in Mathematics" section 10.3 .
+"""
 # Created by moritz (wolter@cs.uni-bonn.de) at 14.04.20
-"""
-This module implements matrix based fwt and ifwt
-based on the description in Strang Nguyen (p. 32).
-As well as the description of boundary filters in
-"Ripples in Mathematics" section 10.3 .
-"""
 import numpy as np
 import torch
 from .sparse_math import (
@@ -18,6 +18,7 @@ from .conv_transform import get_filter_tensors
 
 def cat_sparse_identity_matrix(sparse_matrix, new_length):
     """Concatenate a sparse input matrix and a sparse identity matrix.
+
     Args:
         sparse_matrix: The input matrix.
         new_length: The length up to which the diagonal should be elongated.
@@ -52,9 +53,10 @@ def cat_sparse_identity_matrix(sparse_matrix, new_length):
 def _construct_a(wavelet, length: int,
                  device: torch.device = torch.device("cpu"),
                  dtype=torch.float64) -> torch.tensor:
-    """ Construct a raw analysis matrix.
-        The resulting matrix will only be orthogonal in the Haar case,
-        in most cases you will want to use construct_boundary_a instead.
+    """Construct a raw analysis matrix.
+
+    The resulting matrix will only be orthogonal in the Haar case,
+    in most cases you will want to use construct_boundary_a instead.
 
     Args:
         wavelet (pywt.Wavelet): The wavelet filter to use.
@@ -80,9 +82,10 @@ def _construct_a(wavelet, length: int,
 def _construct_s(wavelet, length: int,
                  device: torch.device = torch.device("cpu"),
                  dtype=torch.float64) -> torch.tensor:
-    """ Create a raw synthesis matrix.
-        The construced matrix is NOT necessary orthogonal.
-        In most cases construct_boundary_s should be used instead.
+    """Create a raw synthesis matrix.
+
+    The construced matrix is NOT necessary orthogonal.
+    In most cases construct_boundary_s should be used instead.
 
     Args:
         wavelet (pywt.Wavelet): The wavelet object to use.
@@ -108,14 +111,15 @@ def _construct_s(wavelet, length: int,
 def _get_to_orthogonalize(
         matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
     """Find matrix rows with fewer entries than filt_len.
-       These rows will need to be orthogonalized.
+
+    The returned rows will need to be orthogonalized.
 
     Args:
         matrix (torch.Tensor): The wavelet matrix under consideration.
         filt_len (int): The number of entries we would expect per row.
 
     Returns:
-        (torch.tensor): The row indices with too few entries.
+        torch.Tensor: The row indices with too few entries.
     """
     unique, count = torch.unique_consecutive(
         matrix.coalesce().indices()[0, :], return_counts=True)
@@ -124,7 +128,7 @@ def _get_to_orthogonalize(
 
 def orthogonalize(matrix: torch.Tensor, filt_len: int,
                   method: str = 'qr') -> torch.Tensor:
-    """ Orthogonalization for sparse filter matrices.
+    """Orthogonalization for sparse filter matrices.
 
     Args:
         matrix (torch.Tensor): The sparse filter matrix to orthogonalize.
@@ -160,6 +164,7 @@ class MatrixWavedec(object):
                 pywt.Wavelet('haar'), level=2)
         >>> coefficients = matrix_wavedec(data_torch)
     """
+
     def __init__(self, wavelet, level: int = None,
                  boundary: str = 'qr'):
         """Create a matrix-fwt object.
@@ -187,7 +192,7 @@ class MatrixWavedec(object):
         self.input_length = None
 
     def __call__(self, data) -> list:
-        """ Compute the matrix fwt.
+        """Compute the matrix fwt.
 
         Args:
             data: Batched input data [batch_size, time],
@@ -249,7 +254,7 @@ def construct_boundary_a(wavelet, length: int,
                          device: torch.device = torch.device("cpu"),
                          boundary: str = 'qr',
                          dtype: torch.dtype = torch.float64):
-    """ Construct a boundary-wavelet filter 1d-analysis matrix.
+    """Construct a boundary-wavelet filter 1d-analysis matrix.
 
     Args:
         wavelet : The wavelet filter object to use.
@@ -257,9 +262,12 @@ def construct_boundary_a(wavelet, length: int,
         boundary (str): A string indicating the desired boundary treatment.
             Possible options are qr and gramschmidt. Defaults to
             qr.
+        device: Where to place the matrix. Choose cpu or cuda.
+            Defaults to cpu.
+        dtype: Choose float32 or float64.
 
     Returns:
-        [torch.sparse.FloatTensor]: The analysis matrix.
+        torch.Tensor: The sparse analysis matrix.
     """
     a_full = _construct_a(wavelet, length, dtype=dtype, device=device)
     a_orth = orthogonalize(a_full, len(wavelet), method=boundary)
@@ -269,18 +277,21 @@ def construct_boundary_a(wavelet, length: int,
 def construct_boundary_s(wavelet, length,
                          device: torch.device = torch.device('cpu'),
                          boundary: str = 'qr',
-                         dtype=torch.float64):
-    """ Construct a boundary-wavelet filter 1d-synthesis matarix.
+                         dtype=torch.float64) -> torch.Tensor:
+    """Construct a boundary-wavelet filter 1d-synthesis matarix.
 
     Args:
         wavelet : The wavelet filter object to use.
         length (int):  The number of entries in the input signal.
+        device (torch.device): Where to place the matrix.
+            Choose cpu or cuda. Defaults to cpu.
         boundary (str): A string indicating the desired boundary treatment.
-            Possible options are qr and gramschmidt. Defaults to
-            qr.
+            Possible options are qr and gramschmidt. Defaults to qr.
+        dtype: Choose torch.float32 or torch.float64.
+            Defaults to torch.float32.
 
     Returns:
-        [torch.sparse.FloatTensor]: The synthesis matrix.
+        torch.Tensor: The sparse synthesis matrix.
     """
     s_full = _construct_s(wavelet, length, dtype=dtype, device=device)
     s_orth = orthogonalize(
@@ -289,7 +300,7 @@ def construct_boundary_s(wavelet, length,
 
 
 class MatrixWaverec(object):
-    """ Matrix based inverse fast wavelet transform.
+    """Matrix based inverse fast wavelet transform.
 
     Example:
         >>> import ptwt, torch, pywt
@@ -304,6 +315,7 @@ class MatrixWaverec(object):
                 pywt.Wavelet('haar'), level=2)
         >>> reconstruction = matrix_waverec(coefficients)
     """
+
     def __init__(self, wavelet, level: int = None,
                  boundary: str = 'qr'):
         """Create an analysis transformation object.
@@ -311,9 +323,9 @@ class MatrixWaverec(object):
         Args:
             wavelet (pywt.Wavelet):  The wavelet used to compute
                 the forward transform.
-            level (int, optional): The level up to which the coefficients
+            level (int): The level up to which the coefficients
                 have been computed. Defaults to None.
-            boundary (str, optional): The boundary treatment method.
+            boundary (str): The boundary treatment method.
                 Choose 'gramschmidt' or 'qr'. Defaults to 'qr'.
         """
         self.wavelet = wavelet
@@ -323,7 +335,7 @@ class MatrixWaverec(object):
         assert self.level > 0, "level must be a positive integer."
 
     def __call__(self, coefficients: list) -> torch.Tensor:
-        """ Run the synthesis or inverse matrix fwt.
+        """Run the synthesis or inverse matrix fwt.
 
         Args:
             coefficients: The coefficients produced by the forward transform.

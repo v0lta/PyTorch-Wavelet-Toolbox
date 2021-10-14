@@ -1,3 +1,4 @@
+"""Two dimensional matrix based fast wavelet transform implementations."""
 # Written by moritz ( @ wolter.tech ) in 2021
 
 import torch
@@ -17,10 +18,7 @@ from .matmul_transform import (
 
 def _construct_a_2d(wavelet, height: int, width: int,
                     device: torch.device, dtype=torch.float64) -> torch.tensor:
-    """ Construct a raw two dimensional analysis fast wavelet transformation
-        matrix.
-        The construced matrix is NOT necessary orthogonal.
-        In most cases construct_boundary_a2d should be used instead.
+    """Construct a raw two dimensional analysis wavelet transformation matrix.
 
     Args:
         wavelet (pywt.Wavelet): The wavelet to use.
@@ -32,8 +30,12 @@ def _construct_a_2d(wavelet, height: int, width: int,
 
     Returns:
         [torch.tensor]: A sparse fwt analysis matrix.
-    """
 
+    Note:
+        The construced matrix is NOT necessary orthogonal.
+        In most cases construct_boundary_a2d should be used instead.
+
+    """
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype)
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
@@ -53,7 +55,9 @@ def _construct_a_2d(wavelet, height: int, width: int,
 
 def _construct_s_2d(wavelet, height: int, width: int,
                     device, dtype=torch.float64) -> torch.tensor:
-    """ Construct a raw fast wavelet transformation synthesis matrix.
+    """Construct a raw fast wavelet transformation synthesis matrix.
+
+    Note:
         The construced matrix is NOT necessary orthogonal.
         In most cases construct_boundary_s2d should be used instead.
 
@@ -99,7 +103,7 @@ def construct_boundary_a2d(
         device: torch.device,
         boundary: str = 'qr',
         dtype: torch.dtype = torch.float64) -> torch.Tensor:
-    """ Construct a boundary fwt matrix for the input wavelet.
+    """Construct a boundary fwt matrix for the input wavelet.
 
     Args:
         wavelet: The input wavelet, either a
@@ -131,7 +135,7 @@ def construct_boundary_s2d(
         device: torch.device,
         boundary: str = 'qr',
         dtype=torch.float64) -> torch.Tensor:
-    """ Construct a 2d-fwt matrix, with boundary wavelets.
+    """Construct a 2d-fwt matrix, with boundary wavelets.
 
     Args:
         wavelet: A pywt wavelet.
@@ -158,7 +162,9 @@ def construct_boundary_s2d(
 
 
 class MatrixWavedec2d(object):
-    """ Sparse matrix 2d wavelet transform.
+    """Sparse matrix 2d wavelet transform.
+
+    Note:
         Constructing the sparse fwt-matrix is expensive.
         For longer wavelets, high level transforms, and large
         input images this may take a while.
@@ -173,10 +179,12 @@ class MatrixWavedec2d(object):
         >>> pt_face = torch.tensor(face).permute([2, 0, 1])
         >>> matrixfwt = ptwt.MatrixWavedec2d(pywt.Wavelet("haar"), level=2)
         >>> mat_coeff = matrixfwt(pt_face)
+
     """
+
     def __init__(self, wavelet, level: int,
                  boundary: str = 'qr'):
-        """ Creates a new matrix fwt object.
+        """Create a new matrix fwt object.
 
         Args:
             wavelet: A pywt wavelet.
@@ -203,16 +211,17 @@ class MatrixWavedec2d(object):
         self.boundary = boundary
 
     def __call__(self, input_signal: torch.Tensor) -> list:
-        """ Compute the fwt for the given input signal.
-            The fwt matrix is set up during the first call
-            and stored for future use.
+        """Compute the fwt for the given input signal.
+
+        The fwt matrix is set up during the first call
+        and stored for future use.
 
         Args:
             input_signal (torch.Tensor): An input signal of shape
                 [batch_size, height, width]
 
         Returns:
-            [list]: The resulting coefficients per level stored in
+            (list): The resulting coefficients per level stored in
             a pywt style list.
         """
         filt_len = len(self.wavelet)
@@ -292,8 +301,9 @@ class MatrixWavedec2d(object):
 
 
 class MatrixWaverec2d(object):
-    """ Synthesis or inverse matrix based-fast wavelet
-        transformation operation object.
+    """Synthesis or inverse matrix based-wavelet transformation object.
+
+    Note:
         Constructing the fwt matrix is expensive.
         The matrix is, therefore, constructed only
         once and stored for later use.
@@ -311,8 +321,7 @@ class MatrixWaverec2d(object):
     """
 
     def __init__(self, wavelet, boundary: str = 'qr'):
-        """ Create the inverse matrix based fast wavelet
-           transformation.
+        """Create the inverse matrix based fast wavelet transformation.
 
         Args:
             wavelet: A pywt.Wavelet compatible wavelet object.
@@ -325,11 +334,11 @@ class MatrixWaverec2d(object):
         self.boundary = boundary
 
     def __call__(self, coefficients: list) -> torch.Tensor:
-        """ Compute the inverse matrix 2d fast wavelet transform.
+        """Compute the inverse matrix 2d fast wavelet transform.
 
         Args:
             coefficients (list): The coefficient list as returned
-            by the MatrixWavedec2d-Object.
+                                 by the MatrixWavedec2d-Object.
 
         Returns:
             torch.Tensor: The  original signal reconstruction of

@@ -11,7 +11,7 @@ from src.ptwt.matmul_transform import (
     MatrixWavedec,
     MatrixWaverec,
 )
-from src.ptwt.mackey_glass import MackeyGenerator
+from src.ptwt._mackey_glass import MackeyGenerator
 
 
 # ----------------------- matrix construction tests ----------------------#

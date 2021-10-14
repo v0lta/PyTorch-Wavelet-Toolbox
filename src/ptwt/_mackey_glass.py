@@ -1,15 +1,20 @@
+"""Gernerate artificial time-series data for debugging purposes. """
+
 import matplotlib.pyplot as plt
 import torch
 
 
 def generate_mackey(
         batch_size=100, tmax=200, delta_t=1.0, rnd=True, device="cuda"):
-    """
-    Generate synthetic training data using the Mackey system
-    of equations (http://www.scholarpedia.org/article/Mackey-Glass_equation):
+    """ Generate synthetic training data using the Mackey system of equations.
+
     dx/dt = beta*(x'/(1+x'))
+    See http://www.scholarpedia.org/article/Mackey-Glass_equation
+    for reference.
+
     The system is simulated using a forward euler scheme
     (https://en.wikipedia.org/wiki/Euler_method).
+
     Returns:
         spikes: A Tensor of shape [batch_size, time, 1],
     """
@@ -38,9 +43,8 @@ def generate_mackey(
 
 
 def blockify(data, block_length):
-    """
-    Blockify the input data series by replacing
-    blocks in the output with its mean.
+    """ Blockify the input data series by replacing
+        blocks in the output with its mean.
     """
     batch_size = data.shape[0]
     steps = data.shape[-1] // block_length
@@ -56,8 +60,7 @@ def blockify(data, block_length):
 
 
 class MackeyGenerator(object):
-    """
-    Generates lorenz attractor data in 1 or 3d on the GPU.
+    """Generates lorenz attractor data in 1 or 3d on the GPU.
     """
 
     def __init__(
@@ -91,7 +94,7 @@ class MackeyGenerator(object):
         return data_nd
 
 
-def main():
+def _main():
     mackey = generate_mackey(tmax=1200, delta_t=0.1, rnd=True, device="cuda")
     block_mackey = blockify(mackey, 100)
     print(mackey.shape)
@@ -102,4 +105,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    _main()
