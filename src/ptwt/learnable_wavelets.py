@@ -1,3 +1,5 @@
+"""Experimental code for adaptive wavelet learning."""
+
 # Created by moritz wolter@cs.uni-bonn.de, 14.05.20
 # Inspired by Ripples in Mathematics, Jensen and La Cour-Harbo, Chapter 7.7
 # import pywt
