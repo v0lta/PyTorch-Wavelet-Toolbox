@@ -20,6 +20,9 @@ Pytorch Wavelet Toolbox (`ptwt`)
     <a href="https://github.com/v0lta/PyTorch-Wavelet-Toolbox/blob/main/LICENSE">
       <img alt="PyPI - License" src="https://img.shields.io/pypi/l/ptwt">
     </a>
+    <a href='https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/?badge=latest'>
+      <img src='https://readthedocs.org/projects/pytorch-wavelet-toolbox/badge/?version=latest' alt='Documentation Status' />
+    </a>
   </p>
 
 
