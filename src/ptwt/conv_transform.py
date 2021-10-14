@@ -273,6 +273,18 @@ def wavedec(data, wavelet, level: int = None, mode="reflect") -> list:
 
     Returns:
         [list]: A list containing the wavelet coefficients.
+
+
+    Example:
+        >>> import torch
+        >>> import ptwt, pywt
+        >>> import numpy as np
+        >>> # generate an input of even length.
+        >>> data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
+        >>> data_torch = torch.from_numpy(data.astype(np.float32))
+        >>> # compute the forward fwt coefficients
+        >>> ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
+                         mode='zero', level=2)
     """
     if len(data.shape) == 1:
         # assume time series
@@ -312,6 +324,18 @@ def waverec(coeffs: list, wavelet) -> torch.tensor:
 
     Returns:
         torch.tensor: The reconstructed signal.
+
+    Examples:
+        >>> import torch
+        >>> import ptwt, pywt
+        >>> import numpy as np
+        >>> # generate an input of even length.
+        >>> data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
+        >>> data_torch = torch.from_numpy(data.astype(np.float32))
+        >>> # invert the fast wavelet transform.
+        >>> ptwt.waverec(ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
+                                      mode='zero', level=2),
+                         pywt.Wavelet('haar'))
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=False, device=coeffs[-1].device,
