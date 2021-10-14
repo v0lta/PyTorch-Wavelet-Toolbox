@@ -1,7 +1,7 @@
 import pywt
 import torch
 
-from ptwt.learnable_wavelets import SoftOrthogonalWavelet
+from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
 
 
 def run_list(lst, orth=True):
