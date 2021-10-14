@@ -186,7 +186,7 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
         """Get only the product filter loss.
 
         Returns:
-            [torch.Tensor]: The loss scalar.
+            torch.Tensor: The loss scalar.
         """
         return self.perfect_reconstruction_loss()[0] \
             + self.alias_cancellation_loss()[0]
@@ -195,7 +195,7 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
         """Return the sum of all loss terms.
 
         Returns:
-            [torch.Tensor]: The loss scalar.
+            torch.Tensor: The loss scalar.
         """
         return self.product_filter_loss()
 
@@ -218,7 +218,7 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
         trough convolution.
 
         Returns:
-            (torch.Tensor): A tensor with the orthogonality constraint value.
+            torch.Tensor: A tensor with the orthogonality constraint value.
         """
         filt_len = self.dec_lo.shape[-1]
         pad_dec_lo = torch.cat(
@@ -252,7 +252,7 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
         is presented. A measurement is implemented below.
 
         Returns:
-            (torch.Tensor): A tensor with the orthogonality constraint value.
+            torch.Tensor: A tensor with the orthogonality constraint value.
         """
         eq0 = self.dec_lo - self.rec_lo.flip(-1)
         eq1 = self.dec_hi - self.rec_hi.flip(-1)

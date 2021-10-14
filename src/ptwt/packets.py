@@ -138,7 +138,7 @@ def get_freq_order(level: int) -> list:
         level (int): The number of decomposition scales.
 
     Returns:
-        (list): A list with the tree nodes in frequency order.
+        list: A list with the tree nodes in frequency order.
 
     Note:
         Adapted from:

@@ -119,7 +119,7 @@ def _get_to_orthogonalize(
         filt_len (int): The number of entries we would expect per row.
 
     Returns:
-        (torch.tensor): The row indices with too few entries.
+        torch.Tensor: The row indices with too few entries.
     """
     unique, count = torch.unique_consecutive(
         matrix.coalesce().indices()[0, :], return_counts=True)
@@ -267,7 +267,7 @@ def construct_boundary_a(wavelet, length: int,
         dtype: Choose float32 or float64.
 
     Returns:
-        [torch.sparse.FloatTensor]: The analysis matrix.
+        torch.Tensor: The sparse analysis matrix.
     """
     a_full = _construct_a(wavelet, length, dtype=dtype, device=device)
     a_orth = orthogonalize(a_full, len(wavelet), method=boundary)
@@ -277,7 +277,7 @@ def construct_boundary_a(wavelet, length: int,
 def construct_boundary_s(wavelet, length,
                          device: torch.device = torch.device('cpu'),
                          boundary: str = 'qr',
-                         dtype=torch.float64):
+                         dtype=torch.float64) -> torch.Tensor:
     """Construct a boundary-wavelet filter 1d-synthesis matarix.
 
     Args:
@@ -291,7 +291,7 @@ def construct_boundary_s(wavelet, length,
             Defaults to torch.float32.
 
     Returns:
-        (torch.sparse.FloatTensor): The synthesis matrix.
+        torch.Tensor: The sparse synthesis matrix.
     """
     s_full = _construct_s(wavelet, length, dtype=dtype, device=device)
     s_orth = orthogonalize(

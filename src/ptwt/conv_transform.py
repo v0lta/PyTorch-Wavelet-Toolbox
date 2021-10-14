@@ -91,7 +91,7 @@ def fwt_pad(data: torch.Tensor,
         mode (str): The desired way to pad.
 
     Returns:
-        (torch.Tensor): A pytorch tensor with the padded input data
+        torch.Tensor: A pytorch tensor with the padded input data
 
     """
     if mode == "zero":
@@ -142,7 +142,7 @@ def flatten_2d_coeff_lst(coeff_lst_2d: list,
              2d tensors are flattened. Defaults to True.
 
     Returns:
-        (list): A single 1-d list with all original elements.
+        list: A single 1-d list with all original elements.
 
     """
     flat_coeff_lst = []
@@ -161,15 +161,15 @@ def flatten_2d_coeff_lst(coeff_lst_2d: list,
     return flat_coeff_lst
 
 
-def construct_2d_filt(lo, hi):
+def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     """Construct two dimensional filters using outer products.
 
     Args:
-        lo (torch.tensor): Low-pass input filter.
-        hi (torch.tensor): High-pass input filter
+        lo (torch.Tensor): Low-pass input filter.
+        hi (torch.Tensor): High-pass input filter
 
     Returns:
-        [torch.tensor]: Stacked 2d filters of dimension
+        torch.Tensor: Stacked 2d filters of dimension
             [filt_no, 1, height, width].
 
     """
@@ -195,7 +195,7 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
             Defaults to reflect.
 
     Returns:
-        (list): A list containing the wavelet coefficients.
+        list: A list containing the wavelet coefficients.
 
     Examples::
         >>> import torch
@@ -227,7 +227,7 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
     return result_lst[::-1]
 
 
-def waverec2(coeffs, wavelet):
+def waverec2(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
@@ -236,7 +236,7 @@ def waverec2(coeffs, wavelet):
             The wavelet object used to compute the forward transform.
 
     Returns:
-        torch.tensor: The reconstructed signal.
+        torch.Tensor: The reconstructed signal.
 
     Examples::
         >>> import ptwt, pywt, torch
@@ -317,7 +317,7 @@ def wavedec(data: torch.Tensor,
                               Defaults to reflect.
 
     Returns:
-        (list): A list containing the wavelet coefficients.
+        list: A list containing the wavelet coefficients.
 
     Examples:
         >>> import torch
@@ -368,7 +368,7 @@ def waverec(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
             The wavelet object used to compute the forward transform.
 
     Returns:
-        (torch.Tensor): The reconstructed signal.
+        torch.Tensor: The reconstructed signal.
 
     Examples::
         >>> import torch
