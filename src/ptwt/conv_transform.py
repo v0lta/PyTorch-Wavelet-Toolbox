@@ -179,6 +179,17 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
 
     Returns:
         [list]: A list containing the wavelet coefficients.
+
+    Examples:
+        >>> import torch
+        >>> import ptwt, pywt
+        >>> import numpy as np
+        >>> import scipy.misc
+        >>> face = np.transpose(scipy.misc.face(),
+        >>>                     [2, 0, 1]).astype(np.float64)
+        >>> pytorch_face = torch.tensor(face).unsqueeze(1)
+        >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
+                                    level=2, mode="constant")
     """
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype)
@@ -208,6 +219,17 @@ def waverec2(coeffs, wavelet):
 
     Returns:
         torch.tensor: The reconstructed signal.
+
+    Examples:
+        >>> import ptwt, pywt, torch
+        >>> import numpy as np
+        >>> import scipy.misc
+        >>> face = np.transpose(scipy.misc.face(),
+                                [2, 0, 1]).astype(np.float64)
+        >>> pytorch_face = torch.tensor(face).unsqueeze(1)
+        >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
+                                         level=2, mode="constant")
+        >>> reconstruction = ptwt.waverec2(coefficients, pywt.Wavelet("haar"))
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=False, device=coeffs[0].device,
