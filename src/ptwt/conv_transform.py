@@ -77,17 +77,21 @@ def get_pad(data_len: int, filt_len: int) -> tuple:
     return padr, padl
 
 
-def fwt_pad(data, wavelet, level, mode="reflect"):
+def fwt_pad(data: torch.Tensor,
+            wavelet: pywt.Wavelet,
+            level: int,
+            mode: str = "reflect") -> torch.Tensor:
     """Pad the input signal to make the fwt matrix work.
 
     Args:
-        data: Input data [batch_size, 1, time]
-        wavelet: The input wavelet following the pywt wavelet format.
-        level: The degree of the transform.
-        mode: The desired way to pad.
+        data (torch.Tensor): Input data [batch_size, 1, time]
+        wavelet (pywt.Wavelet):
+            The input wavelet following the pywt wavelet format.
+        level (int): The degree of the transform.
+        mode (str): The desired way to pad.
 
     Returns:
-        A pytorch tensor with the padded input data
+        (torch.Tensor): A pytorch tensor with the padded input data
 
     """
     if mode == "zero":

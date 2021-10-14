@@ -20,14 +20,6 @@ ptwt.learnable\_wavelets module
    :undoc-members:
    :show-inheritance:
 
-ptwt.mackey\_glass module
--------------------------
-
-.. automodule:: ptwt.mackey_glass
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 ptwt.matmul\_transform module
 -----------------------------
 
