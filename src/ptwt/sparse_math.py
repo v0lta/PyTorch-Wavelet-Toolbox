@@ -153,7 +153,7 @@ def sparse_replace_row(matrix: torch.Tensor, row_index: int,
         row (torch.Tensor): The row to insert into the sparse matrix.
 
     Returns:
-        [torch.Tensor]: A sparse matrix, with the new row inserted at
+        torch.Tensor: A sparse matrix, with the new row inserted at
         row_index.
     """
     if not matrix.is_coalesced():

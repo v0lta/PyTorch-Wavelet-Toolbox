@@ -120,7 +120,7 @@ def construct_boundary_a2d(
             Defaults to torch.float64.
 
     Returns:
-        [torch.Tensor]: A sparse fwt matrix, with orthogonalized boundary
+        torch.Tensor: A sparse fwt matrix, with orthogonalized boundary
             wavelets.
     """
     a = _construct_a_2d(

@@ -16,15 +16,18 @@ from .sparse_math import (
 from .conv_transform import get_filter_tensors
 
 
-def cat_sparse_identity_matrix(sparse_matrix, new_length):
+def cat_sparse_identity_matrix(
+        sparse_matrix: torch.Tensor, new_length: int) -> torch.Tensor:
     """Concatenate a sparse input matrix and a sparse identity matrix.
 
     Args:
-        sparse_matrix: The input matrix.
-        new_length: The length up to which the diagonal should be elongated.
+        sparse_matrix (torch.Tensor): The input matrix.
+        new_length (int):
+            The length up to which the diagonal should be elongated.
 
     Returns:
-        Square [input, eye] matrix of size [new_length, new_length]
+        torch.Tensor: Square [input, eye] matrix
+            of size [new_length, new_length]
     """
     # assert square matrix.
     assert (
