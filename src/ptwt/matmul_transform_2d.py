@@ -18,20 +18,20 @@ from .matmul_transform import (
 )
 
 
-def _construct_a_2d(wavelet, height: int, width: int,
-                    device: torch.device, dtype=torch.float64) -> torch.tensor:
+def _construct_a_2d(wavelet: pywt.Wavelet, height: int, width: int,
+                    device: torch.device, dtype: torch.dtype=torch.float64) -> torch.tensor:
     """Construct a raw two dimensional analysis wavelet transformation matrix.
 
     Args:
         wavelet (pywt.Wavelet): The wavelet to use.
         height (int): The Height of the input image.
         width (int): The Width of the input image.
-        device ([torch.device]): Where to place to matrix, either cpu or gpu.
-        dtype ([type], optional): Desired matrix data-type.
+        device (torch.device): Where to place to matrix, either cpu or gpu.
+        dtype (torch.dtype, optional): Desired matrix data-type.
             Defaults to torch.float64.
 
     Returns:
-        [torch.tensor]: A sparse fwt analysis matrix.
+        torch.tensor: A sparse fwt analysis matrix.
 
     Note:
         The construced matrix is NOT necessary orthogonal.
@@ -55,8 +55,8 @@ def _construct_a_2d(wavelet, height: int, width: int,
     return analysis
 
 
-def _construct_s_2d(wavelet, height: int, width: int,
-                    device, dtype=torch.float64) -> torch.tensor:
+def _construct_s_2d(wavelet: pywt.Wavelet, height: int, width: int,
+                    device: torch.device, dtype=torch.float64) -> torch.tensor:
     """Construct a raw fast wavelet transformation synthesis matrix.
 
     Note:
@@ -137,7 +137,7 @@ def construct_boundary_s2d(
         device: torch.device,
         boundary: str = 'qr',
         dtype=torch.float64) -> torch.Tensor:
-    """Construct a 2d-fwt matrix, with boundary wavelets.
+    """ Construct a 2d-fwt matrix, with boundary wavelets.
 
     Args:
         wavelet: A pywt wavelet.
@@ -164,7 +164,7 @@ def construct_boundary_s2d(
 
 
 class MatrixWavedec2d(object):
-    """Experimental sparse matrix 2d wavelet transform.
+    """ Experimental sparse matrix 2d wavelet transform.
 
        Input images are expected to be divisible by two.
        For multiscale transforms all intermediate
@@ -190,7 +190,7 @@ class MatrixWavedec2d(object):
 
     """
 
-    def __init__(self, wavelet, level: int,
+    def __init__(self, wavelet: pywt.Wavelet, level: int,
                  boundary: str = 'qr'):
         """Create a new matrix fwt object.
 
@@ -332,7 +332,7 @@ class MatrixWaverec2d(object):
         >>> reconstruction = matrixifwt(mat_coeff)
     """
 
-    def __init__(self, wavelet, boundary: str = 'qr'):
+    def __init__(self, wavelet: pywt.Wavelet, boundary: str = 'qr'):
         """Create the inverse matrix based fast wavelet transformation.
 
         Args:
