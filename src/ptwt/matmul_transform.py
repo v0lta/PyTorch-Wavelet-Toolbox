@@ -197,11 +197,16 @@ class MatrixWavedec(object):
     def __call__(self, data) -> list:
         """Compute the matrix fwt.
 
+        Matrix fwt are used to avoid padding.
+        Intermediate scale results must be divisible
+        by two. A working third level transform
+        could use and input length of 128.
+        This would lead to intermediate resolutions
+        of 64 and 32.
+
         Args:
             data: Batched input data [batch_size, time],
                   should be of even length.
-                  WARNING: If the input length is odd it will be padded on the
-                  right to make it even.
 
         Returns:
             list: A list with the coefficients for each scale.
