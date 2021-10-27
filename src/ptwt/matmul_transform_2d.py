@@ -2,7 +2,7 @@
 This module uses boundary filters instead of padding.
 """
 # Written by moritz ( @ wolter.tech ) in 2021
-
+import pywt
 import torch
 import numpy as np
 
