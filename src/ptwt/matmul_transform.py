@@ -158,6 +158,12 @@ def orthogonalize(matrix: torch.Tensor, filt_len: int,
 class MatrixWavedec(object):
     """Compute the sparse matrix fast wavelet transform.
 
+    Intermediate scale results must be divisible
+    by two. A working third level transform
+    could use and input length of 128.
+    This would lead to intermediate resolutions
+    of 64 and 32. All are divisible by two.
+
     Example:
         >>> import ptwt, torch, pywt
         >>> import numpy as np
@@ -199,11 +205,6 @@ class MatrixWavedec(object):
         """Compute the matrix fwt.
 
         Matrix fwt are used to avoid padding.
-        Intermediate scale results must be divisible
-        by two. A working third level transform
-        could use and input length of 128.
-        This would lead to intermediate resolutions
-        of 64 and 32.
 
         Args:
             data: Batched input data [batch_size, time],
