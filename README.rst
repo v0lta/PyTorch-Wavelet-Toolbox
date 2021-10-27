@@ -60,7 +60,7 @@ Example usage:
   import ptwt  # use " from src import ptwt " if you cloned the repo instead of using pip.
   
   # generate an input of even length.
-  data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
+  data = np.array([0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0])
   data_torch = torch.from_numpy(data.astype(np.float32))
   wavelet = pywt.Wavelet('haar')
   
