@@ -4,19 +4,20 @@ import pywt
 import torch
 
 
-def get_filter_tensors(wavelet, flip, device, dtype=torch.float32):
+def get_filter_tensors(wavelet: pywt.Wavelet, flip: bool,
+        device: torch.device, dtype: torch.dtype=torch.float32) -> tuple:
     """Convert input wavelet to filter tensors.
 
     Args:
-        wavelet: Wavelet object, assmuing ptwt-like
+        wavelet (pywt.Wavlet): Wavelet object, assuming ptwt-like
                  field names.
-        flip ([bool]]): If true filters are flipped.
-        device : PyTorch target device.
-        dtype: The data type sets the precision of the computation.
+        flip (bool): If true filters are flipped.
+        device (torch.device) : PyTorch target device.
+        dtype (torch.dtype): The data type sets the precision of the computation.
                Default: torch.float32.
 
     Returns:
-        Tuple containing the four filter tensors
+        tuple: Tuple containing the four filter tensors
         dec_lo, dec_hi, rec_lo, rec_hi
 
     """

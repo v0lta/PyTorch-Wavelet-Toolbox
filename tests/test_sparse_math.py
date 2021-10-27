@@ -87,7 +87,7 @@ def test_conv_matrix_2d():
     """
     for filter_shape in [(2, 2), (3, 3), (3, 2), (2, 3), (5, 3), (3, 5),
                          (2, 5), (5, 2), (4, 4)]:
-        for size in [(5, 5), (16, 16), (8, 16), (16, 8), (16, 7), (7, 16),
+        for size in [(5, 5), (10, 10), (16, 16), (8, 16), (16, 8), (16, 7), (7, 16),
                      (15, 15)]:
             for mode in ['same', 'full', 'valid']:
                 filter = torch.rand(filter_shape)

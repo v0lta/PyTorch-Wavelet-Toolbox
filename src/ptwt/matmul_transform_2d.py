@@ -23,7 +23,7 @@ def _construct_a_2d(wavelet, height: int, width: int,
     Args:
         wavelet (pywt.Wavelet): The wavelet to use.
         height (int): The Height of the input image.
-        width (int): The Widht of the input image.
+        width (int): The Width of the input image.
         device ([torch.device]): Where to place to matrix, either cpu or gpu.
         dtype ([type], optional): Desired matrix data-type.
             Defaults to torch.float64.
@@ -162,7 +162,13 @@ def construct_boundary_s2d(
 
 
 class MatrixWavedec2d(object):
-    """Sparse matrix 2d wavelet transform.
+    """Experimental sparse matrix 2d wavelet transform.
+
+       Input images are expected to be divisible by two.
+       For multiscale transforms all intermediate
+       scale dimensions must be divisible
+       by two, i.e. 128, 128 -> 64, 64 -> 32, 32 would work
+       for a level three transform.
 
     Note:
         Constructing the sparse fwt-matrix is expensive.
@@ -264,6 +270,10 @@ class MatrixWavedec2d(object):
                 current_height, current_width = size_list[-1]
                 if current_height < filt_len or current_width < filt_len:
                     break
+                assert current_height % 2  == 0, \
+                    "Image height must be divisible by two on all scales."
+                assert current_height % 2  == 0, \
+                    "Image width must be divisible by two on all scales."
                 analysis_matrix_2d = construct_boundary_a2d(
                     self.wavelet, current_height, current_width,
                     dtype=input_signal.dtype, device=input_signal.device,

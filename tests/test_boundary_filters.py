@@ -127,7 +127,7 @@ def test_matrix_analysis_fwt_2d_haar():
 def test_boundary_matrix_fwt_2d():
     """ Ensure the boundary matrix fwt is invertable."""
     for wavelet_str in ('haar', 'db2', 'db3', 'db4'):
-        for level in (1, 2, 3, 4, None):
+        for level in (4, 3, 2, 1, None):
             for size in ((16, 16), (15, 15), (16, 15), (15, 16)):
                 face = np.mean(scipy.misc.face()[256:(256+size[0]),
                                                  256:(256+size[1])],
@@ -176,11 +176,12 @@ def test_batched_2d_matrix_fwt_ifwt():
 
 
 if __name__ == '__main__':
-    # test_matrix_analysis_fwt_2d_haar()
-    test_boundary_filter_analysis_and_synthethis_matrices()
-    test_boundary_transform_1d()
+    test_analysis_synthesis_matrices()
+    # test_boundary_filter_analysis_and_synthethis_matrices()
+    # test_boundary_transform_1d()
     # test_conv_matrix()
     # test_conv_matrix_2d()
     # test_strided_conv_matrix_2d_same()
-    test_batched_2d_matrix_fwt_ifwt()
+    # test_batched_2d_matrix_fwt_ifwt()
     # test_analysis_synthesis_matrices()
+    # test_boundary_matrix_fwt_2d()

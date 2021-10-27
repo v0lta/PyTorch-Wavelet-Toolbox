@@ -32,7 +32,7 @@ def cat_sparse_identity_matrix(
     # assert square matrix.
     assert (
         sparse_matrix.shape[0] == sparse_matrix.shape[1]
-    ), "wavelet matrices are square"
+    ), "Input matrices must be square. Odd input images lead to non-square matrices."
     assert new_length > sparse_matrix.shape[0],\
         "cant add negatively many entries."
     x = torch.arange(sparse_matrix.shape[0], new_length,
