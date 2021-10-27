@@ -60,10 +60,3 @@ ptwt.wavelets\_learnable module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
-
-.. automodule:: ptwt
-   :members:
-   :undoc-members:
-   :show-inheritance:
