@@ -1,5 +1,5 @@
 """Two dimensional matrix based fast wavelet transform implementations.
-Boundary filters are used instead of padding.
+This module uses boundary filters instead of padding.
 """
 # Written by moritz ( @ wolter.tech ) in 2021
 

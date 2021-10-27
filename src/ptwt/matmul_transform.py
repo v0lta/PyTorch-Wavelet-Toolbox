@@ -1,5 +1,5 @@
 """Implement matrix based fwt and ifwt.
-Boundary filters are used here instead of padding.
+This module uses boundary filters instead of padding.
 
 The implementation is based on the description
 in Strang Nguyen (p. 32), as well as the description
