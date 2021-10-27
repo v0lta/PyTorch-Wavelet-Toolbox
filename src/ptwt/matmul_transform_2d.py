@@ -1,4 +1,6 @@
-"""Two dimensional matrix based fast wavelet transform implementations."""
+"""Two dimensional matrix based fast wavelet transform implementations.
+Boundary filters are used instead of padding.
+"""
 # Written by moritz ( @ wolter.tech ) in 2021
 
 import torch
