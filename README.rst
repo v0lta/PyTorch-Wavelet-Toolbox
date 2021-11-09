@@ -23,7 +23,7 @@ Pytorch Wavelet Toolbox (`ptwt`)
     :alt: Documentation Status
 
 
-Welcome to the PyTorch (adaptive) wavelet toolbox. This package implements:
+Welcome to the PyTorch wavelet toolbox. This package implements:
 
 - the fast wavelet transform (fwt) implemented in ``wavedec``.
 - the inverse fwt can be used by calling ``waverec``.
