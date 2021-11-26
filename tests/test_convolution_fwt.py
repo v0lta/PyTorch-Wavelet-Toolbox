@@ -1,25 +1,24 @@
+"""Test the conv-fwt code."""
 # Written by moritz ( @ wolter.tech ) in 2021
-import sys
-import pytest
 import numpy as np
+import pytest
 import pywt
 import scipy.misc
 import torch
-
-sys.path.append("./src")
+from src.ptwt._mackey_glass import MackeyGenerator
 from src.ptwt.conv_transform import (
-    flatten_2d_coeff_lst,
     _outer,
+    flatten_2d_coeff_lst,
     wavedec,
     wavedec2,
     waverec,
     waverec2,
 )
 from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
-from src.ptwt._mackey_glass import MackeyGenerator
 
 
 def test_conv_fwt_haar_lvl2():
+    """Test Haar wavelet level two conv fwt."""
     data = [
         1.0,
         2.0,
@@ -58,6 +57,7 @@ def test_conv_fwt_haar_lvl2():
 
 
 def test_conv_fwt_haar_lvl2_odd():
+    """Test an odd Haar wavelet convolution fwt."""
     data = [
         1.0,
         2.0,
@@ -91,6 +91,7 @@ def test_conv_fwt_haar_lvl2_odd():
 
 
 def test_conv_fwt_haar_lvl4():
+    """Test a fourth level Haar wavelet conv-fwt."""
     generator = MackeyGenerator(batch_size=2, tmax=64, delta_t=1, device="cpu")
     mackey_data_1 = torch.squeeze(generator())
     wavelet = pywt.Wavelet("haar")
@@ -111,6 +112,7 @@ def test_conv_fwt_haar_lvl4():
 
 
 def test_conv_fwt_db2_lvl1():
+    """Test a second level db2 conv-fwt."""
     data = [
         1.0,
         2.0,
@@ -147,6 +149,7 @@ def test_conv_fwt_db2_lvl1():
 
 
 def test_conv_fwt_db5_lvl3():
+    """Test a third level db5 conv-fwt."""
     generator = MackeyGenerator(batch_size=2, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
@@ -193,6 +196,7 @@ def test_conv_fwt_db5_lvl3():
 
 
 def test_conv_fwt():
+    """Test multiple convolution fwt, for various levels and padding options."""
     generator = MackeyGenerator(batch_size=2, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
@@ -248,9 +252,7 @@ def test_conv_fwt():
 
 
 def test_ripples_haar_lvl3():
-    """Compute example from page 7 of
-    Ripples in Mathematics, Jensen, la Cour-Harbo
-    """
+    """Compute example from page 7 of Ripples in Mathematics, Jensen, la Cour-Harbo."""
 
     class MyHaarFilterBank(object):
         @property
@@ -274,6 +276,7 @@ def test_ripples_haar_lvl3():
 
 
 def test_orth_wavelet():
+    """Test an orthogonal wavelet fwt."""
     generator = MackeyGenerator(batch_size=2, tmax=64, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
@@ -294,6 +297,7 @@ def test_orth_wavelet():
 
 
 def test_2d_haar_lvl1():
+    """Test a 2d-Haar wavelet conv-fwt."""
     # ------------------------- 2d haar wavelet tests -----------------------
     face = np.transpose(
         scipy.misc.face()[128 : (512 + 128), 256 : (512 + 256)], [2, 0, 1]
@@ -323,6 +327,7 @@ def test_2d_haar_lvl1():
 
 
 def test_2d_db2_lvl1():
+    """Test a 2d-db2 wavelet conv-fwt."""
     # single level db2 - 2d
     face = np.transpose(
         scipy.misc.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
@@ -345,6 +350,7 @@ def test_2d_db2_lvl1():
 
 
 def test_2d_haar_multi():
+    """Test a 2d-db2 wavelet level 5 conv-fwt."""
     # multi level haar - 2d
     face = np.transpose(
         scipy.misc.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
@@ -369,6 +375,7 @@ def test_2d_haar_multi():
 
 
 def test_outer():
+    """Test the outer-product implementation."""
     a = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
     b = torch.tensor([6.0, 7.0, 8.0, 9.0, 10.0])
     res_t = _outer(a, b)
@@ -378,8 +385,10 @@ def test_outer():
 
 @pytest.mark.slow
 def test_2d_wavedec_rec():
-    # ensure pywt.wavedec2 and ptwt.wavedec2 produce the same
-    # coefficients and ensure wavedec2 and waverec2 invert each other.
+    """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
+
+    Wavedec2 and waverec2 invert each other.
+    """
     for level in [1, 2, 3, 4, 5, None]:
         for wavelet_str in ["haar", "db2", "db3", "db4", "db5"]:
             face = np.transpose(

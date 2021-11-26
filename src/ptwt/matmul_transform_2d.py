@@ -3,13 +3,13 @@
 This module uses boundary filters to minimize padding.
 """
 # Written by moritz ( @ wolter.tech ) in 2021
+import numpy as np
 import pywt
 import torch
-import numpy as np
 
+from .conv_transform import construct_2d_filt, flatten_2d_coeff_lst, get_filter_tensors
+from .matmul_transform import cat_sparse_identity_matrix, orthogonalize
 from .sparse_math import construct_strided_conv2d_matrix
-from .conv_transform import flatten_2d_coeff_lst, construct_2d_filt, get_filter_tensors
-from .matmul_transform import orthogonalize, cat_sparse_identity_matrix
 
 
 def _construct_a_2d(

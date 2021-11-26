@@ -1,21 +1,25 @@
+"""Test the sparse math code from ptwt.sparse_math."""
 # Written by moritz ( @ wolter.tech ) in 2021
-import torch
+import numpy as np
 import pytest
 import scipy.signal
-import numpy as np
+import torch
 from scipy import misc
 from src.ptwt.sparse_math import (
-    sparse_kron,
-    construct_conv_matrix,
-    construct_strided_conv_matrix,
-    construct_strided_conv2d_matrix,
     construct_conv2d_matrix,
+    construct_conv_matrix,
+    construct_strided_conv2d_matrix,
+    construct_strided_conv_matrix,
+    sparse_kron,
 )
 
 
 def test_kron():
-    """test the implementation by evaluating the example from
-    https://de.wikipedia.org/wiki/Kronecker-Produkt"""
+    """Test the implementation by evaluation.
+
+    The example is taken from
+    https://de.wikipedia.org/wiki/Kronecker-Produkt
+    """
     a = torch.tensor([[1, 2], [3, 2], [5, 6]]).to_sparse()
     b = torch.tensor([[7, 8], [9, 0]]).to_sparse()
     sparse_result = sparse_kron(a, b)
@@ -87,6 +91,7 @@ def test_strided_conv_matrix():
 
 def test_conv_matrix_2d():
     """Test the validity of the 2d convolution matrix code.
+
     It should be equivalent to signal convolve2d.
     """
     for filter_shape in [

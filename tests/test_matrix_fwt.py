@@ -1,21 +1,22 @@
+"""Test the fwt and ifwt matrices."""
 # Written by moritz ( @ wolter.tech ) in 2021
-import numpy as np
-import pywt
 import time
-import torch
-import pytest
 
+import numpy as np
+import pytest
+import pywt
+import torch
+from src.ptwt._mackey_glass import MackeyGenerator
 from src.ptwt.matmul_transform import (
-    _construct_a,
-    _construct_s,
     MatrixWavedec,
     MatrixWaverec,
+    _construct_a,
+    _construct_s,
 )
-from src.ptwt._mackey_glass import MackeyGenerator
 
 
-# ----------------------- matrix construction tests ----------------------#
 def test_analysis_and_synthethis_matrices_db1():
+    """Tests the db1 case."""
     a_db1 = _construct_a(pywt.Wavelet("db1"), 8)
     s_db1 = _construct_s(pywt.Wavelet("db1"), 8)
     err = np.mean(np.abs(torch.sparse.mm(a_db1, s_db1.to_dense()).numpy() - np.eye(8)))
@@ -23,8 +24,8 @@ def test_analysis_and_synthethis_matrices_db1():
     assert err < 1e-6
 
 
-# ------------------------- Haar fwt-ifwt tests ----------------
 def test_fwt_ifwt_level_1():
+    """Test the Haar case."""
     wavelet = pywt.Wavelet("haar")
     data2 = np.array(
         [
@@ -61,6 +62,7 @@ def test_fwt_ifwt_level_1():
 
 
 def test_fwt_ifwt_level_2():
+    """Test the Haar level two case."""
     wavelet = pywt.Wavelet("haar")
     data2 = np.array(
         [
@@ -104,6 +106,7 @@ def test_fwt_ifwt_level_2():
 
 
 def test_fwt_ifwt_level_3():
+    """Test the Haar level 3 case."""
     wavelet = pywt.Wavelet("haar")
     data2 = np.array(
         [
@@ -150,6 +153,7 @@ def test_fwt_ifwt_level_3():
 
 @pytest.mark.slow
 def test_fwt_ifwt_mackey_haar():
+    """Test the Haar case for a long signal."""
     wavelet = pywt.Wavelet("haar")
     generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1)
     wavelet = pywt.Wavelet("haar")
@@ -181,9 +185,9 @@ def test_fwt_ifwt_mackey_haar():
     assert np.allclose(pt_data.numpy(), reconstructed_data.numpy())
 
 
-# ------------ db2 fwt-ifwt tests --------------------------------------
 @pytest.mark.slow
 def test_fwt_ifwt_mackey_db2():
+    """Test the db2 case for a long signal."""
     wavelet = pywt.Wavelet("db2")
     generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1)
     pt_data = torch.squeeze(generator()).cpu()

@@ -93,6 +93,16 @@ class MackeyGenerator(object):
         restore_and_plot=False,
         device="cuda",
     ):
+        """Create a Mackey-Glass simulator.
+
+        Args:
+            batch_size: Total number of samples to generate.
+            tmax: Total simulation time.
+            delta_t: Time step.
+            block_size: Length of mean blocks. Defaults to None.
+            restore_and_plot: Deactivate random init. Defaults to False.
+            device: Choose cpu or cuda. Defaults to "cuda".
+        """
         self.batch_size = batch_size
         self.tmax = tmax
         self.delta_t = delta_t
@@ -101,6 +111,7 @@ class MackeyGenerator(object):
         self.device = device
 
     def __call__(self):
+        """Simulate a batch and return the result."""
         data_nd = generate_mackey(
             tmax=self.tmax,
             delta_t=self.delta_t,

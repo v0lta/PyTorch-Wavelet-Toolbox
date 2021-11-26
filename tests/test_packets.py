@@ -1,16 +1,17 @@
+"""Test the wavelet packet code."""
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
-import pytest
+from itertools import product
+
 import numpy as np
+import pytest
 import pywt
 import torch
-from itertools import product
 from scipy import misc
 from src.ptwt.packets import WaveletPacket, WaveletPacket2D, get_freq_order
 
 
 def test_packet_harbo_lvl3():
-    # From Jensen, La Cour-Harbo,
-    # Rippels in Mathematics, Chapter 8 (page 89).
+    """From Jensen, La Cour-Harbo, Rippels in Mathematics, Chapter 8 (page 89)."""
     w = [56.0, 40.0, 8.0, 24.0, 48.0, 48.0, 40.0, 16.0]
 
     class MyHaarFilterBank(object):
@@ -106,7 +107,7 @@ def _compare_trees(
 
 @pytest.mark.slow
 def test_2d_packets():
-    "ensure pywt and ptwt produce equivalent wavelet packet trees."
+    """Ensure pywt and ptwt produce equivalent wavelet packet trees."""
     for max_lev in [1, 2, 3, 4]:
         for wavelet_str in ["haar", "db2", "db3", "db4", "db5", "db6", "db7", "db8"]:
             for boundary in ["zero", "reflect"]:
@@ -123,6 +124,7 @@ def test_boundary_matrix_packets():
 
 
 def test_freq_order():
+    """Test the packets in frequency order."""
     for level in [1, 2, 3, 4]:
         wavelet_str = "db2"
         pywt_boundary = "zero"

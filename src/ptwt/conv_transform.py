@@ -350,7 +350,7 @@ def wavedec(
 
     result_lst = []
     res_lo = data
-    for s in range(level):
+    for _ in range(level):
         res_lo = fwt_pad(res_lo, wavelet, mode=mode)
         res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)

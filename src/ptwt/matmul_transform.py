@@ -9,13 +9,15 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 # Created by moritz (wolter@cs.uni-bonn.de) at 14.04.20
 import numpy as np
 import torch
+
+from .conv_transform import get_filter_tensors
 from .sparse_math import (
-    _orth_by_qr,
     _orth_by_gram_schmidt,
+    _orth_by_qr,
     construct_strided_conv_matrix,
 )
 
-from .conv_transform import get_filter_tensors
+cpu = torch.device("cpu")
 
 
 def cat_sparse_identity_matrix(
@@ -64,7 +66,7 @@ def cat_sparse_identity_matrix(
 def _construct_a(
     wavelet,
     length: int,
-    device: torch.device = torch.device("cpu"),
+    device: torch.device = cpu,
     dtype=torch.float64,
 ) -> torch.tensor:
     """Construct a raw analysis matrix.
@@ -99,7 +101,7 @@ def _construct_a(
 def _construct_s(
     wavelet,
     length: int,
-    device: torch.device = torch.device("cpu"),
+    device: torch.device = cpu,
     dtype=torch.float64,
 ) -> torch.tensor:
     """Create a raw synthesis matrix.
@@ -312,7 +314,7 @@ class MatrixWavedec(object):
 def construct_boundary_a(
     wavelet,
     length: int,
-    device: torch.device = torch.device("cpu"),
+    device: torch.device = cpu,
     boundary: str = "qr",
     dtype: torch.dtype = torch.float64,
 ):
@@ -339,7 +341,7 @@ def construct_boundary_a(
 def construct_boundary_s(
     wavelet,
     length,
-    device: torch.device = torch.device("cpu"),
+    device: torch.device = cpu,
     boundary: str = "qr",
     dtype=torch.float64,
 ) -> torch.Tensor:

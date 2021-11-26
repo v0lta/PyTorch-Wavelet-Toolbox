@@ -5,8 +5,9 @@ See https://arxiv.org/pdf/2004.09569.pdf for more information.
 # Created by moritz wolter@cs.uni-bonn.de, 14.05.20
 # Inspired by Ripples in Mathematics, Jensen and La Cour-Harbo, Chapter 7.7
 # import pywt
-import torch
 from abc import ABC, abstractmethod
+
+import torch
 
 
 class WaveletFilter(ABC):

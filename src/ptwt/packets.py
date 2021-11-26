@@ -2,10 +2,11 @@
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 
 import collections
-import pywt
-import torch
 from functools import partial
 from itertools import product
+
+import pywt
+import torch
 
 from .conv_transform import wavedec, wavedec2
 from .matmul_transform_2d import MatrixWavedec2d
@@ -43,7 +44,7 @@ class WaveletPacket(collections.UserDict):
 
     def _get_graycode_order(self, level, x="a", y="d"):
         graycode_order = [x, y]
-        for i in range(level - 1):
+        for _ in range(level - 1):
             graycode_order = [x + path for path in graycode_order] + [
                 y + path for path in graycode_order[::-1]
             ]
@@ -154,7 +155,7 @@ def get_freq_order(level: int) -> list:
 
     def _get_graycode_order(level, x="a", y="d"):
         graycode_order = [x, y]
-        for i in range(level - 1):
+        for _ in range(level - 1):
             graycode_order = [x + path for path in graycode_order] + [
                 y + path for path in graycode_order[::-1]
             ]

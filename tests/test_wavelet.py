@@ -1,10 +1,12 @@
+"""Test the adaptive wavelet cost functions."""
+
 import pywt
 import torch
-
 from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
 
 
-def run_list(lst, orth=True):
+def run_list(lst: list, orth: bool = True):
+    """Test all wavelets in a list."""
     for ws in lst:
         wavelet = pywt.Wavelet(ws)
         orthwave = SoftOrthogonalWavelet(
@@ -30,26 +32,31 @@ def run_list(lst, orth=True):
 
 
 def test_db_wavelet_loss():
+    """Test all Daubechies wavelets."""
     lst = pywt.wavelist(family="db")
     run_list(lst, orth=True)
 
 
 def test_sym_wavelet_loss():
+    """Test all symlets."""
     lst = pywt.wavelist(family="sym")
     run_list(lst, orth=True)
 
 
 def test_coif_wavelet_loss():
+    """Test all coif-wavelets."""
     lst = pywt.wavelist(family="coif")
     run_list(lst, orth=True)
 
 
 def test_bior_wavelet_loss():
+    """Test all bior-wavelets."""
     lst = pywt.wavelist(family="bior")
     run_list(lst, orth=False)
 
 
 def test_rbio_wavelet_loss():
+    """Test all rbio-wavelets."""
     lst = pywt.wavelist(family="rbio")
     run_list(lst, orth=False)
 

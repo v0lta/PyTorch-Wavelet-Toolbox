@@ -1,9 +1,7 @@
 """Efficiently construct fwt operations using sparse matrices."""
 # Written by moritz ( @ wolter.tech ) 17.09.21
-import torch
 import numpy as np
-
-# import pytest
+import torch
 
 
 def _dense_kron(

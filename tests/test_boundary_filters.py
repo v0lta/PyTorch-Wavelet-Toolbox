@@ -1,32 +1,28 @@
+"""Test code for the boundary wavelets."""
 # Created by moritz ( wolter@cs.uni-bonn.de ), 08.09.21
-import pywt
-import torch
-import pytest
 import numpy as np
+import pytest
+import pywt
 import scipy.signal
-
-# from scipy import misc
-
+import torch
+from src.ptwt.conv_transform import flatten_2d_coeff_lst
 from src.ptwt.matmul_transform import (
-    construct_boundary_a,
-    construct_boundary_s,
     MatrixWavedec,
     MatrixWaverec,
+    construct_boundary_a,
+    construct_boundary_s,
 )
-
-from src.ptwt.conv_transform import flatten_2d_coeff_lst
-
 from src.ptwt.matmul_transform_2d import (
-    construct_boundary_a2d,
-    construct_boundary_s2d,
     MatrixWavedec2d,
     MatrixWaverec2d,
+    construct_boundary_a2d,
+    construct_boundary_s2d,
 )
 
 
 @pytest.mark.slow
 def test_boundary_filter_analysis_and_synthethis_matrices():
-    """check 1d the 1d-fwt matrices for orthogonality and invertability."""
+    """Check 1d the 1d-fwt matrices for orthogonality and invertability."""
     for size in [24, 64, 128, 256]:
         for wavelet in [
             pywt.Wavelet("db2"),
@@ -55,7 +51,7 @@ def test_boundary_filter_analysis_and_synthethis_matrices():
 
 
 def test_boundary_transform_1d():
-    """ensure matrix fwt reconstructions are pywt compatible."""
+    """Ensure matrix fwt reconstructions are pywt compatible."""
     data_list = [
         np.random.randn(32),
         np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0]),
@@ -92,7 +88,7 @@ def test_boundary_transform_1d():
 
 
 def test_analysis_synthesis_matrices():
-    """test the 2d analysis and synthesis matrices for various wavelets."""
+    """Test the 2d analysis and synthesis matrices for various wavelets."""
     for size in [(16, 16), (16, 8), (8, 16)]:
         for wavelet_str in ["db1", "db2", "db3", "db4", "db5"]:
             wavelet = pywt.Wavelet(wavelet_str)
@@ -127,8 +123,7 @@ def test_analysis_synthesis_matrices():
 
 @pytest.mark.slow
 def test_matrix_analysis_fwt_2d_haar():
-    """Test the fwt-2d matrix-haar transform,
-    the coefficients should be equal to the pywt result."""
+    """Test the fwt-2d matrix-haar transform, should be equal to the pywt."""
     for size in ((15, 16), (16, 15), (16, 16)):
         for level in (1, 2, 3):
             face = np.mean(
