@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 
 class WaveletFilter(ABC):
     """Interface for learnable wavelets.
+
     Each wavelet has a filter bank a loss function
     and comes with functionality the test the perfect
     reconstruction and anti-aliasing conditions.
@@ -19,15 +20,18 @@ class WaveletFilter(ABC):
     @property
     @abstractmethod
     def filter_bank(self):
+        """Return dec_lo, dec_hi, rec_lo, rec_hi."""
         raise NotImplementedError
 
     @abstractmethod
     def wavelet_loss(self):
+        """Return the sum of all loss terms."""
         return self.alias_cancellation_loss() \
-               + self.perfect_reconstruction_loss()
+            + self.perfect_reconstruction_loss()
 
     @abstractmethod
     def __len__(self):
+        """Return the filter length."""
         raise NotImplementedError
 
     # @abstractmethod
@@ -109,7 +113,7 @@ class WaveletFilter(ABC):
         return torch.sum(errs), p_test, zeros
 
     def perfect_reconstruction_loss(self) -> list:
-        """Return the perferct reconsturction loss.
+        """Return the perfect reconstruction loss.
 
         Strang 107: Assuming alias cancellation holds:
         P(z) = F(z)H(z)
@@ -159,6 +163,8 @@ class WaveletFilter(ABC):
 
 
 class ProductFilter(WaveletFilter, torch.nn.Module):
+    """Learnable product filter implementation."""
+
     def __init__(
         self,
         dec_lo: torch.Tensor,
@@ -166,6 +172,14 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
         rec_lo: torch.Tensor,
         rec_hi: torch.Tensor,
     ):
+        """Create a Product filter object.
+
+        Args:
+            dec_lo (torch.Tensor): Low pass analysis filter.
+            dec_hi (torch.Tensor): High pass analysis filter.
+            rec_lo (torch.Tensor): Low pass synthesis filter.
+            rec_hi (torch.Tensor): High pass synthesis filter.
+        """
         super().__init__()
         self.dec_lo = torch.nn.Parameter(dec_lo)
         self.dec_hi = torch.nn.Parameter(dec_hi)
@@ -174,12 +188,14 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
 
     @property
     def filter_bank(self):
+        """Return all filters a a tuple."""
         return self.dec_lo, self.dec_hi, self.rec_lo, self.rec_hi
 
     # def parameters(self):
     #     return [self.dec_lo, self.dec_hi, self.rec_lo, self.rec_hi]
 
     def __len__(self):
+        """Return the length of all filter arrays."""
         return self.dec_lo.shape[-1]
 
     def product_filter_loss(self):
@@ -201,6 +217,8 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
 
 
 class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
+    """Orthogonal wavelets with a soft orthogonality constraint."""
+
     def __init__(
         self,
         dec_lo: torch.Tensor,
@@ -208,6 +226,14 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
         rec_lo: torch.Tensor,
         rec_hi: torch.Tensor,
     ):
+        """Create a SoftOrthogonalWavelet object.
+
+        Args:
+            dec_lo (torch.Tensor): Low pass analysis filter.
+            dec_hi (torch.Tensor): High pass analysis filter.
+            rec_lo (torch.Tensor): Low pass synthesis filter.
+            rec_hi (torch.Tensor): High pass synthesis filter.
+        """
         super().__init__(dec_lo, dec_hi, rec_lo, rec_hi)
 
     def rec_lo_orthogonality_loss(self):
@@ -262,4 +288,5 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
         return seq0 + seq1
 
     def wavelet_loss(self):
+        """Return the sum of all terms."""
         return self.product_filter_loss() + self.filt_bank_orthogonality_loss()

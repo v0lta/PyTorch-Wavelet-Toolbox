@@ -1,5 +1,6 @@
 """Two dimensional matrix based fast wavelet transform implementations.
-This module uses boundary filters instead of padding.
+
+This module uses boundary filters to minimize padding.
 """
 # Written by moritz ( @ wolter.tech ) in 2021
 import pywt
@@ -19,7 +20,8 @@ from .matmul_transform import (
 
 
 def _construct_a_2d(wavelet: pywt.Wavelet, height: int, width: int,
-                    device: torch.device, dtype: torch.dtype=torch.float64) -> torch.tensor:
+                    device: torch.device, dtype: torch.dtype = torch.float64
+                    ) -> torch.tensor:
     """Construct a raw two dimensional analysis wavelet transformation matrix.
 
     Args:
@@ -137,7 +139,7 @@ def construct_boundary_s2d(
         device: torch.device,
         boundary: str = 'qr',
         dtype=torch.float64) -> torch.Tensor:
-    """ Construct a 2d-fwt matrix, with boundary wavelets.
+    """Construct a 2d-fwt matrix, with boundary wavelets.
 
     Args:
         wavelet: A pywt wavelet.
@@ -164,7 +166,7 @@ def construct_boundary_s2d(
 
 
 class MatrixWavedec2d(object):
-    """ Experimental sparse matrix 2d wavelet transform.
+    """Experimental sparse matrix 2d wavelet transform.
 
        Input images are expected to be divisible by two.
        For multiscale transforms all intermediate
@@ -272,9 +274,9 @@ class MatrixWavedec2d(object):
                 current_height, current_width = size_list[-1]
                 if current_height < filt_len or current_width < filt_len:
                     break
-                assert current_height % 2  == 0, \
+                assert current_height % 2 == 0, \
                     "Image height must be divisible by two on all scales."
-                assert current_height % 2  == 0, \
+                assert current_height % 2 == 0, \
                     "Image width must be divisible by two on all scales."
                 analysis_matrix_2d = construct_boundary_a2d(
                     self.wavelet, current_height, current_width,
