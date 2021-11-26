@@ -46,10 +46,10 @@ def test_fwt_ifwt_level_1():
 def test_fwt_ifwt_level_2():
     wavelet = pywt.Wavelet("haar")
     data2 = np.array([1., 2., 3., 4., 5., 6., 7., 8., 9., 10.,
-                      11., 12., 13., 14., 15., 16.])
+                      11., 12., 13., 14., 15., 16., 17., 18.])
     pt_data = torch.from_numpy(data2).unsqueeze(0)
 
-    coeffs2 = pywt.wavedec(data2, wavelet, level=2)
+    coeffs2 = pywt.wavedec(data2, wavelet, level=2, mode='zero')
     matrix_wavedec = MatrixWavedec(wavelet, 2)
     coeffsmat2 = matrix_wavedec(pt_data)
 
@@ -145,3 +145,7 @@ def test_fwt_ifwt_mackey_db2():
     err = torch.mean(torch.abs(pt_data - reconstructed_data))
     print("reconstruction error:", err)
     assert err < 1e-6
+
+
+if __name__ == '__main__':
+    test_fwt_ifwt_level_2()

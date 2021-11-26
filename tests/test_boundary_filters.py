@@ -50,9 +50,13 @@ def test_boundary_filter_analysis_and_synthethis_matrices():
 
 def test_boundary_transform_1d():
     """ ensure matrix fwt reconstructions are pywt compatible. """
-    data_list = [np.array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0]),
-                 np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])]
-    wavelet_list = ['db2', 'haar', 'db3']
+    data_list = [np.random.randn(32),
+                 np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0]),
+                 np.array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0]),
+                 np.random.randn(18),
+                 np.random.randn(19)
+                 ]
+    wavelet_list = ['db2', 'db3', 'haar']
     for data in data_list:
         for wavelet_str in wavelet_list:
             for level in [1, 2]:
@@ -66,13 +70,14 @@ def test_boundary_transform_1d():
                         wavelet, level=level, boundary=boundary)
                     rec = matrix_waverec(coeffs)
                     rec_pywt = pywt.waverec(
-                        pywt.wavedec(data_torch.numpy(), wavelet), wavelet)
+                        pywt.wavedec(data_torch.numpy(), wavelet, mode='zero'),
+                        wavelet)
                     error = np.sum(np.abs(rec_pywt - rec.numpy()))
                     print('wavelet: {},'.format(wavelet_str),
                           'level: {},'.format(level),
                           'shape: {},'.format(data.shape[-1]),
                           'error {:2.2e}'.format(error))
-                    assert np.allclose(rec.numpy(), rec_pywt, atol=1e-05)
+                    assert np.allclose(rec.numpy(), rec_pywt)
 
 
 def test_analysis_synthesis_matrices():
@@ -176,9 +181,9 @@ def test_batched_2d_matrix_fwt_ifwt():
 
 
 if __name__ == '__main__':
-    test_analysis_synthesis_matrices()
+    # test_analysis_synthesis_matrices()
     # test_boundary_filter_analysis_and_synthethis_matrices()
-    # test_boundary_transform_1d()
+    test_boundary_transform_1d()
     # test_conv_matrix()
     # test_conv_matrix_2d()
     # test_strided_conv_matrix_2d_same()

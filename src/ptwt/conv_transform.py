@@ -5,16 +5,18 @@ import torch
 
 
 def get_filter_tensors(wavelet: pywt.Wavelet, flip: bool,
-        device: torch.device, dtype: torch.dtype=torch.float32) -> tuple:
+                       device: torch.device,
+                       dtype: torch.dtype = torch.float32
+                       ) -> tuple:
     """Convert input wavelet to filter tensors.
 
     Args:
-        wavelet (pywt.Wavlet): Wavelet object, assuming ptwt-like
+        wavelet (pywt.Wavlet): Wavelet object, assuming pywt-like
                  field names.
         flip (bool): If true filters are flipped.
         device (torch.device) : PyTorch target device.
-        dtype (torch.dtype): The data type sets the precision of the computation.
-               Default: torch.float32.
+        dtype (torch.dtype): The data type sets the precision of the
+               computation. Default: torch.float32.
 
     Returns:
         tuple: Tuple containing the four filter tensors
@@ -80,7 +82,6 @@ def get_pad(data_len: int, filt_len: int) -> tuple:
 
 def fwt_pad(data: torch.Tensor,
             wavelet: pywt.Wavelet,
-            level: int,
             mode: str = "reflect") -> torch.Tensor:
     """Pad the input signal to make the fwt matrix work.
 
@@ -88,7 +89,6 @@ def fwt_pad(data: torch.Tensor,
         data (torch.Tensor): Input data [batch_size, 1, time]
         wavelet (pywt.Wavelet):
             The input wavelet following the pywt wavelet format.
-        level (int): The degree of the transform.
         mode (str): The desired way to pad.
 
     Returns:
@@ -342,8 +342,6 @@ def wavedec(data: torch.Tensor,
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype)
     filt_len = dec_lo.shape[-1]
-    # dec_lo = torch.tensor(dec_lo[::-1]).unsqueeze(0)
-    # dec_hi = torch.tensor(dec_hi[::-1]).unsqueeze(0)
     filt = torch.stack([dec_lo, dec_hi], 0)
 
     if level is None:
@@ -352,7 +350,7 @@ def wavedec(data: torch.Tensor,
     result_lst = []
     res_lo = data
     for s in range(level):
-        res_lo = fwt_pad(res_lo, wavelet, level=s, mode=mode)
+        res_lo = fwt_pad(res_lo, wavelet, mode=mode)
         res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)
         result_lst.append(res_hi.squeeze(1))
@@ -402,12 +400,12 @@ def waverec(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
         padr = (2 * filt_len - 3) // 2
         if c_pos < len(coeffs) - 2:
             pred_len = res_lo.shape[-1] - (padl + padr)
-            nex_len = coeffs[c_pos + 2].shape[-1]
-            if nex_len != pred_len:
+            next_len = coeffs[c_pos + 2].shape[-1]
+            if next_len != pred_len:
                 padr += 1
                 pred_len = res_lo.shape[-1] - (padl + padr)
                 assert (
-                    nex_len == pred_len
+                    next_len == pred_len
                 ), "padding error, please open an issue on github "
         if padl > 0:
             res_lo = res_lo[..., padl:]
