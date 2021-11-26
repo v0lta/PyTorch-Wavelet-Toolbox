@@ -1,4 +1,5 @@
 """Implement matrix based fwt and ifwt.
+
 This module uses boundary filters instead of padding.
 
 The implementation is based on the description
@@ -204,6 +205,18 @@ class MatrixWavedec(object):
 
     @property
     def sparse_fwt_operator(self) -> torch.Tensor:
+        """Return the sparse transformation operator.
+
+        If the input signal at all levels is divisible by two,
+        the whole operation is padding-free and can be expressed
+        as a single matrix multiply.
+
+        Use torch.sparse.mm(sparse_fwt_operator, data.T)
+        to compute a batched fwt.
+
+        Returns:
+            torch.Tensor: The sparse operator matrix.
+        """
         if len(self.fwt_mat_list) == 1:
             return self.fwt_mat_list[0]
         elif len(self.fwt_mat_list) > 1 and self.padded is False:
@@ -367,13 +380,32 @@ class MatrixWaverec(object):
         assert self.level > 0, "level must be a positive integer."
 
     @property
-    def ifwt_matrix(self) -> torch.Tensor:
-        # if s > 1:
-        #     sn = cat_sparse_identity_matrix(sn, length)
-        #            self.ifwt_matrix = ifwt_mat_lst[-1]
-        #    for ifwt_mat in ifwt_mat_lst[:-1][::-1]:
-        #        self.ifwt_matrix = torch.sparse.mm(ifwt_mat, self.ifwt_matrix)
-        pass  # TODO
+    def sparse_ifwt_operator(self) -> torch.Tensor:
+        """Return the sparse transformation operator.
+
+        If the input signal at all levels is divisible by two,
+        the whole operation is padding-free and can be expressed
+        as a single matrix multiply.
+
+        Having concatenated the analysis coefficients,
+        use torch.sparse.mm(sparse_ifwt_operator, coefficients.T)
+        to compute a batched ifwt.
+
+        Returns:
+            torch.Tensor: The sparse operator matrix.
+        """
+        if len(self.ifwt_matrix_list) == 1:
+            return self.ifwt_matrix_list[0]
+        elif len(self.ifwt_matrix_list) > 1 and self.padded is False:
+            ifwt_matrix = self.ifwt_matrix_list[-1]
+            for scale_matrix in self.ifwt_matrix_list[:-1][::-1]:
+                scale_matrix = cat_sparse_identity_matrix(
+                    scale_matrix, ifwt_matrix.shape[0])
+                ifwt_matrix = torch.sparse.mm(
+                    scale_matrix, ifwt_matrix)
+            return ifwt_matrix
+        else:
+            return None
 
     def __call__(self, coefficients: list) -> torch.Tensor:
         """Run the synthesis or inverse matrix fwt.
