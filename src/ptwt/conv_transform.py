@@ -318,7 +318,9 @@ def wavedec(data: torch.Tensor,
                               Defaults to reflect.
 
     Returns:
-        list: A list containing the wavelet coefficients.
+        list: A list [cA_n, cD_n, cD_n-1, …, cD2, cD1]
+        containing the wavelet coefficients. A denotes
+        approximation and D detail coefficients.
 
     Examples:
         >>> import torch
