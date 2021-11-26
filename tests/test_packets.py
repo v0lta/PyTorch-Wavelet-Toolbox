@@ -5,11 +5,7 @@ import pywt
 import torch
 from itertools import product
 from scipy import misc
-from src.ptwt.packets import (
-    WaveletPacket,
-    WaveletPacket2D,
-    get_freq_order
-)
+from src.ptwt.packets import WaveletPacket, WaveletPacket2D, get_freq_order
 
 
 def test_packet_harbo_lvl3():
@@ -27,8 +23,7 @@ def test_packet_harbo_lvl3():
                 [1 / 2.0, -1 / 2.0],
             )
 
-    wavelet = pywt.Wavelet(
-        "unscaled Haar Wavelet", filter_bank=MyHaarFilterBank())
+    wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=MyHaarFilterBank())
     data = torch.tensor(w)
     twp = WaveletPacket(data, wavelet, mode="reflect")
     nodes = twp.get_level(3)
@@ -47,8 +42,12 @@ def test_packet_harbo_lvl3():
     assert err < 1e-8
 
 
-def _compare_trees(wavelet_str: str, max_lev: int, pywt_boundary: str = 'zero',
-                   ptwt_boundary: str = 'zero'):
+def _compare_trees(
+    wavelet_str: str,
+    max_lev: int,
+    pywt_boundary: str = "zero",
+    ptwt_boundary: str = "zero",
+):
     face = misc.face()[256:512, 256:512]
     wavelet = pywt.Wavelet(wavelet_str)
     wp_tree = pywt.WaveletPacket2D(
@@ -76,9 +75,7 @@ def _compare_trees(wavelet_str: str, max_lev: int, pywt_boundary: str = 'zero',
     pt_data = torch.unsqueeze(
         torch.from_numpy(np.mean(face, axis=-1).astype(np.float64)), 0
     )
-    ptwt_wp_tree = WaveletPacket2D(
-        data=pt_data, wavelet=wavelet, mode=ptwt_boundary
-    )
+    ptwt_wp_tree = WaveletPacket2D(data=pt_data, wavelet=wavelet, mode=ptwt_boundary)
     # get the PyTorch decomposition
     count = 0
     img_pt = []
@@ -111,24 +108,24 @@ def _compare_trees(wavelet_str: str, max_lev: int, pywt_boundary: str = 'zero',
 def test_2d_packets():
     "ensure pywt and ptwt produce equivalent wavelet packet trees."
     for max_lev in [1, 2, 3, 4]:
-        for wavelet_str in ["haar", "db2", "db3", "db4",
-                            "db5", "db6", "db7", "db8"]:
-            for boundary in ['zero', 'reflect']:
-                _compare_trees(wavelet_str, max_lev,
-                               pywt_boundary=boundary, ptwt_boundary=boundary)
+        for wavelet_str in ["haar", "db2", "db3", "db4", "db5", "db6", "db7", "db8"]:
+            for boundary in ["zero", "reflect"]:
+                _compare_trees(
+                    wavelet_str, max_lev, pywt_boundary=boundary, ptwt_boundary=boundary
+                )
 
 
 @pytest.mark.slow
 def test_boundary_matrix_packets():
-    """ Ensure the sparse matrix haar tree and pywt-tree are the same."""
+    """Ensure the sparse matrix haar tree and pywt-tree are the same."""
     for max_lev in [1, 2, 3, 4]:
-        _compare_trees('db1', max_lev, 'zero', 'boundary')
+        _compare_trees("db1", max_lev, "zero", "boundary")
 
 
 def test_freq_order():
     for level in [1, 2, 3, 4]:
-        wavelet_str = 'db2'
-        pywt_boundary = 'zero'
+        wavelet_str = "db2"
+        pywt_boundary = "zero"
 
         face = misc.face()
         wavelet = pywt.Wavelet(wavelet_str)
@@ -138,17 +135,21 @@ def test_freq_order():
             mode=pywt_boundary,
         )
         # Get the full decomposition
-        freq_tree = wp_tree.get_level(level, 'freq')
+        freq_tree = wp_tree.get_level(level, "freq")
         freq_order = get_freq_order(level)
 
         for order_list, tree_list in zip(freq_tree, freq_order):
             for order_el, tree_el in zip(order_list, tree_list):
-                print(level, order_el.path, "".join(tree_el),
-                      order_el.path == "".join(tree_el))
+                print(
+                    level,
+                    order_el.path,
+                    "".join(tree_el),
+                    order_el.path == "".join(tree_el),
+                )
                 assert order_el.path == "".join(tree_el)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # test_packet_harbo_lvl3()
     # test_2d_packets()
     test_boundary_matrix_packets()

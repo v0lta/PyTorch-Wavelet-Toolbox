@@ -26,8 +26,7 @@ class WaveletFilter(ABC):
     @abstractmethod
     def wavelet_loss(self):
         """Return the sum of all loss terms."""
-        return self.alias_cancellation_loss() \
-            + self.perfect_reconstruction_loss()
+        return self.alias_cancellation_loss() + self.perfect_reconstruction_loss()
 
     @abstractmethod
     def __len__(self):
@@ -107,8 +106,7 @@ class WaveletFilter(ABC):
         )
 
         p_test = p_lo + p_hi
-        zeros = torch.zeros(
-            p_test.shape, device=p_test.device, dtype=p_test.dtype)
+        zeros = torch.zeros(p_test.shape, device=p_test.device, dtype=p_test.dtype)
         errs = (p_test - zeros) * (p_test - zeros)
         return torch.sum(errs), p_test, zeros
 
@@ -204,8 +202,7 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
         Returns:
             torch.Tensor: The loss scalar.
         """
-        return self.perfect_reconstruction_loss()[0] \
-            + self.alias_cancellation_loss()[0]
+        return self.perfect_reconstruction_loss()[0] + self.alias_cancellation_loss()[0]
 
     def wavelet_loss(self):
         """Return the sum of all loss terms.

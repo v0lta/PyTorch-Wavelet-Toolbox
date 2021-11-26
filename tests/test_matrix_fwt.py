@@ -18,8 +18,7 @@ from src.ptwt._mackey_glass import MackeyGenerator
 def test_analysis_and_synthethis_matrices_db1():
     a_db1 = _construct_a(pywt.Wavelet("db1"), 8)
     s_db1 = _construct_s(pywt.Wavelet("db1"), 8)
-    err = np.mean(
-        np.abs(torch.sparse.mm(a_db1, s_db1.to_dense()).numpy() - np.eye(8)))
+    err = np.mean(np.abs(torch.sparse.mm(a_db1, s_db1.to_dense()).numpy() - np.eye(8)))
     print("db1 8 inverse error", err)
     assert err < 1e-6
 
@@ -27,8 +26,26 @@ def test_analysis_and_synthethis_matrices_db1():
 # ------------------------- Haar fwt-ifwt tests ----------------
 def test_fwt_ifwt_level_1():
     wavelet = pywt.Wavelet("haar")
-    data2 = np.array([1., 2., 3., 4., 5., 6., 7., 8., 9., 10.,
-                      11., 12., 13., 14., 15., 16.])
+    data2 = np.array(
+        [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0,
+            8.0,
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0,
+            15.0,
+            16.0,
+        ]
+    )
 
     # level 1
     coeffs = pywt.dwt(data2, wavelet)
@@ -45,11 +62,31 @@ def test_fwt_ifwt_level_1():
 
 def test_fwt_ifwt_level_2():
     wavelet = pywt.Wavelet("haar")
-    data2 = np.array([1., 2., 3., 4., 5., 6., 7., 8., 9., 10.,
-                      11., 12., 13., 14., 15., 16., 17., 18.])
+    data2 = np.array(
+        [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0,
+            8.0,
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0,
+            15.0,
+            16.0,
+            17.0,
+            18.0,
+        ]
+    )
     pt_data = torch.from_numpy(data2).unsqueeze(0)
 
-    coeffs2 = pywt.wavedec(data2, wavelet, level=2, mode='zero')
+    coeffs2 = pywt.wavedec(data2, wavelet, level=2, mode="zero")
     matrix_wavedec = MatrixWavedec(wavelet, 2)
     coeffsmat2 = matrix_wavedec(pt_data)
 
@@ -68,8 +105,26 @@ def test_fwt_ifwt_level_2():
 
 def test_fwt_ifwt_level_3():
     wavelet = pywt.Wavelet("haar")
-    data2 = np.array([1., 2., 3., 4., 5., 6., 7., 8., 9., 10.,
-                      11., 12., 13., 14., 15., 16.])
+    data2 = np.array(
+        [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0,
+            8.0,
+            9.0,
+            10.0,
+            11.0,
+            12.0,
+            13.0,
+            14.0,
+            15.0,
+            16.0,
+        ]
+    )
     pt_data = torch.from_numpy(data2).unsqueeze(0)
     coeffs3 = pywt.wavedec(data2, wavelet, level=3)
     matrix_wavedec = MatrixWavedec(wavelet, 3)
@@ -96,9 +151,7 @@ def test_fwt_ifwt_level_3():
 @pytest.mark.slow
 def test_fwt_ifwt_mackey_haar():
     wavelet = pywt.Wavelet("haar")
-    generator = MackeyGenerator(
-        batch_size=2, tmax=512, delta_t=1
-    )
+    generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1)
     wavelet = pywt.Wavelet("haar")
     pt_data = torch.squeeze(generator()).cpu()
     numpy_data = pt_data.cpu().numpy()
@@ -113,8 +166,7 @@ def test_fwt_ifwt_mackey_haar():
     test_lst = []
     for test_no in range(9):
         test_lst.append(
-            np.sum(np.abs(coeffs_max[test_no]
-                          - coeffs_mat_max[test_no].T.numpy()))
+            np.sum(np.abs(coeffs_max[test_no] - coeffs_mat_max[test_no].T.numpy()))
             < 0.001
         )
     print(test_lst)
@@ -123,8 +175,7 @@ def test_fwt_ifwt_mackey_haar():
 
     # test the inverse fwt.
     matrix_waverec = MatrixWaverec(wavelet, 9)
-    reconstructed_data = matrix_waverec(
-        coeffs_mat_max)
+    reconstructed_data = matrix_waverec(coeffs_mat_max)
     err1 = torch.mean(torch.abs(pt_data - reconstructed_data))
     print("abs ifwt reconstruction error", err1)
     assert np.allclose(pt_data.numpy(), reconstructed_data.numpy())
@@ -134,9 +185,7 @@ def test_fwt_ifwt_mackey_haar():
 @pytest.mark.slow
 def test_fwt_ifwt_mackey_db2():
     wavelet = pywt.Wavelet("db2")
-    generator = MackeyGenerator(
-        batch_size=2, tmax=512, delta_t=1
-    )
+    generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1)
     pt_data = torch.squeeze(generator()).cpu()
     matrix_wavedec = MatrixWavedec(wavelet, 4)
     coeffs_mat_max = matrix_wavedec(pt_data)
@@ -147,5 +196,5 @@ def test_fwt_ifwt_mackey_db2():
     assert err < 1e-6
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_fwt_ifwt_level_2()

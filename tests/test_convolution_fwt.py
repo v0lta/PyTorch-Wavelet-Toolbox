@@ -6,7 +6,7 @@ import pywt
 import scipy.misc
 import torch
 
-sys.path.append('./src')
+sys.path.append("./src")
 from src.ptwt.conv_transform import (
     flatten_2d_coeff_lst,
     _outer,
@@ -49,13 +49,11 @@ def test_conv_fwt_haar_lvl2():
     pywt_coeffs = np.concatenate(coeffs)
     ptwt_coeffs = torch.cat(coeffs2, -1).squeeze().numpy()
     err = np.mean(np.abs(pywt_coeffs - ptwt_coeffs))
-    print("haar coefficient error scale 2", err,
-          ["ok" if err < 1e-6 else "failed!"])
+    print("haar coefficient error scale 2", err, ["ok" if err < 1e-6 else "failed!"])
     assert np.allclose(pywt_coeffs, ptwt_coeffs)
     rec = waverec(coeffs2, wavelet).squeeze().numpy()
     err = np.mean(np.abs((data - rec)))
-    print("haar reconstruction error scale 2", err,
-          ["ok" if err < 1e-6 else "failed!"])
+    print("haar reconstruction error scale 2", err, ["ok" if err < 1e-6 else "failed!"])
     assert np.allclose(data, rec)
 
 
@@ -101,15 +99,14 @@ def test_conv_fwt_haar_lvl4():
     ptwt_coeff = torch.cat(ptcoeff, -1)[0, :].numpy()
     pywt_coeff = np.concatenate(pycoeff)
     err = np.mean(np.abs(pywt_coeff - ptwt_coeff))
-    print("haar coefficient error scale 4:", err,
-          ["ok" if err < 1e-4 else "failed!"])
+    print("haar coefficient error scale 4:", err, ["ok" if err < 1e-4 else "failed!"])
     assert np.allclose(pywt_coeff, ptwt_coeff, atol=1e-06)
 
-    reconstruction = waverec(
-        wavedec(mackey_data_1.unsqueeze(1), wavelet), wavelet)
+    reconstruction = waverec(wavedec(mackey_data_1.unsqueeze(1), wavelet), wavelet)
     err = torch.mean(torch.abs(mackey_data_1 - reconstruction)).numpy()
-    print("haar reconstruction error scale 4:",
-          err, ["ok" if err < 1e-4 else "failed!"])
+    print(
+        "haar reconstruction error scale 4:", err, ["ok" if err < 1e-4 else "failed!"]
+    )
     assert np.allclose(reconstruction.numpy(), mackey_data_1.numpy())
 
 
@@ -141,27 +138,22 @@ def test_conv_fwt_db2_lvl1():
     ccoeffs = np.concatenate(coeffs, -1)
     ccoeffs2 = torch.cat(coeffs2, -1).numpy()
     err = np.mean(np.abs(ccoeffs - ccoeffs2))
-    print("db2 coefficient error scale 1:",
-          err, ["ok" if err < 1e-4 else "failed!"])
+    print("db2 coefficient error scale 1:", err, ["ok" if err < 1e-4 else "failed!"])
     assert np.allclose(ccoeffs, ccoeffs2, atol=1e-6)
     rec = waverec(coeffs2, wavelet)
     err = np.mean(np.abs(npdata - rec.numpy()))
-    print("db2 reconstruction error scale 1:",
-          err, ["ok" if err < 1e-4 else "failed!"])
+    print("db2 reconstruction error scale 1:", err, ["ok" if err < 1e-4 else "failed!"])
     assert np.allclose(npdata, rec.numpy())
 
 
 def test_conv_fwt_db5_lvl3():
-    generator = MackeyGenerator(
-        batch_size=2, tmax=128, delta_t=1, device="cpu")
+    generator = MackeyGenerator(batch_size=2, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
     wavelet = pywt.Wavelet("db5")
     for mode in ["reflect", "zero"]:
-        ptcoeff = wavedec(
-            mackey_data_1.unsqueeze(1), wavelet, level=3, mode=mode)
-        pycoeff = pywt.wavedec(
-            mackey_data_1[0, :].numpy(), wavelet, level=3, mode=mode)
+        ptcoeff = wavedec(mackey_data_1.unsqueeze(1), wavelet, level=3, mode=mode)
+        pycoeff = pywt.wavedec(mackey_data_1[0, :].numpy(), wavelet, level=3, mode=mode)
         cptcoeff = torch.cat(ptcoeff, -1)[0, :]
         cpycoeff = np.concatenate(pycoeff, -1)
         err = np.mean(np.abs(cpycoeff - cptcoeff.numpy()))
@@ -175,8 +167,7 @@ def test_conv_fwt_db5_lvl3():
         assert np.allclose(cpycoeff, cptcoeff.numpy(), atol=1e-6)
 
         res = waverec(
-            wavedec(mackey_data_1.unsqueeze(1), wavelet,
-                    level=3, mode=mode), wavelet
+            wavedec(mackey_data_1.unsqueeze(1), wavelet, level=3, mode=mode), wavelet
         )
         err = torch.mean(torch.abs(mackey_data_1 - res)).numpy()
         print(
@@ -188,8 +179,7 @@ def test_conv_fwt_db5_lvl3():
         )
         assert np.allclose(mackey_data_1.numpy(), res.numpy())
         res = waverec(
-            wavedec(mackey_data_1.unsqueeze(1), wavelet,
-                    level=4, mode=mode), wavelet
+            wavedec(mackey_data_1.unsqueeze(1), wavelet, level=4, mode=mode), wavelet
         )
         err = torch.mean(torch.abs(mackey_data_1 - res)).numpy()
         print(
@@ -203,8 +193,7 @@ def test_conv_fwt_db5_lvl3():
 
 
 def test_conv_fwt():
-    generator = MackeyGenerator(
-        batch_size=2, tmax=128, delta_t=1, device="cpu")
+    generator = MackeyGenerator(batch_size=2, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
     for level in [1, 2, 3, None]:
@@ -215,8 +204,7 @@ def test_conv_fwt():
                     mackey_data_1.unsqueeze(1), wavelet, level=level, mode=mode
                 )
                 pycoeff = pywt.wavedec(
-                    mackey_data_1[0, :].numpy(), wavelet,
-                    level=level, mode=mode
+                    mackey_data_1[0, :].numpy(), wavelet, level=level, mode=mode
                 )
                 cptcoeff = torch.cat(ptcoeff, -1)[0, :]
                 cpycoeff = np.concatenate(pycoeff, -1)
@@ -231,8 +219,7 @@ def test_conv_fwt():
                 assert np.allclose(cptcoeff.numpy(), cpycoeff, atol=1e-6)
 
                 res = waverec(
-                    wavedec(mackey_data_1.unsqueeze(1), wavelet,
-                            level=3, mode=mode),
+                    wavedec(mackey_data_1.unsqueeze(1), wavelet, level=3, mode=mode),
                     wavelet,
                 )
                 err = torch.mean(torch.abs(mackey_data_1 - res)).numpy()
@@ -246,8 +233,7 @@ def test_conv_fwt():
                 assert np.allclose(mackey_data_1.numpy(), res.numpy())
 
                 res = waverec(
-                    wavedec(mackey_data_1.unsqueeze(1), wavelet,
-                            level=4, mode=mode),
+                    wavedec(mackey_data_1.unsqueeze(1), wavelet, level=4, mode=mode),
                     wavelet,
                 )
                 err = torch.mean(torch.abs(mackey_data_1 - res)).numpy()
@@ -277,8 +263,7 @@ def test_ripples_haar_lvl3():
             )
 
     data = [56.0, 40.0, 8.0, 24.0, 48.0, 48.0, 40.0, 16.0]
-    wavelet = pywt.Wavelet("unscaled Haar Wavelet",
-                           filter_bank=MyHaarFilterBank())
+    wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=MyHaarFilterBank())
     ptdata = torch.tensor(data).unsqueeze(0).unsqueeze(0)
     coeffs = wavedec(ptdata, wavelet, level=3)
     # print(coeffs)
@@ -303,16 +288,16 @@ def test_orth_wavelet():
     res = waverec(wavedec(mackey_data_1.unsqueeze(1), orthwave), orthwave)
     err = torch.mean(torch.abs(mackey_data_1 - res.detach())).numpy()
     print(
-        "orth reconstruction error scale 4:", err,
-        ["ok" if err < 1e-4 else "failed!"]
+        "orth reconstruction error scale 4:", err, ["ok" if err < 1e-4 else "failed!"]
     )
     assert np.allclose(res.detach().numpy(), mackey_data_1.numpy())
 
 
 def test_2d_haar_lvl1():
     # ------------------------- 2d haar wavelet tests -----------------------
-    face = np.transpose(scipy.misc.face()[128:(512+128), 256:(512+256)],
-                        [2, 0, 1]).astype(np.float64)
+    face = np.transpose(
+        scipy.misc.face()[128 : (512 + 128), 256 : (512 + 256)], [2, 0, 1]
+    ).astype(np.float64)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet("haar")
 
@@ -339,8 +324,9 @@ def test_2d_haar_lvl1():
 
 def test_2d_db2_lvl1():
     # single level db2 - 2d
-    face = np.transpose(scipy.misc.face()[256:(512+128), 256:(512+128)],
-                        [2, 0, 1]).astype(np.float64)
+    face = np.transpose(
+        scipy.misc.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
+    ).astype(np.float64)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet("db2")
     coeff2d_pywt = pywt.dwt2(face, wavelet, mode="reflect")
@@ -360,8 +346,9 @@ def test_2d_db2_lvl1():
 
 def test_2d_haar_multi():
     # multi level haar - 2d
-    face = np.transpose(scipy.misc.face()[256:(512+128), 256:(512+128)],
-                        [2, 0, 1]).astype(np.float64)
+    face = np.transpose(
+        scipy.misc.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
+    ).astype(np.float64)
     pt_face = torch.tensor(face).unsqueeze(1)
     wavelet = pywt.Wavelet("haar")
     coeff2d_pywt = pywt.wavedec2(face, wavelet, mode="reflect", level=5)
@@ -371,8 +358,7 @@ def test_2d_haar_multi():
     cerr = np.mean(np.abs(flat_list_pywt - flat_list_ptwt.numpy()))
     # plt.plot(flat_list_pywt); plt.show()
     # plt.plot(flat_list_ptwt); plt.show()
-    print("haar 2d scale 5 coeff err,", cerr,
-          ["ok" if cerr < 1e-4 else "failed!"])
+    print("haar 2d scale 5 coeff err,", cerr, ["ok" if cerr < 1e-4 else "failed!"])
     assert np.allclose(flat_list_pywt, flat_list_ptwt)
 
     # inverse multi level Harr - 2d
@@ -396,13 +382,13 @@ def test_2d_wavedec_rec():
     # coefficients and ensure wavedec2 and waverec2 invert each other.
     for level in [1, 2, 3, 4, 5, None]:
         for wavelet_str in ["haar", "db2", "db3", "db4", "db5"]:
-            face = np.transpose(scipy.misc.face()[256:(512+64), 256:(512+64)],
-                                [2, 0, 1]).astype(np.float64)
+            face = np.transpose(
+                scipy.misc.face()[256 : (512 + 64), 256 : (512 + 64)], [2, 0, 1]
+            ).astype(np.float64)
             pt_face = torch.tensor(face).unsqueeze(1)
             wavelet = pywt.Wavelet(wavelet_str)
             coeff2d = wavedec2(pt_face, wavelet, mode="reflect", level=level)
-            pywt_coeff2d = pywt.wavedec2(face, wavelet,
-                                         mode="reflect", level=level)
+            pywt_coeff2d = pywt.wavedec2(face, wavelet, mode="reflect", level=level)
             for pos, coeffs in enumerate(pywt_coeff2d):
                 if type(coeffs) is tuple:
                     for tuple_pos, tuple_el in enumerate(coeffs):
@@ -415,10 +401,10 @@ def test_2d_wavedec_rec():
                         coeffs.shape == torch.squeeze(coeff2d[pos], 1).shape
                     ), "pywt and ptwt should produce the same shapes."
             flat_coeff_list_pywt = np.concatenate(
-                flatten_2d_coeff_lst(pywt_coeff2d), -1)
+                flatten_2d_coeff_lst(pywt_coeff2d), -1
+            )
             flat_coeff_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
-            cerr = np.mean(
-                np.abs(flat_coeff_list_pywt - flat_coeff_list_ptwt.numpy()))
+            cerr = np.mean(np.abs(flat_coeff_list_pywt - flat_coeff_list_ptwt.numpy()))
             print(
                 "wavelet",
                 wavelet_str,
@@ -428,8 +414,7 @@ def test_2d_wavedec_rec():
                 cerr,
                 ["ok" if cerr < 1e-4 else "failed!"],
             )
-            assert np.allclose(
-                flat_coeff_list_pywt, flat_coeff_list_ptwt.numpy())
+            assert np.allclose(flat_coeff_list_pywt, flat_coeff_list_ptwt.numpy())
             rec = waverec2(coeff2d, wavelet)
             rec = rec.numpy().squeeze()
             err_img = np.abs(face - rec)

@@ -52,8 +52,7 @@ class WaveletPacket(collections.UserDict):
     def _recursive_dwt(self, data, level, max_level, path):
         self.data[path] = torch.squeeze(data)
         if level < max_level:
-            res_lo, res_hi = wavedec(
-                data, self.wavelet, level=1, mode=self.mode)
+            res_lo, res_hi = wavedec(data, self.wavelet, level=1, mode=self.mode)
             return (
                 self._recursive_dwt(res_lo, level + 1, max_level, path + "a"),
                 self._recursive_dwt(res_hi, level + 1, max_level, path + "d"),
@@ -93,15 +92,15 @@ class WaveletPacket2D(collections.UserDict):
         self.max_level = max_level
         if self.max_level is None:
             self.max_level = pywt.dwt_max_level(
-                min(self.input_data.shape[2:]), self.wavelet)
+                min(self.input_data.shape[2:]), self.wavelet
+            )
 
         self.matrix_wavedec2_dict = {}
         self.data = {}
-        self._recursive_dwt2d(
-            self.input_data, level=0, path="")
+        self._recursive_dwt2d(self.input_data, level=0, path="")
 
     def _get_wavedec(self, shape):
-        if self.mode == 'boundary':
+        if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_wavedec2_dict.keys():
                 self.matrix_wavedec2_dict[shape] = MatrixWavedec2d(
@@ -110,8 +109,7 @@ class WaveletPacket2D(collections.UserDict):
             fun = self.matrix_wavedec2_dict[shape]
             return fun
         else:
-            return partial(wavedec2, wavelet=self.wavelet,
-                           level=1, mode=self.mode)
+            return partial(wavedec2, wavelet=self.wavelet, level=1, mode=self.mode)
 
     def _recursive_dwt2d(self, data, level, path):
         self.data[path] = data
@@ -119,8 +117,9 @@ class WaveletPacket2D(collections.UserDict):
             # resa, (resh, resv, resd) = self.wavedec2(
             #    data, self.wavelet, level=1, mode=self.mode
             # )
-            result_a, (result_h, result_v, result_d) = \
-                self._get_wavedec(data.shape)(data)
+            result_a, (result_h, result_v, result_d) = self._get_wavedec(data.shape)(
+                data
+            )
             return (
                 self._recursive_dwt2d(result_a, level + 1, path + "a"),
                 self._recursive_dwt2d(result_h, level + 1, path + "h"),
@@ -153,41 +152,38 @@ def get_freq_order(level: int) -> list:
     """
     wp_natural_path = list(product(["a", "h", "v", "d"], repeat=level))
 
-    def _get_graycode_order(level, x='a', y='d'):
+    def _get_graycode_order(level, x="a", y="d"):
         graycode_order = [x, y]
         for i in range(level - 1):
-            graycode_order = [x + path for path in graycode_order] + \
-                            [y + path for path in graycode_order[::-1]]
+            graycode_order = [x + path for path in graycode_order] + [
+                y + path for path in graycode_order[::-1]
+            ]
         return graycode_order
 
     def expand_2d_path(path):
-        expanded_paths = {
-            'd': 'hh',
-            'h': 'hl',
-            'v': 'lh',
-            'a': 'll'
-        }
-        return (''.join([expanded_paths[p][0] for p in path]),
-                ''.join([expanded_paths[p][1] for p in path]))
+        expanded_paths = {"d": "hh", "h": "hl", "v": "lh", "a": "ll"}
+        return (
+            "".join([expanded_paths[p][0] for p in path]),
+            "".join([expanded_paths[p][1] for p in path]),
+        )
 
     nodes = {}
     for (row_path, col_path), node in [
         (expand_2d_path(node), node) for node in wp_natural_path
     ]:
         nodes.setdefault(row_path, {})[col_path] = node
-    graycode_order = _get_graycode_order(level, x='l', y='h')
+    graycode_order = _get_graycode_order(level, x="l", y="h")
     nodes = [nodes[path] for path in graycode_order if path in nodes]
     result = []
     for row in nodes:
-        result.append(
-            [row[path] for path in graycode_order if path in row]
-        )
+        result.append([row[path] for path in graycode_order if path in row])
     # print(result)
     return result
 
 
 if __name__ == "__main__":
     import numpy as np
+
     # import matplotlib.pyplot as plt
     # import scipy.signal as signal
     # from itertools import product
@@ -197,8 +193,7 @@ if __name__ == "__main__":
     face = misc.face()[:128, :128]
     wavelet = pywt.Wavelet("haar")
     wp_tree = pywt.WaveletPacket2D(
-        data=np.mean(face, axis=-1).astype(np.float32),
-        wavelet=wavelet, mode="zero"
+        data=np.mean(face, axis=-1).astype(np.float32), wavelet=wavelet, mode="zero"
     )
 
     # Get the full decomposition
@@ -225,8 +220,7 @@ if __name__ == "__main__":
         torch.from_numpy(np.mean(face, axis=-1).astype(np.float32)), 0
     )
     pt_data = torch.cat([pt_data, pt_data], 0)
-    ptwt_wp_tree = WaveletPacket2D(data=pt_data,
-                                   wavelet=wavelet, mode="boundary")
+    ptwt_wp_tree = WaveletPacket2D(data=pt_data, wavelet=wavelet, mode="boundary")
 
     # get the PyTorch decomposition
     count = 0
@@ -253,21 +247,25 @@ if __name__ == "__main__":
 
     print(
         "a",
-        np.mean(np.abs(wp_tree["a"].data
-                - torch.squeeze(ptwt_wp_tree["a"][0]).numpy())),
+        np.mean(
+            np.abs(wp_tree["a"].data - torch.squeeze(ptwt_wp_tree["a"][0]).numpy())
+        ),
     )
     print(
         "h",
-        np.mean(np.abs(wp_tree["h"].data
-                - torch.squeeze(ptwt_wp_tree["h"][0]).numpy())),
+        np.mean(
+            np.abs(wp_tree["h"].data - torch.squeeze(ptwt_wp_tree["h"][0]).numpy())
+        ),
     )
     print(
         "v",
-        np.mean(np.abs(wp_tree["v"].data
-                - torch.squeeze(ptwt_wp_tree["v"][0]).numpy())),
+        np.mean(
+            np.abs(wp_tree["v"].data - torch.squeeze(ptwt_wp_tree["v"][0]).numpy())
+        ),
     )
     print(
         "d",
-        np.mean(np.abs(wp_tree["d"].data
-                - torch.squeeze(ptwt_wp_tree["d"][0]).numpy())),
+        np.mean(
+            np.abs(wp_tree["d"].data - torch.squeeze(ptwt_wp_tree["d"][0]).numpy())
+        ),
     )

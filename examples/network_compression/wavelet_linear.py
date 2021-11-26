@@ -15,29 +15,30 @@ class WaveletLayer(torch.nn.Module):
     With S,G,B diagonal matrices, P a random permutation and W a
     learnable-wavelet transform.
     """
+
     def __init__(self, depth, init_wavelet, scales, p_drop=0.5):
         super().__init__()
-        print('wavelet dropout:', p_drop)
+        print("wavelet dropout:", p_drop)
         self.scales = scales
         self.wavelet = init_wavelet
-        self.mode = 'zero'
+        self.mode = "zero"
         self.coefficient_len_lst = [depth]
         for _ in range(scales):
             self.coefficient_len_lst.append(
-                pywt.dwt_coeff_len(self.coefficient_len_lst[-1],
-                                   init_wavelet.dec_lo.shape[-1],
-                                   self.mode))
+                pywt.dwt_coeff_len(
+                    self.coefficient_len_lst[-1],
+                    init_wavelet.dec_lo.shape[-1],
+                    self.mode,
+                )
+            )
         self.coefficient_len_lst = self.coefficient_len_lst[1:]
         self.coefficient_len_lst.append(self.coefficient_len_lst[-1])
 
         wave_depth = np.sum(self.coefficient_len_lst)
         self.depth = depth
-        self.diag_vec_s = Parameter(torch.from_numpy(np.ones(depth,
-                                                             np.float32)))
-        self.diag_vec_g = Parameter(torch.from_numpy(np.ones(wave_depth,
-                                                             np.float32)))
-        self.diag_vec_b = Parameter(torch.from_numpy(np.ones(depth,
-                                                             np.float32)))
+        self.diag_vec_s = Parameter(torch.from_numpy(np.ones(depth, np.float32)))
+        self.diag_vec_g = Parameter(torch.from_numpy(np.ones(wave_depth, np.float32)))
+        self.diag_vec_b = Parameter(torch.from_numpy(np.ones(depth, np.float32)))
         perm = np.random.permutation(np.eye(wave_depth, dtype=np.float32))
         self.perm = Parameter(torch.from_numpy(perm), requires_grad=False)
 
@@ -68,8 +69,9 @@ class WaveletLayer(torch.nn.Module):
         c_lst = wavedec(x.unsqueeze(1), self.wavelet, level=self.scales)
         shape_lst = [c_el.shape[-1] for c_el in c_lst]
         c_tensor = torch.cat([c for c in c_lst], -1)
-        assert shape_lst == self.coefficient_len_lst[::-1], \
-            'Wavelet shape assumptions false. This is a bug.'
+        assert (
+            shape_lst == self.coefficient_len_lst[::-1]
+        ), "Wavelet shape assumptions false. This is a bug."
         return c_tensor
 
     def wavelet_reconstruction(self, x):
@@ -90,7 +92,7 @@ class WaveletLayer(torch.nn.Module):
         return y
 
     def forward(self, x):
-        """ Evaluate the wavelet layer.
+        """Evaluate the wavelet layer.
         Args:
             x (torch.tensor): The layer input.
         Returns:
@@ -107,10 +109,10 @@ class WaveletLayer(torch.nn.Module):
         return step6
 
     def extra_repr(self):
-        return 'depth={}'.format(self.depth)
+        return "depth={}".format(self.depth)
 
     def get_wavelet_loss(self) -> torch.Tensor:
-        """ Returns the wavelet loss for the wavelet in the layer.
+        """Returns the wavelet loss for the wavelet in the layer.
             This value must be added to the cost for the wavelet learning to
             work.
 

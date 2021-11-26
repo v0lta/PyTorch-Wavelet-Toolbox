@@ -5,9 +5,12 @@ import torch
 
 
 def generate_mackey(
-        batch_size: int = 100, tmax: int = 200, delta_t: float = 1.0,
-        rnd: bool = True, device: torch.device = "cuda"
-        ) -> torch.Tensor:
+    batch_size: int = 100,
+    tmax: int = 200,
+    delta_t: float = 1.0,
+    rnd: bool = True,
+    device: torch.device = "cuda",
+) -> torch.Tensor:
     """Generate synthetic training data using the Mackey system of equations.
 
     dx/dt = beta*(x'/(1+x'))
@@ -34,8 +37,7 @@ def generate_mackey(
 
     # multi-dimensional data.
     def mackey(x, tau, gamma=0.1, beta=0.2, n=10):
-        return beta * x[:, -tau] / (
-            1 + torch.pow(x[:, -tau], n)) - gamma * x[:, -1]
+        return beta * x[:, -tau] / (1 + torch.pow(x[:, -tau], n)) - gamma * x[:, -1]
 
     tau = int(17 * (1 / delta_t))
     x0 = torch.ones([tau], device=device)
@@ -74,8 +76,7 @@ def _blockify(data: torch.Tensor, block_length: int) -> torch.Tensor:
         start = block_no * block_length
         stop = (block_no + 1) * block_length
         block_mean = torch.mean(data[:, start:stop], dim=-1)
-        block = block_mean * torch.ones(
-            [batch_size, block_length], device=data.device)
+        block = block_mean * torch.ones([batch_size, block_length], device=data.device)
         block_signal.append(block)
     return torch.cat(block_signal).transpose(0, 1)
 
@@ -124,5 +125,5 @@ def _main():
     plt.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()
