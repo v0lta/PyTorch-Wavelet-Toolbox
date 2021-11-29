@@ -215,7 +215,7 @@ class MatrixWavedec(object):
         assert len(rec_lo) == len(rec_hi), "All filters must have the same length."
         assert self.level > 0, "level must be a positive integer."
 
-        self.fwt_mat_list = []
+        self.fwt_matrix_list = []
         self.split_list = []
         self.input_length = None
         self.padded = False
@@ -234,11 +234,11 @@ class MatrixWavedec(object):
         Returns:
             torch.Tensor: The sparse operator matrix.
         """
-        if len(self.fwt_mat_list) == 1:
-            return self.fwt_mat_list[0]
-        elif len(self.fwt_mat_list) > 1 and self.padded is False:
-            fwt_matrix = self.fwt_mat_list[0]
-            for scale_mat in self.fwt_mat_list[1:]:
+        if len(self.fwt_matrix_list) == 1:
+            return self.fwt_matrix_list[0]
+        elif len(self.fwt_matrix_list) > 1 and self.padded is False:
+            fwt_matrix = self.fwt_matrix_list[0]
+            for scale_mat in self.fwt_matrix_list[1:]:
                 scale_mat = cat_sparse_identity_matrix(scale_mat, fwt_matrix.shape[0])
                 fwt_matrix = torch.sparse.mm(scale_mat, fwt_matrix)
             return fwt_matrix
@@ -277,7 +277,9 @@ class MatrixWavedec(object):
         if self.input_length != length:
             re_build = True
 
-        if not self.fwt_mat_list or re_build:
+        if not self.fwt_matrix_list or re_build:
+            self.ifwt_matrix_list = []
+            self.padded = False
             for s in range(1, self.level + 1):
                 if split_list[-1] < filt_len:
                     break
@@ -288,7 +290,7 @@ class MatrixWavedec(object):
                     boundary=self.boundary,
                     device=data.device,
                 )
-                self.fwt_mat_list.append(an)
+                self.fwt_matrix_list.append(an)
                 new_split_size = length // np.power(2, s)
                 if new_split_size % 2 != 0:
                     # padding
@@ -299,16 +301,16 @@ class MatrixWavedec(object):
             self.split_list = split_list
 
         lo = data.T
-        result_lst = []
-        for fwt_matrix in self.fwt_mat_list:
+        result_list = []
+        for fwt_matrix in self.fwt_matrix_list:
             if lo.shape[0] % 2 != 0:
                 # fix odd coefficients lengths for the conv matrix to work.
                 lo = torch.nn.functional.pad(lo.T.unsqueeze(1), [0, 1]).squeeze(1).T
             coefficients = torch.sparse.mm(fwt_matrix, lo)
             lo, hi = torch.split(coefficients, coefficients.shape[0] // 2, dim=0)
-            result_lst.append(hi)
-        result_lst.append(lo)
-        return result_lst[::-1]
+            result_list.append(hi)
+        result_list.append(lo)
+        return result_list[::-1]
 
 
 def construct_boundary_a(
@@ -448,6 +450,7 @@ class MatrixWaverec(object):
                 re_build = True
 
         if not self.ifwt_matrix_list or re_build:
+            self.ifwt_matrix_list = []
             split_lst = [length]
             for s in range(1, self.level + 1):
                 if split_lst[-1] < filt_len:

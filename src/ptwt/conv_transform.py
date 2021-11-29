@@ -135,16 +135,15 @@ def _outer(a, b):
 
 
 def flatten_2d_coeff_lst(coeff_lst_2d: list, flatten_tensors: bool = True) -> list:
-    """Flattens a list of lists into a single list.
+    """Flattens a list of tensor tuples into a single list.
 
     Args:
-        coeff_lst_2d (list): A pywt-style coeffcient list.
+        coeff_lst_2d (list): A pywt-style coefficient list.
         flatten_tensors (bool): If true,
              2d tensors are flattened. Defaults to True.
 
     Returns:
         list: A single 1-d list with all original elements.
-
     """
     flat_coeff_lst = []
     for coeff in coeff_lst_2d:
