@@ -270,7 +270,6 @@ def waverec2(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
         padt = (2 * filt_len - 3) // 2
         padb = (2 * filt_len - 3) // 2
         if c_pos < len(coeffs) - 2:
-            # if 1:
             pred_len = res_ll.shape[-1] - (padl + padr)
             next_len = coeffs[c_pos + 2][0].shape[-1]
             pred_len2 = res_ll.shape[-2] - (padt + padb)

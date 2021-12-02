@@ -150,7 +150,15 @@ def test_boundary_matrix_fwt_2d():
     """Ensure the boundary matrix fwt is invertable."""
     for wavelet_str in ("haar", "db2", "db3", "db4"):
         for level in (4, 3, 2, 1, None):
-            for size in ((16, 16), (15, 15), (16, 15), (15, 16)):
+            for size in (
+                (25, 26),
+                (26, 25),
+                (25, 25),
+                (16, 16),
+                (15, 15),
+                (16, 15),
+                (15, 16),
+            ):
                 face = np.mean(
                     scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
                 ).astype(np.float64)

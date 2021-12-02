@@ -163,6 +163,17 @@ def construct_boundary_s2d(
     return orth_s
 
 
+def _matrix_pad_2d(height: int, width: int) -> tuple:
+    pad_tuple = (False, False)
+    if height % 2 != 0:
+        height += 1
+        pad_tuple = (pad_tuple[0], True)
+    if width % 2 != 0:
+        width += 1
+        pad_tuple = (True, pad_tuple[1])
+    return height, width, pad_tuple
+
+
 class MatrixWavedec2d(object):
     """Experimental sparse matrix 2d wavelet transform.
 
@@ -279,14 +290,10 @@ class MatrixWavedec2d(object):
                     # we have reached the max decomposition depth.
                     break
                 # the conv matrices require even length inputs.
-                pad_tuple = (False, False)
-                if current_height % 2 != 0:
-                    current_height += 1
-                    pad_tuple = (pad_tuple[0], True)
-                    self.padded = True
-                if current_width % 2 != 0:
-                    current_width += 1
-                    pad_tuple = (True, pad_tuple[1])
+                current_height, current_width, pad_tuple = _matrix_pad_2d(
+                    current_height, current_width
+                )
+                if any(pad_tuple):
                     self.padded = True
                 self.pad_list.append(pad_tuple)
                 self.size_list.append((current_height, current_width))
@@ -307,8 +314,8 @@ class MatrixWavedec2d(object):
         ll = input_signal.reshape([batch_size, -1]).T
         for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
             pad = self.pad_list[scale]
+            size = self.size_list[scale]
             if pad[0] or pad[1]:
-                size = self.size_list[scale]
                 if pad[0] and not pad[1]:
                     ll_reshape = ll.T.reshape(batch_size, size[0], size[1] - 1)
                     ll = torch.nn.functional.pad(ll_reshape, [0, 1])
@@ -320,15 +327,16 @@ class MatrixWavedec2d(object):
                     ll = torch.nn.functional.pad(ll_reshape, [0, 1, 0, 1])
                 ll = ll.reshape([batch_size, -1]).T
             coefficients = torch.sparse.mm(fwt_matrix, ll)
-            size = self.size_list[scale + 1]
-            split_size = int(np.prod(size))
-            four_split = torch.split(coefficients, split_size)
+            four_split = torch.split(
+                coefficients, int(np.prod((size[0] // 2, size[1] // 2)))
+            )
             reshaped = tuple(
-                (el.T.reshape(batch_size, size[0], size[1])) for el in four_split[1:]
+                (el.T.reshape(batch_size, size[0] // 2, size[1] // 2))
+                for el in four_split[1:]
             )
             split_list.append(reshaped)
             ll = four_split[0]
-        split_list.append(ll.T.reshape(batch_size, size[0], size[1]))
+        split_list.append(ll.T.reshape(batch_size, size[0] // 2, size[1] // 2))
         return split_list[::-1]
 
 
@@ -358,12 +366,13 @@ class MatrixWaverec2d(object):
         Args:
             wavelet: A pywt.Wavelet compatible wavelet object.
             boundary: The method used to treat the boundary cases.
-                Chosse 'qr' or 'gramschmidt'. Defaults to 'qr'.
+                Choose 'qr' or 'gramschmidt'. Defaults to 'qr'.
         """
         self.wavelet = wavelet
         self.ifwt_matrix_list = []
         self.level = None
         self.boundary = boundary
+        self.padded = False
 
     def sparse_ifwt_operator(self):
         """Return the sparse boundary ifwt operator matrix."""
@@ -402,6 +411,11 @@ class MatrixWaverec2d(object):
         if not self.ifwt_matrix_list or re_build:
             self.ifwt_matrix_list = []
             for _ in range(0, self.level):
+                current_height, current_width, pad_tuple = _matrix_pad_2d(
+                    current_height, current_width
+                )
+                if any(pad_tuple):
+                    self.padded = True
                 synthesis_matrix_2d = construct_boundary_s2d(
                     self.wavelet,
                     current_height,
@@ -415,22 +429,31 @@ class MatrixWaverec2d(object):
                 self.ifwt_matrix_list.append(synthesis_matrix_2d)
 
         batch_size = coefficients[-1][0].shape[0]
-        for no, coefficients in enumerate(coefficients):
-            if type(coefficients) is torch.Tensor:
-                reconstruction = torch.reshape(coefficients, [batch_size, -1]).T
-            elif type(coefficients) is tuple:
-                to_cat = [
+        reconstruction = torch.reshape(coefficients[0], [batch_size, -1]).T
+        for c_pos, lh_hl_hh in enumerate(coefficients[1:]):
+            reconstruction = torch.cat(
+                [
                     reconstruction.T,
-                    coefficients[0],
-                    coefficients[1],
-                    coefficients[2],
-                ]
-                reconstruction = torch.cat(
-                    [c.reshape([batch_size, -1]) for c in to_cat], -1
-                )
-                ifwt_mat = self.ifwt_matrix_list[::-1][no - 1]
-                reconstruction = torch.sparse.mm(ifwt_mat, reconstruction.T)
+                    lh_hl_hh[0].reshape([batch_size, -1]),
+                    lh_hl_hh[1].reshape([batch_size, -1]),
+                    lh_hl_hh[2].reshape([batch_size, -1]),
+                ],
+                -1,
+            )
+            ifwt_mat = self.ifwt_matrix_list[::-1][c_pos]
+            reconstruction = torch.sparse.mm(ifwt_mat, reconstruction.T)
 
+            # remove the padding
+            if c_pos < len(coefficients) - 2:
+                pred_len = [s * 2 for s in lh_hl_hh[0].shape[-2:]]
+                next_len = list(coefficients[c_pos + 2][0].shape[-2:])
+                if pred_len != next_len:
+                    reconstruction = reconstruction.T.reshape([batch_size] + pred_len)
+                    if pred_len[0] != next_len[0]:
+                        reconstruction = reconstruction[:, :-1, :]
+                    if pred_len[1] != next_len[1]:
+                        reconstruction = reconstruction[:, :, :-1]
+                    reconstruction = reconstruction.reshape(batch_size, -1).T
         return reconstruction.T.reshape((batch_size, height, width))
 
 
