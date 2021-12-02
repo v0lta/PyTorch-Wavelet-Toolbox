@@ -410,6 +410,7 @@ class MatrixWaverec2d(object):
 
         if not self.ifwt_matrix_list or re_build:
             self.ifwt_matrix_list = []
+            self.padded = False
             for _ in range(0, self.level):
                 current_height, current_width, pad_tuple = _matrix_pad_2d(
                     current_height, current_width
