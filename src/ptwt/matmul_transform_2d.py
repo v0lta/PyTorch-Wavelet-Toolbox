@@ -7,7 +7,7 @@ import numpy as np
 import pywt
 import torch
 
-from .conv_transform import construct_2d_filt, flatten_2d_coeff_lst, get_filter_tensors
+from .conv_transform import construct_2d_filt, get_filter_tensors
 from .matmul_transform import cat_sparse_identity_matrix, orthogonalize
 from .sparse_math import construct_strided_conv2d_matrix
 
@@ -361,9 +361,20 @@ class MatrixWaverec2d(object):
                 Chosse 'qr' or 'gramschmidt'. Defaults to 'qr'.
         """
         self.wavelet = wavelet
-        self.ifwt_matrix = None
+        self.ifwt_matrix_list = []
         self.level = None
         self.boundary = boundary
+
+    def sparse_ifwt_operator(self):
+        """Return the sparse boundary ifwt operator matrix."""
+        # self.ifwt_matrix = ifwt_mat_list[-1]
+        # for ifwt_mat in ifwt_mat_list[:-1][::-1]:
+        #    self.ifwt_matrix = torch.sparse.mm(ifwt_mat, self.ifwt_matrix)
+        # if s >= 1:
+        #            synthesis_matrix_2d = cat_sparse_identity_matrix(
+        #                synthesis_matrix_2d, coefficient_vectors.shape[-1]
+        #           )
+        pass
 
     def __call__(self, coefficients: list) -> torch.Tensor:
         """Compute the inverse matrix 2d fast wavelet transform.
@@ -387,16 +398,10 @@ class MatrixWaverec2d(object):
 
         height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
         current_height, current_width = height, width
-        batch_size = coefficients[-1][0].shape[0]
-        flat_coefficient_list = flatten_2d_coeff_lst(
-            coefficients, flatten_tensors=False
-        )
-        coefficient_vectors = torch.cat(
-            [c.reshape(batch_size, -1) for c in flat_coefficient_list], -1
-        )
-        ifwt_mat_list = []
-        if self.ifwt_matrix is None or re_build:
-            for s in range(0, self.level):
+
+        if not self.ifwt_matrix_list or re_build:
+            self.ifwt_matrix_list = []
+            for _ in range(0, self.level):
                 synthesis_matrix_2d = construct_boundary_s2d(
                     self.wavelet,
                     current_height,
@@ -405,20 +410,26 @@ class MatrixWaverec2d(object):
                     device=coefficients[-1][0].device,
                     boundary=self.boundary,
                 )
-                if s >= 1:
-                    synthesis_matrix_2d = cat_sparse_identity_matrix(
-                        synthesis_matrix_2d, coefficient_vectors.shape[-1]
-                    )
                 current_height = current_height // 2
                 current_width = current_width // 2
-                ifwt_mat_list.append(synthesis_matrix_2d)
+                self.ifwt_matrix_list.append(synthesis_matrix_2d)
 
-            self.ifwt_matrix = ifwt_mat_list[-1]
-            for ifwt_mat in ifwt_mat_list[:-1][::-1]:
-                self.ifwt_matrix = torch.sparse.mm(ifwt_mat, self.ifwt_matrix)
-
-        # TODO: fix padding.
-        reconstruction = torch.sparse.mm(self.ifwt_matrix, coefficient_vectors.T)
+        batch_size = coefficients[-1][0].shape[0]
+        for no, coefficients in enumerate(coefficients):
+            if type(coefficients) is torch.Tensor:
+                reconstruction = torch.reshape(coefficients, [batch_size, -1]).T
+            elif type(coefficients) is tuple:
+                to_cat = [
+                    reconstruction.T,
+                    coefficients[0],
+                    coefficients[1],
+                    coefficients[2],
+                ]
+                reconstruction = torch.cat(
+                    [c.reshape([batch_size, -1]) for c in to_cat], -1
+                )
+                ifwt_mat = self.ifwt_matrix_list[::-1][no - 1]
+                reconstruction = torch.sparse.mm(ifwt_mat, reconstruction.T)
 
         return reconstruction.T.reshape((batch_size, height, width))
 
