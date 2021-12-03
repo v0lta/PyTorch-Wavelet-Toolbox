@@ -184,7 +184,7 @@ class MatrixWavedec2d(object):
        by two, i.e. 128, 128 -> 64, 64 -> 32, 32 would work
        well for a level three transform.
        In this case multiplication with the `sparse_fwt_operator`
-       es equivalent.
+       property is equivalent.
 
     Note:
         Constructing the sparse fwt-matrix is expensive.
