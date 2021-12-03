@@ -198,7 +198,7 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
         list: A list containing the wavelet coefficients.
               The coefficients are in pywt order. That is:
               [cAn, (cHn, cVn, cDn), … (cH1, cV1, cD1)] .
-              A denotes approximation, H horizontal, V- vertical
+              A denotes approximation, H horizontal, V vertical
               and D diagonal coefficients.
 
     Examples::
