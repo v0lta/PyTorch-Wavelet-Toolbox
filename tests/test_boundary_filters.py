@@ -89,9 +89,11 @@ def test_boundary_transform_1d():
                     if not matrix_wavedec.padded and not matrix_waverec.padded:
                         test_mat = torch.sparse.mm(
                             matrix_waverec.sparse_ifwt_operator,
-                            matrix_wavedec.sparse_fwt_operator)
-                        assert np.allclose(test_mat.to_dense().numpy(),
-                                           np.eye(test_mat.shape[0]))
+                            matrix_wavedec.sparse_fwt_operator,
+                        )
+                        assert np.allclose(
+                            test_mat.to_dense().numpy(), np.eye(test_mat.shape[0])
+                        )
 
 
 def test_analysis_synthesis_matrices():
@@ -189,6 +191,14 @@ def test_boundary_matrix_fwt_2d():
                     np.allclose(reconstruction.numpy(), face),
                 )
                 assert np.allclose(reconstruction.numpy(), face)
+                # test the operator matrices
+                if not matrixfwt.padded and not matrixifwt.padded:
+                    test_mat = torch.sparse.mm(
+                        matrixifwt.sparse_ifwt_operator, matrixfwt.sparse_fwt_operator
+                    )
+                    assert np.allclose(
+                        test_mat.to_dense().numpy(), np.eye(test_mat.shape[0])
+                    )
 
 
 def test_batched_2d_matrix_fwt_ifwt():
@@ -230,15 +240,15 @@ def test_batched_2d_matrix_fwt_ifwt():
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
 
     # test_analysis_synthesis_matrices()
     # test_boundary_filter_analysis_and_synthethis_matrices()
-    test_boundary_transform_1d()
+    # test_boundary_transform_1d()
     # test_conv_matrix()
     # test_conv_matrix_2d()
     # test_strided_conv_matrix_2d_same()
     # test_matrix_analysis_fwt_2d_haar()
     test_boundary_matrix_fwt_2d()
-    test_batched_2d_matrix_fwt_ifwt()
+    # test_batched_2d_matrix_fwt_ifwt()
     # test_analysis_synthesis_matrices()

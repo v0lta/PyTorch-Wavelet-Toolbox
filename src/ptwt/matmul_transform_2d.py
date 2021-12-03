@@ -232,7 +232,10 @@ class MatrixWavedec2d(object):
 
     @property
     def sparse_fwt_operator(self) -> torch.Tensor:
-        """Compute the operator matrix for pad-free cases.
+        """Compute the operator matrix for padding-free cases.
+
+           This property exists to make the transformation matrix available.
+           To benefit from code handling odd-length levels call the object.
 
         Returns:
             torch.Tensor: The sparse 2d-fwt operator matrix.
@@ -390,7 +393,9 @@ class MatrixWaverec2d(object):
         elif len(self.ifwt_matrix_list) > 1 and self.padded is False:
             ifwt_matrix = self.ifwt_matrix_list[-1]
             for scale_mat in self.ifwt_matrix_list[:-1][::-1]:
-                scale_mat = cat_sparse_identity_matrix(scale_mat, ifwt_matrix.shape[0])
+                ifwt_matrix = cat_sparse_identity_matrix(
+                    ifwt_matrix, scale_mat.shape[0]
+                )
                 ifwt_matrix = torch.sparse.mm(scale_mat, ifwt_matrix)
             return ifwt_matrix
         else:
