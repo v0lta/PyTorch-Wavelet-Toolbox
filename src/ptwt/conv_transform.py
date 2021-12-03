@@ -4,17 +4,21 @@ import pywt
 import torch
 
 
-def get_filter_tensors(wavelet: pywt.Wavelet, flip: bool,
-        device: torch.device, dtype: torch.dtype=torch.float32) -> tuple:
+def get_filter_tensors(
+    wavelet: pywt.Wavelet,
+    flip: bool,
+    device: torch.device,
+    dtype: torch.dtype = torch.float32,
+) -> tuple:
     """Convert input wavelet to filter tensors.
 
     Args:
-        wavelet (pywt.Wavlet): Wavelet object, assuming ptwt-like
+        wavelet (pywt.Wavlet): Wavelet object, assuming pywt-like
                  field names.
         flip (bool): If true filters are flipped.
         device (torch.device) : PyTorch target device.
-        dtype (torch.dtype): The data type sets the precision of the computation.
-               Default: torch.float32.
+        dtype (torch.dtype): The data type sets the precision of the
+               computation. Default: torch.float32.
 
     Returns:
         tuple: Tuple containing the four filter tensors
@@ -27,14 +31,14 @@ def get_filter_tensors(wavelet: pywt.Wavelet, flip: bool,
             if isinstance(filter, torch.Tensor):
                 return filter.flip(-1).unsqueeze(0).to(device)
             else:
-                return torch.tensor(filter[::-1],
-                                    device=device, dtype=dtype).unsqueeze(0)
+                return torch.tensor(filter[::-1], device=device, dtype=dtype).unsqueeze(
+                    0
+                )
         else:
             if isinstance(filter, torch.Tensor):
                 return filter.unsqueeze(0).to(device)
             else:
-                return torch.tensor(filter,
-                                    device=device, dtype=dtype).unsqueeze(0)
+                return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
 
     dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
     dec_lo = create_tensor(dec_lo)
@@ -78,17 +82,15 @@ def get_pad(data_len: int, filt_len: int) -> tuple:
     return padr, padl
 
 
-def fwt_pad(data: torch.Tensor,
-            wavelet: pywt.Wavelet,
-            level: int,
-            mode: str = "reflect") -> torch.Tensor:
+def fwt_pad(
+    data: torch.Tensor, wavelet: pywt.Wavelet, mode: str = "reflect"
+) -> torch.Tensor:
     """Pad the input signal to make the fwt matrix work.
 
     Args:
         data (torch.Tensor): Input data [batch_size, 1, time]
         wavelet (pywt.Wavelet):
             The input wavelet following the pywt wavelet format.
-        level (int): The degree of the transform.
         mode (str): The desired way to pad.
 
     Returns:
@@ -119,8 +121,7 @@ def fwt_pad2d(data, wavelet, level, mode="reflect"):
     """
     padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo))
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo))
-    data_pad = torch.nn.functional.pad(
-        data, [padl, padr, padt, padb], mode=mode)
+    data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
     return data_pad
 
 
@@ -133,18 +134,16 @@ def _outer(a, b):
     return a_mul * b_mul
 
 
-def flatten_2d_coeff_lst(coeff_lst_2d: list,
-                         flatten_tensors: bool = True) -> list:
-    """Flattens a list of lists into a single list.
+def flatten_2d_coeff_lst(coeff_lst_2d: list, flatten_tensors: bool = True) -> list:
+    """Flattens a list of tensor tuples into a single list.
 
     Args:
-        coeff_lst_2d (list): A pywt-style coeffcient list.
+        coeff_lst_2d (list): A pywt-style coefficient list.
         flatten_tensors (bool): If true,
              2d tensors are flattened. Defaults to True.
 
     Returns:
         list: A single 1-d list with all original elements.
-
     """
     flat_coeff_lst = []
     for coeff in coeff_lst_2d:
@@ -211,7 +210,8 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
 
     """
     dec_lo, dec_hi, _, _ = get_filter_tensors(
-        wavelet, flip=True, device=data.device, dtype=data.dtype)
+        wavelet, flip=True, device=data.device, dtype=data.dtype
+    )
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
 
     if level is None:
@@ -252,8 +252,7 @@ def waverec2(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
 
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=coeffs[0].device,
-        dtype=coeffs[0].dtype
+        wavelet, flip=False, device=coeffs[0].device, dtype=coeffs[0].dtype
     )
     filt_len = rec_lo.shape[-1]
     rec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
@@ -263,8 +262,7 @@ def waverec2(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
         res_ll = torch.cat(
             [res_ll, res_lh_hl_hh[0], res_lh_hl_hh[1], res_lh_hl_hh[2]], 1
         )
-        res_ll = torch.nn.functional.conv_transpose2d(
-            res_ll, rec_filt, stride=2)
+        res_ll = torch.nn.functional.conv_transpose2d(res_ll, rec_filt, stride=2)
 
         # remove the padding
         padl = (2 * filt_len - 3) // 2
@@ -272,7 +270,6 @@ def waverec2(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
         padt = (2 * filt_len - 3) // 2
         padb = (2 * filt_len - 3) // 2
         if c_pos < len(coeffs) - 2:
-            # if 1:
             pred_len = res_ll.shape[-1] - (padl + padr)
             next_len = coeffs[c_pos + 2][0].shape[-1]
             pred_len2 = res_ll.shape[-2] - (padt + padb)
@@ -300,10 +297,9 @@ def waverec2(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
     return res_ll
 
 
-def wavedec(data: torch.Tensor,
-            wavelet: pywt.Wavelet,
-            level: int = None,
-            mode: str = "reflect") -> list:
+def wavedec(
+    data: torch.Tensor, wavelet: pywt.Wavelet, level: int = None, mode: str = "reflect"
+) -> list:
     """Compute the analysis (forward) 1d fast wavelet transform.
 
     Args:
@@ -318,7 +314,9 @@ def wavedec(data: torch.Tensor,
                               Defaults to reflect.
 
     Returns:
-        list: A list containing the wavelet coefficients.
+        list: A list [cA_n, cD_n, cD_n-1, …, cD2, cD1]
+        containing the wavelet coefficients. A denotes
+        approximation and D detail coefficients.
 
     Examples:
         >>> import torch
@@ -340,10 +338,9 @@ def wavedec(data: torch.Tensor,
         data = data.unsqueeze(1)
 
     dec_lo, dec_hi, _, _ = get_filter_tensors(
-        wavelet, flip=True, device=data.device, dtype=data.dtype)
+        wavelet, flip=True, device=data.device, dtype=data.dtype
+    )
     filt_len = dec_lo.shape[-1]
-    # dec_lo = torch.tensor(dec_lo[::-1]).unsqueeze(0)
-    # dec_hi = torch.tensor(dec_hi[::-1]).unsqueeze(0)
     filt = torch.stack([dec_lo, dec_hi], 0)
 
     if level is None:
@@ -351,8 +348,8 @@ def wavedec(data: torch.Tensor,
 
     result_lst = []
     res_lo = data
-    for s in range(level):
-        res_lo = fwt_pad(res_lo, wavelet, level=s, mode=mode)
+    for _ in range(level):
+        res_lo = fwt_pad(res_lo, wavelet, mode=mode)
         res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)
         result_lst.append(res_hi.squeeze(1))
@@ -385,8 +382,7 @@ def waverec(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
 
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=coeffs[-1].device,
-        dtype=coeffs[-1].dtype
+        wavelet, flip=False, device=coeffs[-1].device, dtype=coeffs[-1].dtype
     )
     filt_len = rec_lo.shape[-1]
     filt = torch.stack([rec_lo, rec_hi], 0)
@@ -394,20 +390,19 @@ def waverec(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
     res_lo = coeffs[0]
     for c_pos, res_hi in enumerate(coeffs[1:]):
         res_lo = torch.stack([res_lo, res_hi], 1)
-        res_lo = torch.nn.functional.conv_transpose1d(
-            res_lo, filt, stride=2).squeeze(1)
+        res_lo = torch.nn.functional.conv_transpose1d(res_lo, filt, stride=2).squeeze(1)
 
         # remove the padding
         padl = (2 * filt_len - 3) // 2
         padr = (2 * filt_len - 3) // 2
         if c_pos < len(coeffs) - 2:
             pred_len = res_lo.shape[-1] - (padl + padr)
-            nex_len = coeffs[c_pos + 2].shape[-1]
-            if nex_len != pred_len:
+            next_len = coeffs[c_pos + 2].shape[-1]
+            if next_len != pred_len:
                 padr += 1
                 pred_len = res_lo.shape[-1] - (padl + padr)
                 assert (
-                    nex_len == pred_len
+                    next_len == pred_len
                 ), "padding error, please open an issue on github "
         if padl > 0:
             res_lo = res_lo[..., padl:]

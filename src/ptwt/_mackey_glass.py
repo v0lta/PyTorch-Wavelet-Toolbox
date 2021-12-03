@@ -1,12 +1,17 @@
-"""Gernerate artificial time-series data for debugging purposes. """
+"""Generate artificial time-series data for debugging purposes."""
 
 import matplotlib.pyplot as plt
 import torch
 
 
 def generate_mackey(
-        batch_size=100, tmax=200, delta_t=1.0, rnd=True, device="cuda"):
-    """ Generate synthetic training data using the Mackey system of equations.
+    batch_size: int = 100,
+    tmax: int = 200,
+    delta_t: float = 1.0,
+    rnd: bool = True,
+    device: torch.device = "cuda",
+) -> torch.Tensor:
+    """Generate synthetic training data using the Mackey system of equations.
 
     dx/dt = beta*(x'/(1+x'))
     See http://www.scholarpedia.org/article/Mackey-Glass_equation
@@ -15,8 +20,18 @@ def generate_mackey(
     The system is simulated using a forward euler scheme
     (https://en.wikipedia.org/wiki/Euler_method).
 
+    Args:
+        batch_size (int): The number of simulated series to return.
+            Defaults to 100.
+        tmax (int): Total time to simulate. Defaults to 200.
+        delta_t (float): Size of the time step. Defaults to 1.0.
+        rnd (bool): If true use a random initial state.
+            Defaults to True.
+        device (torch.device): Choose cpu or cuda.
+            Defaults to "cuda".
+
     Returns:
-        spikes: A Tensor of shape [batch_size, time, 1],
+        torch.Tensor: A Tensor of shape [batch_size, time, 1],
     """
     steps = int(tmax / delta_t) + 200
 
@@ -42,9 +57,17 @@ def generate_mackey(
     return x[:, discard:]
 
 
-def blockify(data, block_length):
-    """ Blockify the input data series by replacing
-        blocks in the output with its mean.
+def _blockify(data: torch.Tensor, block_length: int) -> torch.Tensor:
+    """Blockify the input data series.
+
+       Blocks in the output are replaced with mean values its mean.
+
+    Args:
+        data (torch.Tensor): The block free input
+        block_length (int): The desired length of the anomaly.
+
+    Returns:
+        torch.Tensor: Corrupted output.
     """
     batch_size = data.shape[0]
     steps = data.shape[-1] // block_length
@@ -53,15 +76,13 @@ def blockify(data, block_length):
         start = block_no * block_length
         stop = (block_no + 1) * block_length
         block_mean = torch.mean(data[:, start:stop], dim=-1)
-        block = block_mean * torch.ones(
-            [batch_size, block_length], device=data.device)
+        block = block_mean * torch.ones([batch_size, block_length], device=data.device)
         block_signal.append(block)
     return torch.cat(block_signal).transpose(0, 1)
 
 
 class MackeyGenerator(object):
-    """Generates lorenz attractor data in 1 or 3d on the GPU.
-    """
+    """Generates lorenz attractor data in 1 or 3d on the GPU."""
 
     def __init__(
         self,
@@ -72,6 +93,16 @@ class MackeyGenerator(object):
         restore_and_plot=False,
         device="cuda",
     ):
+        """Create a Mackey-Glass simulator.
+
+        Args:
+            batch_size: Total number of samples to generate.
+            tmax: Total simulation time.
+            delta_t: Time step.
+            block_size: Length of mean blocks. Defaults to None.
+            restore_and_plot: Deactivate random init. Defaults to False.
+            device: Choose cpu or cuda. Defaults to "cuda".
+        """
         self.batch_size = batch_size
         self.tmax = tmax
         self.delta_t = delta_t
@@ -80,6 +111,7 @@ class MackeyGenerator(object):
         self.device = device
 
     def __call__(self):
+        """Simulate a batch and return the result."""
         data_nd = generate_mackey(
             tmax=self.tmax,
             delta_t=self.delta_t,
@@ -89,14 +121,14 @@ class MackeyGenerator(object):
         )
         data_nd = torch.unsqueeze(data_nd, -1)
         if self.block_size:
-            data_nd = blockify(data_nd, self.block_size)
+            data_nd = _blockify(data_nd, self.block_size)
         # print('data_nd_shape', data_nd.shape)
         return data_nd
 
 
 def _main():
     mackey = generate_mackey(tmax=1200, delta_t=0.1, rnd=True, device="cuda")
-    block_mackey = blockify(mackey, 100)
+    block_mackey = _blockify(mackey, 100)
     print(mackey.shape)
     plt.plot(mackey[0, :].cpu().numpy())
     plt.plot(block_mackey[0, :].cpu().numpy())
@@ -104,5 +136,5 @@ def _main():
     plt.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _main()

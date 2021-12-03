@@ -1,25 +1,24 @@
 """Two dimensional matrix based fast wavelet transform implementations.
-This module uses boundary filters instead of padding.
+
+This module uses boundary filters to minimize padding.
 """
 # Written by moritz ( @ wolter.tech ) in 2021
+import numpy as np
 import pywt
 import torch
-import numpy as np
 
+from .conv_transform import construct_2d_filt, get_filter_tensors
+from .matmul_transform import cat_sparse_identity_matrix, orthogonalize
 from .sparse_math import construct_strided_conv2d_matrix
-from .conv_transform import (
-    flatten_2d_coeff_lst,
-    construct_2d_filt,
-    get_filter_tensors
-)
-from .matmul_transform import (
-    orthogonalize,
-    cat_sparse_identity_matrix
-)
 
 
-def _construct_a_2d(wavelet: pywt.Wavelet, height: int, width: int,
-                    device: torch.device, dtype: torch.dtype=torch.float64) -> torch.tensor:
+def _construct_a_2d(
+    wavelet: pywt.Wavelet,
+    height: int,
+    width: int,
+    device: torch.device,
+    dtype: torch.dtype = torch.float64,
+) -> torch.tensor:
     """Construct a raw two dimensional analysis wavelet transformation matrix.
 
     Args:
@@ -39,24 +38,25 @@ def _construct_a_2d(wavelet: pywt.Wavelet, height: int, width: int,
 
     """
     dec_lo, dec_hi, _, _ = get_filter_tensors(
-        wavelet, flip=False, device=device, dtype=dtype)
+        wavelet, flip=False, device=device, dtype=dtype
+    )
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
     ll, lh, hl, hh = dec_filt.squeeze(1)
-    analysis_ll = construct_strided_conv2d_matrix(
-        ll, height, width, mode='sameshift')
-    analysis_lh = construct_strided_conv2d_matrix(
-        lh, height, width, mode='sameshift')
-    analysis_hl = construct_strided_conv2d_matrix(
-        hl, height, width, mode='sameshift')
-    analysis_hh = construct_strided_conv2d_matrix(
-        hh, height, width, mode='sameshift')
-    analysis = torch.cat([analysis_ll, analysis_hl,
-                          analysis_lh, analysis_hh], 0)
+    analysis_ll = construct_strided_conv2d_matrix(ll, height, width, mode="sameshift")
+    analysis_lh = construct_strided_conv2d_matrix(lh, height, width, mode="sameshift")
+    analysis_hl = construct_strided_conv2d_matrix(hl, height, width, mode="sameshift")
+    analysis_hh = construct_strided_conv2d_matrix(hh, height, width, mode="sameshift")
+    analysis = torch.cat([analysis_ll, analysis_hl, analysis_lh, analysis_hh], 0)
     return analysis
 
 
-def _construct_s_2d(wavelet: pywt.Wavelet, height: int, width: int,
-                    device: torch.device, dtype=torch.float64) -> torch.tensor:
+def _construct_s_2d(
+    wavelet: pywt.Wavelet,
+    height: int,
+    width: int,
+    device: torch.device,
+    dtype=torch.float64,
+) -> torch.tensor:
     """Construct a raw fast wavelet transformation synthesis matrix.
 
     Note:
@@ -78,33 +78,34 @@ def _construct_s_2d(wavelet: pywt.Wavelet, height: int, width: int,
         [torch.tensor]: The generated fast wavelet synthesis matrix.
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=True, device=device, dtype=dtype)
+        wavelet, flip=True, device=device, dtype=dtype
+    )
     dec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
     ll, lh, hl, hh = dec_filt.squeeze(1)
-    synthesis_ll = construct_strided_conv2d_matrix(
-        ll, height, width, mode='sameshift')
-    synthesis_lh = construct_strided_conv2d_matrix(
-        lh, height, width, mode='sameshift')
-    synthesis_hl = construct_strided_conv2d_matrix(
-        hl, height, width, mode='sameshift')
-    synthesis_hh = construct_strided_conv2d_matrix(
-        hh, height, width, mode='sameshift')
-    synthesis = torch.cat([synthesis_ll, synthesis_hl,
-                           synthesis_lh, synthesis_hh], 0).coalesce()
+    synthesis_ll = construct_strided_conv2d_matrix(ll, height, width, mode="sameshift")
+    synthesis_lh = construct_strided_conv2d_matrix(lh, height, width, mode="sameshift")
+    synthesis_hl = construct_strided_conv2d_matrix(hl, height, width, mode="sameshift")
+    synthesis_hh = construct_strided_conv2d_matrix(hh, height, width, mode="sameshift")
+    synthesis = torch.cat(
+        [synthesis_ll, synthesis_hl, synthesis_lh, synthesis_hh], 0
+    ).coalesce()
     indices = synthesis.indices()
     shape = synthesis.shape
     transpose_indices = torch.stack([indices[1, :], indices[0, :]])
-    transpose_synthesis = torch.sparse_coo_tensor(transpose_indices,
-                                                  synthesis.values(),
-                                                  size=(shape[1], shape[0]))
+    transpose_synthesis = torch.sparse_coo_tensor(
+        transpose_indices, synthesis.values(), size=(shape[1], shape[0])
+    )
     return transpose_synthesis
 
 
 def construct_boundary_a2d(
-        wavelet, height: int, width: int,
-        device: torch.device,
-        boundary: str = 'qr',
-        dtype: torch.dtype = torch.float64) -> torch.Tensor:
+    wavelet,
+    height: int,
+    width: int,
+    device: torch.device,
+    boundary: str = "qr",
+    dtype: torch.dtype = torch.float64,
+) -> torch.Tensor:
     """Construct a boundary fwt matrix for the input wavelet.
 
     Args:
@@ -125,19 +126,20 @@ def construct_boundary_a2d(
         torch.Tensor: A sparse fwt matrix, with orthogonalized boundary
             wavelets.
     """
-    a = _construct_a_2d(
-        wavelet, height, width, device, dtype=dtype)
-    orth_a = orthogonalize(
-        a, len(wavelet)*len(wavelet), method=boundary)
+    a = _construct_a_2d(wavelet, height, width, device, dtype=dtype)
+    orth_a = orthogonalize(a, len(wavelet) * len(wavelet), method=boundary)
     return orth_a
 
 
 def construct_boundary_s2d(
-        wavelet, height: int, width: int,
-        device: torch.device,
-        boundary: str = 'qr',
-        dtype=torch.float64) -> torch.Tensor:
-    """ Construct a 2d-fwt matrix, with boundary wavelets.
+    wavelet,
+    height: int,
+    width: int,
+    device: torch.device,
+    boundary: str = "qr",
+    dtype=torch.float64,
+) -> torch.Tensor:
+    """Construct a 2d-fwt matrix, with boundary wavelets.
 
     Args:
         wavelet: A pywt wavelet.
@@ -154,23 +156,35 @@ def construct_boundary_s2d(
         torch.Tensor: The synthesis matrix, used to compute the
             inverse fast wavelet transform.
     """
-    s = _construct_s_2d(
-        wavelet, height, width, device, dtype=dtype)
+    s = _construct_s_2d(wavelet, height, width, device, dtype=dtype)
     orth_s = orthogonalize(
-        s.transpose(1, 0),
-        len(wavelet)*len(wavelet),
-        method=boundary).transpose(1, 0)
+        s.transpose(1, 0), len(wavelet) * len(wavelet), method=boundary
+    ).transpose(1, 0)
     return orth_s
 
 
-class MatrixWavedec2d(object):
-    """ Experimental sparse matrix 2d wavelet transform.
+def _matrix_pad_2d(height: int, width: int) -> tuple:
+    pad_tuple = (False, False)
+    if height % 2 != 0:
+        height += 1
+        pad_tuple = (pad_tuple[0], True)
+    if width % 2 != 0:
+        width += 1
+        pad_tuple = (True, pad_tuple[1])
+    return height, width, pad_tuple
 
-       Input images are expected to be divisible by two.
+
+class MatrixWavedec2d(object):
+    """Experimental sparse matrix 2d wavelet transform.
+
+       For a completely pad free transform,
+       input images are expected to be divisible by two.
        For multiscale transforms all intermediate
-       scale dimensions must be divisible
+       scale dimensions should be divisible
        by two, i.e. 128, 128 -> 64, 64 -> 32, 32 would work
-       for a level three transform.
+       well for a level three transform.
+       In this case multiplication with the `sparse_fwt_operator`
+       es equivalent.
 
     Note:
         Constructing the sparse fwt-matrix is expensive.
@@ -190,8 +204,7 @@ class MatrixWavedec2d(object):
 
     """
 
-    def __init__(self, wavelet: pywt.Wavelet, level: int,
-                 boundary: str = 'qr'):
+    def __init__(self, wavelet: pywt.Wavelet, level: int, boundary: str = "qr"):
         """Create a new matrix fwt object.
 
         Args:
@@ -206,17 +219,34 @@ class MatrixWavedec2d(object):
                 Defaults to 'qr'.
         """
         dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
-        assert len(dec_lo) == len(dec_hi),\
-            "All filters must have the same length."
-        assert len(dec_hi) == len(rec_lo),\
-            "All filters must have the same length."
-        assert len(rec_lo) == len(rec_hi),\
-            "All filters must have the same length."
+        assert len(dec_lo) == len(dec_hi), "All filters must have the same length."
+        assert len(dec_hi) == len(rec_lo), "All filters must have the same length."
+        assert len(rec_lo) == len(rec_hi), "All filters must have the same length."
         self.level = level
         self.wavelet = wavelet
-        self.fwt_matrix = None
         self.input_signal_shape = None
         self.boundary = boundary
+        self.fwt_matrix_list = []
+        self.pad_list = []
+        self.padded = False
+
+    @property
+    def sparse_fwt_operator(self) -> torch.Tensor:
+        """Compute the operator matrix for pad-free cases.
+
+        Returns:
+            torch.Tensor: The sparse 2d-fwt operator matrix.
+        """
+        if len(self.fwt_matrix_list) == 1:
+            return self.fwt_matrix_list[0]
+        elif len(self.fwt_matrix_list) > 1 and self.padded is False:
+            fwt_matrix = self.fwt_matrix_list[0]
+            for scale_mat in self.fwt_matrix_list[1:]:
+                scale_mat = cat_sparse_identity_matrix(scale_mat, fwt_matrix.shape[0])
+                fwt_matrix = torch.sparse.mm(scale_mat, fwt_matrix)
+            return fwt_matrix
+        else:
+            return None
 
     def __call__(self, input_signal: torch.Tensor) -> list:
         """Compute the fwt for the given input signal.
@@ -234,16 +264,6 @@ class MatrixWavedec2d(object):
         """
         filt_len = len(self.wavelet)
 
-        if input_signal.shape[-1] % 2 != 0:
-            # odd length input
-            # print('input length odd, padding a zero on the right')
-            input_signal = torch.nn.functional.pad(input_signal, [0, 1])
-        if input_signal.shape[-2] % 2 != 0:
-            # odd length input
-            # print('input length odd, padding a zero on the right')
-            input_signal = torch.nn.functional.pad(
-                input_signal, [0, 0, 0, 1])
-
         if input_signal.shape[1] == 1:
             input_signal = input_signal.squeeze(1)
         batch_size, height, width = input_signal.shape
@@ -252,63 +272,75 @@ class MatrixWavedec2d(object):
         if self.input_signal_shape is None:
             self.input_signal_shape = input_signal.shape[-2:]
         else:
-            # if the input shape changed the matrix has to be
-            # constructed again.
+            # the input shape changed rebuild the operator-matrices
             if self.input_signal_shape[0] != height:
                 re_build = True
             if self.input_signal_shape[1] != width:
                 re_build = True
 
-        if self.fwt_matrix is None or re_build:
-            size_list = [(height, width)]
-            fwt_mat_list = []
+        if not self.fwt_matrix_list or re_build:
+            self.size_list = []
+            self.fwt_matrix_list = []
+            self.pad_list = []
+            self.padded = False
             if self.level is None:
-                self.level = int(np.min(
-                    [np.log2(height), np.log2(width)]))
+                self.level = int(np.min([np.log2(height), np.log2(width)]))
             else:
                 assert self.level > 0, "level must be a positive integer."
 
-            for s in range(1, self.level + 1):
-                current_height, current_width = size_list[-1]
+            current_height, current_width = height, width
+            for _ in range(1, self.level + 1):
                 if current_height < filt_len or current_width < filt_len:
+                    # we have reached the max decomposition depth.
                     break
-                assert current_height % 2  == 0, \
-                    "Image height must be divisible by two on all scales."
-                assert current_height % 2  == 0, \
-                    "Image width must be divisible by two on all scales."
+                # the conv matrices require even length inputs.
+                current_height, current_width, pad_tuple = _matrix_pad_2d(
+                    current_height, current_width
+                )
+                if any(pad_tuple):
+                    self.padded = True
+                self.pad_list.append(pad_tuple)
+                self.size_list.append((current_height, current_width))
                 analysis_matrix_2d = construct_boundary_a2d(
-                    self.wavelet, current_height, current_width,
-                    dtype=input_signal.dtype, device=input_signal.device,
-                    boundary=self.boundary)
-                if s > 1:
-                    analysis_matrix_2d = cat_sparse_identity_matrix(
-                        analysis_matrix_2d, height*width)
-                fwt_mat_list.append(analysis_matrix_2d)
-                size_list.append((height // np.power(2, s),
-                                  width // np.power(2, s)))
-
-            self.fwt_matrix = fwt_mat_list[0]
-            for fwt_mat in fwt_mat_list[1:]:
-                self.fwt_matrix = torch.sparse.mm(fwt_mat, self.fwt_matrix)
-            self.size_list = size_list
-
-        coefficients = torch.sparse.mm(
-            self.fwt_matrix, input_signal.reshape(
-                [input_signal.shape[0], -1]).T)
+                    self.wavelet,
+                    current_height,
+                    current_width,
+                    dtype=input_signal.dtype,
+                    device=input_signal.device,
+                    boundary=self.boundary,
+                )
+                self.fwt_matrix_list.append(analysis_matrix_2d)
+                current_height = current_height // 2
+                current_width = current_width // 2
+            self.size_list.append((current_height, current_width))
 
         split_list = []
-        next_to_split = coefficients
-        for size in self.size_list[1:]:
-            split_size = int(np.prod(size))
-            four_split = torch.split(next_to_split, split_size)
-            next_to_split = four_split[0]
+        ll = input_signal.reshape([batch_size, -1]).T
+        for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
+            pad = self.pad_list[scale]
+            size = self.size_list[scale]
+            if pad[0] or pad[1]:
+                if pad[0] and not pad[1]:
+                    ll_reshape = ll.T.reshape(batch_size, size[0], size[1] - 1)
+                    ll = torch.nn.functional.pad(ll_reshape, [0, 1])
+                elif pad[1] and not pad[0]:
+                    ll_reshape = ll.T.reshape(batch_size, size[0] - 1, size[1])
+                    ll = torch.nn.functional.pad(ll_reshape, [0, 0, 0, 1])
+                elif pad[0] and pad[1]:
+                    ll_reshape = ll.T.reshape(batch_size, size[0] - 1, size[1] - 1)
+                    ll = torch.nn.functional.pad(ll_reshape, [0, 1, 0, 1])
+                ll = ll.reshape([batch_size, -1]).T
+            coefficients = torch.sparse.mm(fwt_matrix, ll)
+            four_split = torch.split(
+                coefficients, int(np.prod((size[0] // 2, size[1] // 2)))
+            )
             reshaped = tuple(
-                (el.T.reshape(batch_size, size[0], size[1]))
-                for el in four_split[1:])
+                (el.T.reshape(batch_size, size[0] // 2, size[1] // 2))
+                for el in four_split[1:]
+            )
             split_list.append(reshaped)
-        split_list.append(
-            next_to_split.T.reshape(batch_size, size[0], size[1]))
-
+            ll = four_split[0]
+        split_list.append(ll.T.reshape(batch_size, size[0] // 2, size[1] // 2))
         return split_list[::-1]
 
 
@@ -332,18 +364,37 @@ class MatrixWaverec2d(object):
         >>> reconstruction = matrixifwt(mat_coeff)
     """
 
-    def __init__(self, wavelet: pywt.Wavelet, boundary: str = 'qr'):
+    def __init__(self, wavelet: pywt.Wavelet, boundary: str = "qr"):
         """Create the inverse matrix based fast wavelet transformation.
 
         Args:
             wavelet: A pywt.Wavelet compatible wavelet object.
             boundary: The method used to treat the boundary cases.
-                Chosse 'qr' or 'gramschmidt'. Defaults to 'qr'.
+                Choose 'qr' or 'gramschmidt'. Defaults to 'qr'.
         """
         self.wavelet = wavelet
-        self.ifwt_matrix = None
+        self.ifwt_matrix_list = []
         self.level = None
         self.boundary = boundary
+        self.padded = False
+
+    @property
+    def sparse_ifwt_operator(self):
+        """Compute the ifwt operator matrix for pad-free cases.
+
+        Returns:
+            torch.Tensor: The sparse 2d-ifwt operator matrix.
+        """
+        if len(self.ifwt_matrix_list) == 1:
+            return self.ifwt_matrix_list[0]
+        elif len(self.ifwt_matrix_list) > 1 and self.padded is False:
+            ifwt_matrix = self.ifwt_matrix_list[0]
+            for scale_mat in self.ifwt_matrix_list[1:]:
+                scale_mat = cat_sparse_identity_matrix(scale_mat, ifwt_matrix.shape[0])
+                ifwt_matrix = torch.sparse.mm(scale_mat, ifwt_matrix)
+            return ifwt_matrix
+        else:
+            return None
 
     def __call__(self, coefficients: list) -> torch.Tensor:
         """Compute the inverse matrix 2d fast wavelet transform.
@@ -365,49 +416,69 @@ class MatrixWaverec2d(object):
                 self.level = level
                 re_build = True
 
-        height, width = tuple(c*2 for c in coefficients[-1][0].shape[-2:])
+        height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
         current_height, current_width = height, width
-        batch_size = coefficients[-1][0].shape[0]
-        flat_coefficient_list = flatten_2d_coeff_lst(
-            coefficients, flatten_tensors=False)
-        coefficient_vectors = torch.cat(
-            [c.reshape(batch_size, -1) for c in flat_coefficient_list], -1)
-        ifwt_mat_list = []
-        if self.ifwt_matrix is None or re_build:
-            for s in range(0, self.level):
+
+        if not self.ifwt_matrix_list or re_build:
+            self.ifwt_matrix_list = []
+            self.padded = False
+            for _ in range(0, self.level):
+                current_height, current_width, pad_tuple = _matrix_pad_2d(
+                    current_height, current_width
+                )
+                if any(pad_tuple):
+                    self.padded = True
                 synthesis_matrix_2d = construct_boundary_s2d(
-                    self.wavelet, current_height, current_width,
+                    self.wavelet,
+                    current_height,
+                    current_width,
                     dtype=coefficients[-1][0].dtype,
                     device=coefficients[-1][0].device,
-                    boundary=self.boundary)
-                if s >= 1:
-                    synthesis_matrix_2d = cat_sparse_identity_matrix(
-                        synthesis_matrix_2d, coefficient_vectors.shape[-1])
+                    boundary=self.boundary,
+                )
                 current_height = current_height // 2
                 current_width = current_width // 2
-                ifwt_mat_list.append(synthesis_matrix_2d)
+                self.ifwt_matrix_list.append(synthesis_matrix_2d)
 
-            self.ifwt_matrix = ifwt_mat_list[-1]
-            for ifwt_mat in ifwt_mat_list[:-1][::-1]:
-                self.ifwt_matrix = torch.sparse.mm(ifwt_mat, self.ifwt_matrix)
+        batch_size = coefficients[-1][0].shape[0]
+        reconstruction = torch.reshape(coefficients[0], [batch_size, -1]).T
+        for c_pos, lh_hl_hh in enumerate(coefficients[1:]):
+            reconstruction = torch.cat(
+                [
+                    reconstruction.T,
+                    lh_hl_hh[0].reshape([batch_size, -1]),
+                    lh_hl_hh[1].reshape([batch_size, -1]),
+                    lh_hl_hh[2].reshape([batch_size, -1]),
+                ],
+                -1,
+            )
+            ifwt_mat = self.ifwt_matrix_list[::-1][c_pos]
+            reconstruction = torch.sparse.mm(ifwt_mat, reconstruction.T)
 
-        reconstruction = torch.sparse.mm(
-            self.ifwt_matrix, coefficient_vectors.T)
-
+            # remove the padding
+            if c_pos < len(coefficients) - 2:
+                pred_len = [s * 2 for s in lh_hl_hh[0].shape[-2:]]
+                next_len = list(coefficients[c_pos + 2][0].shape[-2:])
+                if pred_len != next_len:
+                    reconstruction = reconstruction.T.reshape([batch_size] + pred_len)
+                    if pred_len[0] != next_len[0]:
+                        reconstruction = reconstruction[:, :-1, :]
+                    if pred_len[1] != next_len[1]:
+                        reconstruction = reconstruction[:, :, :-1]
+                    reconstruction = reconstruction.reshape(batch_size, -1).T
         return reconstruction.T.reshape((batch_size, height, width))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import scipy
     import scipy.misc
     import pywt
     import time
+
     size = 32, 32
     level = 3
-    wavelet_str = 'db2'
-    face = np.mean(scipy.misc.face()[:size[0],
-                                     :size[1]],
-                   -1).astype(np.float64)
+    wavelet_str = "db2"
+    face = np.mean(scipy.misc.face()[: size[0], : size[1]], -1).astype(np.float64)
     pt_face = torch.tensor(face).cuda()
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2d(wavelet, level=level)
@@ -428,7 +499,11 @@ if __name__ == '__main__':
     if size[1] % 2 != 0:
         reconstruction = reconstruction[:, :-1]
     err = np.sum(np.abs(reconstruction.cpu().numpy() - face))
-    print(size, str(level).center(4),
-          wavelet_str, "error {:3.3e}".format(err),
-          np.allclose(reconstruction.cpu().numpy(), face))
+    print(
+        size,
+        str(level).center(4),
+        wavelet_str,
+        "error {:3.3e}".format(err),
+        np.allclose(reconstruction.cpu().numpy(), face),
+    )
     assert np.allclose(reconstruction.cpu().numpy(), face)
