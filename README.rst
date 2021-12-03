@@ -6,6 +6,10 @@ Pytorch Wavelet Toolbox (`ptwt`)
     :target: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml
     :alt: GitHub Actions
 
+.. image:: https://readthedocs.org/projects/pytorch-wavelet-toolbox/badge/?version=latest
+    :target: https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 .. image:: https://img.shields.io/pypi/pyversions/ptwt
     :target: https://pypi.org/project/ptwt/
     :alt: PyPI Versions
@@ -17,10 +21,6 @@ Pytorch Wavelet Toolbox (`ptwt`)
 .. image:: https://img.shields.io/pypi/l/ptwt
     :target: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/blob/main/LICENSE
     :alt: PyPI - License
-
-.. image:: https://readthedocs.org/projects/pytorch-wavelet-toolbox/badge/?version=latest
-    :target: https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/psf/black
