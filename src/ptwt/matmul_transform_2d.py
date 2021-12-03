@@ -190,8 +190,8 @@ class MatrixWavedec2d(object):
         Constructing the sparse fwt-matrix is expensive.
         For longer wavelets, high level transforms, and large
         input images this may take a while.
-        The matrix is therefore constructed only once and
-        stored in this objects fwt_matrix variable for future use.
+        The matrix is therefore constructed only once.
+        It can be accessed via the sparse_fwt_operator property.
 
     Example:
         >>> import ptwt, torch, pywt
