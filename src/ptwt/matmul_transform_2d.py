@@ -177,11 +177,14 @@ def _matrix_pad_2d(height: int, width: int) -> tuple:
 class MatrixWavedec2d(object):
     """Experimental sparse matrix 2d wavelet transform.
 
-       Input images are expected to be divisible by two.
+       For a completely pad free transform,
+       input images are expected to be divisible by two.
        For multiscale transforms all intermediate
-       scale dimensions must be divisible
+       scale dimensions should be divisible
        by two, i.e. 128, 128 -> 64, 64 -> 32, 32 would work
-       for a level three transform.
+       well for a level three transform.
+       In this case multiplication with the `sparse_fwt_operator`
+       es equivalent.
 
     Note:
         Constructing the sparse fwt-matrix is expensive.
@@ -227,6 +230,7 @@ class MatrixWavedec2d(object):
         self.pad_list = []
         self.padded = False
 
+    @property
     def sparse_fwt_operator(self) -> torch.Tensor:
         """Compute the operator matrix for pad-free cases.
 
@@ -374,16 +378,23 @@ class MatrixWaverec2d(object):
         self.boundary = boundary
         self.padded = False
 
+    @property
     def sparse_ifwt_operator(self):
-        """Return the sparse boundary ifwt operator matrix."""
-        # self.ifwt_matrix = ifwt_mat_list[-1]
-        # for ifwt_mat in ifwt_mat_list[:-1][::-1]:
-        #    self.ifwt_matrix = torch.sparse.mm(ifwt_mat, self.ifwt_matrix)
-        # if s >= 1:
-        #            synthesis_matrix_2d = cat_sparse_identity_matrix(
-        #                synthesis_matrix_2d, coefficient_vectors.shape[-1]
-        #           )
-        pass
+        """Compute the ifwt operator matrix for pad-free cases.
+
+        Returns:
+            torch.Tensor: The sparse 2d-ifwt operator matrix.
+        """
+        if len(self.ifwt_matrix_list) == 1:
+            return self.ifwt_matrix_list[0]
+        elif len(self.ifwt_matrix_list) > 1 and self.padded is False:
+            ifwt_matrix = self.ifwt_matrix_list[0]
+            for scale_mat in self.ifwt_matrix_list[1:]:
+                scale_mat = cat_sparse_identity_matrix(scale_mat, ifwt_matrix.shape[0])
+                ifwt_matrix = torch.sparse.mm(scale_mat, ifwt_matrix)
+            return ifwt_matrix
+        else:
+            return None
 
     def __call__(self, coefficients: list) -> torch.Tensor:
         """Compute the inverse matrix 2d fast wavelet transform.
