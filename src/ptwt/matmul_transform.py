@@ -228,8 +228,11 @@ class MatrixWavedec(object):
         the whole operation is padding-free and can be expressed
         as a single matrix multiply.
 
-        Use torch.sparse.mm(sparse_fwt_operator, data.T)
-        to compute a batched fwt.
+        With the operator torch.sparse.mm(sparse_fwt_operator, data.T)
+        to computes a batched fwt.
+
+        This property exists to make the operator matrix transparent.
+        Calling the object will handle odd-length inputs properly.
 
         Returns:
             torch.Tensor: The sparse operator matrix.
@@ -411,8 +414,11 @@ class MatrixWaverec(object):
         as a single matrix multiply.
 
         Having concatenated the analysis coefficients,
-        use torch.sparse.mm(sparse_ifwt_operator, coefficients.T)
-        to compute a batched ifwt.
+        torch.sparse.mm(sparse_ifwt_operator, coefficients.T)
+        to computes a batched ifwt.
+
+        This functionality is manly here to make the operator-matrix
+        transparent. Calling the object handles padding for odd inputs.
 
         Returns:
             torch.Tensor: The sparse operator matrix.
@@ -422,8 +428,8 @@ class MatrixWaverec(object):
         elif len(self.ifwt_matrix_list) > 1 and self.padded is False:
             ifwt_matrix = self.ifwt_matrix_list[-1]
             for scale_matrix in self.ifwt_matrix_list[:-1][::-1]:
-                scale_matrix = cat_sparse_identity_matrix(
-                    scale_matrix, ifwt_matrix.shape[0]
+                ifwt_matrix = cat_sparse_identity_matrix(
+                    ifwt_matrix, scale_matrix.shape[0]
                 )
                 ifwt_matrix = torch.sparse.mm(scale_matrix, ifwt_matrix)
             return ifwt_matrix

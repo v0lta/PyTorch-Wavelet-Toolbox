@@ -388,8 +388,8 @@ class MatrixWaverec2d(object):
         if len(self.ifwt_matrix_list) == 1:
             return self.ifwt_matrix_list[0]
         elif len(self.ifwt_matrix_list) > 1 and self.padded is False:
-            ifwt_matrix = self.ifwt_matrix_list[0]
-            for scale_mat in self.ifwt_matrix_list[1:]:
+            ifwt_matrix = self.ifwt_matrix_list[-1]
+            for scale_mat in self.ifwt_matrix_list[:-1][::-1]:
                 scale_mat = cat_sparse_identity_matrix(scale_mat, ifwt_matrix.shape[0])
                 ifwt_matrix = torch.sparse.mm(scale_mat, ifwt_matrix)
             return ifwt_matrix

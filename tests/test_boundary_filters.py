@@ -62,7 +62,7 @@ def test_boundary_transform_1d():
     wavelet_list = ["db2", "db3", "haar"]
     for data in data_list:
         for wavelet_str in wavelet_list:
-            for level in [1, 2]:
+            for level in [2, 1]:
                 for boundary in ["gramschmidt", "qr"]:
                     data_torch = torch.from_numpy(data.astype(np.float64))
                     wavelet = pywt.Wavelet(wavelet_str)
@@ -85,6 +85,13 @@ def test_boundary_transform_1d():
                         "error {:2.2e}".format(error),
                     )
                     assert np.allclose(rec.numpy(), rec_pywt)
+                    # test the operator matrices
+                    if not matrix_wavedec.padded and not matrix_waverec.padded:
+                        test_mat = torch.sparse.mm(
+                            matrix_waverec.sparse_ifwt_operator,
+                            matrix_wavedec.sparse_fwt_operator)
+                        assert np.allclose(test_mat.to_dense().numpy(),
+                                           np.eye(test_mat.shape[0]))
 
 
 def test_analysis_synthesis_matrices():
@@ -223,11 +230,11 @@ def test_batched_2d_matrix_fwt_ifwt():
 
 
 if __name__ == "__main__":
-    # import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 
     # test_analysis_synthesis_matrices()
     # test_boundary_filter_analysis_and_synthethis_matrices()
-    # test_boundary_transform_1d()
+    test_boundary_transform_1d()
     # test_conv_matrix()
     # test_conv_matrix_2d()
     # test_strided_conv_matrix_2d_same()
