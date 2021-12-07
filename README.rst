@@ -78,7 +78,7 @@ Example usage:
   print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2), wavelet))
 
 
-**Sparse-Matrices**
+**Boundary Wavelets with Sparse-Matrices**
 
 In addition to convolution and padding approaches,
 sparse-matrix-based code with boundary wavelet support is available.
