@@ -57,6 +57,9 @@ You can remove it later by typing ``pip uninstall ptwt``.
 
 Example usage:
 """"""""""""""
+**Single dimensional transform**
+One way to compute fast wavelet transforms is to rely on padding and
+convolution. Consider the following example: 
 
 .. code-block:: python
 
@@ -78,16 +81,50 @@ Example usage:
   print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2), wavelet))
 
 
+The functions ``wavedec`` and ``waverec`` rely on 
+`conv1d``, and its transposed counterpart ``conv_transpose1d``
+from the ``torch.nn.functional`` module. 
+
+**Two-dimensional transform**
+Analog to the 1d-case ``wavedec2`` and ``waverec2`` rely on 
+`conv2d``, and its transposed counterpart ``conv_transpose2d``.
+To test an example run:
+
+
+.. code-block:: python
+  import ptwt, pywt, torch
+  import numpy as np
+  import scipy.misc
+
+  face = np.transpose(scipy.misc.face(),
+                          [2, 0, 1]).astype(np.float64)
+  pytorch_face = torch.tensor(face).unsqueeze(1)
+  coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
+                                  level=2, mode="constant")
+  reconstruction = ptwt.waverec2(coefficients, pywt.Wavelet("haar"))
+  np.max(np.abs(face - reconstruction.squeeze(1).numpy()))
+
+
+
 **Boundary Wavelets with Sparse-Matrices**
 
 In addition to convolution and padding approaches,
 sparse-matrix-based code with boundary wavelet support is available.
+Internally, boundary wavelet support relies on ``torch.sparse.mm``.
 Generate 1d sparse matrix forward and backward transforms with the
 `MatrixWavedec` and `MatrixWaverec` classes.
-Continuing the example above try for example:
+Reconsidering the 1d case, try:
 
 .. code-block:: python
 
+  import torch
+  import numpy as np
+  import pywt
+  import ptwt  # use " from src import ptwt " if you cloned the repo instead of using pip.
+  
+  # generate an input of even length.
+  data = np.array([0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0])
+  data_torch = torch.from_numpy(data.astype(np.float32))
   # forward
   matrix_wavedec = ptwt.MatrixWavedec(wavelet, level=2)
   coeff = matrix_wavedec(data_torch)
