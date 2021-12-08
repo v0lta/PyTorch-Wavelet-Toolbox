@@ -83,7 +83,7 @@ convolution. Consider the following example:
 
 
 The functions ``wavedec`` and ``waverec`` rely on 
-`conv1d``, and its transposed counterpart ``conv_transpose1d``
+``conv1d``, and its transposed counterpart ``conv_transpose1d``
 from the ``torch.nn.functional`` module. 
 
 **Two-dimensional transform**
