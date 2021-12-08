@@ -113,6 +113,8 @@ To test an example run:
 
 In addition to convolution and padding approaches,
 sparse-matrix-based code with boundary wavelet support is available.
+In contrast to padding, boundary wavelets do not add extra pixels at 
+the edges.
 Internally, boundary wavelet support relies on ``torch.sparse.mm``.
 Generate 1d sparse matrix forward and backward transforms with the
 `MatrixWavedec` and `MatrixWaverec` classes.
