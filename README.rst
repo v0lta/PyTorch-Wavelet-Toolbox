@@ -58,6 +58,7 @@ You can remove it later by typing ``pip uninstall ptwt``.
 Example usage:
 """"""""""""""
 **Single dimensional transform**
+
 One way to compute fast wavelet transforms is to rely on padding and
 convolution. Consider the following example: 
 
@@ -86,6 +87,7 @@ The functions ``wavedec`` and ``waverec`` rely on
 from the ``torch.nn.functional`` module. 
 
 **Two-dimensional transform**
+
 Analog to the 1d-case ``wavedec2`` and ``waverec2`` rely on 
 `conv2d``, and its transposed counterpart ``conv_transpose2d``.
 To test an example run:
