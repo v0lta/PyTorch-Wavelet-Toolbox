@@ -84,7 +84,8 @@ convolution. Consider the following example:
 
 The functions ``wavedec`` and ``waverec`` compute the 1d-fwt and its inverse.
 Internally both rely on ``conv1d``, and its transposed counterpart ``conv_transpose1d``
-from the ``torch.nn.functional`` module. 
+from the ``torch.nn.functional`` module. This toolbox supports discrete wavelets
+see also ``pywt.wavelist(kind='discrete')``.
 
 **Two-dimensional transform**
 
@@ -131,11 +132,11 @@ Reconsidering the 1d case, try:
   data = np.array([0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0])
   data_torch = torch.from_numpy(data.astype(np.float32))
   # forward
-  matrix_wavedec = ptwt.MatrixWavedec(wavelet, level=2)
+  matrix_wavedec = ptwt.MatrixWavedec(pywt.Wavelet("haar"), level=2)
   coeff = matrix_wavedec(data_torch)
   print(coeff)
   # backward 
-  matrix_waverec = ptwt.MatrixWaverec(wavelet, level=2)
+  matrix_waverec = ptwt.MatrixWaverec(pywt.Wavelet("haar"), level=2)
   rec = matrix_waverec(coeff)
   print(rec)
 
