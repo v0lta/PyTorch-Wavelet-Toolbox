@@ -82,8 +82,8 @@ convolution. Consider the following example:
   print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2), wavelet))
 
 
-The functions ``wavedec`` and ``waverec`` rely on 
-``conv1d``, and its transposed counterpart ``conv_transpose1d``
+The functions ``wavedec`` and ``waverec`` compute the 1d-fwt and its inverse.
+Internally both rely on ``conv1d``, and its transposed counterpart ``conv_transpose1d``
 from the ``torch.nn.functional`` module. 
 
 **Two-dimensional transform**
@@ -94,6 +94,7 @@ To test an example run:
 
 
 .. code-block:: python
+
   import ptwt, pywt, torch
   import numpy as np
   import scipy.misc
