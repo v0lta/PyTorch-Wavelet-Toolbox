@@ -89,7 +89,7 @@ from the ``torch.nn.functional`` module.
 **Two-dimensional transform**
 
 Analog to the 1d-case ``wavedec2`` and ``waverec2`` rely on 
-`conv2d``, and its transposed counterpart ``conv_transpose2d``.
+``conv2d``, and its transposed counterpart ``conv_transpose2d``.
 To test an example run:
 
 
