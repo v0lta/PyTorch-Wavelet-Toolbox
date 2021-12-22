@@ -531,10 +531,14 @@ def batch_mm(matrix: torch.Tensor, matrix_batch: torch.Tensor) -> torch.Tensor:
 
     Returns
         torch.Tensor: The batched matrix-matrix product, size (b, m, k).
+
+    Raises:
+        ValueError: If the matrices cannot be multiplied due to incompatible matrix
+            shapes.
     """
     batch_size = matrix_batch.shape[0]
     if matrix.shape[1] != matrix_batch.shape[1]:
-        raise AssertionError("Matrix shapes not compatible.")
+        raise ValueError("Matrix shapes not compatible.")
 
     # Stack the vector batch into columns. (b, n, k) -> (n, b, k) -> (n, b*k)
     vectors = matrix_batch.transpose(0, 1).reshape(matrix.shape[1], -1)

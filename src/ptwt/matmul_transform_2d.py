@@ -3,14 +3,21 @@
 This module uses boundary filters to minimize padding.
 """
 # Written by moritz ( @ wolter.tech ) in 2021
+from typing import Optional, Union
+
 import numpy as np
 import pywt
 import torch
 
-from .conv_transform import construct_2d_filt, get_filter_tensors
-from .matmul_transform import cat_sparse_identity_matrix, orthogonalize
-from .sparse_math import batch_mm, construct_strided_conv2d_matrix
 from ._util import _as_wavelet, _is_boundary_mode_supported
+from .conv_transform import construct_2d_filt, get_filter_tensors
+from .matmul_transform import (
+    cat_sparse_identity_matrix,
+    construct_boundary_a,
+    construct_boundary_s,
+    orthogonalize,
+)
+from .sparse_math import batch_mm, construct_strided_conv2d_matrix
 
 
 def _construct_a_2d(
@@ -215,22 +222,26 @@ class MatrixWavedec2d(object):
         """Create a new matrix fwt object.
 
         Args:
-            wavelet(Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
+            wavelet (Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
                 the name of  a pywt wavelet.
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
-            boundary (str, optional): The method used for boundary filter treatment.
+            boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's
                 dense qr implementation, it is fast but memory hungry.
                 The 'gramschmidt' option is sparse, memory efficient,
                 and slow.
                 Choose 'gramschmidt' if 'qr' runs out of memory.
                 Defaults to 'qr'.
-            separable (bool, optional): If this flag is set, a separable transformation
+            separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis. This is significantly
                 faster than a non-separable transformation since only a small constant-
                 size part of the matrices must be orthogonalized. Defaults to False.
+
+        Raises:
+            NotImplementedError: If the selected `boundary` mode is not supported.
+            ValueError: If the wavelet filters have different lenghts.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.level = level
@@ -285,6 +296,9 @@ class MatrixWavedec2d(object):
         Returns:
             (list): The resulting coefficients per level stored in
             a pywt style list.
+
+        Raises:
+            ValueError: If the decomposition level is not a positive integer.
         """
         if input_signal.shape[1] == 1:
             input_signal = input_signal.squeeze(1)
@@ -380,14 +394,12 @@ class MatrixWavedec2d(object):
                     elif pad[0] and pad[1]:
                         ll = torch.nn.functional.pad(ll, [0, 1, 0, 1])
 
-                coeffs = batch_mm(fwt_col_matrix, signal.transpose(-2, -1)).transpose(
-                    -2, -1
-                )
-                coeffs = batch_mm(fwt_row_matrix, coeffs)
+                ll = batch_mm(fwt_col_matrix, ll.transpose(-2, -1)).transpose(-2, -1)
+                ll = batch_mm(fwt_row_matrix, ll)
 
-                a_coeffs, d_coeffs = torch.split(coeffs, data.shape[-2] // 2, dim=-2)
-                ll, lh = torch.split(a_coeffs, data.shape[-1] // 2, dim=-1)
-                hl, hh = torch.split(d_coeffs, data.shape[-1] // 2, dim=-1)
+                a_coeffs, d_coeffs = torch.split(ll, height // 2, dim=-2)
+                ll, lh = torch.split(a_coeffs, width // 2, dim=-1)
+                hl, hh = torch.split(d_coeffs, width // 2, dim=-1)
 
                 # TODO: Is the order consistent with the non-separable case?
                 split_list.append((lh, hl, hh))
@@ -451,19 +463,21 @@ class MatrixWaverec2d(object):
         """Create the inverse matrix based fast wavelet transformation.
 
         Args:
-            wavelet(Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
+            wavelet (Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
                 the name of  a pywt wavelet.
-            boundary: The method used to treat the boundary cases.
-                Choose 'qr' or 'gramschmidt'. Defaults to 'qr'.
-            boundary (str, optional): The method used for boundary filter treatment.
+            boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt' option
                 is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs
                 out of memory. Defaults to 'qr'.
-            separable (bool, optional): If this flag is set, a separable transformation
+            separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis. This is significantly
                 faster than a non-separable transformation since only a small constant-
                 size part of the matrices must be orthogonalized. Defaults to False.
+
+        Raises:
+            NotImplementedError: If the selected `boundary` mode is not supported.
+            ValueError: If the wavelet filters have different lenghts.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.boundary = boundary
@@ -513,6 +527,11 @@ class MatrixWaverec2d(object):
         Returns:
             torch.Tensor: The  original signal reconstruction of
             shape [batch_size, height, width].
+
+        Raises:
+            ValueError: If the decomposition level is not a positive integer or if the
+                coefficients are not in the shape as it is returned from
+                `MatrixWavedec2` object.
         """
         level = len(coefficients) - 1
         # TODO: input checks from boundwav?
@@ -576,12 +595,12 @@ class MatrixWaverec2d(object):
         for c_pos, lh_hl_hh in enumerate(coefficients[1:]):
             if lh_hl_hh is None:
                 raise ValueError("Coefficient tuple may not be None")
-            elif not isinstance(lh_hl_hh, (list, tuple)) or len(d) != 3:
+            elif not isinstance(lh_hl_hh, (list, tuple)) or len(lh_hl_hh) != 3:
                 raise ValueError(
                     (
                         "Unexpected detail coefficient type: {}. Detail coefficients "
                         "must be a 3-tuple of tensors as returned by MatrixWavedec2."
-                    ).format(type(d))
+                    ).format(type(lh_hl_hh))
                 )
 
             lh, hl, hh = lh_hl_hh
