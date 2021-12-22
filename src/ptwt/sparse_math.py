@@ -519,6 +519,28 @@ def construct_strided_conv2d_matrix(
     return torch.sparse.mm(selection_eye, convolution_matrix)
 
 
+def batch_mm(matrix: torch.Tensor, matrix_batch: torch.Tensor) -> torch.Tensor:
+    """Calculate a batched matrix-matrix product using torch tensors.
+
+    This calculates the product of a matrix with a batch of dense matrices.
+    The former can be dense or sparse.
+
+    Args:
+        matrix (torch.Tensor): Sparse or dense matrix, size (m, n).
+        matrix_batch (torch.Tensor): Batched dense matrices, size (b, n, k).
+
+    Returns
+        torch.Tensor: The batched matrix-matrix product, size (b, m, k).
+    """
+    batch_size = matrix_batch.shape[0]
+    if matrix.shape[1] != matrix_batch.shape[1]:
+        raise AssertionError("Matrix shapes not compatible.")
+
+    # Stack the vector batch into columns. (b, n, k) -> (n, b, k) -> (n, b*k)
+    vectors = matrix_batch.transpose(0, 1).reshape(matrix.shape[1], -1)
+    return matrix.mm(vectors).reshape(matrix.shape[0], batch_size, -1).transpose(1, 0)
+
+
 if __name__ == "__main__":
     test_matrix = torch.ones([4, 4]).to_sparse()
     new_matrix = sparse_replace_row(

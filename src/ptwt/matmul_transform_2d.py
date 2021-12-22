@@ -9,7 +9,7 @@ import torch
 
 from .conv_transform import construct_2d_filt, get_filter_tensors
 from .matmul_transform import cat_sparse_identity_matrix, orthogonalize
-from .sparse_math import construct_strided_conv2d_matrix
+from .sparse_math import batch_mm, construct_strided_conv2d_matrix
 from ._util import _as_wavelet, _is_boundary_mode_supported
 
 
