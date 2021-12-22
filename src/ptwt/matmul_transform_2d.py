@@ -215,7 +215,8 @@ class MatrixWavedec2d(object):
         """Create a new matrix fwt object.
 
         Args:
-            wavelet(Union[str, pywt.Wavelet]): A pywt wavelet or its name.
+            wavelet(Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
+                the name of  a pywt wavelet.
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
@@ -227,7 +228,7 @@ class MatrixWavedec2d(object):
                 Choose 'gramschmidt' if 'qr' runs out of memory.
                 Defaults to 'qr'.
             separable (bool, optional): If this flag is set, a separable transformation
-                is used, i.e. a 1d transformation along the axis. This is significantly
+                is used, i.e. a 1d transformation along each axis. This is significantly
                 faster than a non-separable transformation since only a small constant-
                 size part of the matrices must be orthogonalized. Defaults to False.
         """
