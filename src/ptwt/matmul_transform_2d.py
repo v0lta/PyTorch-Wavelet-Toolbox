@@ -442,19 +442,44 @@ class MatrixWaverec2d(object):
         >>> reconstruction = matrixifwt(mat_coeff)
     """
 
-    def __init__(self, wavelet: pywt.Wavelet, boundary: str = "qr"):
+    def __init__(
+        self,
+        wavelet: Union[str, pywt.Wavelet],
+        boundary: str = "qr",
+        separable: bool = False,
+    ):
         """Create the inverse matrix based fast wavelet transformation.
 
         Args:
-            wavelet: A pywt.Wavelet compatible wavelet object.
+            wavelet(Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
+                the name of  a pywt wavelet.
             boundary: The method used to treat the boundary cases.
                 Choose 'qr' or 'gramschmidt'. Defaults to 'qr'.
+            boundary (str, optional): The method used for boundary filter treatment.
+                Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
+                implementation, it is fast but memory hungry. The 'gramschmidt' option
+                is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs
+                out of memory. Defaults to 'qr'.
+            separable (bool, optional): If this flag is set, a separable transformation
+                is used, i.e. a 1d transformation along each axis. This is significantly
+                faster than a non-separable transformation since only a small constant-
+                size part of the matrices must be orthogonalized. Defaults to False.
         """
-        self.wavelet = wavelet
+        self.wavelet = _as_wavelet(wavelet)
+        self.boundary = boundary
+        self.separable = separable
+
         self.ifwt_matrix_list = []
         self.level = None
-        self.boundary = boundary
         self.padded = False
+
+        # TODO: Allow separate wavelets and lengths for each axis in the separable case
+
+        if not _is_boundary_mode_supported(self.boundary):
+            raise NotImplementedError
+
+        if self.wavelet.dec_len != self.wavelet.rec_len:
+            raise ValueError("All filters must have the same length")
 
     @property
     def sparse_ifwt_operator(self):
@@ -463,6 +488,8 @@ class MatrixWaverec2d(object):
         Returns:
             torch.Tensor: The sparse 2d-ifwt operator matrix.
         """
+        if self.separable:
+            raise NotImplementedError
         if len(self.ifwt_matrix_list) == 1:
             return self.ifwt_matrix_list[0]
         elif len(self.ifwt_matrix_list) > 1 and self.padded is False:
@@ -481,20 +508,19 @@ class MatrixWaverec2d(object):
 
         Args:
             coefficients (list): The coefficient list as returned
-                                 by the MatrixWavedec2d-Object.
+                by the `MatrixWavedec2d`-Object.
 
         Returns:
             torch.Tensor: The  original signal reconstruction of
             shape [batch_size, height, width].
         """
         level = len(coefficients) - 1
+        # TODO: input checks from boundwav?
+
         re_build = False
-        if self.level is None:
+        if self.level is None or self.level != level:
             self.level = level
-        else:
-            if self.level != level:
-                self.level = level
-                re_build = True
+            re_build = True
 
         height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
         current_height, current_width = height, width
@@ -508,45 +534,116 @@ class MatrixWaverec2d(object):
                 )
                 if any(pad_tuple):
                     self.padded = True
-                synthesis_matrix_2d = construct_boundary_s2d(
-                    self.wavelet,
-                    current_height,
-                    current_width,
-                    dtype=coefficients[-1][0].dtype,
-                    device=coefficients[-1][0].device,
-                    boundary=self.boundary,
-                )
+                if self.separable:
+                    # TODO: handle coefficients[-1][0] == None
+                    synthesis_matrix_rows = construct_boundary_s(
+                        wavelet=self.wavelet,
+                        length=current_height,
+                        boundary=self.boundary,
+                        device=coefficients[-1][0].device,
+                        dtype=coefficients[-1][0].dtype,
+                    )
+                    synthesis_matrix_cols = construct_boundary_s(
+                        wavelet=self.wavelet,
+                        length=current_width,
+                        boundary=self.boundary,
+                        device=coefficients[-1][0].device,
+                        dtype=coefficients[-1][0].dtype,
+                    )
+                    self.ifwt_matrix_list.append(
+                        (synthesis_matrix_rows, synthesis_matrix_cols)
+                    )
+                else:
+                    synthesis_matrix_2d = construct_boundary_s2d(
+                        self.wavelet,
+                        current_height,
+                        current_width,
+                        dtype=coefficients[-1][0].dtype,
+                        device=coefficients[-1][0].device,
+                        boundary=self.boundary,
+                    )
+                    self.ifwt_matrix_list.append(synthesis_matrix_2d)
                 current_height = current_height // 2
                 current_width = current_width // 2
-                self.ifwt_matrix_list.append(synthesis_matrix_2d)
 
         batch_size = coefficients[-1][0].shape[0]
-        reconstruction = torch.reshape(coefficients[0], [batch_size, -1]).T
-        for c_pos, lh_hl_hh in enumerate(coefficients[1:]):
-            reconstruction = torch.cat(
-                [
-                    reconstruction.T,
-                    lh_hl_hh[0].reshape([batch_size, -1]),
-                    lh_hl_hh[1].reshape([batch_size, -1]),
-                    lh_hl_hh[2].reshape([batch_size, -1]),
-                ],
-                -1,
+        ll = coefficients[0]
+        if not isinstance(ll, torch.Tensor):
+            raise ValueError(
+                "First element of coeffs must be the approximation coefficient tensor."
             )
-            ifwt_mat = self.ifwt_matrix_list[::-1][c_pos]
-            reconstruction = torch.sparse.mm(ifwt_mat, reconstruction.T)
+
+        for c_pos, lh_hl_hh in enumerate(coefficients[1:]):
+            if lh_hl_hh is None:
+                raise ValueError("Coefficient tuple may not be None")
+            elif not isinstance(lh_hl_hh, (list, tuple)) or len(d) != 3:
+                raise ValueError(
+                    (
+                        "Unexpected detail coefficient type: {}. Detail coefficients "
+                        "must be a 3-tuple of tensors as returned by MatrixWavedec2."
+                    ).format(type(d))
+                )
+
+            lh, hl, hh = lh_hl_hh
+            torch_device = None
+            curr_shape = None
+            for coeff in [ll, lh, hl, hh]:
+                if coeff is not None:
+                    if curr_shape is None:
+                        curr_shape = coeff.shape
+                        torch_device = coeff.device
+                    elif curr_shape != coeff.shape:
+                        # TODO: Add check that coeffs are on the same device
+                        raise ValueError("coeffs must have the same shape")
+
+            if ll is None:
+                ll = torch.zeros_like(curr_shape, device=torch_device)
+            if hl is None:
+                hl = torch.zeros_like(curr_shape, device=torch_device)
+            if lh is None:
+                lh = torch.zeros_like(curr_shape, device=torch_device)
+            if hh is None:
+                hh = torch.zeros_like(curr_shape, device=torch_device)
+
+            if self.separable:
+                synthesis_matrix_rows, synthesis_matrix_cols = self.ifwt_matrix_list[
+                    ::-1
+                ][c_pos]
+                a_coeffs = torch.cat((ll, lh), -1)
+                d_coeffs = torch.cat((hl, hh), -1)
+                coeff_tensor = torch.cat((a_coeffs, d_coeffs), -2)
+                if len(curr_shape) == 2:
+                    coeff_tensor = coeff_tensor.unsqueeze(0)
+                ll = batch_mm(
+                    synthesis_matrix_cols, coeff_tensor.transpose(-2, -1)
+                ).transpose(-2, -1)
+                ll = batch_mm(synthesis_matrix_rows, ll)
+            else:
+                ll = torch.cat(
+                    [
+                        ll.reshape([batch_size, -1]),
+                        lh.reshape([batch_size, -1]),
+                        hl.reshape([batch_size, -1]),
+                        hh.reshape([batch_size, -1]),
+                    ],
+                    -1,
+                )
+                ifwt_mat = self.ifwt_matrix_list[::-1][c_pos]
+                ll = torch.sparse.mm(ifwt_mat, ll.T)
 
             # remove the padding
             if c_pos < len(coefficients) - 2:
-                pred_len = [s * 2 for s in lh_hl_hh[0].shape[-2:]]
+                pred_len = [s * 2 for s in curr_shape[-2:]]
                 next_len = list(coefficients[c_pos + 2][0].shape[-2:])
+                if not self.separable:
+                    ll = ll.T.reshape([batch_size] + pred_len)
                 if pred_len != next_len:
-                    reconstruction = reconstruction.T.reshape([batch_size] + pred_len)
                     if pred_len[0] != next_len[0]:
-                        reconstruction = reconstruction[:, :-1, :]
+                        ll = ll[:, :-1, :]
                     if pred_len[1] != next_len[1]:
-                        reconstruction = reconstruction[:, :, :-1]
-                    reconstruction = reconstruction.reshape(batch_size, -1).T
-        return reconstruction.T.reshape((batch_size, height, width))
+                        ll = ll[:, :, :-1]
+
+        return ll
 
 
 if __name__ == "__main__":
