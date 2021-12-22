@@ -283,6 +283,60 @@ class MatrixWavedec2d(object):
         else:
             return None
 
+    def _construct_analysis_matrices(self, height, width, device, dtype):
+        self.size_list = []
+        self.fwt_matrix_list = []
+        self.pad_list = []
+        self.padded = False
+
+        filt_len = self.wavelet.dec_len
+        current_height, current_width = height, width
+        for _ in range(1, self.level + 1):
+            # TODO: Do we want to raise an error if the level is to fine for the
+            #       signal length?
+            if current_height < filt_len or current_width < filt_len:
+                # we have reached the max decomposition depth.
+                break
+            # the conv matrices require even length inputs.
+            current_height, current_width, pad_tuple = _matrix_pad_2d(
+                current_height, current_width
+            )
+            if any(pad_tuple):
+                self.padded = True
+            self.pad_list.append(pad_tuple)
+            self.size_list.append((current_height, current_width))
+            if self.separable:
+                analysis_matrix_rows = construct_boundary_a(
+                    wavelet=self.wavelet,
+                    length=current_height,
+                    boundary=self.boundary,
+                    device=device,
+                    dtype=dtype,
+                )
+                analysis_matrix_cols = construct_boundary_a(
+                    wavelet=self.wavelet,
+                    length=current_width,
+                    boundary=self.boundary,
+                    device=device,
+                    dtype=dtype,
+                )
+                self.fwt_matrix_list.append(
+                    (analysis_matrix_rows, analysis_matrix_cols)
+                )
+            else:
+                analysis_matrix_2d = construct_boundary_a2d(
+                    self.wavelet,
+                    current_height,
+                    current_width,
+                    boundary=self.boundary,
+                    device=device,
+                    dtype=dtype,
+                )
+                self.fwt_matrix_list.append(analysis_matrix_2d)
+            current_height = current_height // 2
+            current_width = current_width // 2
+        self.size_list.append((current_height, current_width))
+
     def __call__(self, input_signal: torch.Tensor) -> list:
         """Compute the fwt for the given input signal.
 
@@ -307,7 +361,6 @@ class MatrixWavedec2d(object):
             input_signal = input_signal.unsqueeze(0)
 
         batch_size, height, width = input_signal.shape
-        filt_len = self.wavelet.dec_len
 
         re_build = False
         if self.input_signal_shape is None:
@@ -327,57 +380,9 @@ class MatrixWavedec2d(object):
             raise ValueError("level must be a positive integer.")
 
         if not self.fwt_matrix_list or re_build:
-            self.size_list = []
-            self.fwt_matrix_list = []
-            self.pad_list = []
-            self.padded = False
-
-            current_height, current_width = height, width
-            for _ in range(1, self.level + 1):
-                # TODO: Do we want to raise an error if the level is to fine for the
-                #       signal length?
-                if current_height < filt_len or current_width < filt_len:
-                    # we have reached the max decomposition depth.
-                    break
-                # the conv matrices require even length inputs.
-                current_height, current_width, pad_tuple = _matrix_pad_2d(
-                    current_height, current_width
-                )
-                if any(pad_tuple):
-                    self.padded = True
-                self.pad_list.append(pad_tuple)
-                self.size_list.append((current_height, current_width))
-                if self.separable:
-                    analysis_matrix_rows = construct_boundary_a(
-                        wavelet=self.wavelet,
-                        length=current_height,
-                        boundary=self.boundary,
-                        device=input_signal.device,
-                        dtype=input_signal.dtype,
-                    )
-                    analysis_matrix_cols = construct_boundary_a(
-                        wavelet=self.wavelet,
-                        length=current_width,
-                        boundary=self.boundary,
-                        device=input_signal.device,
-                        dtype=input_signal.dtype,
-                    )
-                    self.fwt_matrix_list.append(
-                        (analysis_matrix_rows, analysis_matrix_cols)
-                    )
-                else:
-                    analysis_matrix_2d = construct_boundary_a2d(
-                        self.wavelet,
-                        current_height,
-                        current_width,
-                        dtype=input_signal.dtype,
-                        device=input_signal.device,
-                        boundary=self.boundary,
-                    )
-                    self.fwt_matrix_list.append(analysis_matrix_2d)
-                current_height = current_height // 2
-                current_width = current_width // 2
-            self.size_list.append((current_height, current_width))
+            self._construct_analysis_matrices(
+                height, width, device=input_signal.device, dtype=input_signal.dtype
+            )
 
         split_list = []
         if self.separable:
@@ -517,6 +522,48 @@ class MatrixWaverec2d(object):
         else:
             return None
 
+    def _construct_synthesis_matrices(self, height: int, width: int, device, dtype):
+        current_height, current_width = height, width
+        self.ifwt_matrix_list = []
+        self.padded = False
+        for _ in range(0, self.level):
+            current_height, current_width, pad_tuple = _matrix_pad_2d(
+                current_height, current_width
+            )
+            if any(pad_tuple):
+                self.padded = True
+            if self.separable:
+                # TODO: handle coefficients[-1][0] == None
+                synthesis_matrix_rows = construct_boundary_s(
+                    wavelet=self.wavelet,
+                    length=current_height,
+                    boundary=self.boundary,
+                    device=device,
+                    dtype=dtype,
+                )
+                synthesis_matrix_cols = construct_boundary_s(
+                    wavelet=self.wavelet,
+                    length=current_width,
+                    boundary=self.boundary,
+                    device=device,
+                    dtype=dtype,
+                )
+                self.ifwt_matrix_list.append(
+                    (synthesis_matrix_rows, synthesis_matrix_cols)
+                )
+            else:
+                synthesis_matrix_2d = construct_boundary_s2d(
+                    self.wavelet,
+                    current_height,
+                    current_width,
+                    boundary=self.boundary,
+                    device=device,
+                    dtype=dtype,
+                )
+                self.ifwt_matrix_list.append(synthesis_matrix_2d)
+            current_height = current_height // 2
+            current_width = current_width // 2
+
     def __call__(self, coefficients: list) -> torch.Tensor:
         """Compute the inverse matrix 2d fast wavelet transform.
 
@@ -541,49 +588,14 @@ class MatrixWaverec2d(object):
             self.level = level
             re_build = True
 
-        height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
-        current_height, current_width = height, width
-
         if not self.ifwt_matrix_list or re_build:
-            self.ifwt_matrix_list = []
-            self.padded = False
-            for _ in range(0, self.level):
-                current_height, current_width, pad_tuple = _matrix_pad_2d(
-                    current_height, current_width
-                )
-                if any(pad_tuple):
-                    self.padded = True
-                if self.separable:
-                    # TODO: handle coefficients[-1][0] == None
-                    synthesis_matrix_rows = construct_boundary_s(
-                        wavelet=self.wavelet,
-                        length=current_height,
-                        boundary=self.boundary,
-                        device=coefficients[-1][0].device,
-                        dtype=coefficients[-1][0].dtype,
-                    )
-                    synthesis_matrix_cols = construct_boundary_s(
-                        wavelet=self.wavelet,
-                        length=current_width,
-                        boundary=self.boundary,
-                        device=coefficients[-1][0].device,
-                        dtype=coefficients[-1][0].dtype,
-                    )
-                    self.ifwt_matrix_list.append(
-                        (synthesis_matrix_rows, synthesis_matrix_cols)
-                    )
-                else:
-                    synthesis_matrix_2d = construct_boundary_s2d(
-                        self.wavelet,
-                        current_height,
-                        current_width,
-                        dtype=coefficients[-1][0].dtype,
-                        device=coefficients[-1][0].device,
-                        boundary=self.boundary,
-                    )
-                    self.ifwt_matrix_list.append(synthesis_matrix_2d)
-                current_height = current_height // 2
-                current_width = current_width // 2
+            height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
+            self._construct_synthesis_matrices(
+                height=height,
+                width=width,
+                device=coefficients[-1][0].device,
+                dtype=coefficients[-1][0].dtype,
+            )
 
         batch_size = coefficients[-1][0].shape[0]
         ll = coefficients[0]
