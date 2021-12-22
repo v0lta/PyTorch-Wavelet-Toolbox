@@ -10,6 +10,7 @@ import torch
 from .conv_transform import construct_2d_filt, get_filter_tensors
 from .matmul_transform import cat_sparse_identity_matrix, orthogonalize
 from .sparse_math import construct_strided_conv2d_matrix
+from ._util import _as_wavelet, _is_boundary_mode_supported
 
 
 def _construct_a_2d(
@@ -204,31 +205,48 @@ class MatrixWavedec2d(object):
 
     """
 
-    def __init__(self, wavelet: pywt.Wavelet, level: int, boundary: str = "qr"):
+    def __init__(
+        self,
+        wavelet: Union[str, pywt.Wavelet],
+        level: Optional[int] = None,
+        boundary: str = "qr",
+        separable: bool = False,
+    ):
         """Create a new matrix fwt object.
 
         Args:
-            wavelet: A pywt wavelet.
-            level (int): The level up to which to compute the fwt.
-            boundary (str): The method used for boundary filter treatment.
+            wavelet(Union[str, pywt.Wavelet]): A pywt wavelet or its name.
+            level (int, optional): The level up to which to compute the fwt. If None,
+                the maximum level based on the signal length is chosen. Defaults to
+                None.
+            boundary (str, optional): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's
                 dense qr implementation, it is fast but memory hungry.
                 The 'gramschmidt' option is sparse, memory efficient,
                 and slow.
                 Choose 'gramschmidt' if 'qr' runs out of memory.
                 Defaults to 'qr'.
+            separable (bool, optional): If this flag is set, a separable transformation
+                is used, i.e. a 1d transformation along the axis. This is significantly
+                faster than a non-separable transformation since only a small constant-
+                size part of the matrices must be orthogonalized. Defaults to False.
         """
-        dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
-        assert len(dec_lo) == len(dec_hi), "All filters must have the same length."
-        assert len(dec_hi) == len(rec_lo), "All filters must have the same length."
-        assert len(rec_lo) == len(rec_hi), "All filters must have the same length."
+        self.wavelet = _as_wavelet(wavelet)
         self.level = level
-        self.wavelet = wavelet
-        self.input_signal_shape = None
         self.boundary = boundary
+        self.separable = separable
+        self.input_signal_shape = None
         self.fwt_matrix_list = []
         self.pad_list = []
         self.padded = False
+
+        # TODO: Allow separate wavelets and lengths for each axis in the separable case
+
+        if not _is_boundary_mode_supported(self.boundary):
+            raise NotImplementedError
+
+        if self.wavelet.dec_len != self.wavelet.rec_len:
+            raise ValueError("All filters must have the same length")
 
     @property
     def sparse_fwt_operator(self) -> torch.Tensor:
@@ -240,6 +258,8 @@ class MatrixWavedec2d(object):
         Returns:
             torch.Tensor: The sparse 2d-fwt operator matrix.
         """
+        if self.separable:
+            raise NotImplementedError
         if len(self.fwt_matrix_list) == 1:
             return self.fwt_matrix_list[0]
         elif len(self.fwt_matrix_list) > 1 and self.padded is False:
@@ -265,34 +285,42 @@ class MatrixWavedec2d(object):
             (list): The resulting coefficients per level stored in
             a pywt style list.
         """
-        filt_len = len(self.wavelet)
-
         if input_signal.shape[1] == 1:
             input_signal = input_signal.squeeze(1)
+
+        if len(input_signal.shape) == 2:
+            input_signal = input_signal.unsqueeze(0)
+
         batch_size, height, width = input_signal.shape
+        filt_len = self.wavelet.dec_len
 
         re_build = False
         if self.input_signal_shape is None:
             self.input_signal_shape = input_signal.shape[-2:]
+            re_build = True
         else:
-            # the input shape changed rebuild the operator-matrices
+            # if the input shape changed rebuild the operator-matrices
             if self.input_signal_shape[0] != height:
                 re_build = True
             if self.input_signal_shape[1] != width:
                 re_build = True
+
+        if self.level is None:
+            self.level = int(np.min([np.log2(height), np.log2(width)]))
+            re_build = True
+        elif self.level <= 0:
+            raise ValueError("level must be a positive integer.")
 
         if not self.fwt_matrix_list or re_build:
             self.size_list = []
             self.fwt_matrix_list = []
             self.pad_list = []
             self.padded = False
-            if self.level is None:
-                self.level = int(np.min([np.log2(height), np.log2(width)]))
-            else:
-                assert self.level > 0, "level must be a positive integer."
 
             current_height, current_width = height, width
             for _ in range(1, self.level + 1):
+                # TODO: Do we want to raise an error if the level is to fine for the
+                #       signal length?
                 if current_height < filt_len or current_width < filt_len:
                     # we have reached the max decomposition depth.
                     break
@@ -304,46 +332,92 @@ class MatrixWavedec2d(object):
                     self.padded = True
                 self.pad_list.append(pad_tuple)
                 self.size_list.append((current_height, current_width))
-                analysis_matrix_2d = construct_boundary_a2d(
-                    self.wavelet,
-                    current_height,
-                    current_width,
-                    dtype=input_signal.dtype,
-                    device=input_signal.device,
-                    boundary=self.boundary,
-                )
-                self.fwt_matrix_list.append(analysis_matrix_2d)
+                if self.separable:
+                    analysis_matrix_rows = construct_boundary_a(
+                        wavelet=self.wavelet,
+                        length=current_height,
+                        boundary=self.boundary,
+                        device=input_signal.device,
+                        dtype=input_signal.dtype,
+                    )
+                    analysis_matrix_cols = construct_boundary_a(
+                        wavelet=self.wavelet,
+                        length=current_width,
+                        boundary=self.boundary,
+                        device=input_signal.device,
+                        dtype=input_signal.dtype,
+                    )
+                    self.fwt_matrix_list.append(
+                        (analysis_matrix_rows, analysis_matrix_cols)
+                    )
+                else:
+                    analysis_matrix_2d = construct_boundary_a2d(
+                        self.wavelet,
+                        current_height,
+                        current_width,
+                        dtype=input_signal.dtype,
+                        device=input_signal.device,
+                        boundary=self.boundary,
+                    )
+                    self.fwt_matrix_list.append(analysis_matrix_2d)
                 current_height = current_height // 2
                 current_width = current_width // 2
             self.size_list.append((current_height, current_width))
 
         split_list = []
-        ll = input_signal.reshape([batch_size, -1]).T
-        for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
-            pad = self.pad_list[scale]
-            size = self.size_list[scale]
-            if pad[0] or pad[1]:
-                if pad[0] and not pad[1]:
-                    ll_reshape = ll.T.reshape(batch_size, size[0], size[1] - 1)
-                    ll = torch.nn.functional.pad(ll_reshape, [0, 1])
-                elif pad[1] and not pad[0]:
-                    ll_reshape = ll.T.reshape(batch_size, size[0] - 1, size[1])
-                    ll = torch.nn.functional.pad(ll_reshape, [0, 0, 0, 1])
-                elif pad[0] and pad[1]:
-                    ll_reshape = ll.T.reshape(batch_size, size[0] - 1, size[1] - 1)
-                    ll = torch.nn.functional.pad(ll_reshape, [0, 1, 0, 1])
-                ll = ll.reshape([batch_size, -1]).T
-            coefficients = torch.sparse.mm(fwt_matrix, ll)
-            four_split = torch.split(
-                coefficients, int(np.prod((size[0] // 2, size[1] // 2)))
-            )
-            reshaped = tuple(
-                (el.T.reshape(batch_size, size[0] // 2, size[1] // 2))
-                for el in four_split[1:]
-            )
-            split_list.append(reshaped)
-            ll = four_split[0]
-        split_list.append(ll.T.reshape(batch_size, size[0] // 2, size[1] // 2))
+        if self.separable:
+            ll = input_signal
+            for scale, fwt_mats in enumerate(self.fwt_matrix_list):
+                fwt_row_matrix, fwt_col_matrix = fwt_mats
+                pad = self.pad_list[scale]
+                size = self.size_list[scale]
+                if pad[0] or pad[1]:
+                    if pad[0] and not pad[1]:
+                        ll = torch.nn.functional.pad(ll, [0, 1])
+                    elif pad[1] and not pad[0]:
+                        ll = torch.nn.functional.pad(ll, [0, 0, 0, 1])
+                    elif pad[0] and pad[1]:
+                        ll = torch.nn.functional.pad(ll, [0, 1, 0, 1])
+
+                coeffs = batch_mm(fwt_col_matrix, signal.transpose(-2, -1)).transpose(
+                    -2, -1
+                )
+                coeffs = batch_mm(fwt_row_matrix, coeffs)
+
+                a_coeffs, d_coeffs = torch.split(coeffs, data.shape[-2] // 2, dim=-2)
+                ll, lh = torch.split(a_coeffs, data.shape[-1] // 2, dim=-1)
+                hl, hh = torch.split(d_coeffs, data.shape[-1] // 2, dim=-1)
+
+                # TODO: Is the order consistent with the non-separable case?
+                split_list.append((hl, lh, hh))
+            split_list.append(ll)
+        else:
+            ll = input_signal.reshape([batch_size, -1]).T
+            for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
+                pad = self.pad_list[scale]
+                size = self.size_list[scale]
+                if pad[0] or pad[1]:
+                    if pad[0] and not pad[1]:
+                        ll_reshape = ll.T.reshape(batch_size, size[0], size[1] - 1)
+                        ll = torch.nn.functional.pad(ll_reshape, [0, 1])
+                    elif pad[1] and not pad[0]:
+                        ll_reshape = ll.T.reshape(batch_size, size[0] - 1, size[1])
+                        ll = torch.nn.functional.pad(ll_reshape, [0, 0, 0, 1])
+                    elif pad[0] and pad[1]:
+                        ll_reshape = ll.T.reshape(batch_size, size[0] - 1, size[1] - 1)
+                        ll = torch.nn.functional.pad(ll_reshape, [0, 1, 0, 1])
+                    ll = ll.reshape([batch_size, -1]).T
+                coefficients = torch.sparse.mm(fwt_matrix, ll)
+                four_split = torch.split(
+                    coefficients, int(np.prod((size[0] // 2, size[1] // 2)))
+                )
+                reshaped = tuple(
+                    (el.T.reshape(batch_size, size[0] // 2, size[1] // 2))
+                    for el in four_split[1:]
+                )
+                split_list.append(reshaped)
+                ll = four_split[0]
+            split_list.append(ll.T.reshape(batch_size, size[0] // 2, size[1] // 2))
         return split_list[::-1]
 
 

@@ -338,6 +338,7 @@ def construct_boundary_a(
     Returns:
         torch.Tensor: The sparse analysis matrix.
     """
+    # TODO: Improve orthogonalization
     a_full = _construct_a(wavelet, length, dtype=dtype, device=device)
     a_orth = orthogonalize(a_full, len(wavelet), method=boundary)
     return a_orth
@@ -360,7 +361,7 @@ def construct_boundary_s(
         boundary (str): A string indicating the desired boundary treatment.
             Possible options are qr and gramschmidt. Defaults to qr.
         dtype: Choose torch.float32 or torch.float64.
-            Defaults to torch.float32.
+            Defaults to torch.float64.
 
     Returns:
         torch.Tensor: The sparse synthesis matrix.
