@@ -390,7 +390,7 @@ class MatrixWavedec2d(object):
                 hl, hh = torch.split(d_coeffs, data.shape[-1] // 2, dim=-1)
 
                 # TODO: Is the order consistent with the non-separable case?
-                split_list.append((hl, lh, hh))
+                split_list.append((lh, hl, hh))
             split_list.append(ll)
         else:
             ll = input_signal.reshape([batch_size, -1]).T
