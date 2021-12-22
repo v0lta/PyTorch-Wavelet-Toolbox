@@ -68,7 +68,7 @@ def _construct_a(
     length: int,
     device: torch.device = cpu,
     dtype=torch.float64,
-) -> torch.tensor:
+) -> torch.Tensor:
     """Construct a raw analysis matrix.
 
     The resulting matrix will only be orthogonal in the Haar case,
@@ -83,7 +83,7 @@ def _construct_a(
             or torch.float64. Defaults to torch.float64.
 
     Returns:
-        torch.tensor: The sparse raw analysis matrix.
+        torch.Tensor: The sparse raw analysis matrix.
     """
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype
@@ -103,7 +103,7 @@ def _construct_s(
     length: int,
     device: torch.device = cpu,
     dtype=torch.float64,
-) -> torch.tensor:
+) -> torch.Tensor:
     """Create a raw synthesis matrix.
 
     The construced matrix is NOT necessary orthogonal.
@@ -118,7 +118,7 @@ def _construct_s(
             or torch.float64. Defaults to torch.float64.
 
     Returns:
-        torch.tensor: The raw sparse synthesis matrix.
+        torch.Tensor: The raw sparse synthesis matrix.
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype

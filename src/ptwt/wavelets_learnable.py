@@ -38,7 +38,7 @@ class WaveletFilter(ABC):
     # def parameters(self):
     #     raise NotImplementedError
 
-    def pf_alias_cancellation_loss(self) -> list:
+    def pf_alias_cancellation_loss(self):
         """Return the product filter-alias cancellation loss.
 
         See: Strang+Nguyen 105: F0(z) = H1(-z); F1(z) = -H0(-z)
@@ -111,7 +111,7 @@ class WaveletFilter(ABC):
         errs = (p_test - zeros) * (p_test - zeros)
         return torch.sum(errs), p_test, zeros
 
-    def perfect_reconstruction_loss(self) -> list:
+    def perfect_reconstruction_loss(self):
         """Return the perfect reconstruction loss.
 
         Strang 107: Assuming alias cancellation holds:
