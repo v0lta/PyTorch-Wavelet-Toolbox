@@ -223,7 +223,7 @@ class MatrixWavedec2d(object):
 
         Args:
             wavelet (Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
-                the name of  a pywt wavelet.
+                the name of a pywt wavelet.
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
