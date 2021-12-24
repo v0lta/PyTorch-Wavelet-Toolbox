@@ -582,6 +582,45 @@ class MatrixWaverec2d(object):
             current_height = current_height // 2
             current_width = current_width // 2
 
+    def _process_coeffs(self, ll, lh_hl_hh):
+        if lh_hl_hh is None:
+            raise ValueError("Coefficient tuple may not be None")
+        elif not isinstance(lh_hl_hh, (list, tuple)) or len(lh_hl_hh) != 3:
+            raise ValueError(
+                (
+                    "Unexpected detail coefficient type: {}. Detail coefficients "
+                    "must be a 3-tuple of tensors as returned by MatrixWavedec2."
+                ).format(type(lh_hl_hh))
+            )
+
+        lh, hl, hh = lh_hl_hh
+
+        torch_device = None
+        curr_shape: Optional[Tuple[int]] = None
+        torch_dtype = None
+        for coeff in [ll, lh, hl, hh]:
+            if coeff is not None:
+                if curr_shape is None:
+                    curr_shape = coeff.shape
+                    torch_device = coeff.device
+                    torch_dtype = coeff.dtype
+                elif curr_shape != coeff.shape:
+                    # TODO: Add check that coeffs are on the same device
+                    raise ValueError("coeffs must have the same shape")
+
+        if curr_shape is None:
+            raise ValueError("At least one coefficient parameter must be specified.")
+
+        if ll is None:
+            ll = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
+        if hl is None:
+            hl = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
+        if lh is None:
+            lh = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
+        if hh is None:
+            hh = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
+        return (ll, lh, hl, hh), curr_shape, torch_device, torch_dtype
+
     def __call__(self, coefficients: list) -> torch.Tensor:
         """Compute the inverse matrix 2d fast wavelet transform.
 
@@ -622,44 +661,8 @@ class MatrixWaverec2d(object):
                 "First element of coeffs must be the approximation coefficient tensor."
             )
 
-        for c_pos, lh_hl_hh in enumerate(coefficients[1:]):
-            if lh_hl_hh is None:
-                raise ValueError("Coefficient tuple may not be None")
-            elif not isinstance(lh_hl_hh, (list, tuple)) or len(lh_hl_hh) != 3:
-                raise ValueError(
-                    (
-                        "Unexpected detail coefficient type: {}. Detail coefficients "
-                        "must be a 3-tuple of tensors as returned by MatrixWavedec2."
-                    ).format(type(lh_hl_hh))
-                )
-
-            lh, hl, hh = lh_hl_hh
-            torch_device = None
-            curr_shape: Optional[Tuple[int]] = None
-            dtype = None
-            for coeff in [ll, lh, hl, hh]:
-                if coeff is not None:
-                    if curr_shape is None:
-                        curr_shape = coeff.shape
-                        torch_device = coeff.device
-                        dtype = coeff.dtype
-                    elif curr_shape != coeff.shape:
-                        # TODO: Add check that coeffs are on the same device
-                        raise ValueError("coeffs must have the same shape")
-
-            if curr_shape is None:
-                raise ValueError(
-                    "At least one coefficient parameter must be specified."
-                )
-
-            if ll is None:
-                ll = torch.zeros(curr_shape, device=torch_device, dtype=dtype)
-            if hl is None:
-                hl = torch.zeros(curr_shape, device=torch_device, dtype=dtype)
-            if lh is None:
-                lh = torch.zeros(curr_shape, device=torch_device, dtype=dtype)
-            if hh is None:
-                hh = torch.zeros(curr_shape, device=torch_device, dtype=dtype)
+        for c_pos, coeff_tuple in enumerate(coefficients[1:]):
+            (ll, lh, hl, hh), curr_shape, _, _ = self._process_coeffs(ll, coeff_tuple)
 
             if self.separable:
                 synthesis_matrix_rows, synthesis_matrix_cols = self.ifwt_matrix_list[
