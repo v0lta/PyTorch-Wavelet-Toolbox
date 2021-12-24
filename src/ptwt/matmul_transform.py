@@ -371,7 +371,7 @@ def construct_boundary_a(
 
     Args:
         wavelet : The wavelet filter object to use.
-        length (int):  The number of entries in the input signal.
+        length (int): The number of entries in the input signal.
         boundary (str): A string indicating the desired boundary treatment.
             Possible options are qr and gramschmidt. Defaults to
             qr.
@@ -399,7 +399,7 @@ def construct_boundary_s(
 
     Args:
         wavelet : The wavelet filter object to use.
-        length (int):  The number of entries in the input signal.
+        length (int): The number of entries in the input signal.
         device (torch.device): Where to place the matrix.
             Choose cpu or cuda. Defaults to cpu.
         boundary (str): A string indicating the desired boundary treatment.
