@@ -14,53 +14,11 @@ from .conv_transform import get_filter_tensors
 from .sparse_math import (
     _orth_by_gram_schmidt,
     _orth_by_qr,
+    cat_sparse_identity_matrix,
     construct_strided_conv_matrix,
 )
 
 cpu = torch.device("cpu")
-
-
-def cat_sparse_identity_matrix(
-    sparse_matrix: torch.Tensor, new_length: int
-) -> torch.Tensor:
-    """Concatenate a sparse input matrix and a sparse identity matrix.
-
-    Args:
-        sparse_matrix (torch.Tensor): The input matrix.
-        new_length (int):
-            The length up to which the diagonal should be elongated.
-
-    Returns:
-        torch.Tensor: Square [input, eye] matrix
-            of size [new_length, new_length]
-    """
-    # assert square matrix.
-    assert (
-        sparse_matrix.shape[0] == sparse_matrix.shape[1]
-    ), "Matrices must be square. Odd inputs can cause to non-square matrices."
-    assert new_length > sparse_matrix.shape[0], "cant add negatively many entries."
-    x = torch.arange(
-        sparse_matrix.shape[0],
-        new_length,
-        dtype=sparse_matrix.dtype,
-        device=sparse_matrix.device,
-    )
-    y = torch.arange(
-        sparse_matrix.shape[0],
-        new_length,
-        dtype=sparse_matrix.dtype,
-        device=sparse_matrix.device,
-    )
-    extra_indices = torch.stack([x, y])
-    extra_values = torch.ones(
-        [new_length - sparse_matrix.shape[0]],
-        dtype=sparse_matrix.dtype,
-        device=sparse_matrix.device,
-    )
-    new_indices = torch.cat([sparse_matrix.coalesce().indices(), extra_indices], -1)
-    new_values = torch.cat([sparse_matrix.coalesce().values(), extra_values], -1)
-    new_matrix = torch.sparse_coo_tensor(new_indices, new_values)
-    return new_matrix
 
 
 def _construct_a(
