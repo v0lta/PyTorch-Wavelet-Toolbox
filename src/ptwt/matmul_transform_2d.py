@@ -185,14 +185,14 @@ def _matrix_pad_2d(height: int, width: int) -> tuple:
 class MatrixWavedec2d(object):
     """Experimental sparse matrix 2d wavelet transform.
 
-       For a completely pad free transform,
-       input images are expected to be divisible by two.
-       For multiscale transforms all intermediate
-       scale dimensions should be divisible
-       by two, i.e. 128, 128 -> 64, 64 -> 32, 32 would work
-       well for a level three transform.
-       In this case multiplication with the `sparse_fwt_operator`
-       property is equivalent.
+        For a completely pad free transform,
+        input images are expected to be divisible by two.
+        For multiscale transforms all intermediate
+        scale dimensions should be divisible
+        by two, i.e. 128, 128 -> 64, 64 -> 32, 32 would work
+        well for a level three transform.
+        In this case multiplication with the `sparse_fwt_operator`
+        property is equivalent.
 
     Note:
         Constructing the sparse fwt-matrix is expensive.
@@ -266,11 +266,14 @@ class MatrixWavedec2d(object):
     def sparse_fwt_operator(self):
         """Compute the operator matrix for padding-free cases.
 
-           This property exists to make the transformation matrix available.
-           To benefit from code handling odd-length levels call the object.
+            This property exists to make the transformation matrix available.
+            To benefit from code handling odd-length levels call the object.
 
         Returns:
             torch.Tensor: The sparse 2d-fwt operator matrix.
+
+        Raises:
+            NotImplementedError: if a `separable` is True.
         """
         if self.separable:
             raise NotImplementedError
@@ -477,7 +480,7 @@ class MatrixWaverec2d(object):
 
         Args:
             wavelet (Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
-                the name of  a pywt wavelet.
+                the name of a pywt wavelet.
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt' option
@@ -516,6 +519,9 @@ class MatrixWaverec2d(object):
 
         Returns:
             torch.Tensor: The sparse 2d-ifwt operator matrix.
+
+        Raises:
+            NotImplementedError: if a `separable` is True.
         """
         if self.separable:
             raise NotImplementedError
@@ -584,12 +590,12 @@ class MatrixWaverec2d(object):
                 by the `MatrixWavedec2d`-Object.
 
         Returns:
-            torch.Tensor: The  original signal reconstruction of
+            torch.Tensor: The original signal reconstruction of
             shape [batch_size, height, width].
 
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the
-                coefficients are not in the shape as it is returned from
+                coefficients are not in the shape as it is returned from a
                 `MatrixWavedec2` object.
         """
         level = len(coefficients) - 1
