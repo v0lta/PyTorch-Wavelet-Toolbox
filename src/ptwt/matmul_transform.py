@@ -595,10 +595,10 @@ class MatrixWaverec(object):
                 if next_len != pred_len:
                     lo = lo[:-1, :]
                     pred_len = lo.shape[0]
-                    if pred_len != next_len:
-                        raise AssertionError(
-                            "padding error, please open an issue on github"
-                        )
+                    assert (
+                        pred_len == next_len
+                    ), "padding error, please open an issue on github"
+
         return lo.T
 
 
