@@ -286,8 +286,9 @@ class MatrixWavedec2d(object):
             return None
 
     def _construct_analysis_matrices(self, height, width, device, dtype):
-        self.size_list = []
+        self.input_signal_shape = (height, width)
         self.fwt_matrix_list = []
+        self.size_list = []
         self.pad_list = []
         self.padded = False
 
@@ -367,15 +368,12 @@ class MatrixWavedec2d(object):
         batch_size, height, width = input_signal.shape
 
         re_build = False
-        if self.input_signal_shape is None:
-            self.input_signal_shape = input_signal.shape[-2:]
+        if (
+            self.input_signal_shape is None
+            or self.input_signal_shape[0] != height
+            or self.input_signal_shape[1] != width
+        ):
             re_build = True
-        else:
-            # if the input shape changed rebuild the operator-matrices
-            if self.input_signal_shape[0] != height:
-                re_build = True
-            if self.input_signal_shape[1] != width:
-                re_build = True
 
         if self.level is None:
             self.level = int(np.min([np.log2(height), np.log2(width)]))
