@@ -281,7 +281,7 @@ class MatrixWavedec(object):
             re_build = True
 
         if not self.fwt_matrix_list or re_build:
-            self.ifwt_matrix_list = []
+            self.fwt_matrix_list = []
             self.padded = False
             for s in range(1, self.level + 1):
                 if split_list[-1] < filt_len:
