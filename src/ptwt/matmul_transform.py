@@ -215,6 +215,9 @@ class MatrixWavedec(object):
 
         Returns:
             torch.Tensor: The sparse operator matrix.
+        Raises:
+            ValueError: If no level transformation matrices are stored (most likely
+                since the object was not called yet).
         """
         if len(self.fwt_matrix_list) == 1:
             return self.fwt_matrix_list[0]
@@ -225,7 +228,11 @@ class MatrixWavedec(object):
                 fwt_matrix = torch.sparse.mm(scale_mat, fwt_matrix)
             return fwt_matrix
         else:
-            return None
+            # One could argue that we should return an eye matrix instead if the level
+            # matric list is empty
+            raise ValueError(
+                "Call this object first to create the transformation matrices for each level."
+            )
 
     def _construct_analysis_matrices(self, length, device, dtype):
         self.input_length = length
@@ -437,6 +444,10 @@ class MatrixWaverec(object):
 
         Returns:
             torch.Tensor: The sparse operator matrix.
+
+        Raises:
+            ValueError: If no level transformation matrices are stored (most likely
+                since the object was not called yet).
         """
         if len(self.ifwt_matrix_list) == 1:
             return self.ifwt_matrix_list[0]
@@ -449,7 +460,11 @@ class MatrixWaverec(object):
                 ifwt_matrix = torch.sparse.mm(scale_matrix, ifwt_matrix)
             return ifwt_matrix
         else:
-            return None
+            # One could argue that we should return an eye matrix instead if the level
+            # matric list is empty
+            raise ValueError(
+                "Call this object first to create the transformation matrices for each level."
+            )
 
     def _construct_synthesis_matrices(self, length: int, device, dtype):
         self.ifwt_matrix_list = []
@@ -522,7 +537,7 @@ class MatrixWaverec(object):
         lo = coefficients[0]
         for c_pos, hi in enumerate(coefficients[1:]):
             torch_device = None
-            curr_shape: Optional[Tuple[int]] = None
+            curr_shape: Optional[torch.Size] = None
             dtype = None
             for coeff in [lo, hi]:
                 if coeff is not None:

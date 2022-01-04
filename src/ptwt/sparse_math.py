@@ -391,8 +391,8 @@ def construct_conv_matrix(
     indices = torch.tensor(
         np.stack([row_indices, column_indices]), device=filter.device
     )
-    values = torch.stack(values)
-    return torch.sparse_coo_tensor(indices, values, dtype=filter.dtype)
+    value_tensor = torch.stack(values)
+    return torch.sparse_coo_tensor(indices, value_tensor, dtype=filter.dtype)
 
 
 def construct_conv2d_matrix(

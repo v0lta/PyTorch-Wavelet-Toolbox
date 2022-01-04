@@ -221,7 +221,9 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
     if level is None:
         level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
 
-    result_lst = []
+    result_lst: List[
+        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+    ] = []
     res_ll = data
     for s in range(level):
         res_ll = fwt_pad2d(res_ll, wavelet, level=s, mode=mode)

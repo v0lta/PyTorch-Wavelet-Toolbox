@@ -1,4 +1,5 @@
 """Generate artificial time-series data for debugging purposes."""
+from typing import Union
 
 import matplotlib.pyplot as plt
 import torch
@@ -9,7 +10,7 @@ def generate_mackey(
     tmax: int = 200,
     delta_t: float = 1.0,
     rnd: bool = True,
-    device: torch.device = "cuda",
+    device: Union[torch.device, str] = "cuda",
 ) -> torch.Tensor:
     """Generate synthetic training data using the Mackey system of equations.
 
@@ -27,7 +28,7 @@ def generate_mackey(
         delta_t (float): Size of the time step. Defaults to 1.0.
         rnd (bool): If true use a random initial state.
             Defaults to True.
-        device (torch.device): Choose cpu or cuda.
+        device (Union[torch.device, str]): Choose cpu or cuda.
             Defaults to "cuda".
 
     Returns:
