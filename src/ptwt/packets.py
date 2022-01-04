@@ -4,6 +4,7 @@
 import collections
 from functools import partial
 from itertools import product
+from typing import Dict, Tuple
 
 import pywt
 import torch
@@ -15,20 +16,19 @@ from .matmul_transform_2d import MatrixWavedec2d
 class WaveletPacket(collections.UserDict):
     """One dimensional wavelet packets."""
 
-    def __init__(self, data: torch.tensor, wavelet, mode: str = "reflect"):
+    def __init__(self, data: torch.Tensor, wavelet, mode: str = "reflect"):
         """Create a wavelet packet decomposition object.
 
         The decompositions will rely on padded fast wavelet transforms.
 
         Args:
-            data (np.array): The input data array of shape [time].
+            data (torch.Tensor): The input data array of shape [time].
             wavelet (pywt.Wavelet or WaveletFilter): The wavelet to use.
             mode (str): The desired padding method.
         """
         self.input_data = data
         self.wavelet = wavelet
         self.mode = mode
-        self.data = None
         self._wavepacketdec(self.input_data, wavelet)
 
     def get_level(self, level: int):
@@ -168,13 +168,13 @@ def get_freq_order(level: int) -> list:
             "".join([expanded_paths[p][1] for p in path]),
         )
 
-    nodes = {}
+    nodes_dict: Dict[str, Dict[str, Tuple[str, ...]]] = {}
     for (row_path, col_path), node in [
         (expand_2d_path(node), node) for node in wp_natural_path
     ]:
-        nodes.setdefault(row_path, {})[col_path] = node
+        nodes_dict.setdefault(row_path, {})[col_path] = node
     graycode_order = _get_graycode_order(level, x="l", y="h")
-    nodes = [nodes[path] for path in graycode_order if path in nodes]
+    nodes = [nodes_dict[path] for path in graycode_order if path in nodes_dict]
     result = []
     for row in nodes:
         result.append([row[path] for path in graycode_order if path in row])
@@ -239,7 +239,7 @@ if __name__ == "__main__":
             img_pt.append(img_rows_pt)
             img_rows_pt = None
 
-    img_pt = torch.cat(img_pt, axis=0).numpy()
+    img_pt = torch.cat(img_pt, dim=0).numpy()
     abs = np.abs(img_pt - img_pywt)
 
     err = np.mean(abs)

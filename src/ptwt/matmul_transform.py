@@ -7,9 +7,13 @@ in Strang Nguyen (p. 32), as well as the description
 of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
 # Created by moritz (wolter@cs.uni-bonn.de) at 14.04.20
+from typing import List, Optional, Tuple, Union
+
 import numpy as np
+import pywt
 import torch
 
+from ._util import _as_wavelet, _is_boundary_mode_supported
 from .conv_transform import get_filter_tensors
 from .sparse_math import (
     _orth_by_gram_schmidt,
@@ -26,7 +30,7 @@ def _construct_a(
     length: int,
     device: torch.device = cpu,
     dtype=torch.float64,
-) -> torch.tensor:
+) -> torch.Tensor:
     """Construct a raw analysis matrix.
 
     The resulting matrix will only be orthogonal in the Haar case,
@@ -41,7 +45,7 @@ def _construct_a(
             or torch.float64. Defaults to torch.float64.
 
     Returns:
-        torch.tensor: The sparse raw analysis matrix.
+        torch.Tensor: The sparse raw analysis matrix.
     """
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype
@@ -61,7 +65,7 @@ def _construct_s(
     length: int,
     device: torch.device = cpu,
     dtype=torch.float64,
-) -> torch.tensor:
+) -> torch.Tensor:
     """Create a raw synthesis matrix.
 
     The construced matrix is NOT necessary orthogonal.
@@ -76,7 +80,7 @@ def _construct_s(
             or torch.float64. Defaults to torch.float64.
 
     Returns:
-        torch.tensor: The raw sparse synthesis matrix.
+        torch.Tensor: The raw sparse synthesis matrix.
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype
@@ -155,28 +159,45 @@ class MatrixWavedec(object):
         >>> coefficients = matrix_wavedec(data_torch)
     """
 
-    def __init__(self, wavelet, level: int = None, boundary: str = "qr"):
+    def __init__(
+        self,
+        wavelet: Union[str, pywt.Wavelet],
+        level: Optional[int] = None,
+        boundary: str = "qr",
+    ):
         """Create a matrix-fwt object.
 
         Args:
-            wavelet: A wavelet object.
-            level: The desired level up to which to compute the fwt.
-            boundary: The desired approach to boundary value treatment.
-                Choose qr or gramschmidt. Defaults to qr.
+            wavelet (Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
+                the name of a pywt wavelet.
+            level (int, optional): The level up to which to compute the fwt. If None,
+                the maximum level based on the signal length is chosen. Defaults to
+                None.
+            boundary (str): The method used for boundary filter treatment.
+                Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
+                implementation, it is fast but memory hungry. The 'gramschmidt'
+                option is sparse, memory efficient, and slow. Choose 'gramschmidt' if
+                'qr' runs out of memory. Defaults to 'qr'.
+
+        Raises:
+            NotImplementedError: If the selected `boundary` mode is not supported.
+            ValueError: If the wavelet filters have different lenghts.
         """
-        self.wavelet = wavelet
+        self.wavelet = _as_wavelet(wavelet)
         self.level = level
         self.boundary = boundary
-        dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
-        assert len(dec_lo) == len(dec_hi), "All filters must have the same length."
-        assert len(dec_hi) == len(rec_lo), "All filters must have the same length."
-        assert len(rec_lo) == len(rec_hi), "All filters must have the same length."
-        assert self.level > 0, "level must be a positive integer."
 
-        self.fwt_matrix_list = []
-        self.split_list = []
-        self.input_length = None
+        self.input_length: Optional[int] = None
+        self.fwt_matrix_list: List[torch.Tensor] = []
+        self.pad_list: List[bool] = []
         self.padded = False
+        self.size_list: List[int] = []
+
+        if not _is_boundary_mode_supported(self.boundary):
+            raise NotImplementedError
+
+        if self.wavelet.dec_len != self.wavelet.rec_len:
+            raise ValueError("All filters must have the same length")
 
     @property
     def sparse_fwt_operator(self) -> torch.Tensor:
@@ -206,72 +227,95 @@ class MatrixWavedec(object):
         else:
             return None
 
-    def __call__(self, data) -> list:
-        """Compute the matrix fwt.
+    def _construct_analysis_matrices(self, length, device, dtype):
+        self.input_length = length
+        self.fwt_matrix_list = []
+        self.size_list = []
+        self.pad_list = []
+        self.padded = False
+
+        filt_len = self.wavelet.dec_len
+        curr_length = length
+        for _ in range(1, self.level + 1):
+            # TODO: Do we want to raise an error if the level is to fine for the
+            #       signal length?
+            if curr_length < filt_len:
+                break
+
+            if curr_length % 2 != 0:
+                # padding
+                curr_length += 1
+                self.padded = True
+                self.pad_list.append(True)
+            else:
+                self.pad_list.append(False)
+
+            self.size_list.append(curr_length)
+
+            an = construct_boundary_a(
+                self.wavelet,
+                curr_length,
+                boundary=self.boundary,
+                device=device,
+                dtype=dtype,
+            )
+            self.fwt_matrix_list.append(an)
+            curr_length = curr_length // 2
+
+        self.size_list.append(curr_length)
+
+    def __call__(self, input_signal: torch.Tensor) -> List[torch.Tensor]:
+        """Compute the matrix fwt for the given input signal.
 
         Matrix fwt are used to avoid padding.
 
         Args:
-            data: Batched input data [batch_size, time],
+            input_signal (torch.Tensor): Batched input data [batch_size, time],
                   should be of even length.
 
         Returns:
-            list: A list with the coefficients for each scale.
+            List[torch.Tensor]: A list with the coefficients for each scale.
+
+        Raises:
+            ValueError: If the decomposition level is not a positive integer.
         """
-        if len(data.shape) == 1:
+        if len(input_signal.shape) == 1:
             # assume time series
-            data = data.unsqueeze(0)
-        if data.shape[-1] % 2 != 0:
+            input_signal = input_signal.unsqueeze(0)
+
+        if input_signal.shape[-1] % 2 != 0:
             # odd length input
             # print('input length odd, padding a zero on the right')
-            data = torch.nn.functional.pad(data, [0, 1])
+            input_signal = torch.nn.functional.pad(input_signal, [0, 1])
 
-        filt_len = len(self.wavelet)
-        length = data.shape[1]
-        split_list = [length]
+        batch_size, length = input_signal.shape
 
         re_build = False
+        if self.input_length is None or self.input_length != length:
+            re_build = True
+
         if self.level is None:
             self.level = int(np.log2(length))
             re_build = True
-
-        if self.input_length != length:
-            re_build = True
+        elif self.level <= 0:
+            raise ValueError("level must be a positive integer.")
 
         if not self.fwt_matrix_list or re_build:
-            self.fwt_matrix_list = []
-            self.padded = False
-            for s in range(1, self.level + 1):
-                if split_list[-1] < filt_len:
-                    break
-                an = construct_boundary_a(
-                    self.wavelet,
-                    split_list[-1],
-                    dtype=data.dtype,
-                    boundary=self.boundary,
-                    device=data.device,
-                )
-                self.fwt_matrix_list.append(an)
-                new_split_size = length // np.power(2, s)
-                if new_split_size % 2 != 0:
-                    # padding
-                    new_split_size += 1
-                    self.padded = True
-                split_list.append(new_split_size)
-            split_list.append(length // np.power(2, self.level))
-            self.split_list = split_list
+            self._construct_analysis_matrices(
+                length, device=input_signal.device, dtype=input_signal.dtype
+            )
 
-        lo = data.T
-        result_list = []
-        for fwt_matrix in self.fwt_matrix_list:
-            if lo.shape[0] % 2 != 0:
+        lo = input_signal.T
+        split_list = []
+        for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
+            if self.pad_list[scale]:
                 # fix odd coefficients lengths for the conv matrix to work.
                 lo = torch.nn.functional.pad(lo.T.unsqueeze(1), [0, 1]).squeeze(1).T
             coefficients = torch.sparse.mm(fwt_matrix, lo)
             lo, hi = torch.split(coefficients, coefficients.shape[0] // 2, dim=0)
-            result_list.append(hi)
-        result_list.append(lo)
-        return result_list[::-1]
+            split_list.append(hi)
+        split_list.append(lo)
+        return split_list[::-1]
 
 
 def construct_boundary_a(
@@ -285,7 +329,7 @@ def construct_boundary_a(
 
     Args:
         wavelet : The wavelet filter object to use.
-        length (int):  The number of entries in the input signal.
+        length (int): The number of entries in the input signal.
         boundary (str): A string indicating the desired boundary treatment.
             Possible options are qr and gramschmidt. Defaults to
             qr.
@@ -313,7 +357,7 @@ def construct_boundary_s(
 
     Args:
         wavelet : The wavelet filter object to use.
-        length (int):  The number of entries in the input signal.
+        length (int): The number of entries in the input signal.
         device (torch.device): Where to place the matrix.
             Choose cpu or cuda. Defaults to cpu.
         boundary (str): A string indicating the desired boundary treatment.
@@ -347,22 +391,34 @@ class MatrixWaverec(object):
     """
 
     def __init__(self, wavelet, level: int = None, boundary: str = "qr"):
-        """Create an analysis transformation object.
+        """Create the inverse matrix based fast wavelet transformation.
 
         Args:
-            wavelet (pywt.Wavelet):  The wavelet used to compute
-                the forward transform.
-            level (int): The level up to which the coefficients
-                have been computed. Defaults to None.
-            boundary (str): The boundary treatment method.
-                Choose 'gramschmidt' or 'qr'. Defaults to 'qr'.
+            wavelet (Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
+                the name of a pywt wavelet.
+            boundary (str): The method used for boundary filter treatment.
+                Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
+                implementation, it is fast but memory hungry. The 'gramschmidt' option
+                is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs
+                out of memory. Defaults to 'qr'.
+
+        Raises:
+            NotImplementedError: If the selected `boundary` mode is not supported.
+            ValueError: If the wavelet filters have different lenghts.
         """
-        self.wavelet = wavelet
-        self.level = level
+        self.wavelet = _as_wavelet(wavelet)
         self.boundary = boundary
-        self.ifwt_matrix_list = []
+
+        self.ifwt_matrix_list: List[torch.Tensor] = []
+        self.level: Optional[int] = None
         self.padded = False
-        assert self.level > 0, "level must be a positive integer."
+        self.pad_list: List[bool] = []
+
+        if not _is_boundary_mode_supported(self.boundary):
+            raise NotImplementedError
+
+        if self.wavelet.dec_len != self.wavelet.rec_len:
+            raise ValueError("All filters must have the same length")
 
     @property
     def sparse_ifwt_operator(self) -> torch.Tensor:
@@ -395,48 +451,98 @@ class MatrixWaverec(object):
         else:
             return None
 
-    def __call__(self, coefficients: list) -> torch.Tensor:
+    def _construct_synthesis_matrices(self, length: int, device, dtype):
+        self.ifwt_matrix_list = []
+        self.size_list = []
+        self.padded = False
+        self.pad_list = []
+        # TODO: Check pad list: Can it be removed or should it be implemented?
+
+        filt_len = len(self.wavelet)
+        curr_length = length
+        if self.level is None:
+            raise ValueError
+        for _ in range(self.level):
+            # TODO: Do we want to raise an error if the level is to fine for the
+            #       signal length?
+            if curr_length < filt_len:
+                break
+
+            if curr_length % 2 != 0:
+                # padding
+                curr_length += 1
+                self.padded = True
+                self.pad_list.append(True)
+            else:
+                self.pad_list.append(False)
+
+            self.size_list.append(curr_length)
+
+            sn = construct_boundary_s(
+                self.wavelet,
+                curr_length,
+                boundary=self.boundary,
+                device=device,
+                dtype=dtype,
+            )
+            self.ifwt_matrix_list.append(sn)
+            curr_length = curr_length // 2
+
+    def __call__(self, coefficients: List[torch.Tensor]) -> torch.Tensor:
         """Run the synthesis or inverse matrix fwt.
 
         Args:
-            coefficients: The coefficients produced by the forward transform.
+            coefficients (List[torch.Tensor]): The coefficients produced by the forward
+                transform.
 
         Returns:
             torch.Tensor: The input signal reconstruction.
+
+        Raises:
+            ValueError: If the decomposition level is not a positive integer or if the
+                coefficients are not in the shape as it is returned from a
+                `MatrixWavedec` object.
         """
-        filt_len = len(self.wavelet)
-        length = coefficients[-1].shape[0] * 2
+        level = len(coefficients) - 1
+        # TODO: input checks from boundwav?
 
         re_build = False
-        if self.level is None:
-            self.level = int(np.log2(length))
-        else:
-            if self.level != int(np.log2(length)):
-                re_build = True
+        if self.level is None or self.level != level:
+            self.level = level
+            re_build = True
 
         if not self.ifwt_matrix_list or re_build:
-            self.ifwt_matrix_list = []
-            split_lst = [length]
-            for s in range(1, self.level + 1):
-                if split_lst[-1] < filt_len:
-                    break
-                sn = construct_boundary_s(
-                    self.wavelet,
-                    split_lst[-1],
-                    dtype=coefficients[-1].dtype,
-                    boundary=self.boundary,
-                    device=coefficients[-1].device,
-                )
-                self.ifwt_matrix_list.append(sn)
-                new_split_size = length // np.power(2, s)
-                if new_split_size % 2 != 0:
-                    # padding
-                    new_split_size += 1
-                    self.padded = True
-                split_lst.append(new_split_size)
+            length = coefficients[-1].shape[0] * 2
+            self._construct_synthesis_matrices(
+                length=length,
+                device=coefficients[-1].device,
+                dtype=coefficients[-1].dtype,
+            )
 
         lo = coefficients[0]
         for c_pos, hi in enumerate(coefficients[1:]):
+            torch_device = None
+            curr_shape: Optional[Tuple[int]] = None
+            dtype = None
+            for coeff in [lo, hi]:
+                if coeff is not None:
+                    if curr_shape is None:
+                        curr_shape = coeff.shape
+                        torch_device = coeff.device
+                        dtype = coeff.dtype
+                    elif curr_shape != coeff.shape:
+                        # TODO: Add check that coeffs are on the same device
+                        raise ValueError("coeffs must have the same shape")
+
+            if curr_shape is None:
+                raise ValueError(
+                    "At least one coefficient parameter must be specified."
+                )
+            if lo is None:
+                lo = torch.zeros(curr_shape, device=torch_device, dtype=dtype)
+            if hi is None:
+                hi = torch.zeros(curr_shape, device=torch_device, dtype=dtype)
+
             lo = torch.cat([lo, hi], 0)
             lo = torch.sparse.mm(self.ifwt_matrix_list[::-1][c_pos], lo)
 
@@ -448,8 +554,9 @@ class MatrixWaverec(object):
                     lo = lo[:-1, :]
                     pred_len = lo.shape[0]
                     assert (
-                        next_len == pred_len
-                    ), "padding error, please open an issue on github "
+                        pred_len == next_len
+                    ), "padding error, please open an issue on github"
+
         return lo.T
 
 

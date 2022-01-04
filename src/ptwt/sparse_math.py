@@ -1,5 +1,7 @@
 """Efficiently construct fwt operations using sparse matrices."""
 # Written by moritz ( @ wolter.tech ) 17.09.21
+from typing import List
+
 import numpy as np
 import torch
 
@@ -171,7 +173,7 @@ def sparse_diag(
     return diag
 
 
-def sparse_matmul_select(matrix: torch.tensor, row: int) -> torch.Tensor:
+def sparse_matmul_select(matrix: torch.Tensor, row: int) -> torch.Tensor:
     """Select a sparse tensor row by matrix multiplication.
 
     Args:
@@ -182,7 +184,7 @@ def sparse_matmul_select(matrix: torch.tensor, row: int) -> torch.Tensor:
         torch.Tensor: The selected row.
     """
     selection_matrix = torch.sparse_coo_tensor(
-        torch.stack([torch.tensor(0, device=row.device), row]).unsqueeze(-1),
+        torch.stack([torch.tensor(0, device=matrix.device), row]).unsqueeze(-1),
         torch.tensor(1.0),
         device=matrix.device,
         dtype=matrix.dtype,
@@ -313,7 +315,7 @@ def _orth_by_gram_schmidt(
     Returns:
         torch.Tensor: The orthogonalized sparse matrix.
     """
-    done = []
+    done: List[int] = []
     # loop over the rows we want to orthogonalize
     for row_no_to_ortho in to_orthogonalize:
         current_row = matrix.select(0, row_no_to_ortho).unsqueeze(0)
@@ -336,7 +338,7 @@ def _orth_by_gram_schmidt(
 
 
 def construct_conv_matrix(
-    filter: torch.tensor, input_rows: int, mode: str = "valid"
+    filter: torch.Tensor, input_rows: int, mode: str = "valid"
 ) -> torch.Tensor:
     """Construct a convolution matrix.
 
@@ -386,13 +388,15 @@ def construct_conv_matrix(
                 row_indices.append(row + column - start_row)
                 column_indices.append(column)
                 values.append(filter[row])
-    indices = np.stack([row_indices, column_indices])
+    indices = torch.tensor(
+        np.stack([row_indices, column_indices]), device=filter.device
+    )
     values = torch.stack(values)
     return torch.sparse_coo_tensor(indices, values, dtype=filter.dtype)
 
 
 def construct_conv2d_matrix(
-    filter: torch.tensor,
+    filter: torch.Tensor,
     input_rows: int,
     input_columns: int,
     mode: str = "valid",

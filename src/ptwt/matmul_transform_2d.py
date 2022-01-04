@@ -3,7 +3,7 @@
 This module uses boundary filters to minimize padding.
 """
 # Written by moritz ( @ wolter.tech ) in 2021
-from typing import Optional, Union
+from typing import List, Optional, Tuple, Union, cast
 
 import numpy as np
 import pywt
@@ -26,7 +26,7 @@ def _construct_a_2d(
     width: int,
     device: torch.device,
     dtype: torch.dtype = torch.float64,
-) -> torch.tensor:
+) -> torch.Tensor:
     """Construct a raw two dimensional analysis wavelet transformation matrix.
 
     Args:
@@ -38,7 +38,7 @@ def _construct_a_2d(
             Defaults to torch.float64.
 
     Returns:
-        torch.tensor: A sparse fwt analysis matrix.
+        torch.Tensor: A sparse fwt analysis matrix.
 
     Note:
         The construced matrix is NOT necessary orthogonal.
@@ -64,7 +64,7 @@ def _construct_s_2d(
     width: int,
     device: torch.device,
     dtype=torch.float64,
-) -> torch.tensor:
+) -> torch.Tensor:
     """Construct a raw fast wavelet transformation synthesis matrix.
 
     Note:
@@ -83,7 +83,7 @@ def _construct_s_2d(
             Defaults to torch.float64.
 
     Returns:
-        [torch.tensor]: The generated fast wavelet synthesis matrix.
+        [torch.Tensor]: The generated fast wavelet synthesis matrix.
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype
@@ -185,14 +185,14 @@ def _matrix_pad_2d(height: int, width: int) -> tuple:
 class MatrixWavedec2d(object):
     """Experimental sparse matrix 2d wavelet transform.
 
-       For a completely pad free transform,
-       input images are expected to be divisible by two.
-       For multiscale transforms all intermediate
-       scale dimensions should be divisible
-       by two, i.e. 128, 128 -> 64, 64 -> 32, 32 would work
-       well for a level three transform.
-       In this case multiplication with the `sparse_fwt_operator`
-       property is equivalent.
+        For a completely pad free transform,
+        input images are expected to be divisible by two.
+        For multiscale transforms all intermediate
+        scale dimensions should be divisible
+        by two, i.e. 128, 128 -> 64, 64 -> 32, 32 would work
+        well for a level three transform.
+        In this case multiplication with the `sparse_fwt_operator`
+        property is equivalent.
 
     Note:
         Constructing the sparse fwt-matrix is expensive.
@@ -223,7 +223,7 @@ class MatrixWavedec2d(object):
 
         Args:
             wavelet (Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
-                the name of  a pywt wavelet.
+                the name of a pywt wavelet.
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
@@ -247,9 +247,11 @@ class MatrixWavedec2d(object):
         self.level = level
         self.boundary = boundary
         self.separable = separable
-        self.input_signal_shape = None
-        self.fwt_matrix_list = []
-        self.pad_list = []
+        self.input_signal_shape: Optional[Tuple] = None
+        self.fwt_matrix_list: List[
+            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]
+        ] = []
+        self.pad_list: List[Tuple[bool, bool]] = []
         self.padded = False
 
         # TODO: Allow separate wavelets and lengths for each axis in the separable case
@@ -261,14 +263,17 @@ class MatrixWavedec2d(object):
             raise ValueError("All filters must have the same length")
 
     @property
-    def sparse_fwt_operator(self) -> torch.Tensor:
+    def sparse_fwt_operator(self):
         """Compute the operator matrix for padding-free cases.
 
-           This property exists to make the transformation matrix available.
-           To benefit from code handling odd-length levels call the object.
+            This property exists to make the transformation matrix available.
+            To benefit from code handling odd-length levels call the object.
 
         Returns:
             torch.Tensor: The sparse 2d-fwt operator matrix.
+
+        Raises:
+            NotImplementedError: if a `separable` is True.
         """
         if self.separable:
             raise NotImplementedError
@@ -284,8 +289,9 @@ class MatrixWavedec2d(object):
             return None
 
     def _construct_analysis_matrices(self, height, width, device, dtype):
-        self.size_list = []
+        self.input_signal_shape = (height, width)
         self.fwt_matrix_list = []
+        self.size_list = []
         self.pad_list = []
         self.padded = False
 
@@ -337,7 +343,9 @@ class MatrixWavedec2d(object):
             current_width = current_width // 2
         self.size_list.append((current_height, current_width))
 
-    def __call__(self, input_signal: torch.Tensor) -> list:
+    def __call__(
+        self, input_signal: torch.Tensor
+    ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
         """Compute the fwt for the given input signal.
 
         The fwt matrix is set up during the first call
@@ -363,15 +371,12 @@ class MatrixWavedec2d(object):
         batch_size, height, width = input_signal.shape
 
         re_build = False
-        if self.input_signal_shape is None:
-            self.input_signal_shape = input_signal.shape[-2:]
+        if (
+            self.input_signal_shape is None
+            or self.input_signal_shape[0] != height
+            or self.input_signal_shape[1] != width
+        ):
             re_build = True
-        else:
-            # if the input shape changed rebuild the operator-matrices
-            if self.input_signal_shape[0] != height:
-                re_build = True
-            if self.input_signal_shape[1] != width:
-                re_build = True
 
         if self.level is None:
             self.level = int(np.min([np.log2(height), np.log2(width)]))
@@ -384,7 +389,9 @@ class MatrixWavedec2d(object):
                 height, width, device=input_signal.device, dtype=input_signal.dtype
             )
 
-        split_list = []
+        split_list: List[
+            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+        ] = []
         if self.separable:
             ll = input_signal
             for scale, fwt_mats in enumerate(self.fwt_matrix_list):
@@ -412,6 +419,7 @@ class MatrixWavedec2d(object):
         else:
             ll = input_signal.reshape([batch_size, -1]).T
             for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
+                fwt_matrix = cast(torch.Tensor, fwt_matrix)
                 pad = self.pad_list[scale]
                 size = self.size_list[scale]
                 if pad[0] or pad[1]:
@@ -429,9 +437,12 @@ class MatrixWavedec2d(object):
                 four_split = torch.split(
                     coefficients, int(np.prod((size[0] // 2, size[1] // 2)))
                 )
-                reshaped = tuple(
-                    (el.T.reshape(batch_size, size[0] // 2, size[1] // 2))
-                    for el in four_split[1:]
+                reshaped = cast(
+                    Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+                    tuple(
+                        (el.T.reshape(batch_size, size[0] // 2, size[1] // 2))
+                        for el in four_split[1:]
+                    ),
                 )
                 split_list.append(reshaped)
                 ll = four_split[0]
@@ -469,7 +480,7 @@ class MatrixWaverec2d(object):
 
         Args:
             wavelet (Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
-                the name of  a pywt wavelet.
+                the name of a pywt wavelet.
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt' option
@@ -488,8 +499,10 @@ class MatrixWaverec2d(object):
         self.boundary = boundary
         self.separable = separable
 
-        self.ifwt_matrix_list = []
-        self.level = None
+        self.ifwt_matrix_list: List[
+            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]
+        ] = []
+        self.level: Optional[int] = None
         self.padded = False
 
         # TODO: Allow separate wavelets and lengths for each axis in the separable case
@@ -506,6 +519,9 @@ class MatrixWaverec2d(object):
 
         Returns:
             torch.Tensor: The sparse 2d-ifwt operator matrix.
+
+        Raises:
+            NotImplementedError: if a `separable` is True.
         """
         if self.separable:
             raise NotImplementedError
@@ -526,6 +542,8 @@ class MatrixWaverec2d(object):
         current_height, current_width = height, width
         self.ifwt_matrix_list = []
         self.padded = False
+        if self.level is None:
+            raise ValueError
         for _ in range(0, self.level):
             current_height, current_width, pad_tuple = _matrix_pad_2d(
                 current_height, current_width
@@ -564,6 +582,45 @@ class MatrixWaverec2d(object):
             current_height = current_height // 2
             current_width = current_width // 2
 
+    def _process_coeffs(self, ll, lh_hl_hh):
+        if lh_hl_hh is None:
+            raise ValueError("Coefficient tuple may not be None")
+        elif not isinstance(lh_hl_hh, (list, tuple)) or len(lh_hl_hh) != 3:
+            raise ValueError(
+                (
+                    "Unexpected detail coefficient type: {}. Detail coefficients "
+                    "must be a 3-tuple of tensors as returned by MatrixWavedec2."
+                ).format(type(lh_hl_hh))
+            )
+
+        lh, hl, hh = lh_hl_hh
+
+        torch_device = None
+        curr_shape: Optional[Tuple[int]] = None
+        torch_dtype = None
+        for coeff in [ll, lh, hl, hh]:
+            if coeff is not None:
+                if curr_shape is None:
+                    curr_shape = coeff.shape
+                    torch_device = coeff.device
+                    torch_dtype = coeff.dtype
+                elif curr_shape != coeff.shape:
+                    # TODO: Add check that coeffs are on the same device
+                    raise ValueError("coeffs must have the same shape")
+
+        if curr_shape is None:
+            raise ValueError("At least one coefficient parameter must be specified.")
+
+        if ll is None:
+            ll = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
+        if hl is None:
+            hl = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
+        if lh is None:
+            lh = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
+        if hh is None:
+            hh = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
+        return (ll, lh, hl, hh), curr_shape, torch_device, torch_dtype
+
     def __call__(self, coefficients: list) -> torch.Tensor:
         """Compute the inverse matrix 2d fast wavelet transform.
 
@@ -572,12 +629,12 @@ class MatrixWaverec2d(object):
                 by the `MatrixWavedec2d`-Object.
 
         Returns:
-            torch.Tensor: The  original signal reconstruction of
+            torch.Tensor: The original signal reconstruction of
             shape [batch_size, height, width].
 
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the
-                coefficients are not in the shape as it is returned from
+                coefficients are not in the shape as it is returned from a
                 `MatrixWavedec2` object.
         """
         level = len(coefficients) - 1
@@ -604,37 +661,8 @@ class MatrixWaverec2d(object):
                 "First element of coeffs must be the approximation coefficient tensor."
             )
 
-        for c_pos, lh_hl_hh in enumerate(coefficients[1:]):
-            if lh_hl_hh is None:
-                raise ValueError("Coefficient tuple may not be None")
-            elif not isinstance(lh_hl_hh, (list, tuple)) or len(lh_hl_hh) != 3:
-                raise ValueError(
-                    (
-                        "Unexpected detail coefficient type: {}. Detail coefficients "
-                        "must be a 3-tuple of tensors as returned by MatrixWavedec2."
-                    ).format(type(lh_hl_hh))
-                )
-
-            lh, hl, hh = lh_hl_hh
-            torch_device = None
-            curr_shape = None
-            for coeff in [ll, lh, hl, hh]:
-                if coeff is not None:
-                    if curr_shape is None:
-                        curr_shape = coeff.shape
-                        torch_device = coeff.device
-                    elif curr_shape != coeff.shape:
-                        # TODO: Add check that coeffs are on the same device
-                        raise ValueError("coeffs must have the same shape")
-
-            if ll is None:
-                ll = torch.zeros_like(curr_shape, device=torch_device)
-            if hl is None:
-                hl = torch.zeros_like(curr_shape, device=torch_device)
-            if lh is None:
-                lh = torch.zeros_like(curr_shape, device=torch_device)
-            if hh is None:
-                hh = torch.zeros_like(curr_shape, device=torch_device)
+        for c_pos, coeff_tuple in enumerate(coefficients[1:]):
+            (ll, lh, hl, hh), curr_shape, _, _ = self._process_coeffs(ll, coeff_tuple)
 
             if self.separable:
                 synthesis_matrix_rows, synthesis_matrix_cols = self.ifwt_matrix_list[
@@ -659,15 +687,15 @@ class MatrixWaverec2d(object):
                     ],
                     -1,
                 )
-                ifwt_mat = self.ifwt_matrix_list[::-1][c_pos]
+                ifwt_mat = cast(torch.Tensor, self.ifwt_matrix_list[::-1][c_pos])
                 ll = torch.sparse.mm(ifwt_mat, ll.T)
 
+            pred_len = [s * 2 for s in curr_shape[-2:]]
+            if not self.separable:
+                ll = ll.T.reshape([batch_size] + pred_len)
             # remove the padding
             if c_pos < len(coefficients) - 2:
-                pred_len = [s * 2 for s in curr_shape[-2:]]
                 next_len = list(coefficients[c_pos + 2][0].shape[-2:])
-                if not self.separable:
-                    ll = ll.T.reshape([batch_size] + pred_len)
                 if pred_len != next_len:
                     if pred_len[0] != next_len[0]:
                         ll = ll[:, :-1, :]
