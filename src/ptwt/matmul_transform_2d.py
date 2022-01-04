@@ -690,12 +690,12 @@ class MatrixWaverec2d(object):
                 ifwt_mat = cast(torch.Tensor, self.ifwt_matrix_list[::-1][c_pos])
                 ll = torch.sparse.mm(ifwt_mat, ll.T)
 
+            pred_len = [s * 2 for s in curr_shape[-2:]]
+            if not self.separable:
+                ll = ll.T.reshape([batch_size] + pred_len)
             # remove the padding
             if c_pos < len(coefficients) - 2:
-                pred_len = [s * 2 for s in curr_shape[-2:]]
                 next_len = list(coefficients[c_pos + 2][0].shape[-2:])
-                if not self.separable:
-                    ll = ll.T.reshape([batch_size] + pred_len)
                 if pred_len != next_len:
                     if pred_len[0] != next_len[0]:
                         ll = ll[:, :-1, :]
