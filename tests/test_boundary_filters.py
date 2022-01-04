@@ -163,16 +163,17 @@ def test_matrix_analysis_fwt_2d_haar(size, level):
     ],
 )
 @pytest.mark.parametrize("level", [4, 3, 2, 1, None])
-def test_boundary_matrix_fwt_2d(wavelet_str, size, level):
+@pytest.mark.parametrize("separable", [False, True])
+def test_boundary_matrix_fwt_2d(wavelet_str, size, level, separable):
     """Ensure the boundary matrix fwt is invertable."""
     face = np.mean(
         scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
     ).astype(np.float64)
     pt_face = torch.tensor(face)
     wavelet = pywt.Wavelet(wavelet_str)
-    matrixfwt = MatrixWavedec2d(wavelet, level=level)
+    matrixfwt = MatrixWavedec2d(wavelet, level=level, separable=separable)
     mat_coeff = matrixfwt(pt_face.unsqueeze(0))
-    matrixifwt = MatrixWaverec2d(wavelet)
+    matrixifwt = MatrixWaverec2d(wavelet, separable=separable)
     reconstruction = matrixifwt(mat_coeff).squeeze(0)
     # remove the padding
     if size[0] % 2 != 0:
@@ -189,7 +190,7 @@ def test_boundary_matrix_fwt_2d(wavelet_str, size, level):
     )
     assert np.allclose(reconstruction.numpy(), face)
     # test the operator matrices
-    if not matrixfwt.padded and not matrixifwt.padded:
+    if not separable and not matrixfwt.padded and not matrixifwt.padded:
         test_mat = torch.sparse.mm(
             matrixifwt.sparse_ifwt_operator, matrixfwt.sparse_fwt_operator
         )
@@ -199,16 +200,17 @@ def test_boundary_matrix_fwt_2d(wavelet_str, size, level):
 @pytest.mark.parametrize("wavelet_str", ["db2"])
 @pytest.mark.parametrize("level", [3])
 @pytest.mark.parametrize("size", [(16, 16)])
-def test_batched_2d_matrix_fwt_ifwt(wavelet_str, level, size):
+@pytest.mark.parametrize("separable", [False, True])
+def test_batched_2d_matrix_fwt_ifwt(wavelet_str, level, size, separable):
     """Ensure the batched matrix fwt works properly."""
     face = scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])].astype(
         np.float64
     )
     pt_face = torch.tensor(face).permute([2, 0, 1])
     wavelet = pywt.Wavelet(wavelet_str)
-    matrixfwt = MatrixWavedec2d(wavelet, level=level)
+    matrixfwt = MatrixWavedec2d(wavelet, level=level, separable=separable)
     mat_coeff = matrixfwt(pt_face)
-    matrixifwt = MatrixWaverec2d(wavelet)
+    matrixifwt = MatrixWaverec2d(wavelet, separable=separable)
     reconstruction = matrixifwt(mat_coeff)
     err = np.sum(
         np.abs(
