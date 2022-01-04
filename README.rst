@@ -36,7 +36,7 @@ Welcome to the PyTorch wavelet toolbox. This package implements:
 - the 2d fwt is called ``wavedec2``
 - and inverse 2d fwt ``waverec2``.
 - 1d sparse-matrix fast wavelet transforms with boundary filters.
-- 2d sparse-matrix transforms with boundary filters (experimental).
+- 2d sparse-matrix transforms with separable & non-separable boundary filters (experimental).
 - single and two-dimensional wavelet packet forward transforms.
 - adaptive wavelet support (experimental).
 
@@ -142,8 +142,9 @@ Reconsidering the 1d case, try:
   print(rec)
 
 
-The process for the 2d transforms `MatrixWavedec2d`, `MatrixWaverec2d`,
-works similarly.
+The process for the 2d transforms `MatrixWavedec2d`, `MatrixWaverec2d` works similarly.
+By default, a non-separable transformation is used.
+To use a separable transformation, pass `separable=True` to `MatrixWavedec2d` and `MatrixWaverec2d`.
 
 
 **Adaptive** **Wavelets**
