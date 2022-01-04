@@ -397,7 +397,7 @@ class MatrixWavedec2d(object):
             for scale, fwt_mats in enumerate(self.fwt_matrix_list):
                 fwt_row_matrix, fwt_col_matrix = fwt_mats
                 pad = self.pad_list[scale]
-                size = self.size_list[scale]
+                current_height, current_width = self.size_list[scale]
                 if pad[0] or pad[1]:
                     if pad[0] and not pad[1]:
                         ll = torch.nn.functional.pad(ll, [0, 1])
@@ -409,9 +409,9 @@ class MatrixWavedec2d(object):
                 ll = batch_mm(fwt_col_matrix, ll.transpose(-2, -1)).transpose(-2, -1)
                 ll = batch_mm(fwt_row_matrix, ll)
 
-                a_coeffs, d_coeffs = torch.split(ll, height // 2, dim=-2)
-                ll, lh = torch.split(a_coeffs, width // 2, dim=-1)
-                hl, hh = torch.split(d_coeffs, width // 2, dim=-1)
+                a_coeffs, d_coeffs = torch.split(ll, current_height // 2, dim=-2)
+                ll, lh = torch.split(a_coeffs, current_width // 2, dim=-1)
+                hl, hh = torch.split(d_coeffs, current_width // 2, dim=-1)
 
                 # TODO: Is the order consistent with the non-separable case?
                 split_list.append((lh, hl, hh))
