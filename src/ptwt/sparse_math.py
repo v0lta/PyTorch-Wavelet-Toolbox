@@ -173,26 +173,6 @@ def sparse_diag(
     return diag
 
 
-def sparse_matmul_select(matrix: torch.Tensor, row: int) -> torch.Tensor:
-    """Select a sparse tensor row by matrix multiplication.
-
-    Args:
-        matrix (torch.tensor): The sparse matrix from which to select.
-        row (int): The row to return.
-
-    Returns:
-        torch.Tensor: The selected row.
-    """
-    selection_matrix = torch.sparse_coo_tensor(
-        torch.stack([torch.tensor(0, device=matrix.device), row]).unsqueeze(-1),
-        torch.tensor(1.0),
-        device=matrix.device,
-        dtype=matrix.dtype,
-        size=(1, matrix.shape[0]),
-    )
-    return torch.sparse.mm(selection_matrix, matrix)
-
-
 def sparse_replace_row(
     matrix: torch.Tensor, row_index: int, row: torch.Tensor
 ) -> torch.Tensor:
