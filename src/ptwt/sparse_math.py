@@ -305,7 +305,7 @@ def _orth_by_gram_schmidt(
             non_orthogonal = torch.sparse.mm(current_row, done_row.transpose(1, 0))
             non_orthogonal_values = non_orthogonal.coalesce().values()
             if len(non_orthogonal_values) == 0:
-                non_orthogonal_item = 0
+                non_orthogonal_item: float = 0
             else:
                 non_orthogonal_item = non_orthogonal_values.item()
             sum += non_orthogonal_item * done_row

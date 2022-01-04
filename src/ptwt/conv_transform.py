@@ -1,5 +1,7 @@
 """Fast wavelet transformation code with edge-padding."""
 # Created by moritz wolter, 14.04.20
+from typing import List, Tuple, Union
+
 import pywt
 import torch
 
