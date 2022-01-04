@@ -7,7 +7,7 @@ in Strang Nguyen (p. 32), as well as the description
 of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
 # Created by moritz (wolter@cs.uni-bonn.de) at 14.04.20
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
 import numpy as np
 import pywt
@@ -215,6 +215,7 @@ class MatrixWavedec(object):
 
         Returns:
             torch.Tensor: The sparse operator matrix.
+
         Raises:
             ValueError: If no level transformation matrices are stored (most likely
                 since the object was not called yet).
@@ -231,7 +232,8 @@ class MatrixWavedec(object):
             # One could argue that we should return an eye matrix instead if the level
             # matric list is empty
             raise ValueError(
-                "Call this object first to create the transformation matrices for each level."
+                "Call this object first to create the transformation matrices for each "
+                "level."
             )
 
     def _construct_analysis_matrices(self, length, device, dtype):
@@ -463,7 +465,8 @@ class MatrixWaverec(object):
             # One could argue that we should return an eye matrix instead if the level
             # matric list is empty
             raise ValueError(
-                "Call this object first to create the transformation matrices for each level."
+                "Call this object first to create the transformation matrices for each "
+                "level."
             )
 
     def _construct_synthesis_matrices(self, length: int, device, dtype):
