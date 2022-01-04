@@ -1,11 +1,21 @@
 """Test the adaptive wavelet cost functions."""
-
+import pytest
 import pywt
 import torch
 from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
 
 
-def run_list(lst: list, orth: bool = True):
+@pytest.mark.parametrize(
+    "lst,orth",
+    [
+        (pywt.wavelist(family="db"), True),
+        (pywt.wavelist(family="sym"), True),
+        (pywt.wavelist(family="coif"), True),
+        (pywt.wavelist(family="bior"), False),
+        (pywt.wavelist(family="rbio"), False),
+    ],
+)
+def test_wavelet_lst(lst: list, orth: bool):
     """Test all wavelets in a list."""
     for ws in lst:
         wavelet = pywt.Wavelet(ws)
@@ -29,41 +39,3 @@ def run_list(lst: list, orth: bool = True):
         )
         if orth is True:
             assert orth < 1e-10
-
-
-def test_db_wavelet_loss():
-    """Test all Daubechies wavelets."""
-    lst = pywt.wavelist(family="db")
-    run_list(lst, orth=True)
-
-
-def test_sym_wavelet_loss():
-    """Test all symlets."""
-    lst = pywt.wavelist(family="sym")
-    run_list(lst, orth=True)
-
-
-def test_coif_wavelet_loss():
-    """Test all coif-wavelets."""
-    lst = pywt.wavelist(family="coif")
-    run_list(lst, orth=True)
-
-
-def test_bior_wavelet_loss():
-    """Test all bior-wavelets."""
-    lst = pywt.wavelist(family="bior")
-    run_list(lst, orth=False)
-
-
-def test_rbio_wavelet_loss():
-    """Test all rbio-wavelets."""
-    lst = pywt.wavelist(family="rbio")
-    run_list(lst, orth=False)
-
-
-if __name__ == "__main__":
-    test_db_wavelet_loss()
-    test_sym_wavelet_loss()
-    test_bior_wavelet_loss()
-    test_rbio_wavelet_loss()
-    test_coif_wavelet_loss()
