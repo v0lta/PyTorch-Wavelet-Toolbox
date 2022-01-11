@@ -54,7 +54,11 @@ class WaveletPacket(collections.UserDict[str, torch.Tensor]):
             ]
         return graycode_order
 
-    def _recursive_dwt(self, data: torch.Tensor, level: int, max_level: int, path: str):
+    # ignoring missing return type, as recursive nesting is currently not supported
+    # see https://github.com/python/mypy/issues/731
+    def _recursive_dwt(  # type: ignore[no-untyped-def]
+        self, data: torch.Tensor, level: int, max_level: int, path: str
+    ):
         self.data[path] = torch.squeeze(data)
         if level < max_level:
             res_lo, res_hi = wavedec(data, self.wavelet, level=1, mode=self.mode)
@@ -65,7 +69,9 @@ class WaveletPacket(collections.UserDict[str, torch.Tensor]):
         else:
             self.data[path] = torch.squeeze(data)
 
-    def _wavepacketdec(
+    # ignoring missing return type, as recursive nesting is currently not supported
+    # see https://github.com/python/mypy/issues/731
+    def _wavepacketdec(  # type: ignore[no-untyped-def]
         self,
         data: torch.Tensor,
         wavelet: Union[Wavelet, str],
@@ -135,7 +141,11 @@ class WaveletPacket2D(collections.UserDict[str, torch.Tensor]):
         else:
             return partial(wavedec2, wavelet=self.wavelet, level=1, mode=self.mode)
 
-    def _recursive_dwt2d(self, data: torch.Tensor, level: int, path: str):
+    # ignoring missing return type, as recursive nesting is currently not supported
+    # see https://github.com/python/mypy/issues/731
+    def _recursive_dwt2d(  # type: ignore[no-untyped-def]
+        self, data: torch.Tensor, level: int, path: str
+    ):
         self.data[path] = data
         if level < self.max_level:
             # resa, (resh, resv, resd) = self.wavedec2(
