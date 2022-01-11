@@ -4,7 +4,7 @@
 import collections
 from functools import partial
 from itertools import product
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Tuple, Union
 
 import pywt
 import torch
@@ -15,7 +15,13 @@ from .conv_transform import wavedec, wavedec2
 from .matmul_transform_2d import MatrixWavedec2d
 
 
-class WaveletPacket(collections.UserDict[str, torch.Tensor]):
+if TYPE_CHECKING:
+    BaseDict = collections.UserDict[str, torch.Tensor]
+else:
+    BaseDict = collections.UserDict
+
+
+class WaveletPacket(BaseDict):
     """One dimensional wavelet packets."""
 
     def __init__(
@@ -86,7 +92,7 @@ class WaveletPacket(collections.UserDict[str, torch.Tensor]):
         self._recursive_dwt(data, level=0, max_level=max_level, path="")
 
 
-class WaveletPacket2D(collections.UserDict[str, torch.Tensor]):
+class WaveletPacket2D(BaseDict):
     """Two dimensional wavelet packets."""
 
     def __init__(
