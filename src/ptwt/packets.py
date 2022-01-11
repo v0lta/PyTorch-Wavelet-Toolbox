@@ -4,7 +4,7 @@
 import collections
 from functools import partial
 from itertools import product
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import pywt
 import torch
@@ -118,7 +118,12 @@ class WaveletPacket2D(collections.UserDict[str, torch.Tensor]):
         self.data = {}
         self._recursive_dwt2d(self.input_data, level=0, path="")
 
-    def _get_wavedec(self, shape: Tuple[int, ...]):
+    def _get_wavedec(
+        self, shape: Tuple[int, ...]
+    ) -> Callable[
+        [torch.Tensor],
+        List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    ]:
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_wavedec2_dict.keys():
