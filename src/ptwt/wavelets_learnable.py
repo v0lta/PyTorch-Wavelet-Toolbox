@@ -31,7 +31,7 @@ class WaveletFilter(ABC):
     @abstractmethod
     def wavelet_loss(self) -> torch.Tensor:
         """Return the sum of all loss terms."""
-        return self.alias_cancellation_loss() + self.perfect_reconstruction_loss()
+        return self.alias_cancellation_loss()[0] + self.perfect_reconstruction_loss()[0]
 
     @abstractmethod
     def __len__(self) -> int:
