@@ -6,7 +6,6 @@ This module uses boundary filters to minimize padding.
 from typing import List, Optional, Tuple, Union, cast
 
 import numpy as np
-import pywt
 import torch
 
 from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported

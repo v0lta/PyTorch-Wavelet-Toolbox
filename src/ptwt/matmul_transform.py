@@ -10,7 +10,6 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 from typing import List, Optional, Union
 
 import numpy as np
-import pywt
 import torch
 
 from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported
