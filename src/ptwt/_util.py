@@ -1,8 +1,21 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
-from typing import Union
+from typing import Protocol, Sequence, Tuple, Union
 
 
 import pywt
+
+
+class Wavelet(Protocol):
+    name: str
+    dec_lo: Sequence[float]
+    dec_hi: Sequence[float]
+    rec_lo: Sequence[float]
+    rec_hi: Sequence[float]
+    dec_len: int
+    rec_len: int
+    filter_bank: Tuple[
+        Sequence[float], Sequence[float], Sequence[float], Sequence[float]
+    ]
 
 
 def _as_wavelet(wavelet: Union[str, pywt.Wavelet]) -> pywt.Wavelet:
