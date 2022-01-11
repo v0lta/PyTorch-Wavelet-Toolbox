@@ -218,12 +218,17 @@ class MatrixWavedec(object):
             torch.Tensor: The sparse operator matrix.
 
         Raises:
+            NotImplementedError: if padding had to be used in the creation of the
+                transformation matrices.
             ValueError: If no level transformation matrices are stored (most likely
                 since the object was not called yet).
         """
         if len(self.fwt_matrix_list) == 1:
             return self.fwt_matrix_list[0]
-        elif len(self.fwt_matrix_list) > 1 and self.padded is False:
+        elif len(self.fwt_matrix_list) > 1:
+            if self.padded:
+                raise NotImplementedError
+
             fwt_matrix = self.fwt_matrix_list[0]
             for scale_mat in self.fwt_matrix_list[1:]:
                 scale_mat = cat_sparse_identity_matrix(scale_mat, fwt_matrix.shape[0])
@@ -462,12 +467,17 @@ class MatrixWaverec(object):
             torch.Tensor: The sparse operator matrix.
 
         Raises:
+            NotImplementedError: if padding had to be used in the creation of the
+                transformation matrices.
             ValueError: If no level transformation matrices are stored (most likely
                 since the object was not called yet).
         """
         if len(self.ifwt_matrix_list) == 1:
             return self.ifwt_matrix_list[0]
-        elif len(self.ifwt_matrix_list) > 1 and self.padded is False:
+        elif len(self.ifwt_matrix_list) > 1:
+            if self.padded:
+                raise NotImplementedError
+
             ifwt_matrix = self.ifwt_matrix_list[-1]
             for scale_matrix in self.ifwt_matrix_list[:-1][::-1]:
                 ifwt_matrix = cat_sparse_identity_matrix(
