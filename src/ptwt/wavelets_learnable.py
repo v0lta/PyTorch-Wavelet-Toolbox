@@ -20,7 +20,9 @@ class WaveletFilter(ABC):
 
     @property
     @abstractmethod
-    def filter_bank(self):
+    def filter_bank(
+        self,
+    ) -> Tuple[Sequence[float], Sequence[float], Sequence[float], Sequence[float]]:
         """Return dec_lo, dec_hi, rec_lo, rec_hi."""
         raise NotImplementedError
 
