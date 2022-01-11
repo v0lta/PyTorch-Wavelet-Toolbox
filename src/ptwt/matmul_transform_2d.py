@@ -279,7 +279,10 @@ class MatrixWavedec2d(object):
             torch.Tensor: The sparse 2d-fwt operator matrix.
 
         Raises:
-            NotImplementedError: if a `separable` is True.
+            NotImplementedError: if a separable transformation was used or if padding
+                had to be used in the creation of the transformation matrices.
+            ValueError: If no level transformation matrices are stored (most likely
+                since the object was not called yet).
         """
         if self.separable:
             raise NotImplementedError
@@ -542,7 +545,10 @@ class MatrixWaverec2d(object):
             torch.Tensor: The sparse 2d-ifwt operator matrix.
 
         Raises:
-            NotImplementedError: if a `separable` is True.
+            NotImplementedError: if a separable transformation was used or if padding
+                had to be used in the creation of the transformation matrices.
+            ValueError: If no level transformation matrices are stored (most likely
+                since the object was not called yet).
         """
         if self.separable:
             raise NotImplementedError
