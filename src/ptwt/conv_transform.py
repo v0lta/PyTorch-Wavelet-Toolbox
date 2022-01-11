@@ -1,6 +1,6 @@
 """Fast wavelet transformation code with edge-padding."""
 # Created by moritz wolter, 14.04.20
-from typing import List, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import pywt
 import torch
@@ -11,9 +11,9 @@ from ._util import Wavelet, _as_wavelet
 def get_filter_tensors(
     wavelet: Union[Wavelet, str],
     flip: bool,
-    device: torch.device,
+    device: Union[torch.device, str],
     dtype: torch.dtype = torch.float32,
-) -> tuple:
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Convert input wavelet to filter tensors.
 
     Args:
@@ -31,7 +31,7 @@ def get_filter_tensors(
     """
     wavelet = _as_wavelet(wavelet)
 
-    def create_tensor(filter):
+    def _create_tensor(filter: Sequence[float]) -> torch.Tensor:
         if flip:
             if isinstance(filter, torch.Tensor):
                 return filter.flip(-1).unsqueeze(0).to(device)
@@ -46,14 +46,14 @@ def get_filter_tensors(
                 return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
 
     dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
-    dec_lo = create_tensor(dec_lo)
-    dec_hi = create_tensor(dec_hi)
-    rec_lo = create_tensor(rec_lo)
-    rec_hi = create_tensor(rec_hi)
-    return dec_lo, dec_hi, rec_lo, rec_hi
+    dec_lo_tensor = _create_tensor(dec_lo)
+    dec_hi_tensor = _create_tensor(dec_hi)
+    rec_lo_tensor = _create_tensor(rec_lo)
+    rec_hi_tensor = _create_tensor(rec_hi)
+    return dec_lo_tensor, dec_hi_tensor, rec_lo_tensor, rec_hi_tensor
 
 
-def get_pad(data_len: int, filt_len: int) -> tuple:
+def get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
     """Compute the required padding.
 
     Args:
@@ -113,16 +113,16 @@ def fwt_pad(
 
 
 def fwt_pad2d(
-    data, wavelet: Union[Wavelet, str], level, mode="reflect"
-):
+    data: torch.Tensor, wavelet: Union[Wavelet, str], level: int, mode: str = "reflect"
+) -> torch.Tensor:
     """Pad data for the 2d FWT.
 
     Args:
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        level: The number of scales in the transform.
-        mode: The padding mode. Defaults to 'reflect'.
+        level (int): The number of scales in the transform.
+        mode (str): The padding mode. Defaults to 'reflect'.
 
     Returns:
         The padded output tensor.
@@ -135,7 +135,7 @@ def fwt_pad2d(
     return data_pad
 
 
-def _outer(a, b):
+def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """Torch implementation of numpy's outer for vectors."""
     a_flat = torch.reshape(a, [-1])
     b_flat = torch.reshape(b, [-1])
@@ -144,7 +144,12 @@ def _outer(a, b):
     return a_mul * b_mul
 
 
-def flatten_2d_coeff_lst(coeff_lst_2d: list, flatten_tensors: bool = True) -> list:
+def flatten_2d_coeff_lst(
+    coeff_lst_2d: List[
+        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+    ],
+    flatten_tensors: bool = True,
+) -> List[torch.Tensor]:
     """Flattens a list of tensor tuples into a single list.
 
     Args:
@@ -157,7 +162,7 @@ def flatten_2d_coeff_lst(coeff_lst_2d: list, flatten_tensors: bool = True) -> li
     """
     flat_coeff_lst = []
     for coeff in coeff_lst_2d:
-        if type(coeff) is tuple:
+        if isinstance(coeff, tuple):
             for c in coeff:
                 if flatten_tensors:
                     flat_coeff_lst.append(c.flatten())
@@ -193,11 +198,11 @@ def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
 
 
 def wavedec2(
-    data,
+    data: torch.Tensor,
     wavelet: Union[Wavelet, str],
-    level: int = None,
+    level: Optional[int] = None,
     mode: str = "reflect",
-) -> list:
+) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
     """Non seperated two dimensional wavelet transform.
 
     Args:
@@ -252,7 +257,7 @@ def wavedec2(
 
 
 def waverec2(
-    coeffs: list,
+    coeffs: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
     wavelet: Union[Wavelet, str],
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
@@ -328,9 +333,9 @@ def waverec2(
 def wavedec(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
-    level: int = None,
+    level: Optional[int] = None,
     mode: str = "reflect",
-) -> list:
+) -> List[torch.Tensor]:
     """Compute the analysis (forward) 1d fast wavelet transform.
 
     Args:
@@ -388,7 +393,7 @@ def wavedec(
     return result_lst[::-1]
 
 
-def waverec(coeffs: list, wavelet: Union[Wavelet, str]) -> torch.Tensor:
+def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
