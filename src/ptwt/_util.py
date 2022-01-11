@@ -18,15 +18,15 @@ class Wavelet(Protocol):
     ]
 
 
-def _as_wavelet(wavelet: Union[str, pywt.Wavelet]) -> pywt.Wavelet:
-    """Ensure the input arguments to be a pywt wavelet object.
+def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
+    """Ensure the input argument to be a pywt wavelet compatible object.
 
     Args:
-        wavelet (Union[str, pywt.Wavelet]): The input argument, which is either
-            a pywt.Wavelet object or a valid wavelet name string.
+        wavelet (Wavelet or str): The input argument, which is either a
+            pywt wavelet compatible object or a valid pywt wavelet name string.
 
     Returns:
-        pywt.Wavelet: the input wavelet object or a wavelet object described by the
+        Wavelet: the input wavelet object or the pywt wavelet object described by the
             input str.
     """
     if isinstance(wavelet, str):
