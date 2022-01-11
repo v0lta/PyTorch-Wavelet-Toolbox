@@ -9,9 +9,10 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 import pywt
 import torch
 
+
+from ._util import Wavelet, _as_wavelet
 from .conv_transform import wavedec, wavedec2
 from .matmul_transform_2d import MatrixWavedec2d
-from ._util import Wavelet, _as_wavelet
 
 
 class WaveletPacket(collections.UserDict[str, torch.Tensor]):
