@@ -22,14 +22,12 @@ from .sparse_math import (
     construct_strided_conv_matrix,
 )
 
-cpu = torch.device("cpu")
-
 
 def _construct_a(
     wavelet: Union[Wavelet, str],
     length: int,
-    device: torch.device = cpu,
-    dtype=torch.float64,
+    device: Union[torch.device, str] = "cpu",
+    dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Construct a raw analysis matrix.
 
@@ -40,8 +38,8 @@ def _construct_a(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         length (int): The length of the input signal to transfrom.
-        device (torch.device, optional): Where to create the matrix.
-            Choose cpu or GPU Defaults to torch.device("cpu").
+        device (torch.device or str, optional): Where to create the matrix.
+            Choose a torch device or device name. Defaults to "cpu".
         dtype (optional): The desired torch datatype. Choose torch.float32
             or torch.float64. Defaults to torch.float64.
 
@@ -65,8 +63,8 @@ def _construct_a(
 def _construct_s(
     wavelet: Union[Wavelet, str],
     length: int,
-    device: torch.device = cpu,
-    dtype=torch.float64,
+    device: Union[torch.device, str] = "cpu",
+    dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Create a raw synthesis matrix.
 
@@ -168,7 +166,7 @@ class MatrixWavedec(object):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         boundary: str = "qr",
-    ):
+    ) -> None:
         """Create a matrix-fwt object.
 
         Args:
@@ -240,7 +238,9 @@ class MatrixWavedec(object):
                 "level."
             )
 
-    def _construct_analysis_matrices(self, length, device, dtype):
+    def _construct_analysis_matrices(
+        self, length: int, device: Union[torch.device, str], dtype: torch.dtype
+    ) -> None:
         self.input_length = length
         self.fwt_matrix_list = []
         self.size_list = []
@@ -334,10 +334,10 @@ class MatrixWavedec(object):
 def construct_boundary_a(
     wavelet: Union[Wavelet, str],
     length: int,
-    device: torch.device = cpu,
+    device: Union[torch.device, str] = "cpu",
     boundary: str = "qr",
     dtype: torch.dtype = torch.float64,
-):
+) -> torch.Tensor:
     """Construct a boundary-wavelet filter 1d-analysis matrix.
 
     Args:
@@ -363,10 +363,10 @@ def construct_boundary_a(
 
 def construct_boundary_s(
     wavelet: Union[Wavelet, str],
-    length,
-    device: torch.device = cpu,
+    length: int,
+    device: Union[torch.device, str] = "cpu",
     boundary: str = "qr",
-    dtype=torch.float64,
+    dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Construct a boundary-wavelet filter 1d-synthesis matarix.
 
@@ -410,9 +410,9 @@ class MatrixWaverec(object):
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
-        level: int = None,
+        level: Optional[int] = None,
         boundary: str = "qr",
-    ):
+    ) -> None:
         """Create the inverse matrix based fast wavelet transformation.
 
         Args:
@@ -482,7 +482,9 @@ class MatrixWaverec(object):
                 "level."
             )
 
-    def _construct_synthesis_matrices(self, length: int, device, dtype):
+    def _construct_synthesis_matrices(
+        self, length: int, device: Union[torch.device, str], dtype: torch.dtype
+    ) -> None:
         self.ifwt_matrix_list = []
         self.size_list = []
         self.padded = False
