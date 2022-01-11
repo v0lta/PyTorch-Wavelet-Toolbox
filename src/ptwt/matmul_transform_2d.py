@@ -283,11 +283,18 @@ class MatrixWavedec2d(object):
         """
         if self.separable:
             raise NotImplementedError
-        if len(self.fwt_matrix_list) == 1:
-            return self.fwt_matrix_list[0]
-        elif len(self.fwt_matrix_list) > 1 and self.padded is False:
-            fwt_matrix = self.fwt_matrix_list[0]
-            for scale_mat in self.fwt_matrix_list[1:]:
+
+        # in the non-separable case the list entries are tensors
+        fwt_matrix_list = cast(List[torch.Tensor], self.fwt_matrix_list)
+
+        if len(fwt_matrix_list) == 1:
+            return fwt_matrix_list[0]
+        elif len(fwt_matrix_list) > 1:
+            if self.padded:
+                raise NotImplementedError
+
+            fwt_matrix = fwt_matrix_list[0]
+            for scale_mat in fwt_matrix_list[1:]:
                 scale_mat = cat_sparse_identity_matrix(scale_mat, fwt_matrix.shape[0])
                 fwt_matrix = torch.sparse.mm(scale_mat, fwt_matrix)
             return fwt_matrix
@@ -539,11 +546,18 @@ class MatrixWaverec2d(object):
         """
         if self.separable:
             raise NotImplementedError
-        if len(self.ifwt_matrix_list) == 1:
-            return self.ifwt_matrix_list[0]
-        elif len(self.ifwt_matrix_list) > 1 and self.padded is False:
-            ifwt_matrix = self.ifwt_matrix_list[-1]
-            for scale_mat in self.ifwt_matrix_list[:-1][::-1]:
+
+        # in the non-separable case the list entries are tensors
+        ifwt_matrix_list = cast(List[torch.Tensor], self.ifwt_matrix_list)
+
+        if len(ifwt_matrix_list) == 1:
+            return ifwt_matrix_list[0]
+        elif len(ifwt_matrix_list) > 1:
+            if self.padded:
+                raise NotImplementedError
+
+            ifwt_matrix = ifwt_matrix_list[-1]
+            for scale_mat in ifwt_matrix_list[:-1][::-1]:
                 ifwt_matrix = cat_sparse_identity_matrix(
                     ifwt_matrix, scale_mat.shape[0]
                 )
