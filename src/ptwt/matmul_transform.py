@@ -241,6 +241,8 @@ class MatrixWavedec(object):
     def _construct_analysis_matrices(
         self, length: int, device: Union[torch.device, str], dtype: torch.dtype
     ) -> None:
+        if self.level is None:
+            raise AssertionError()
         self.input_length = length
         self.fwt_matrix_list = []
         self.size_list = []

@@ -300,6 +300,8 @@ class MatrixWavedec2d(object):
         device: Union[torch.device, str],
         dtype: torch.dtype,
     ) -> None:
+        if self.level is None:
+            raise AssertionError()
         self.input_signal_shape = (height, width)
         self.fwt_matrix_list = []
         self.size_list = []

@@ -284,6 +284,11 @@ def waverec2(
     """
     wavelet = _as_wavelet(wavelet)
 
+    if not isinstance(coeffs[0], torch.Tensor):
+        raise ValueError(
+            "First element of coeffs must be the approximation coefficient tensor."
+        )
+
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=False, device=coeffs[0].device, dtype=coeffs[0].dtype
     )
