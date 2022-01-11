@@ -153,7 +153,7 @@ def flatten_2d_coeff_lst(
     """Flattens a list of tensor tuples into a single list.
 
     Args:
-        coeff_lst_2d (list): A pywt-style coefficient list.
+        coeff_lst_2d (list): A pywt-style coefficient list of torch tensors.
         flatten_tensors (bool): If true,
              2d tensors are flattened. Defaults to True.
 
@@ -269,6 +269,9 @@ def waverec2(
 
     Returns:
         torch.Tensor: The reconstructed signal.
+
+    Raises:
+        ValueError: If `coeffs` is not in the shape as it is returned from `wavedec2`.
 
     Examples::
         >>> import ptwt, pywt, torch

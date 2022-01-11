@@ -690,7 +690,7 @@ class MatrixWaverec2d(object):
 
         Returns:
             torch.Tensor: The original signal reconstruction of
-            shape [batch_size, height, width].
+                shape [batch_size, height, width].
 
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the
