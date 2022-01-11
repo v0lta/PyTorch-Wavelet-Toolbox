@@ -9,7 +9,7 @@ import numpy as np
 import pywt
 import torch
 
-from ._util import _as_wavelet, _is_boundary_mode_supported
+from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported
 from .conv_transform import construct_2d_filt, get_filter_tensors
 from .matmul_transform import (
     cat_sparse_identity_matrix,
@@ -21,7 +21,7 @@ from .sparse_math import batch_mm, construct_strided_conv2d_matrix
 
 
 def _construct_a_2d(
-    wavelet: pywt.Wavelet,
+    wavelet: Union[Wavelet, str],
     height: int,
     width: int,
     device: torch.device,
@@ -30,7 +30,8 @@ def _construct_a_2d(
     """Construct a raw two dimensional analysis wavelet transformation matrix.
 
     Args:
-        wavelet (pywt.Wavelet): The wavelet to use.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
         height (int): The Height of the input image.
         width (int): The Width of the input image.
         device (torch.device): Where to place to matrix, either cpu or gpu.
@@ -59,7 +60,7 @@ def _construct_a_2d(
 
 
 def _construct_s_2d(
-    wavelet: pywt.Wavelet,
+    wavelet: Union[Wavelet, str],
     height: int,
     width: int,
     device: torch.device,
@@ -72,7 +73,8 @@ def _construct_s_2d(
         In most cases construct_boundary_s2d should be used instead.
 
     Args:
-        wavelet (pywt.Wavelet): The wavelet to use.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
         height (int): The height of the input image, which was originally
             transformed.
         width (int): The width of the input image, which was originally
@@ -85,6 +87,7 @@ def _construct_s_2d(
     Returns:
         [torch.Tensor]: The generated fast wavelet synthesis matrix.
     """
+    wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype
     )
@@ -107,7 +110,7 @@ def _construct_s_2d(
 
 
 def construct_boundary_a2d(
-    wavelet,
+    wavelet: Union[Wavelet, str],
     height: int,
     width: int,
     device: torch.device,
@@ -117,8 +120,8 @@ def construct_boundary_a2d(
     """Construct a boundary fwt matrix for the input wavelet.
 
     Args:
-        wavelet: The input wavelet, either a
-            pywt.Wavelet or a ptwt.WaveletFilter.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
         height (int): The height of the input matrix.
             Should be divisible by two.
         width (int): The width of the input matrix.
@@ -134,13 +137,14 @@ def construct_boundary_a2d(
         torch.Tensor: A sparse fwt matrix, with orthogonalized boundary
             wavelets.
     """
+    wavelet = _as_wavelet(wavelet)
     a = _construct_a_2d(wavelet, height, width, device, dtype=dtype)
-    orth_a = orthogonalize(a, len(wavelet) * len(wavelet), method=boundary)
+    orth_a = orthogonalize(a, wavelet.dec_len ** 2, method=boundary)
     return orth_a
 
 
 def construct_boundary_s2d(
-    wavelet,
+    wavelet: Union[Wavelet, str],
     height: int,
     width: int,
     device: torch.device,
@@ -150,7 +154,8 @@ def construct_boundary_s2d(
     """Construct a 2d-fwt matrix, with boundary wavelets.
 
     Args:
-        wavelet: A pywt wavelet.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
         height (int): The original height of the input matrix.
         width (int): The width of the original input matrix.
         device (torch.device): Choose CPU or GPU.
@@ -214,7 +219,7 @@ class MatrixWavedec2d(object):
 
     def __init__(
         self,
-        wavelet: Union[str, pywt.Wavelet],
+        wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         boundary: str = "qr",
         separable: bool = False,
@@ -222,7 +227,7 @@ class MatrixWavedec2d(object):
         """Create a new matrix fwt object.
 
         Args:
-            wavelet (Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
+            wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
@@ -472,14 +477,14 @@ class MatrixWaverec2d(object):
 
     def __init__(
         self,
-        wavelet: Union[str, pywt.Wavelet],
+        wavelet: Union[Wavelet, str],
         boundary: str = "qr",
         separable: bool = False,
     ):
         """Create the inverse matrix based fast wavelet transformation.
 
         Args:
-            wavelet (Union[str, pywt.Wavelet]): A pywt wavelet compatible object or
+            wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
