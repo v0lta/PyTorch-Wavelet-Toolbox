@@ -24,7 +24,7 @@ def _construct_a_2d(
     wavelet: Union[Wavelet, str],
     height: int,
     width: int,
-    device: torch.device,
+    device: Union[torch.device, str],
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Construct a raw two dimensional analysis wavelet transformation matrix.
@@ -32,9 +32,9 @@ def _construct_a_2d(
     Args:
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        height (int): The Height of the input image.
-        width (int): The Width of the input image.
-        device (torch.device): Where to place to matrix, either cpu or gpu.
+        height (int): The height of the input image.
+        width (int): The width of the input image.
+        device (torch.device or str): Where to place the matrix.
         dtype (torch.dtype, optional): Desired matrix data-type.
             Defaults to torch.float64.
 
@@ -63,8 +63,8 @@ def _construct_s_2d(
     wavelet: Union[Wavelet, str],
     height: int,
     width: int,
-    device: torch.device,
-    dtype=torch.float64,
+    device: Union[torch.device, str],
+    dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Construct a raw fast wavelet transformation synthesis matrix.
 
@@ -113,7 +113,7 @@ def construct_boundary_a2d(
     wavelet: Union[Wavelet, str],
     height: int,
     width: int,
-    device: torch.device,
+    device: Union[torch.device, str],
     boundary: str = "qr",
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
@@ -147,9 +147,9 @@ def construct_boundary_s2d(
     wavelet: Union[Wavelet, str],
     height: int,
     width: int,
-    device: torch.device,
+    device: Union[torch.device, str],
     boundary: str = "qr",
-    dtype=torch.float64,
+    dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Construct a 2d-fwt matrix, with boundary wavelets.
 
@@ -176,7 +176,7 @@ def construct_boundary_s2d(
     return orth_s
 
 
-def _matrix_pad_2d(height: int, width: int) -> tuple:
+def _matrix_pad_2d(height: int, width: int) -> Tuple[int, int, Tuple[bool, bool]]:
     pad_tuple = (False, False)
     if height % 2 != 0:
         height += 1
@@ -252,7 +252,7 @@ class MatrixWavedec2d(object):
         self.level = level
         self.boundary = boundary
         self.separable = separable
-        self.input_signal_shape: Optional[Tuple] = None
+        self.input_signal_shape: Optional[Tuple[int, int]] = None
         self.fwt_matrix_list: List[
             Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]
         ] = []
@@ -268,7 +268,7 @@ class MatrixWavedec2d(object):
             raise ValueError("All filters must have the same length")
 
     @property
-    def sparse_fwt_operator(self):
+    def sparse_fwt_operator(self) -> torch.Tensor:
         """Compute the operator matrix for padding-free cases.
 
             This property exists to make the transformation matrix available.
@@ -293,7 +293,13 @@ class MatrixWavedec2d(object):
         else:
             return None
 
-    def _construct_analysis_matrices(self, height, width, device, dtype):
+    def _construct_analysis_matrices(
+        self,
+        height: int,
+        width: int,
+        device: Union[torch.device, str],
+        dtype: torch.dtype,
+    ) -> None:
         self.input_signal_shape = (height, width)
         self.fwt_matrix_list = []
         self.size_list = []
@@ -519,7 +525,7 @@ class MatrixWaverec2d(object):
             raise ValueError("All filters must have the same length")
 
     @property
-    def sparse_ifwt_operator(self):
+    def sparse_ifwt_operator(self) -> torch.Tensor:
         """Compute the ifwt operator matrix for pad-free cases.
 
         Returns:
@@ -543,7 +549,13 @@ class MatrixWaverec2d(object):
         else:
             return None
 
-    def _construct_synthesis_matrices(self, height: int, width: int, device, dtype):
+    def _construct_synthesis_matrices(
+        self,
+        height: int,
+        width: int,
+        device: Union[torch.device, str],
+        dtype: torch.dtype,
+    ) -> None:
         current_height, current_width = height, width
         self.ifwt_matrix_list = []
         self.padded = False
@@ -587,21 +599,26 @@ class MatrixWaverec2d(object):
             current_height = current_height // 2
             current_width = current_width // 2
 
-    def _process_coeffs(self, ll, lh_hl_hh):
-        if lh_hl_hh is None:
-            raise ValueError("Coefficient tuple may not be None")
-        elif not isinstance(lh_hl_hh, (list, tuple)) or len(lh_hl_hh) != 3:
+    def _process_coeffs(
+        self,
+        ll: torch.Tensor,
+        lh_hl_hh: Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    ) -> Tuple[
+        Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
+        torch.Size,
+        torch.device,
+        torch.dtype,
+    ]:
+        if len(lh_hl_hh) != 3:
             raise ValueError(
-                (
-                    "Unexpected detail coefficient type: {}. Detail coefficients "
-                    "must be a 3-tuple of tensors as returned by MatrixWavedec2."
-                ).format(type(lh_hl_hh))
+                "Detail coefficients must be a 3-tuple of tensors as returned by "
+                "MatrixWavedec2."
             )
 
         lh, hl, hh = lh_hl_hh
 
         torch_device = None
-        curr_shape: Optional[Tuple[int]] = None
+        curr_shape = None
         torch_dtype = None
         for coeff in [ll, lh, hl, hh]:
             if coeff is not None:
@@ -613,7 +630,7 @@ class MatrixWaverec2d(object):
                     # TODO: Add check that coeffs are on the same device
                     raise ValueError("coeffs must have the same shape")
 
-        if curr_shape is None:
+        if torch_device is None or curr_shape is None or torch_dtype is None:
             raise ValueError("At least one coefficient parameter must be specified.")
 
         if ll is None:
@@ -626,7 +643,12 @@ class MatrixWaverec2d(object):
             hh = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
         return (ll, lh, hl, hh), curr_shape, torch_device, torch_dtype
 
-    def __call__(self, coefficients: list) -> torch.Tensor:
+    def __call__(
+        self,
+        coefficients: List[
+            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+        ],
+    ) -> torch.Tensor:
         """Compute the inverse matrix 2d fast wavelet transform.
 
         Args:
@@ -667,6 +689,13 @@ class MatrixWaverec2d(object):
             )
 
         for c_pos, coeff_tuple in enumerate(coefficients[1:]):
+            if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
+                raise ValueError(
+                    (
+                        "Unexpected detail coefficient type: {}. Detail coefficients "
+                        "must be a 3-tuple of tensors as returned by MatrixWavedec2."
+                    ).format(type(coeff_tuple))
+                )
             (ll, lh, hl, hh), curr_shape, _, _ = self._process_coeffs(ll, coeff_tuple)
 
             if self.separable:
