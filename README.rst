@@ -145,6 +145,8 @@ Reconsidering the 1d case, try:
 The process for the 2d transforms ``MatrixWavedec2d``, ``MatrixWaverec2d`` works similarly.
 By default, a non-separable transformation is used.
 To use a separable transformation, pass ``separable=True`` to ``MatrixWavedec2d`` and ``MatrixWaverec2d``.
+Separable transformations use a 1d transformation along both axes which might be faster since less matrix entries
+have to be orthogonalized.
 
 
 **Adaptive** **Wavelets**
