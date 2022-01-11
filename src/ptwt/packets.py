@@ -155,6 +155,8 @@ class WaveletPacket2D(collections.UserDict[str, torch.Tensor]):
             result_a, (result_h, result_v, result_d) = self._get_wavedec(data.shape)(
                 data
             )
+            # assert for type checking
+            assert not isinstance(result_a, tuple)
             return (
                 self._recursive_dwt2d(result_a, level + 1, path + "a"),
                 self._recursive_dwt2d(result_h, level + 1, path + "h"),
