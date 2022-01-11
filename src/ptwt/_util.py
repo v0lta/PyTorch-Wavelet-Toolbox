@@ -6,6 +6,8 @@ import pywt
 
 
 class Wavelet(Protocol):
+    """Wavelet object interface, based on the pywt wavelet object."""
+
     name: str
     dec_lo: Sequence[float]
     dec_hi: Sequence[float]
