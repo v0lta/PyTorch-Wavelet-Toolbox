@@ -301,8 +301,6 @@ class MatrixWavedec2d(object):
                 fwt_matrix = torch.sparse.mm(scale_mat, fwt_matrix)
             return fwt_matrix
         else:
-            # One could argue that we should return an eye matrix instead if the level
-            # matric list is empty
             raise ValueError(
                 "Call this object first to create the transformation matrices for each "
                 "level."
@@ -326,8 +324,6 @@ class MatrixWavedec2d(object):
         filt_len = self.wavelet.dec_len
         current_height, current_width = height, width
         for _ in range(1, self.level + 1):
-            # TODO: Do we want to raise an error if the level is to fine for the
-            #       signal length?
             if current_height < filt_len or current_width < filt_len:
                 # we have reached the max decomposition depth.
                 break
@@ -574,8 +570,6 @@ class MatrixWaverec2d(object):
                 ifwt_matrix = torch.sparse.mm(scale_mat, ifwt_matrix)
             return ifwt_matrix
         else:
-            # One could argue that we should return an eye matrix instead if the level
-            # matric list is empty
             raise ValueError(
                 "Call this object first to create the transformation matrices for each "
                 "level."
@@ -600,7 +594,6 @@ class MatrixWaverec2d(object):
             if any(pad_tuple):
                 self.padded = True
             if self.separable:
-                # TODO: handle coefficients[-1][0] == None
                 synthesis_matrix_rows = construct_boundary_s(
                     wavelet=self.wavelet,
                     length=current_height,
@@ -697,13 +690,13 @@ class MatrixWaverec2d(object):
                 `MatrixWavedec2` object.
         """
         level = len(coefficients) - 1
-        # TODO: input checks from boundwav?
 
         re_build = False
         if self.level is None or self.level != level:
             self.level = level
             re_build = True
 
+        # TODO: handle coefficients[-1][0] == None
         if not self.ifwt_matrix_list or re_build:
             height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
             self._construct_synthesis_matrices(

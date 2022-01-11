@@ -95,7 +95,7 @@ def fwt_pad(
     Args:
         data (torch.Tensor): Input data [batch_size, 1, time]
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-                the name of a pywt wavelet.
+            the name of a pywt wavelet.
         mode (str): The desired way to pad.
 
     Returns:
@@ -154,8 +154,7 @@ def flatten_2d_coeff_lst(
 
     Args:
         coeff_lst_2d (list): A pywt-style coefficient list of torch tensors.
-        flatten_tensors (bool): If true,
-             2d tensors are flattened. Defaults to True.
+        flatten_tensors (bool): If true, 2d tensors are flattened. Defaults to True.
 
     Returns:
         list: A single 1-d list with all original elements.

@@ -235,8 +235,6 @@ class MatrixWavedec(object):
                 fwt_matrix = torch.sparse.mm(scale_mat, fwt_matrix)
             return fwt_matrix
         else:
-            # One could argue that we should return an eye matrix instead if the level
-            # matric list is empty
             raise ValueError(
                 "Call this object first to create the transformation matrices for each "
                 "level."
@@ -256,8 +254,6 @@ class MatrixWavedec(object):
         filt_len = self.wavelet.dec_len
         curr_length = length
         for _ in range(1, self.level + 1):
-            # TODO: Do we want to raise an error if the level is to fine for the
-            #       signal length?
             if curr_length < filt_len:
                 break
 
@@ -361,7 +357,6 @@ def construct_boundary_a(
         torch.Tensor: The sparse analysis matrix.
     """
     wavelet = _as_wavelet(wavelet)
-    # TODO: Improve orthogonalization
     a_full = _construct_a(wavelet, length, dtype=dtype, device=device)
     a_orth = orthogonalize(a_full, wavelet.dec_len, method=boundary)
     return a_orth
@@ -440,6 +435,7 @@ class MatrixWaverec(object):
         self.ifwt_matrix_list: List[torch.Tensor] = []
         self.level: Optional[int] = None
         self.padded = False
+        # TODO: Should we remove pad_list attribute? It is not used.
         self.pad_list: List[bool] = []
 
         if not _is_boundary_mode_supported(self.boundary):
@@ -486,8 +482,6 @@ class MatrixWaverec(object):
                 ifwt_matrix = torch.sparse.mm(scale_matrix, ifwt_matrix)
             return ifwt_matrix
         else:
-            # One could argue that we should return an eye matrix instead if the level
-            # matric list is empty
             raise ValueError(
                 "Call this object first to create the transformation matrices for each "
                 "level."
@@ -500,15 +494,12 @@ class MatrixWaverec(object):
         self.size_list = []
         self.padded = False
         self.pad_list = []
-        # TODO: Check pad list: Can it be removed or should it be implemented?
 
         filt_len = self.wavelet.rec_len
         curr_length = length
         if self.level is None:
             raise ValueError
         for _ in range(self.level):
-            # TODO: Do we want to raise an error if the level is to fine for the
-            #       signal length?
             if curr_length < filt_len:
                 break
 
@@ -548,7 +539,6 @@ class MatrixWaverec(object):
                 `MatrixWavedec` object.
         """
         level = len(coefficients) - 1
-        # TODO: input checks from boundwav?
 
         re_build = False
         if self.level is None or self.level != level:
