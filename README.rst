@@ -186,3 +186,12 @@ If you find this work useful, please consider citing:
     url = {https://hdl.handle.net/20.500.11811/9245}
   }
 
+  @thesis{Blanke2021,
+    author = {Felix Blanke},
+    title = {{Randbehandlung bei Wavelets für Faltungsnetzwerke}},
+    type = {Bachelor's Thesis},
+    annote = {Gbachelor},
+    year = {2021},
+    school = {Institut f\"ur Numerische Simulation, Universit\"at Bonn}
+  }
+
