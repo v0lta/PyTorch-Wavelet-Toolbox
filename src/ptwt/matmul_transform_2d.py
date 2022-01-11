@@ -302,7 +302,12 @@ class MatrixWavedec2d(object):
                 fwt_matrix = torch.sparse.mm(scale_mat, fwt_matrix)
             return fwt_matrix
         else:
-            return None
+            # One could argue that we should return an eye matrix instead if the level
+            # matric list is empty
+            raise ValueError(
+                "Call this object first to create the transformation matrices for each "
+                "level."
+            )
 
     def _construct_analysis_matrices(
         self,
@@ -570,7 +575,12 @@ class MatrixWaverec2d(object):
                 ifwt_matrix = torch.sparse.mm(scale_mat, ifwt_matrix)
             return ifwt_matrix
         else:
-            return None
+            # One could argue that we should return an eye matrix instead if the level
+            # matric list is empty
+            raise ValueError(
+                "Call this object first to create the transformation matrices for each "
+                "level."
+            )
 
     def _construct_synthesis_matrices(
         self,
