@@ -500,7 +500,6 @@ class MatrixWaverec(object):
         self.ifwt_matrix_list = []
         self.size_list = []
         self.padded = False
-        self.pad_list = []
 
         filt_len = self.wavelet.rec_len
         curr_length = length
@@ -522,9 +521,6 @@ class MatrixWaverec(object):
                 # padding
                 curr_length += 1
                 self.padded = True
-                self.pad_list.append(True)
-            else:
-                self.pad_list.append(False)
 
             self.size_list.append(curr_length)
 
