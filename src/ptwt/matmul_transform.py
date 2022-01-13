@@ -7,6 +7,7 @@ in Strang Nguyen (p. 32), as well as the description
 of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
 # Created by moritz (wolter@cs.uni-bonn.de) at 14.04.20
+import sys
 from typing import List, Optional, Union
 
 import numpy as np
@@ -253,8 +254,16 @@ class MatrixWavedec(object):
 
         filt_len = self.wavelet.dec_len
         curr_length = length
-        for _ in range(1, self.level + 1):
+        for curr_level in range(1, self.level + 1):
             if curr_length < filt_len:
+                sys.stderr.write(
+                    f"Warning: The selected number of decomposition levels {self.level}"
+                    f" is too large for the given input size {length}. At level "
+                    f"{curr_level}, the current signal length {curr_length} is "
+                    f"smaller than the filter length {filt_len}. Therefore, the "
+                    "transformation is only computed up to the decomposition level "
+                    f"{curr_level-1}.\n"
+                )
                 break
 
             if curr_length % 2 != 0:
@@ -499,8 +508,16 @@ class MatrixWaverec(object):
         curr_length = length
         if self.level is None:
             raise ValueError
-        for _ in range(self.level):
+        for curr_level in range(1, self.level + 1):
             if curr_length < filt_len:
+                sys.stderr.write(
+                    f"Warning: The selected number of decomposition levels {self.level}"
+                    f" is too large for the given input size {length}. At level "
+                    f"{curr_level}, the current signal length {curr_length} is "
+                    f"smaller than the filter length {filt_len}. Therefore, the "
+                    "transformation is only computed up to the decomposition level "
+                    f"{curr_level-1}.\n"
+                )
                 break
 
             if curr_length % 2 != 0:
