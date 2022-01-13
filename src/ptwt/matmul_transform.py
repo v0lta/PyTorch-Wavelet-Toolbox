@@ -550,18 +550,17 @@ class MatrixWaverec(object):
                 `MatrixWavedec` object.
         """
         level = len(coefficients) - 1
-        input_length = coefficients[-1] * 2
+        input_length = coefficients[-1].shape[0] * 2
 
         re_build = False
-        if self.level != level or input_length != self.input_length:
+        if self.level != level or self.input_length != input_length:
             self.level = level
             self.input_length = input_length
             re_build = True
 
         if not self.ifwt_matrix_list or re_build:
-            length = coefficients[-1].shape[0] * 2
             self._construct_synthesis_matrices(
-                length=length,
+                length=input_length,
                 device=coefficients[-1].device,
                 dtype=coefficients[-1].dtype,
             )
