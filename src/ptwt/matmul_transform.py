@@ -303,7 +303,7 @@ class MatrixWavedec(object):
             # print('input length odd, padding a zero on the right')
             input_signal = torch.nn.functional.pad(input_signal, [0, 1])
 
-        batch_size, length = input_signal.shape
+        _, length = input_signal.shape
 
         re_build = False
         if self.input_length is None or self.input_length != length:
@@ -404,14 +404,13 @@ class MatrixWaverec(object):
                 pywt.Wavelet('haar'), level=2)
         >>> coefficients = matrix_wavedec(data_torch)
         >>> matrix_waverec = ptwt.MatrixWaverec(
-                pywt.Wavelet('haar'), level=2)
+                pywt.Wavelet('haar'))
         >>> reconstruction = matrix_waverec(coefficients)
     """
 
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
-        level: Optional[int] = None,
         boundary: str = "qr",
     ) -> None:
         """Create the inverse matrix based fast wavelet transformation.
@@ -434,9 +433,8 @@ class MatrixWaverec(object):
 
         self.ifwt_matrix_list: List[torch.Tensor] = []
         self.level: Optional[int] = None
+        self.input_length: Optional[int] = None
         self.padded = False
-        # TODO: Should we remove pad_list attribute? It is not used.
-        self.pad_list: List[bool] = []
 
         if not _is_boundary_mode_supported(self.boundary):
             raise NotImplementedError
@@ -539,10 +537,12 @@ class MatrixWaverec(object):
                 `MatrixWavedec` object.
         """
         level = len(coefficients) - 1
+        input_length = coefficients[-1] * 2
 
         re_build = False
-        if self.level is None or self.level != level:
+        if self.level != level or input_length != self.input_length:
             self.level = level
+            self.input_length = self.input_length
             re_build = True
 
         if not self.ifwt_matrix_list or re_build:

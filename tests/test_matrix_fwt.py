@@ -130,7 +130,7 @@ def test_fwt_ifwt_level_3():
     )
     pt_data = torch.from_numpy(data2).unsqueeze(0)
     coeffs3 = pywt.wavedec(data2, wavelet, level=3)
-    matrix_wavedec = MatrixWavedec(wavelet, 3)
+    matrix_wavedec = MatrixWavedec(wavelet, level=3)
     coeffsmat3 = matrix_wavedec(pt_data)
 
     err1 = np.mean(np.abs(coeffs3[0] - coeffsmat3[0].squeeze().numpy()))
@@ -144,7 +144,7 @@ def test_fwt_ifwt_level_3():
     assert err3 < 1e-6
     assert err4 < 1e-6
 
-    matrix_waverec = MatrixWaverec(wavelet, 3)
+    matrix_waverec = MatrixWaverec(wavelet)
     reconstructed_data = matrix_waverec(coeffsmat3)
     err5 = torch.mean(torch.abs(pt_data - reconstructed_data))
     print("abs ifwt 3 reconstruction error", err5)
@@ -179,7 +179,7 @@ def test_fwt_ifwt_mackey_haar():
     print("time_sparse_wt", time_sparse_fwt)
 
     # test the inverse fwt.
-    matrix_waverec = MatrixWaverec(wavelet, 9)
+    matrix_waverec = MatrixWaverec(wavelet)
     reconstructed_data = matrix_waverec(coeffs_mat_max)
     err1 = torch.mean(torch.abs(pt_data - reconstructed_data))
     print("abs ifwt reconstruction error", err1)
@@ -195,12 +195,8 @@ def test_fwt_ifwt_mackey_db2():
     pt_data = torch.squeeze(generator()).cpu()
     matrix_wavedec = MatrixWavedec(wavelet, 4)
     coeffs_mat_max = matrix_wavedec(pt_data)
-    matrix_waverec = MatrixWaverec(wavelet, 4)
+    matrix_waverec = MatrixWaverec(wavelet)
     reconstructed_data = matrix_waverec(coeffs_mat_max)
     err = torch.mean(torch.abs(pt_data - reconstructed_data))
     print("reconstruction error:", err)
     assert err < 1e-6
-
-
-if __name__ == "__main__":
-    test_fwt_ifwt_level_2()
