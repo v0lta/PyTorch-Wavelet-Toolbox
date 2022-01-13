@@ -309,31 +309,28 @@ class MatrixWavedec2d(object):
 
     def _construct_analysis_matrices(
         self,
-        height: int,
-        width: int,
         device: Union[torch.device, str],
         dtype: torch.dtype,
     ) -> None:
-        if self.level is None:
-            raise AssertionError()
-        self.input_signal_shape = (height, width)
+        if self.level is None or self.input_signal_shape is None:
+            raise AssertionError
         self.fwt_matrix_list = []
         self.size_list = []
         self.pad_list = []
         self.padded = False
 
         filt_len = self.wavelet.dec_len
-        current_height, current_width = height, width
+        current_height, current_width = self.input_signal_shape
         for curr_level in range(1, self.level + 1):
             if current_height < filt_len or current_width < filt_len:
                 # we have reached the max decomposition depth.
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input shape ({height}, {width}). At "
-                    f"level {curr_level}, at least one of the current signal height and"
-                    f" width ({current_height}, {current_width}) is smaller than the "
-                    f"filter length {filt_len}. Therefore, the transformation is only "
-                    f"computed up to the decomposition level {curr_level-1}.\n"
+                    f" is too large for the given input shape {self.input_signal_shape}"
+                    f". At level {curr_level}, at least one of the current signal "
+                    f"height and width ({current_height}, {current_width}) is smaller "
+                    f"than the filter length {filt_len}. Therefore, the transformation "
+                    f"is only computed up to the decomposition level {curr_level-1}.\n"
                 )
                 break
             # the conv matrices require even length inputs.
@@ -409,6 +406,7 @@ class MatrixWavedec2d(object):
             or self.input_signal_shape[0] != height
             or self.input_signal_shape[1] != width
         ):
+            self.input_signal_shape = height, width
             re_build = True
 
         if self.level is None:
@@ -419,7 +417,7 @@ class MatrixWavedec2d(object):
 
         if not self.fwt_matrix_list or re_build:
             self._construct_analysis_matrices(
-                height, width, device=input_signal.device, dtype=input_signal.dtype
+                device=input_signal.device, dtype=input_signal.dtype
             )
 
         split_list: List[
@@ -536,6 +534,8 @@ class MatrixWaverec2d(object):
             Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]
         ] = []
         self.level: Optional[int] = None
+        self.input_signal_shape: Optional[Tuple[int, int]] = None
+
         self.padded = False
 
         # TODO: Allow separate wavelets and lengths for each axis in the separable case
@@ -586,26 +586,26 @@ class MatrixWaverec2d(object):
 
     def _construct_synthesis_matrices(
         self,
-        height: int,
-        width: int,
         device: Union[torch.device, str],
         dtype: torch.dtype,
     ) -> None:
-        current_height, current_width = height, width
         self.ifwt_matrix_list = []
         self.padded = False
-        if self.level is None:
-            raise ValueError
+        if self.level is None or self.input_signal_shape is None:
+            raise AssertionError
+
+        current_height, current_width = self.input_signal_shape
         filt_len = self.wavelet.rec_len
+
         for curr_level in range(1, self.level + 1):
             if current_height < filt_len or current_width < filt_len:
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input shape ({height}, {width}). At "
-                    f"level {curr_level}, at least one of the current signal height and"
-                    f" width ({current_height}, {current_width}) is smaller than the "
-                    f"filter length {filt_len}. Therefore, the transformation is only "
-                    f"computed up to the decomposition level {curr_level-1}.\n"
+                    f" is too large for the given input shape {self.input_signal_shape}"
+                    f". At level {curr_level}, at least one of the current signal "
+                    f"height and width ({current_height}, {current_width}) is smaller "
+                    f"than the filter length {filt_len}. Therefore, the transformation "
+                    f"is only computed up to the decomposition level {curr_level-1}.\n"
                 )
                 break
             current_height, current_width, pad_tuple = _matrix_pad_2d(
@@ -710,18 +710,24 @@ class MatrixWaverec2d(object):
                 `MatrixWavedec2` object.
         """
         level = len(coefficients) - 1
+        height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
 
         re_build = False
-        if self.level is None or self.level != level:
+        if (
+            self.input_signal_shape is None
+            or self.input_signal_shape[0] != height
+            or self.input_signal_shape[1] != width
+        ):
+            self.input_signal_shape = height, width
+            re_build = True
+
+        if self.level != level:
             self.level = level
             re_build = True
 
         # TODO: handle coefficients[-1][0] == None
         if not self.ifwt_matrix_list or re_build:
-            height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
             self._construct_synthesis_matrices(
-                height=height,
-                width=width,
                 device=coefficients[-1][0].device,
                 dtype=coefficients[-1][0].dtype,
             )
