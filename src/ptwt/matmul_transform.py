@@ -542,7 +542,7 @@ class MatrixWaverec(object):
         re_build = False
         if self.level != level or input_length != self.input_length:
             self.level = level
-            self.input_length = self.input_length
+            self.input_length = input_length
             re_build = True
 
         if not self.ifwt_matrix_list or re_build:
