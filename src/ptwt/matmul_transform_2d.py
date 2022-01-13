@@ -3,6 +3,7 @@
 This module uses boundary filters to minimize padding.
 """
 # Written by moritz ( @ wolter.tech ) in 2021
+import sys
 from typing import List, Optional, Tuple, Union, cast
 
 import numpy as np
@@ -323,9 +324,17 @@ class MatrixWavedec2d(object):
 
         filt_len = self.wavelet.dec_len
         current_height, current_width = height, width
-        for _ in range(1, self.level + 1):
+        for curr_level in range(1, self.level + 1):
             if current_height < filt_len or current_width < filt_len:
                 # we have reached the max decomposition depth.
+                sys.stderr.write(
+                    f"Warning: The selected number of decomposition levels {self.level}"
+                    f" is too large for the given input shape ({height}, {width}). At "
+                    f"level {curr_level}, at least one of the current signal height and"
+                    f" width ({current_height}, {current_width}) is smaller than the "
+                    f"filter length {filt_len}. Therefore, the transformation is only "
+                    f"computed up to the decomposition level {curr_level-1}.\n"
+                )
                 break
             # the conv matrices require even length inputs.
             current_height, current_width, pad_tuple = _matrix_pad_2d(
@@ -587,7 +596,18 @@ class MatrixWaverec2d(object):
         self.padded = False
         if self.level is None:
             raise ValueError
-        for _ in range(0, self.level):
+        filt_len = self.wavelet.rec_len
+        for curr_level in range(1, self.level + 1):
+            if current_height < filt_len or current_width < filt_len:
+                sys.stderr.write(
+                    f"Warning: The selected number of decomposition levels {self.level}"
+                    f" is too large for the given input shape ({height}, {width}). At "
+                    f"level {curr_level}, at least one of the current signal height and"
+                    f" width ({current_height}, {current_width}) is smaller than the "
+                    f"filter length {filt_len}. Therefore, the transformation is only "
+                    f"computed up to the decomposition level {curr_level-1}.\n"
+                )
+                break
             current_height, current_width, pad_tuple = _matrix_pad_2d(
                 current_height, current_width
             )
