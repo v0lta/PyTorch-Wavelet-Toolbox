@@ -240,7 +240,7 @@ def test_batched_2d_matrix_fwt_ifwt(wavelet_str, level, size, separable):
 @pytest.mark.parametrize("boundary", ["qr", "gramschmidt"])
 def test_matrix_transform_1d_rebuild(wavelet_str, boundary):
     """Ensure matrix fwt reconstructions are pywt compatible."""
-    data_list = [np.random.randn(18), np.random.randn(19)]
+    data_list = [np.random.randn(18), np.random.randn(21)]
     wavelet = pywt.Wavelet(wavelet_str)
     matrix_waverec = MatrixWaverec(wavelet, boundary=boundary)
     for level in [2, 1]:
@@ -280,7 +280,7 @@ def test_matrix_transform_2d_rebuild(wavelet_str, separable):
     matrixifwt = MatrixWaverec2d(wavelet, separable=separable)
     for level in [4, 1, None]:
         matrixfwt = MatrixWavedec2d(wavelet, level=level, separable=separable)
-        for size in [[16, 16], [15, 15]]:
+        for size in [[16, 16], [17, 17]]:
             face = np.mean(
                 scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
             ).astype(np.float64)
