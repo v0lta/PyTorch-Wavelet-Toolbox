@@ -79,7 +79,7 @@ convolution. Consider the following example:
   print(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2))
   
   # invert the fwt.
-  print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2), wavelet))
+  print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero'), wavelet))
 
 
 The functions ``wavedec`` and ``waverec`` compute the 1d-fwt and its inverse.
@@ -137,7 +137,7 @@ Reconsidering the 1d case, try:
   coeff = matrix_wavedec(data_torch)
   print(coeff)
   # backward 
-  matrix_waverec = ptwt.MatrixWaverec(pywt.Wavelet("haar"), level=2)
+  matrix_waverec = ptwt.MatrixWaverec(pywt.Wavelet("haar"))
   rec = matrix_waverec(coeff)
   print(rec)
 
