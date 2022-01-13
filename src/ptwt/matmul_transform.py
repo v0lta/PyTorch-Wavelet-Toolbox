@@ -242,24 +242,23 @@ class MatrixWavedec(object):
             )
 
     def _construct_analysis_matrices(
-        self, length: int, device: Union[torch.device, str], dtype: torch.dtype
+        self, device: Union[torch.device, str], dtype: torch.dtype
     ) -> None:
-        if self.level is None:
-            raise AssertionError()
-        self.input_length = length
+        if self.level is None or self.input_length is None:
+            raise AssertionError
         self.fwt_matrix_list = []
         self.size_list = []
         self.pad_list = []
         self.padded = False
 
         filt_len = self.wavelet.dec_len
-        curr_length = length
+        curr_length = self.input_length
         for curr_level in range(1, self.level + 1):
             if curr_length < filt_len:
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input size {length}. At level "
-                    f"{curr_level}, the current signal length {curr_length} is "
+                    f" is too large for the given input size {self.input_length}. At "
+                    f"level {curr_level}, the current signal length {curr_length} is "
                     f"smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
                     f"{curr_level-1}.\n"
@@ -315,7 +314,8 @@ class MatrixWavedec(object):
         _, length = input_signal.shape
 
         re_build = False
-        if self.input_length is None or self.input_length != length:
+        if self.input_length != length:
+            self.input_length = length
             re_build = True
 
         if self.level is None:
@@ -326,7 +326,7 @@ class MatrixWavedec(object):
 
         if not self.fwt_matrix_list or re_build:
             self._construct_analysis_matrices(
-                length, device=input_signal.device, dtype=input_signal.dtype
+                device=input_signal.device, dtype=input_signal.dtype
             )
 
         lo = input_signal.T
@@ -495,23 +495,23 @@ class MatrixWaverec(object):
             )
 
     def _construct_synthesis_matrices(
-        self, length: int, device: Union[torch.device, str], dtype: torch.dtype
+        self, device: Union[torch.device, str], dtype: torch.dtype
     ) -> None:
         self.ifwt_matrix_list = []
         self.size_list = []
         self.padded = False
-        self.pad_list = []
+        if self.level is None or self.input_length is None:
+            raise AssertionError
 
         filt_len = self.wavelet.rec_len
-        curr_length = length
-        if self.level is None:
-            raise ValueError
+        curr_length = self.input_length
+
         for curr_level in range(1, self.level + 1):
             if curr_length < filt_len:
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input size {length}. At level "
-                    f"{curr_level}, the current signal length {curr_length} is "
+                    f" is too large for the given input size {self.input_length}. At "
+                    f"level {curr_level}, the current signal length {curr_length} is "
                     f"smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
                     f"{curr_level-1}.\n"
@@ -522,9 +522,6 @@ class MatrixWaverec(object):
                 # padding
                 curr_length += 1
                 self.padded = True
-                self.pad_list.append(True)
-            else:
-                self.pad_list.append(False)
 
             self.size_list.append(curr_length)
 
@@ -554,18 +551,16 @@ class MatrixWaverec(object):
                 `MatrixWavedec` object.
         """
         level = len(coefficients) - 1
-        input_length = coefficients[-1] * 2
+        input_length = coefficients[-1].shape[0] * 2
 
         re_build = False
-        if self.level != level or input_length != self.input_length:
+        if self.level != level or self.input_length != input_length:
             self.level = level
             self.input_length = input_length
             re_build = True
 
         if not self.ifwt_matrix_list or re_build:
-            length = coefficients[-1].shape[0] * 2
             self._construct_synthesis_matrices(
-                length=length,
                 device=coefficients[-1].device,
                 dtype=coefficients[-1].dtype,
             )
