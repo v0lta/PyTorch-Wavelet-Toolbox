@@ -155,7 +155,8 @@ def test_fwt_ifwt_level_3():
 def test_fwt_ifwt_mackey_haar():
     """Test the Haar case for a long signal."""
     wavelet = pywt.Wavelet("haar")
-    generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1, device=device)
     wavelet = pywt.Wavelet("haar")
     pt_data = torch.squeeze(generator()).cpu()
     numpy_data = pt_data.cpu().numpy()
@@ -188,8 +189,9 @@ def test_fwt_ifwt_mackey_haar():
 @pytest.mark.slow
 def test_fwt_ifwt_mackey_db2():
     """Test the db2 case for a long signal."""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     wavelet = pywt.Wavelet("db2")
-    generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1)
+    generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1, device=device)
     pt_data = torch.squeeze(generator()).cpu()
     matrix_wavedec = MatrixWavedec(wavelet, 4)
     coeffs_mat_max = matrix_wavedec(pt_data)

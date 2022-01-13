@@ -4,34 +4,45 @@
 import collections
 from functools import partial
 from itertools import product
+from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Tuple, Union
 
 import pywt
 import torch
 
+
+from ._util import Wavelet, _as_wavelet
 from .conv_transform import wavedec, wavedec2
 from .matmul_transform_2d import MatrixWavedec2d
 
 
-class WaveletPacket(collections.UserDict):
+if TYPE_CHECKING:
+    BaseDict = collections.UserDict[str, torch.Tensor]
+else:
+    BaseDict = collections.UserDict
+
+
+class WaveletPacket(BaseDict):
     """One dimensional wavelet packets."""
 
-    def __init__(self, data: torch.tensor, wavelet, mode: str = "reflect"):
+    def __init__(
+        self, data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str = "reflect"
+    ) -> None:
         """Create a wavelet packet decomposition object.
 
         The decompositions will rely on padded fast wavelet transforms.
 
         Args:
-            data (np.array): The input data array of shape [time].
-            wavelet (pywt.Wavelet or WaveletFilter): The wavelet to use.
-            mode (str): The desired padding method.
+            data (torch.Tensor): The input data array of shape [time].
+            wavelet (Wavelet or str): A pywt wavelet compatible object or
+                the name of a pywt wavelet.
+            mode (str): The desired padding method. Defaults to 'reflect'.
         """
         self.input_data = data
         self.wavelet = wavelet
         self.mode = mode
-        self.data = None
         self._wavepacketdec(self.input_data, wavelet)
 
-    def get_level(self, level: int):
+    def get_level(self, level: int) -> List[str]:
         """Return the graycode ordered paths to the filter tree nodes.
 
         Args:
@@ -42,7 +53,7 @@ class WaveletPacket(collections.UserDict):
         """
         return self._get_graycode_order(level)
 
-    def _get_graycode_order(self, level, x="a", y="d"):
+    def _get_graycode_order(self, level: int, x: str = "a", y: str = "d") -> List[str]:
         graycode_order = [x, y]
         for _ in range(level - 1):
             graycode_order = [x + path for path in graycode_order] + [
@@ -50,7 +61,11 @@ class WaveletPacket(collections.UserDict):
             ]
         return graycode_order
 
-    def _recursive_dwt(self, data, level, max_level, path):
+    # ignoring missing return type, as recursive nesting is currently not supported
+    # see https://github.com/python/mypy/issues/731
+    def _recursive_dwt(  # type: ignore[no-untyped-def]
+        self, data: torch.Tensor, level: int, max_level: int, path: str
+    ):
         self.data[path] = torch.squeeze(data)
         if level < max_level:
             res_lo, res_hi = wavedec(data, self.wavelet, level=1, mode=self.mode)
@@ -61,7 +76,15 @@ class WaveletPacket(collections.UserDict):
         else:
             self.data[path] = torch.squeeze(data)
 
-    def _wavepacketdec(self, data, wavelet, max_level=None):
+    # ignoring missing return type, as recursive nesting is currently not supported
+    # see https://github.com/python/mypy/issues/731
+    def _wavepacketdec(  # type: ignore[no-untyped-def]
+        self,
+        data: torch.Tensor,
+        wavelet: Union[Wavelet, str],
+        max_level: Optional[int] = None,
+    ):
+        wavelet = _as_wavelet(wavelet)
         self.data = {}
         filter_len = len(wavelet.dec_lo)
         if max_level is None:
@@ -69,38 +92,51 @@ class WaveletPacket(collections.UserDict):
         self._recursive_dwt(data, level=0, max_level=max_level, path="")
 
 
-class WaveletPacket2D(collections.UserDict):
+class WaveletPacket2D(BaseDict):
     """Two dimensional wavelet packets."""
 
-    def __init__(self, data, wavelet, mode, max_level=None):
+    def __init__(
+        self,
+        data: torch.Tensor,
+        wavelet: Union[Wavelet, str],
+        mode: str,
+        max_level: Optional[int] = None,
+    ) -> None:
         """Create a 2D-Wavelet packet tree.
 
         Args:
             data (torch.tensor): The input data array
                 of shape [batch_size, height, width]
-            wavelet (Wavelet Object): A named wavelet tuple.
+            wavelet (Wavelet or str): A pywt wavelet compatible object or
+                the name of a pywt wavelet.
             mode (str): A string indicating the desired padding mode,
                 choose zero or reflect.
-            max_level (int): The highest decomposition level.
+            max_level (int, optional): The highest decomposition level.
         """
         self.input_data = torch.unsqueeze(data, 1)
-        self.wavelet = wavelet
+        self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
         if mode == "zero":
             # translate pywt to PyTorch
             self.mode = "constant"
 
-        self.max_level = max_level
-        if self.max_level is None:
+        if max_level is None:
             self.max_level = pywt.dwt_max_level(
                 min(self.input_data.shape[2:]), self.wavelet
             )
+        else:
+            self.max_level = max_level
 
-        self.matrix_wavedec2_dict = {}
+        self.matrix_wavedec2_dict: Dict[Tuple[int, ...], MatrixWavedec2d] = {}
         self.data = {}
         self._recursive_dwt2d(self.input_data, level=0, path="")
 
-    def _get_wavedec(self, shape):
+    def _get_wavedec(
+        self, shape: Tuple[int, ...]
+    ) -> Callable[
+        [torch.Tensor],
+        List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    ]:
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_wavedec2_dict.keys():
@@ -112,7 +148,11 @@ class WaveletPacket2D(collections.UserDict):
         else:
             return partial(wavedec2, wavelet=self.wavelet, level=1, mode=self.mode)
 
-    def _recursive_dwt2d(self, data, level, path):
+    # ignoring missing return type, as recursive nesting is currently not supported
+    # see https://github.com/python/mypy/issues/731
+    def _recursive_dwt2d(  # type: ignore[no-untyped-def]
+        self, data: torch.Tensor, level: int, path: str
+    ):
         self.data[path] = data
         if level < self.max_level:
             # resa, (resh, resv, resd) = self.wavedec2(
@@ -121,6 +161,8 @@ class WaveletPacket2D(collections.UserDict):
             result_a, (result_h, result_v, result_d) = self._get_wavedec(data.shape)(
                 data
             )
+            # assert for type checking
+            assert not isinstance(result_a, tuple)
             return (
                 self._recursive_dwt2d(result_a, level + 1, path + "a"),
                 self._recursive_dwt2d(result_h, level + 1, path + "h"),
@@ -131,7 +173,7 @@ class WaveletPacket2D(collections.UserDict):
             self.data[path] = torch.squeeze(data)
 
 
-def get_freq_order(level: int) -> list:
+def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
     """Get the frequency order for a given packet decomposition level.
 
     Args:
@@ -153,7 +195,7 @@ def get_freq_order(level: int) -> list:
     """
     wp_natural_path = list(product(["a", "h", "v", "d"], repeat=level))
 
-    def _get_graycode_order(level, x="a", y="d"):
+    def _get_graycode_order(level: int, x: str = "a", y: str = "d") -> List[str]:
         graycode_order = [x, y]
         for _ in range(level - 1):
             graycode_order = [x + path for path in graycode_order] + [
@@ -161,24 +203,23 @@ def get_freq_order(level: int) -> list:
             ]
         return graycode_order
 
-    def expand_2d_path(path):
+    def expand_2d_path(path: Tuple[str, ...]) -> Tuple[str, str]:
         expanded_paths = {"d": "hh", "h": "hl", "v": "lh", "a": "ll"}
         return (
             "".join([expanded_paths[p][0] for p in path]),
             "".join([expanded_paths[p][1] for p in path]),
         )
 
-    nodes = {}
+    nodes_dict: Dict[str, Dict[str, Tuple[str, ...]]] = {}
     for (row_path, col_path), node in [
         (expand_2d_path(node), node) for node in wp_natural_path
     ]:
-        nodes.setdefault(row_path, {})[col_path] = node
+        nodes_dict.setdefault(row_path, {})[col_path] = node
     graycode_order = _get_graycode_order(level, x="l", y="h")
-    nodes = [nodes[path] for path in graycode_order if path in nodes]
+    nodes = [nodes_dict[path] for path in graycode_order if path in nodes_dict]
     result = []
     for row in nodes:
         result.append([row[path] for path in graycode_order if path in row])
-    # print(result)
     return result
 
 
@@ -239,7 +280,7 @@ if __name__ == "__main__":
             img_pt.append(img_rows_pt)
             img_rows_pt = None
 
-    img_pt = torch.cat(img_pt, axis=0).numpy()
+    img_pt = torch.cat(img_pt, dim=0).numpy()
     abs = np.abs(img_pt - img_pywt)
 
     err = np.mean(abs)

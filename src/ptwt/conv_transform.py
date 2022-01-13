@@ -1,20 +1,24 @@
 """Fast wavelet transformation code with edge-padding."""
 # Created by moritz wolter, 14.04.20
+from typing import List, Optional, Sequence, Tuple, Union
+
 import pywt
 import torch
 
+from ._util import Wavelet, _as_wavelet
+
 
 def get_filter_tensors(
-    wavelet: pywt.Wavelet,
+    wavelet: Union[Wavelet, str],
     flip: bool,
-    device: torch.device,
+    device: Union[torch.device, str],
     dtype: torch.dtype = torch.float32,
-) -> tuple:
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Convert input wavelet to filter tensors.
 
     Args:
-        wavelet (pywt.Wavlet): Wavelet object, assuming pywt-like
-                 field names.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+                the name of a pywt wavelet.
         flip (bool): If true filters are flipped.
         device (torch.device) : PyTorch target device.
         dtype (torch.dtype): The data type sets the precision of the
@@ -25,8 +29,9 @@ def get_filter_tensors(
         dec_lo, dec_hi, rec_lo, rec_hi
 
     """
+    wavelet = _as_wavelet(wavelet)
 
-    def create_tensor(filter):
+    def _create_tensor(filter: Sequence[float]) -> torch.Tensor:
         if flip:
             if isinstance(filter, torch.Tensor):
                 return filter.flip(-1).unsqueeze(0).to(device)
@@ -41,14 +46,14 @@ def get_filter_tensors(
                 return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
 
     dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
-    dec_lo = create_tensor(dec_lo)
-    dec_hi = create_tensor(dec_hi)
-    rec_lo = create_tensor(rec_lo)
-    rec_hi = create_tensor(rec_hi)
-    return dec_lo, dec_hi, rec_lo, rec_hi
+    dec_lo_tensor = _create_tensor(dec_lo)
+    dec_hi_tensor = _create_tensor(dec_hi)
+    rec_lo_tensor = _create_tensor(rec_lo)
+    rec_hi_tensor = _create_tensor(rec_hi)
+    return dec_lo_tensor, dec_hi_tensor, rec_lo_tensor, rec_hi_tensor
 
 
-def get_pad(data_len: int, filt_len: int) -> tuple:
+def get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
     """Compute the required padding.
 
     Args:
@@ -83,20 +88,21 @@ def get_pad(data_len: int, filt_len: int) -> tuple:
 
 
 def fwt_pad(
-    data: torch.Tensor, wavelet: pywt.Wavelet, mode: str = "reflect"
+    data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str = "reflect"
 ) -> torch.Tensor:
     """Pad the input signal to make the fwt matrix work.
 
     Args:
         data (torch.Tensor): Input data [batch_size, 1, time]
-        wavelet (pywt.Wavelet):
-            The input wavelet following the pywt wavelet format.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
         mode (str): The desired way to pad.
 
     Returns:
         torch.Tensor: A pytorch tensor with the padded input data
 
     """
+    wavelet = _as_wavelet(wavelet)
     if mode == "zero":
         # convert pywt to pytorch convention.
         mode = "constant"
@@ -106,26 +112,30 @@ def fwt_pad(
     return data_pad
 
 
-def fwt_pad2d(data, wavelet, level, mode="reflect"):
+def fwt_pad2d(
+    data: torch.Tensor, wavelet: Union[Wavelet, str], level: int, mode: str = "reflect"
+) -> torch.Tensor:
     """Pad data for the 2d FWT.
 
     Args:
         data (torch.Tensor): Input data with 4 dimensions.
-        wavelet (pywt.Wavelet or WaveletFilter): The wavelet used.
-        level: The number of scales in the transform.
-        mode (str, optional): The padding mode. Defaults to 'reflect'.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+        level (int): The number of scales in the transform.
+        mode (str): The padding mode. Defaults to 'reflect'.
 
     Returns:
         The padded output tensor.
 
     """
+    wavelet = _as_wavelet(wavelet)
     padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo))
     padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo))
     data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
     return data_pad
 
 
-def _outer(a, b):
+def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """Torch implementation of numpy's outer for vectors."""
     a_flat = torch.reshape(a, [-1])
     b_flat = torch.reshape(b, [-1])
@@ -134,20 +144,24 @@ def _outer(a, b):
     return a_mul * b_mul
 
 
-def flatten_2d_coeff_lst(coeff_lst_2d: list, flatten_tensors: bool = True) -> list:
+def flatten_2d_coeff_lst(
+    coeff_lst_2d: List[
+        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+    ],
+    flatten_tensors: bool = True,
+) -> List[torch.Tensor]:
     """Flattens a list of tensor tuples into a single list.
 
     Args:
-        coeff_lst_2d (list): A pywt-style coefficient list.
-        flatten_tensors (bool): If true,
-             2d tensors are flattened. Defaults to True.
+        coeff_lst_2d (list): A pywt-style coefficient list of torch tensors.
+        flatten_tensors (bool): If true, 2d tensors are flattened. Defaults to True.
 
     Returns:
         list: A single 1-d list with all original elements.
     """
     flat_coeff_lst = []
     for coeff in coeff_lst_2d:
-        if type(coeff) is tuple:
+        if isinstance(coeff, tuple):
             for c in coeff:
                 if flatten_tensors:
                     flat_coeff_lst.append(c.flatten())
@@ -182,13 +196,19 @@ def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     return filt
 
 
-def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
+def wavedec2(
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    level: Optional[int] = None,
+    mode: str = "reflect",
+) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
     """Non seperated two dimensional wavelet transform.
 
     Args:
         data (torch.Tensor): The input data tensor of shape
             [batch_size, 1, height, width].
-        wavelet: The transformation wavelet.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+                the name of a pywt wavelet.
         level (int): The number of desired scales.
             Defaults to None.
         mode (str): The padding mode, i.e. zero or reflect.
@@ -213,6 +233,7 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
                                          level=2, mode="constant")
 
     """
+    wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
@@ -221,7 +242,9 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
     if level is None:
         level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
 
-    result_lst = []
+    result_lst: List[
+        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+    ] = []
     res_ll = data
     for s in range(level):
         res_ll = fwt_pad2d(res_ll, wavelet, level=s, mode=mode)
@@ -232,16 +255,22 @@ def wavedec2(data, wavelet, level: int = None, mode: str = "reflect") -> list:
     return result_lst[::-1]
 
 
-def waverec2(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
+def waverec2(
+    coeffs: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    wavelet: Union[Wavelet, str],
+) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
         coeffs (list): The wavelet coefficient list produced by wavedec2.
-        wavelet (pywt.Wavelet or learnable_wavelets.WaveletFilter):
-            The wavelet object used to compute the forward transform.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
 
     Returns:
         torch.Tensor: The reconstructed signal.
+
+    Raises:
+        ValueError: If `coeffs` is not in the shape as it is returned from `wavedec2`.
 
     Examples::
         >>> import ptwt, pywt, torch
@@ -255,6 +284,13 @@ def waverec2(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
         >>> reconstruction = ptwt.waverec2(coefficients, pywt.Wavelet("haar"))
 
     """
+    wavelet = _as_wavelet(wavelet)
+
+    if not isinstance(coeffs[0], torch.Tensor):
+        raise ValueError(
+            "First element of coeffs must be the approximation coefficient tensor."
+        )
+
     _, _, rec_lo, rec_hi = get_filter_tensors(
         wavelet, flip=False, device=coeffs[0].device, dtype=coeffs[0].dtype
     )
@@ -302,16 +338,19 @@ def waverec2(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
 
 
 def wavedec(
-    data: torch.Tensor, wavelet: pywt.Wavelet, level: int = None, mode: str = "reflect"
-) -> list:
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    level: Optional[int] = None,
+    mode: str = "reflect",
+) -> List[torch.Tensor]:
     """Compute the analysis (forward) 1d fast wavelet transform.
 
     Args:
         data (torch.Tensor): Input time series of shape [batch_size, 1, time]
                              1d inputs are interpreted as [time],
                              2d inputs are interpreted as [batch_size, time].
-        wavelet (learnable_wavelets.WaveletFilter or pywt.Wavelet):
-            The wavelet object to use.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
         level (int): The scale level to be computed.
                                Defaults to None.
         mode (str): The padding mode i.e. zero or reflect.
@@ -361,13 +400,13 @@ def wavedec(
     return result_lst[::-1]
 
 
-def waverec(coeffs: list, wavelet: pywt.Wavelet) -> torch.Tensor:
+def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
         coeffs (list): The wavelet coefficient list produced by wavedec.
-        wavelet (learnable_wavelets.WaveletFilter or pywt.Wavelet):
-            The wavelet object used to compute the forward transform.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
 
     Returns:
         torch.Tensor: The reconstructed signal.

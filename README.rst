@@ -36,7 +36,7 @@ Welcome to the PyTorch wavelet toolbox. This package implements:
 - the 2d fwt is called ``wavedec2``
 - and inverse 2d fwt ``waverec2``.
 - 1d sparse-matrix fast wavelet transforms with boundary filters.
-- 2d sparse-matrix transforms with boundary filters (experimental).
+- 2d sparse-matrix transforms with separable & non-separable boundary filters (experimental).
 - single and two-dimensional wavelet packet forward transforms.
 - adaptive wavelet support (experimental).
 
@@ -119,7 +119,7 @@ In contrast to padding, boundary wavelets do not add extra pixels at
 the edges.
 Internally, boundary wavelet support relies on ``torch.sparse.mm``.
 Generate 1d sparse matrix forward and backward transforms with the
-`MatrixWavedec` and `MatrixWaverec` classes.
+``MatrixWavedec`` and ``MatrixWaverec`` classes.
 Reconsidering the 1d case, try:
 
 .. code-block:: python
@@ -142,13 +142,16 @@ Reconsidering the 1d case, try:
   print(rec)
 
 
-The process for the 2d transforms `MatrixWavedec2d`, `MatrixWaverec2d`,
-works similarly.
+The process for the 2d transforms ``MatrixWavedec2d``, ``MatrixWaverec2d`` works similarly.
+By default, a non-separable transformation is used.
+To use a separable transformation, pass ``separable=True`` to ``MatrixWavedec2d`` and ``MatrixWaverec2d``.
+Separable transformations use a 1d transformation along both axes which might be faster since less matrix entries
+have to be orthogonalized.
 
 
 **Adaptive** **Wavelets**
 
-Experimental code to train an adaptive wavelet layer in PyTorch is available in the `examples` folder. In addition to static wavelets
+Experimental code to train an adaptive wavelet layer in PyTorch is available in the ``examples`` folder. In addition to static wavelets
 from pywt,
 
 - Adaptive product-filters
@@ -159,8 +162,8 @@ See https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples for a co
 
 **Testing**
 
-The `tests` folder contains multiple tests to allow independent verification of this toolbox. After cloning the
-repository, and moving into the main directory, and installing `tox` with `pip install tox` run:
+The ``tests`` folder contains multiple tests to allow independent verification of this toolbox. After cloning the
+repository, and moving into the main directory, and installing ``tox`` with ``pip install tox`` run:
 
 .. code-block:: sh
 
@@ -183,5 +186,14 @@ If you find this work useful, please consider citing:
     year = 2021,
     month = jul,
     url = {https://hdl.handle.net/20.500.11811/9245}
+  }
+
+  @thesis{Blanke2021,
+    author = {Felix Blanke},
+    title = {{Randbehandlung bei Wavelets für Faltungsnetzwerke}},
+    type = {Bachelor's Thesis},
+    annote = {Gbachelor},
+    year = {2021},
+    school = {Institut f\"ur Numerische Simulation, Universit\"at Bonn}
   }
 

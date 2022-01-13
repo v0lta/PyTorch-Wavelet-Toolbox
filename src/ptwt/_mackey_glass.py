@@ -1,4 +1,5 @@
 """Generate artificial time-series data for debugging purposes."""
+from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import torch
@@ -6,10 +7,10 @@ import torch
 
 def generate_mackey(
     batch_size: int = 100,
-    tmax: int = 200,
+    tmax: float = 200,
     delta_t: float = 1.0,
     rnd: bool = True,
-    device: torch.device = "cuda",
+    device: Union[torch.device, str] = "cuda",
 ) -> torch.Tensor:
     """Generate synthetic training data using the Mackey system of equations.
 
@@ -23,12 +24,11 @@ def generate_mackey(
     Args:
         batch_size (int): The number of simulated series to return.
             Defaults to 100.
-        tmax (int): Total time to simulate. Defaults to 200.
+        tmax (float): Total time to simulate. Defaults to 200.
         delta_t (float): Size of the time step. Defaults to 1.0.
         rnd (bool): If true use a random initial state.
             Defaults to True.
-        device (torch.device): Choose cpu or cuda.
-            Defaults to "cuda".
+        device (torch.device or str): Choose cpu or cuda. Defaults to "cuda".
 
     Returns:
         torch.Tensor: A Tensor of shape [batch_size, time, 1],
@@ -36,7 +36,9 @@ def generate_mackey(
     steps = int(tmax / delta_t) + 200
 
     # multi-dimensional data.
-    def mackey(x, tau, gamma=0.1, beta=0.2, n=10):
+    def mackey(
+        x: torch.Tensor, tau: int, gamma: float = 0.1, beta: float = 0.2, n: int = 10
+    ) -> torch.Tensor:
         return beta * x[:, -tau] / (1 + torch.pow(x[:, -tau], n)) - gamma * x[:, -1]
 
     tau = int(17 * (1 / delta_t))
@@ -86,22 +88,22 @@ class MackeyGenerator(object):
 
     def __init__(
         self,
-        batch_size,
-        tmax,
-        delta_t,
-        block_size=None,
-        restore_and_plot=False,
-        device="cuda",
-    ):
+        batch_size: int,
+        tmax: float,
+        delta_t: float,
+        block_size: Optional[int] = None,
+        restore_and_plot: bool = False,
+        device: Union[torch.device, str] = "cuda",
+    ) -> None:
         """Create a Mackey-Glass simulator.
 
         Args:
-            batch_size: Total number of samples to generate.
-            tmax: Total simulation time.
-            delta_t: Time step.
-            block_size: Length of mean blocks. Defaults to None.
-            restore_and_plot: Deactivate random init. Defaults to False.
-            device: Choose cpu or cuda. Defaults to "cuda".
+            batch_size (int): Total number of samples to generate.
+            tmax (float): Total simulation time.
+            delta_t (float): Time step.
+            block_size (int, optional): Length of mean blocks. Defaults to None.
+            restore_and_plot (bool): Deactivate random init. Defaults to False.
+            device (torch.device or str): Choose cpu or cuda. Defaults to "cuda".
         """
         self.batch_size = batch_size
         self.tmax = tmax
@@ -110,7 +112,7 @@ class MackeyGenerator(object):
         self.restore_and_plot = restore_and_plot
         self.device = device
 
-    def __call__(self):
+    def __call__(self) -> torch.Tensor:
         """Simulate a batch and return the result."""
         data_nd = generate_mackey(
             tmax=self.tmax,
@@ -126,7 +128,7 @@ class MackeyGenerator(object):
         return data_nd
 
 
-def _main():
+def _main() -> None:
     mackey = generate_mackey(tmax=1200, delta_t=0.1, rnd=True, device="cuda")
     block_mackey = _blockify(mackey, 100)
     print(mackey.shape)

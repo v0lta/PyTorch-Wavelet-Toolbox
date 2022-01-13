@@ -106,52 +106,45 @@ def _compare_trees(
 
 
 @pytest.mark.slow
-def test_2d_packets():
+@pytest.mark.parametrize("max_lev", [1, 2, 3, 4])
+@pytest.mark.parametrize(
+    "wavelet_str", ["haar", "db2", "db3", "db4", "db5", "db6", "db7", "db8"]
+)
+@pytest.mark.parametrize("boundary", ["zero", "reflect"])
+def test_2d_packets(max_lev, wavelet_str, boundary):
     """Ensure pywt and ptwt produce equivalent wavelet packet trees."""
-    for max_lev in [1, 2, 3, 4]:
-        for wavelet_str in ["haar", "db2", "db3", "db4", "db5", "db6", "db7", "db8"]:
-            for boundary in ["zero", "reflect"]:
-                _compare_trees(
-                    wavelet_str, max_lev, pywt_boundary=boundary, ptwt_boundary=boundary
-                )
+    _compare_trees(wavelet_str, max_lev, pywt_boundary=boundary, ptwt_boundary=boundary)
 
 
 @pytest.mark.slow
-def test_boundary_matrix_packets():
+@pytest.mark.parametrize("max_lev", [1, 2, 3, 4])
+def test_boundary_matrix_packets(max_lev):
     """Ensure the sparse matrix haar tree and pywt-tree are the same."""
-    for max_lev in [1, 2, 3, 4]:
-        _compare_trees("db1", max_lev, "zero", "boundary")
+    _compare_trees("db1", max_lev, "zero", "boundary")
 
 
-def test_freq_order():
+@pytest.mark.parametrize("level", [1, 2, 3, 4])
+@pytest.mark.parametrize("wavelet_str", ["db2"])
+@pytest.mark.parametrize("pywt_boundary", ["zero"])
+def test_freq_order(level, wavelet_str, pywt_boundary):
     """Test the packets in frequency order."""
-    for level in [1, 2, 3, 4]:
-        wavelet_str = "db2"
-        pywt_boundary = "zero"
+    face = misc.face()
+    wavelet = pywt.Wavelet(wavelet_str)
+    wp_tree = pywt.WaveletPacket2D(
+        data=np.mean(face, axis=-1).astype(np.float64),
+        wavelet=wavelet,
+        mode=pywt_boundary,
+    )
+    # Get the full decomposition
+    freq_tree = wp_tree.get_level(level, "freq")
+    freq_order = get_freq_order(level)
 
-        face = misc.face()
-        wavelet = pywt.Wavelet(wavelet_str)
-        wp_tree = pywt.WaveletPacket2D(
-            data=np.mean(face, axis=-1).astype(np.float64),
-            wavelet=wavelet,
-            mode=pywt_boundary,
-        )
-        # Get the full decomposition
-        freq_tree = wp_tree.get_level(level, "freq")
-        freq_order = get_freq_order(level)
-
-        for order_list, tree_list in zip(freq_tree, freq_order):
-            for order_el, tree_el in zip(order_list, tree_list):
-                print(
-                    level,
-                    order_el.path,
-                    "".join(tree_el),
-                    order_el.path == "".join(tree_el),
-                )
-                assert order_el.path == "".join(tree_el)
-
-
-if __name__ == "__main__":
-    # test_packet_harbo_lvl3()
-    # test_2d_packets()
-    test_boundary_matrix_packets()
+    for order_list, tree_list in zip(freq_tree, freq_order):
+        for order_el, tree_el in zip(order_list, tree_list):
+            print(
+                level,
+                order_el.path,
+                "".join(tree_el),
+                order_el.path == "".join(tree_el),
+            )
+            assert order_el.path == "".join(tree_el)
