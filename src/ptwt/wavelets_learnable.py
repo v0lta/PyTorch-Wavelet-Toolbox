@@ -6,6 +6,8 @@ See https://arxiv.org/pdf/2004.09569.pdf for more information.
 # Inspired by Ripples in Mathematics, Jensen and La Cour-Harbo, Chapter 7.7
 # import pywt
 from abc import ABC, abstractmethod
+from typing import Tuple
+
 
 import torch
 
@@ -20,17 +22,19 @@ class WaveletFilter(ABC):
 
     @property
     @abstractmethod
-    def filter_bank(self):
+    def filter_bank(
+        self,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return dec_lo, dec_hi, rec_lo, rec_hi."""
         raise NotImplementedError
 
     @abstractmethod
-    def wavelet_loss(self):
+    def wavelet_loss(self) -> torch.Tensor:
         """Return the sum of all loss terms."""
-        return self.alias_cancellation_loss() + self.perfect_reconstruction_loss()
+        return self.alias_cancellation_loss()[0] + self.perfect_reconstruction_loss()[0]
 
     @abstractmethod
-    def __len__(self):
+    def __len__(self) -> int:
         """Return the filter length."""
         raise NotImplementedError
 
@@ -38,7 +42,9 @@ class WaveletFilter(ABC):
     # def parameters(self):
     #     raise NotImplementedError
 
-    def pf_alias_cancellation_loss(self) -> list:
+    def pf_alias_cancellation_loss(
+        self,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the product filter-alias cancellation loss.
 
         See: Strang+Nguyen 105: F0(z) = H1(-z); F1(z) = -H0(-z)
@@ -71,7 +77,9 @@ class WaveletFilter(ABC):
         err2s = torch.sum(err2 * err2)
         return err1s + err2s, err1, err2
 
-    def alias_cancellation_loss(self):
+    def alias_cancellation_loss(
+        self,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the alias cancellation loss.
 
         Implementation of the ac-loss as described
@@ -111,7 +119,9 @@ class WaveletFilter(ABC):
         errs = (p_test - zeros) * (p_test - zeros)
         return torch.sum(errs), p_test, zeros
 
-    def perfect_reconstruction_loss(self) -> list:
+    def perfect_reconstruction_loss(
+        self,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the perfect reconstruction loss.
 
         Strang 107: Assuming alias cancellation holds:
@@ -186,18 +196,20 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
         self.rec_hi = torch.nn.Parameter(rec_hi)
 
     @property
-    def filter_bank(self):
+    def filter_bank(
+        self,
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return all filters a a tuple."""
         return self.dec_lo, self.dec_hi, self.rec_lo, self.rec_hi
 
     # def parameters(self):
     #     return [self.dec_lo, self.dec_hi, self.rec_lo, self.rec_hi]
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Return the length of all filter arrays."""
         return self.dec_lo.shape[-1]
 
-    def product_filter_loss(self):
+    def product_filter_loss(self) -> torch.Tensor:
         """Get only the product filter loss.
 
         Returns:
@@ -205,7 +217,7 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
         """
         return self.perfect_reconstruction_loss()[0] + self.alias_cancellation_loss()[0]
 
-    def wavelet_loss(self):
+    def wavelet_loss(self) -> torch.Tensor:
         """Return the sum of all loss terms.
 
         Returns:
@@ -234,7 +246,7 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
         """
         super().__init__(dec_lo, dec_hi, rec_lo, rec_hi)
 
-    def rec_lo_orthogonality_loss(self):
+    def rec_lo_orthogonality_loss(self) -> torch.Tensor:
         """Return a Strang inspired soft orthogonality loss.
 
         See Strang p. 148/149 or Harbo p. 80.
@@ -267,7 +279,7 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
         err = res - test
         return torch.sum(err * err)
 
-    def filt_bank_orthogonality_loss(self):
+    def filt_bank_orthogonality_loss(self) -> torch.Tensor:
         """Return a Jensen+Harbo inspired soft orthogonality loss.
 
         On Page 79 of the Book Ripples in Mathematics
@@ -285,6 +297,6 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
         # print(eq0, eq1)
         return seq0 + seq1
 
-    def wavelet_loss(self):
+    def wavelet_loss(self) -> torch.Tensor:
         """Return the sum of all terms."""
         return self.product_filter_loss() + self.filt_bank_orthogonality_loss()

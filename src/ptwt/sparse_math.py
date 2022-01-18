@@ -1,5 +1,7 @@
 """Efficiently construct fwt operations using sparse matrices."""
 # Written by moritz ( @ wolter.tech ) 17.09.21
+from typing import List
+
 import numpy as np
 import torch
 
@@ -82,6 +84,49 @@ def sparse_kron(
     return result
 
 
+def cat_sparse_identity_matrix(
+    sparse_matrix: torch.Tensor, new_length: int
+) -> torch.Tensor:
+    """Concatenate a sparse input matrix and a sparse identity matrix.
+
+    Args:
+        sparse_matrix (torch.Tensor): The input matrix.
+        new_length (int):
+            The length up to which the diagonal should be elongated.
+
+    Returns:
+        torch.Tensor: Square [input, eye] matrix
+            of size [new_length, new_length]
+    """
+    # assert square matrix.
+    assert (
+        sparse_matrix.shape[0] == sparse_matrix.shape[1]
+    ), "Matrices must be square. Odd inputs can cause to non-square matrices."
+    assert new_length > sparse_matrix.shape[0], "cant add negatively many entries."
+    x = torch.arange(
+        sparse_matrix.shape[0],
+        new_length,
+        dtype=sparse_matrix.dtype,
+        device=sparse_matrix.device,
+    )
+    y = torch.arange(
+        sparse_matrix.shape[0],
+        new_length,
+        dtype=sparse_matrix.dtype,
+        device=sparse_matrix.device,
+    )
+    extra_indices = torch.stack([x, y])
+    extra_values = torch.ones(
+        [new_length - sparse_matrix.shape[0]],
+        dtype=sparse_matrix.dtype,
+        device=sparse_matrix.device,
+    )
+    new_indices = torch.cat([sparse_matrix.coalesce().indices(), extra_indices], -1)
+    new_values = torch.cat([sparse_matrix.coalesce().values(), extra_values], -1)
+    new_matrix = torch.sparse_coo_tensor(new_indices, new_values)
+    return new_matrix
+
+
 def sparse_diag(
     diagonal: torch.Tensor, col_offset: int, rows: int, cols: int
 ) -> torch.Tensor:
@@ -126,26 +171,6 @@ def sparse_diag(
     )
 
     return diag
-
-
-def sparse_matmul_select(matrix: torch.tensor, row: int) -> torch.Tensor:
-    """Select a sparse tensor row by matrix multiplication.
-
-    Args:
-        matrix (torch.tensor): The sparse matrix from which to select.
-        row (int): The row to return.
-
-    Returns:
-        torch.Tensor: The selected row.
-    """
-    selection_matrix = torch.sparse_coo_tensor(
-        torch.stack([torch.tensor(0, device=row.device), row]).unsqueeze(-1),
-        torch.tensor(1.0),
-        device=matrix.device,
-        dtype=matrix.dtype,
-        size=(1, matrix.shape[0]),
-    )
-    return torch.sparse.mm(selection_matrix, matrix)
 
 
 def sparse_replace_row(
@@ -270,7 +295,7 @@ def _orth_by_gram_schmidt(
     Returns:
         torch.Tensor: The orthogonalized sparse matrix.
     """
-    done = []
+    done: List[int] = []
     # loop over the rows we want to orthogonalize
     for row_no_to_ortho in to_orthogonalize:
         current_row = matrix.select(0, row_no_to_ortho).unsqueeze(0)
@@ -280,7 +305,7 @@ def _orth_by_gram_schmidt(
             non_orthogonal = torch.sparse.mm(current_row, done_row.transpose(1, 0))
             non_orthogonal_values = non_orthogonal.coalesce().values()
             if len(non_orthogonal_values) == 0:
-                non_orthogonal_item = 0
+                non_orthogonal_item: float = 0
             else:
                 non_orthogonal_item = non_orthogonal_values.item()
             sum += non_orthogonal_item * done_row
@@ -293,7 +318,7 @@ def _orth_by_gram_schmidt(
 
 
 def construct_conv_matrix(
-    filter: torch.tensor, input_rows: int, mode: str = "valid"
+    filter: torch.Tensor, input_rows: int, mode: str = "valid"
 ) -> torch.Tensor:
     """Construct a convolution matrix.
 
@@ -343,13 +368,15 @@ def construct_conv_matrix(
                 row_indices.append(row + column - start_row)
                 column_indices.append(column)
                 values.append(filter[row])
-    indices = np.stack([row_indices, column_indices])
-    values = torch.stack(values)
-    return torch.sparse_coo_tensor(indices, values, dtype=filter.dtype)
+    indices = torch.tensor(
+        np.stack([row_indices, column_indices]), device=filter.device
+    )
+    value_tensor = torch.stack(values)
+    return torch.sparse_coo_tensor(indices, value_tensor, dtype=filter.dtype)
 
 
 def construct_conv2d_matrix(
-    filter: torch.tensor,
+    filter: torch.Tensor,
     input_rows: int,
     input_columns: int,
     mode: str = "valid",
@@ -517,6 +544,32 @@ def construct_strided_conv2d_matrix(
     )
     # return convolution_matrix.index_select(0, strided_rows)
     return torch.sparse.mm(selection_eye, convolution_matrix)
+
+
+def batch_mm(matrix: torch.Tensor, matrix_batch: torch.Tensor) -> torch.Tensor:
+    """Calculate a batched matrix-matrix product using torch tensors.
+
+    This calculates the product of a matrix with a batch of dense matrices.
+    The former can be dense or sparse.
+
+    Args:
+        matrix (torch.Tensor): Sparse or dense matrix, size (m, n).
+        matrix_batch (torch.Tensor): Batched dense matrices, size (b, n, k).
+
+    Returns
+        torch.Tensor: The batched matrix-matrix product, size (b, m, k).
+
+    Raises:
+        ValueError: If the matrices cannot be multiplied due to incompatible matrix
+            shapes.
+    """
+    batch_size = matrix_batch.shape[0]
+    if matrix.shape[1] != matrix_batch.shape[1]:
+        raise ValueError("Matrix shapes not compatible.")
+
+    # Stack the vector batch into columns. (b, n, k) -> (n, b, k) -> (n, b*k)
+    vectors = matrix_batch.transpose(0, 1).reshape(matrix.shape[1], -1)
+    return matrix.mm(vectors).reshape(matrix.shape[0], batch_size, -1).transpose(1, 0)
 
 
 if __name__ == "__main__":
