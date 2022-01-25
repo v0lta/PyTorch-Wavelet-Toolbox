@@ -127,39 +127,63 @@ class WaveletPacket2D(BaseDict):
 
     def __init__(
         self,
-        data: torch.Tensor,
         wavelet: Union[Wavelet, str],
-        mode: str,
-        max_level: Optional[int] = None,
+        mode: str = "reflect",
+        boundary_orthogonalization: str = "qr",
+        separable: bool = False,
     ) -> None:
         """Create a 2D-Wavelet packet tree.
 
         Args:
-            data (torch.tensor): The input data array
-                of shape [batch_size, height, width]
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
-            mode (str): A string indicating the desired padding mode,
-                choose zero or reflect.
-            max_level (int, optional): The highest decomposition level.
+            mode (str): A string indicating the desired padding mode.
+                If you select 'boundary', the sparse matrix backend is used.
+                Defaults to 'reflect'
+            boundary_orthogonalization (str): The orthogonalization method
+                to use in the sparse matrix backend. Only used if `mode`
+                equals 'boundary'. Choose from 'qr' or 'gramschmidt'.
+                Defaults to 'qr'.
+            separable (bool): If true and the sparse matrix backend is selected,
+                a separable transform is performed, i.e. each image axis is
+                transformed separately. Defaults to False.
         """
-        self.input_data = torch.unsqueeze(data, 1)
         self.wavelet = _as_wavelet(wavelet)
-        self.mode = mode
-        if mode == "zero":
-            # translate pywt to PyTorch
-            self.mode = "constant"
 
-        if max_level is None:
-            self.max_level = pywt.dwt_max_level(
-                min(self.input_data.shape[2:]), self.wavelet
-            )
-        else:
-            self.max_level = max_level
+        # translate pywt to PyTorch
+        self.mode = "constant" if mode == "zero" else mode
 
+        self.boundary = boundary_orthogonalization
+        self.separable = separable
         self.matrix_wavedec2_dict: Dict[Tuple[int, ...], MatrixWavedec2d] = {}
+
+        self.max_level: Optional[int] = None
         self.data = {}
-        self._recursive_dwt2d(self.input_data, level=0, path="")
+
+    def transform(
+        self, input_data: torch.Tensor, max_level: Optional[int] = None
+    ) -> "WaveletPacket2D":
+        """Calculate the 2d wavelet packet transform for the input data.
+
+        Args:
+            input_data (torch.tensor): The input data tensor
+                of shape [batch_size, height, width]
+            max_level (int, optional): The highest decomposition level to compute.
+                If None, the maximum level is determined from the input data shape.
+                Defaults to None.
+        """
+        self.data = {}
+        if max_level is None:
+            max_level = pywt.dwt_max_level(
+                min(input_data.shape[-2:]), self.wavelet.dec_len
+            )
+        self.max_level = max_level
+
+        if input_data.dim() == 3:
+            input_data = torch.unsqueeze(input_data, 1)
+
+        self._recursive_dwt2d(input_data, level=0, path="")
+        return self
 
     def _get_wavedec(
         self, shape: Tuple[int, ...]
@@ -171,7 +195,10 @@ class WaveletPacket2D(BaseDict):
             shape = tuple(shape)
             if shape not in self.matrix_wavedec2_dict.keys():
                 self.matrix_wavedec2_dict[shape] = MatrixWavedec2d(
-                    self.wavelet, level=1
+                    self.wavelet,
+                    level=1,
+                    boundary=self.boundary,
+                    separable=self.separable,
                 )
             fun = self.matrix_wavedec2_dict[shape]
             return fun
@@ -181,16 +208,18 @@ class WaveletPacket2D(BaseDict):
     # ignoring missing return type, as recursive nesting is currently not supported
     # see https://github.com/python/mypy/issues/731
     def _recursive_dwt2d(  # type: ignore[no-untyped-def]
-        self, data: torch.Tensor, level: int, path: str
+        self, input_data: torch.Tensor, level: int, path: str
     ):
-        self.data[path] = data
+        if not self.max_level:
+            raise AssertionError
+        self.data[path] = input_data
         if level < self.max_level:
             # resa, (resh, resv, resd) = self.wavedec2(
             #    data, self.wavelet, level=1, mode=self.mode
             # )
-            result_a, (result_h, result_v, result_d) = self._get_wavedec(data.shape)(
-                data
-            )
+            result_a, (result_h, result_v, result_d) = self._get_wavedec(
+                input_data.shape[-2:]
+            )(input_data)
             # assert for type checking
             assert not isinstance(result_a, tuple)
             return (
@@ -200,7 +229,7 @@ class WaveletPacket2D(BaseDict):
                 self._recursive_dwt2d(result_d, level + 1, path + "d"),
             )
         else:
-            self.data[path] = torch.squeeze(data)
+            self.data[path] = torch.squeeze(input_data)
 
 
 def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
