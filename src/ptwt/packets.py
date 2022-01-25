@@ -321,7 +321,7 @@ if __name__ == "__main__":
         torch.from_numpy(np.mean(face, axis=-1).astype(np.float32)), 0
     )
     pt_data = torch.cat([pt_data, pt_data], 0)
-    ptwt_wp_tree = WaveletPacket2D(data=pt_data, wavelet=wavelet, mode="boundary")
+    ptwt_wp_tree = WaveletPacket2D(wavelet=wavelet, mode="boundary").transform(pt_data)
 
     # get the PyTorch decomposition
     count = 0
