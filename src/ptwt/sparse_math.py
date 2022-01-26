@@ -372,7 +372,9 @@ def construct_conv_matrix(
         np.stack([row_indices, column_indices]), device=filter.device
     )
     value_tensor = torch.stack(values)
-    return torch.sparse_coo_tensor(indices, value_tensor, dtype=filter.dtype)
+    return torch.sparse_coo_tensor(
+        indices, value_tensor, device=filter.device, dtype=filter.dtype
+    )
 
 
 def construct_conv2d_matrix(
@@ -471,6 +473,7 @@ def construct_strided_conv_matrix(
         torch.ones_like(select_rows),
         size=[len(select_rows), conv_matrix.shape[0]],
         dtype=conv_matrix.dtype,
+        device=conv_matrix.device,
     )
     return torch.sparse.mm(selection_matrix, conv_matrix)
 
