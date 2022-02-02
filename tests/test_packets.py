@@ -76,7 +76,7 @@ def _compare_trees(
     pt_data = torch.unsqueeze(
         torch.from_numpy(np.mean(face, axis=-1).astype(np.float64)), 0
     )
-    ptwt_wp_tree = WaveletPacket2D(data=pt_data, wavelet=wavelet, mode=ptwt_boundary)
+    ptwt_wp_tree = WaveletPacket2D(pt_data, wavelet=wavelet, mode=ptwt_boundary)
     # get the PyTorch decomposition
     count = 0
     img_pt = []
