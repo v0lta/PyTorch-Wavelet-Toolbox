@@ -26,7 +26,7 @@ def test_packet_harbo_lvl3():
 
     wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=MyHaarFilterBank())
     data = torch.tensor(w)
-    twp = WaveletPacket(wavelet, mode="reflect").transform(data)
+    twp = WaveletPacket(data, wavelet, mode="reflect")
     nodes = twp.get_level(3)
     twp_lst = []
     for node in nodes:
@@ -76,9 +76,7 @@ def _compare_trees(
     pt_data = torch.unsqueeze(
         torch.from_numpy(np.mean(face, axis=-1).astype(np.float64)), 0
     )
-    ptwt_wp_tree = WaveletPacket2D(wavelet=wavelet, mode=ptwt_boundary).transform(
-        pt_data
-    )
+    ptwt_wp_tree = WaveletPacket2D(pt_data, wavelet=wavelet, mode=ptwt_boundary)
     # get the PyTorch decomposition
     count = 0
     img_pt = []
