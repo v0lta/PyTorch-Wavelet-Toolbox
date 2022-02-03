@@ -25,7 +25,7 @@ def test_packet_harbo_lvl3():
             )
 
     wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=MyHaarFilterBank())
-    data = torch.tensor(w)
+    data = torch.tensor(w).unsqueeze(0)
     twp = WaveletPacket(data, wavelet, mode="reflect")
     nodes = twp.get_level(3)
     twp_lst = []

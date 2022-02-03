@@ -56,6 +56,9 @@ class WaveletPacket(BaseDict):
         self.boundary = boundary_orthogonalization
         self._matrix_wavedec_dict: Dict[int, MatrixWavedec] = {}
         if data is not None:
+            if len(data.shape) == 1:
+                # add a batch dimension.
+                data = data.unsqueeze(0)
             self.transform(data)
         else:
             self.data = {}
@@ -118,7 +121,7 @@ class WaveletPacket(BaseDict):
     ):
         if not self.max_level:
             raise AssertionError
-        self.data[path] = torch.squeeze(data)
+        self.data[path] = torch.squeeze(data, 1)
         if level < self.max_level:
             res_lo, res_hi = self._get_wavedec(data.shape[-1])(data)
             return (
@@ -126,7 +129,7 @@ class WaveletPacket(BaseDict):
                 self._recursive_dwt(res_hi, level + 1, path + "d"),
             )
         else:
-            self.data[path] = torch.squeeze(data)
+            self.data[path] = torch.squeeze(data, 1)
 
 
 class WaveletPacket2D(BaseDict):
@@ -243,7 +246,7 @@ class WaveletPacket2D(BaseDict):
                 self._recursive_dwt2d(result_d, level + 1, path + "d"),
             )
         else:
-            self.data[path] = torch.squeeze(data)
+            self.data[path] = torch.squeeze(data, 1)
 
 
 def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
@@ -294,93 +297,3 @@ def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
     for row in nodes:
         result.append([row[path] for path in graycode_order if path in row])
     return result
-
-
-if __name__ == "__main__":
-    import numpy as np
-
-    # import matplotlib.pyplot as plt
-    # import scipy.signal as signal
-    # from itertools import product
-
-    from scipy import misc
-
-    face = misc.face()[:128, :128]
-    wavelet = pywt.Wavelet("haar")
-    wp_tree = pywt.WaveletPacket2D(
-        data=np.mean(face, axis=-1).astype(np.float32), wavelet=wavelet, mode="zero"
-    )
-
-    # Get the full decomposition
-    max_lev = 5
-    wp_keys = list(product(["a", "d", "h", "v"], repeat=max_lev))
-    count = 0
-    img_rows = None
-    img = []
-    for node in wp_keys:
-        packet = np.squeeze(wp_tree["".join(node)].data)
-        if img_rows is not None:
-            img_rows = np.concatenate([img_rows, packet], axis=1)
-        else:
-            img_rows = packet
-        count += 1
-        if count > 31:
-            count = 0
-            img.append(img_rows)
-            img_rows = None
-
-    img_pywt = np.concatenate(img, axis=0)
-
-    pt_data = torch.unsqueeze(
-        torch.from_numpy(np.mean(face, axis=-1).astype(np.float32)), 0
-    )
-    pt_data = torch.cat([pt_data, pt_data], 0)
-    ptwt_wp_tree = WaveletPacket2D(data=pt_data, wavelet=wavelet, mode="boundary")
-
-    # get the PyTorch decomposition
-    count = 0
-    img_pt = []
-    img_rows_pt = None
-    for node in wp_keys:
-        packet = torch.squeeze(ptwt_wp_tree["".join(node)][0])
-        if img_rows_pt is not None:
-            img_rows_pt = torch.cat([img_rows_pt, packet], axis=1)
-        else:
-            img_rows_pt = packet
-        count += 1
-        if count > 31:
-            count = 0
-            img_pt.append(img_rows_pt)
-            img_rows_pt = None
-
-    img_pt = torch.cat(img_pt, dim=0).numpy()
-    abs = np.abs(img_pt - img_pywt)
-
-    err = np.mean(abs)
-    print("total error", err, ["ok" if err < 1e-4 else "failed!"])
-    assert err < 1e-4
-
-    print(
-        "a",
-        np.mean(
-            np.abs(wp_tree["a"].data - torch.squeeze(ptwt_wp_tree["a"][0]).numpy())
-        ),
-    )
-    print(
-        "h",
-        np.mean(
-            np.abs(wp_tree["h"].data - torch.squeeze(ptwt_wp_tree["h"][0]).numpy())
-        ),
-    )
-    print(
-        "v",
-        np.mean(
-            np.abs(wp_tree["v"].data - torch.squeeze(ptwt_wp_tree["v"][0]).numpy())
-        ),
-    )
-    print(
-        "d",
-        np.mean(
-            np.abs(wp_tree["d"].data - torch.squeeze(ptwt_wp_tree["d"][0]).numpy())
-        ),
-    )
