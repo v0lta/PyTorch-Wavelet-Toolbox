@@ -10,7 +10,8 @@ from scipy import misc
 from src.ptwt.packets import WaveletPacket, WaveletPacket2D, get_freq_order
 
 
-def _compare_trees1(wavelet_str: str,
+def _compare_trees1(
+    wavelet_str: str,
     max_lev: int = 3,
     pywt_boundary: str = "zero",
     ptwt_boundary: str = "zero",
@@ -29,7 +30,9 @@ def _compare_trees1(wavelet_str: str,
 
     np_batches = []
     for batch_index in range(batch_size):
-        wp = pywt.WaveletPacket(data=data[batch_index], wavelet=wavelet, mode=pywt_boundary)
+        wp = pywt.WaveletPacket(
+            data=data[batch_index], wavelet=wavelet, mode=pywt_boundary
+        )
         nodes = [node.path for node in wp.get_level(max_lev, "freq")]
         np_lst = []
         for node in nodes:
@@ -47,7 +50,7 @@ def _compare_trees2(
     ptwt_boundary: str = "zero",
     height: int = 256,
     width: int = 256,
-    batch_size: int = 1
+    batch_size: int = 1,
 ):
 
     face = misc.face()[:height, :width]
@@ -71,7 +74,7 @@ def _compare_trees2(
     batch_np_packets = np.stack(batch_list, 0)
 
     # get the PyTorch decomposition
-    pt_data = torch.stack([torch.from_numpy(face)]*batch_size, 0)
+    pt_data = torch.stack([torch.from_numpy(face)] * batch_size, 0)
     ptwt_wp_tree = WaveletPacket2D(pt_data, wavelet=wavelet, mode=ptwt_boundary)
     packets = []
     for node in wp_keys:
@@ -90,8 +93,13 @@ def _compare_trees2(
 @pytest.mark.parametrize("batch_size", [2, 1])
 def test_2d_packets(max_lev, wavelet_str, boundary, batch_size):
     """Ensure pywt and ptwt produce equivalent wavelet 2d packet trees."""
-    _compare_trees2(wavelet_str, max_lev, pywt_boundary=boundary, ptwt_boundary=boundary,
-                    batch_size=batch_size)
+    _compare_trees2(
+        wavelet_str,
+        max_lev,
+        pywt_boundary=boundary,
+        ptwt_boundary=boundary,
+        batch_size=batch_size,
+    )
 
 
 @pytest.mark.slow
@@ -111,8 +119,13 @@ def test_boundary_matrix_packets2(max_lev, batch_size):
 @pytest.mark.parametrize("batch_size", [2, 1])
 def test_1d_packets(max_lev, wavelet_str, boundary, batch_size):
     """Ensure pywt and ptwt produce equivalent wavelet 1d packet trees."""
-    _compare_trees1(wavelet_str, max_lev, pywt_boundary=boundary, ptwt_boundary=boundary,
-                    batch_size=batch_size)
+    _compare_trees1(
+        wavelet_str,
+        max_lev,
+        pywt_boundary=boundary,
+        ptwt_boundary=boundary,
+        batch_size=batch_size,
+    )
 
 
 @pytest.mark.parametrize("level", [1, 2, 3, 4])
@@ -140,7 +153,6 @@ def test_freq_order(level, wavelet_str, pywt_boundary):
                 order_el.path == "".join(tree_el),
             )
             assert order_el.path == "".join(tree_el)
-
 
 
 def test_packet_harbo_lvl3():

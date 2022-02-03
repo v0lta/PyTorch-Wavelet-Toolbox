@@ -232,9 +232,6 @@ class WaveletPacket2D(BaseDict):
             raise AssertionError
         self.data[path] = torch.squeeze(data, 1)
         if level < self.max_level:
-            # resa, (resh, resv, resd) = self.wavedec2(
-            #    data, self.wavelet, level=1, mode=self.mode
-            # )
             result_a, (result_h, result_v, result_d) = self._get_wavedec(
                 data.shape[-2:]
             )(data)
@@ -248,7 +245,6 @@ class WaveletPacket2D(BaseDict):
             )
         else:
             self.data[path] = torch.squeeze(data, 1)
-            # self.data[path] = data
 
 
 def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
