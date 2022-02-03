@@ -121,7 +121,8 @@ class WaveletPacket(BaseDict):
     ):
         if not self.max_level:
             raise AssertionError
-        self.data[path] = torch.squeeze(data, 1)
+
+        self.data[path] = data
         if level < self.max_level:
             res_lo, res_hi = self._get_wavedec(data.shape[-1])(data)
             return (
@@ -129,7 +130,7 @@ class WaveletPacket(BaseDict):
                 self._recursive_dwt(res_hi, level + 1, path + "d"),
             )
         else:
-            self.data[path] = torch.squeeze(data, 1)
+            self.data[path] = data
 
 
 class WaveletPacket2D(BaseDict):
@@ -229,7 +230,7 @@ class WaveletPacket2D(BaseDict):
     ):
         if not self.max_level:
             raise AssertionError
-        self.data[path] = data
+        self.data[path] = torch.squeeze(data, 1)
         if level < self.max_level:
             # resa, (resh, resv, resd) = self.wavedec2(
             #    data, self.wavelet, level=1, mode=self.mode
@@ -247,10 +248,13 @@ class WaveletPacket2D(BaseDict):
             )
         else:
             self.data[path] = torch.squeeze(data, 1)
+            # self.data[path] = data
 
 
 def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
     """Get the frequency order for a given packet decomposition level.
+
+    Use this code to create two-dimensional frequency orderings.
 
     Args:
         level (int): The number of decomposition scales.
