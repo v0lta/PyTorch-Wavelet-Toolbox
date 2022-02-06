@@ -118,6 +118,11 @@ class WaveletPacket(BaseDict):
         if not self.max_level:
             raise AssertionError
 
+        # TODO: This is a workaround since the convolutional transforms insert a
+        #       squeezable dimension. We should adapt the wavedec code instead.
+        if data.dim() == 3:
+            data = data.squeeze(1)
+
         self.data[path] = data
         if level < self.max_level:
             res_lo, res_hi = self._get_wavedec(data.shape[-1])(data)
@@ -215,6 +220,12 @@ class WaveletPacket2D(BaseDict):
     def _recursive_dwt2d(self, data: torch.Tensor, level: int, path: str) -> None:
         if not self.max_level:
             raise AssertionError
+
+        # TODO: This is a workaround since the convolutional transforms insert a
+        #       squeezable dimension. We should adapt the wavedec2 code instead.
+        if data.dim() == 4:
+            data = data.squeeze(1)
+
         self.data[path] = data
         if level < self.max_level:
             result_a, (result_h, result_v, result_d) = self._get_wavedec(
