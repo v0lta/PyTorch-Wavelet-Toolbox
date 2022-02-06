@@ -402,7 +402,7 @@ class MatrixWavedec2d(object):
             # we assume the shape [batch_size, color_channels, height, width]
             # and squeeze the single color channel
             input_signal = input_signal.squeeze(1)
-        else:
+        elif input_signal.dim() != 3:
             raise ValueError(
                 f"Invalid input tensor shape {input_signal.size()}. "
                 "The input signal is expected to be of the form "
