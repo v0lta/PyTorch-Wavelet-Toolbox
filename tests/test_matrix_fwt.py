@@ -1,7 +1,5 @@
 """Test the fwt and ifwt matrices."""
 # Written by moritz ( @ wolter.tech ) in 2021
-import time
-
 import numpy as np
 import pytest
 import pywt
