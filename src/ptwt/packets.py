@@ -114,23 +114,15 @@ class WaveletPacket(BaseDict):
             ]
         return graycode_order
 
-    # ignoring missing return type, as recursive nesting is currently not supported
-    # see https://github.com/python/mypy/issues/731
-    def _recursive_dwt(  # type: ignore[no-untyped-def]
-        self, data: torch.Tensor, level: int, path: str
-    ):
+    def _recursive_dwt(self, data: torch.Tensor, level: int, path: str) -> None:
         if not self.max_level:
             raise AssertionError
 
         self.data[path] = data
         if level < self.max_level:
             res_lo, res_hi = self._get_wavedec(data.shape[-1])(data)
-            return (
-                self._recursive_dwt(res_lo, level + 1, path + "a"),
-                self._recursive_dwt(res_hi, level + 1, path + "d"),
-            )
-        else:
-            self.data[path] = data
+            self._recursive_dwt(res_lo, level + 1, path + "a")
+            self._recursive_dwt(res_hi, level + 1, path + "d")
 
 
 class WaveletPacket2D(BaseDict):
