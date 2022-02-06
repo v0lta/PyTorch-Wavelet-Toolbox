@@ -302,7 +302,7 @@ class MatrixWavedec(object):
         Raises:
             ValueError: If the decomposition level is not a positive integer.
         """
-        if len(input_signal.shape) == 1:
+        if input_signal.dim() == 1:
             # assume time series
             input_signal = input_signal.unsqueeze(0)
 
