@@ -294,17 +294,24 @@ class MatrixWavedec(object):
 
         Args:
             input_signal (torch.Tensor): Batched input data [batch_size, time],
-                  should be of even length.
+                should be of even length. 1d inputs are interpreted as [time].
 
         Returns:
             List[torch.Tensor]: A list with the coefficients for each scale.
 
         Raises:
-            ValueError: If the decomposition level is not a positive integer.
+            ValueError: If the decomposition level is not a positive integer
+                or if the input signal has not the expected shape.
         """
         if input_signal.dim() == 1:
             # assume time series
             input_signal = input_signal.unsqueeze(0)
+        elif input_signal.dim() != 2:
+            raise ValueError(
+                f"Invalid input tensor shape {input_signal.size()}. "
+                "The input signal is expected to be of the form "
+                "[batch_size, length]."
+            )
 
         if input_signal.shape[-1] % 2 != 0:
             # odd length input
