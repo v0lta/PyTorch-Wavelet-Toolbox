@@ -215,28 +215,20 @@ class WaveletPacket2D(BaseDict):
         else:
             return partial(wavedec2, wavelet=self.wavelet, level=1, mode=self.mode)
 
-    # ignoring missing return type, as recursive nesting is currently not supported
-    # see https://github.com/python/mypy/issues/731
-    def _recursive_dwt2d(  # type: ignore[no-untyped-def]
-        self, data: torch.Tensor, level: int, path: str
-    ):
+    def _recursive_dwt2d(self, data: torch.Tensor, level: int, path: str) -> None:
         if not self.max_level:
             raise AssertionError
-        self.data[path] = torch.squeeze(data, 1)
+        self.data[path] = data
         if level < self.max_level:
             result_a, (result_h, result_v, result_d) = self._get_wavedec(
                 data.shape[-2:]
             )(data)
             # assert for type checking
             assert not isinstance(result_a, tuple)
-            return (
-                self._recursive_dwt2d(result_a, level + 1, path + "a"),
-                self._recursive_dwt2d(result_h, level + 1, path + "h"),
-                self._recursive_dwt2d(result_v, level + 1, path + "v"),
-                self._recursive_dwt2d(result_d, level + 1, path + "d"),
-            )
-        else:
-            self.data[path] = torch.squeeze(data, 1)
+            self._recursive_dwt2d(result_a, level + 1, path + "a")
+            self._recursive_dwt2d(result_h, level + 1, path + "h")
+            self._recursive_dwt2d(result_v, level + 1, path + "v")
+            self._recursive_dwt2d(result_d, level + 1, path + "d")
 
 
 def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
