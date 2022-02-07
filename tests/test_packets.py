@@ -20,8 +20,7 @@ def _compare_trees1(
 ):
     data = np.random.rand(batch_size, length)
     wavelet = pywt.Wavelet(wavelet_str)
-    pt_data = torch.tensor(data)
-    twp = WaveletPacket(pt_data, wavelet, mode=ptwt_boundary)
+    twp = WaveletPacket(torch.from_numpy(data), wavelet, mode=ptwt_boundary)
     nodes = twp.get_level(max_lev)
     twp_lst = []
     for node in nodes:
@@ -157,7 +156,7 @@ def test_freq_order(level, wavelet_str, pywt_boundary):
 
 def test_packet_harbo_lvl3():
     """From Jensen, La Cour-Harbo, Rippels in Mathematics, Chapter 8 (page 89)."""
-    w = [56.0, 40.0, 8.0, 24.0, 48.0, 48.0, 40.0, 16.0]
+    data = np.array([56.0, 40.0, 8.0, 24.0, 48.0, 48.0, 40.0, 16.0])
 
     class MyHaarFilterBank(object):
         @property
@@ -170,14 +169,14 @@ def test_packet_harbo_lvl3():
             )
 
     wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=MyHaarFilterBank())
-    data = torch.tensor(w).unsqueeze(0)
-    twp = WaveletPacket(data, wavelet, mode="reflect")
+
+    twp = WaveletPacket(torch.from_numpy(data), wavelet, mode="reflect")
     twp_nodes = twp.get_level(3)
     twp_lst = []
     for node in twp_nodes:
         twp_lst.append(torch.squeeze(twp[node]))
     torch_res = torch.stack(twp_lst).numpy()
-    wp = pywt.WaveletPacket(data=np.array(w), wavelet=wavelet, mode="reflect")
+    wp = pywt.WaveletPacket(data=data, wavelet=wavelet, mode="reflect")
     pywt_nodes = [node.path for node in wp.get_level(3, "freq")]
     np_lst = []
     for node in pywt_nodes:
