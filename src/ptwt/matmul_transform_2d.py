@@ -383,20 +383,31 @@ class MatrixWavedec2d(object):
 
         Args:
             input_signal (torch.Tensor): An input signal of shape
-                [batch_size, height, width]
+                [batch_size, height, width].
+                2d inputs are interpreted as [height, width].
+                Inputs of the form [batch_size, 1, height, width] are squeezed.
 
         Returns:
             (list): The resulting coefficients per level stored in
             a pywt style list.
 
         Raises:
-            ValueError: If the decomposition level is not a positive integer.
+            ValueError: If the decomposition level is not a positive integer
+                or if the input signal has not the expected shape.
         """
-        if input_signal.shape[1] == 1:
-            input_signal = input_signal.squeeze(1)
-
-        if len(input_signal.shape) == 2:
+        if input_signal.dim() == 2:
+            # add batch dim to unbatched input
             input_signal = input_signal.unsqueeze(0)
+        elif input_signal.dim() == 4 and input_signal.size(1) == 1:
+            # we assume the shape [batch_size, color_channels, height, width]
+            # and squeeze the single color channel
+            input_signal = input_signal.squeeze(1)
+        elif input_signal.dim() != 3:
+            raise ValueError(
+                f"Invalid input tensor shape {input_signal.size()}. "
+                "The input signal is expected to be of the form "
+                "[batch_size, height, width]."
+            )
 
         batch_size, height, width = input_signal.shape
 

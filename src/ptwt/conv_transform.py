@@ -207,8 +207,10 @@ def wavedec2(
     Args:
         data (torch.Tensor): The input data tensor of shape
             [batch_size, 1, height, width].
+            2d inputs are interpreted as [height, width],
+            3d inputs are interpreted as [batch_size, height, width].
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-                the name of a pywt wavelet.
+            the name of a pywt wavelet.
         level (int): The number of desired scales.
             Defaults to None.
         mode (str): The padding mode, i.e. zero or reflect.
@@ -233,6 +235,11 @@ def wavedec2(
                                          level=2, mode="constant")
 
     """
+    if data.dim() == 2:
+        data = data.unsqueeze(0).unsqueeze(0)
+    elif data.dim() == 3:
+        data = data.unsqueeze(1)
+
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -373,10 +380,10 @@ def wavedec(
                          mode='zero', level=2)
 
     """
-    if len(data.shape) == 1:
+    if data.dim() == 1:
         # assume time series
         data = data.unsqueeze(0).unsqueeze(0)
-    elif len(data.shape) == 2:
+    elif data.dim() == 2:
         # assume batched time series
         data = data.unsqueeze(1)
 
