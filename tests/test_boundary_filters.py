@@ -132,10 +132,9 @@ def test_matrix_analysis_fwt_2d_haar(size, level):
     face = np.mean(
         scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
     ).astype(np.float64)
-    pt_face = torch.tensor(face)
     wavelet = pywt.Wavelet("haar")
     matrixfwt = MatrixWavedec2d(wavelet, level=level)
-    mat_coeff = matrixfwt(pt_face.unsqueeze(0))
+    mat_coeff = matrixfwt(torch.from_numpy(face))
     conv_coeff = pywt.wavedec2(face, wavelet, level=level, mode="zero")
     flat_mat_coeff = torch.cat(flatten_2d_coeff_lst(mat_coeff), -1)
     flat_conv_coeff = np.concatenate(flatten_2d_coeff_lst(conv_coeff), -1)
@@ -169,10 +168,9 @@ def test_boundary_matrix_fwt_2d(wavelet_str, size, level, separable):
     face = np.mean(
         scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
     ).astype(np.float64)
-    pt_face = torch.tensor(face)
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2d(wavelet, level=level, separable=separable)
-    mat_coeff = matrixfwt(pt_face.unsqueeze(0))
+    mat_coeff = matrixfwt(torch.from_numpy(face))
     matrixifwt = MatrixWaverec2d(wavelet, separable=separable)
     reconstruction = matrixifwt(mat_coeff).squeeze(0)
     # remove the padding
@@ -206,7 +204,7 @@ def test_batched_2d_matrix_fwt_ifwt(wavelet_str, level, size, separable):
     face = scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])].astype(
         np.float64
     )
-    pt_face = torch.tensor(face).permute([2, 0, 1])
+    pt_face = torch.from_numpy(face).permute([2, 0, 1])
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2d(wavelet, level=level, separable=separable)
     mat_coeff = matrixfwt(pt_face)
@@ -284,8 +282,7 @@ def test_matrix_transform_2d_rebuild(wavelet_str, separable):
             face = np.mean(
                 scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
             ).astype(np.float64)
-            pt_face = torch.tensor(face)
-            mat_coeff = matrixfwt(pt_face.unsqueeze(0))
+            mat_coeff = matrixfwt(torch.from_numpy(face))
             reconstruction = matrixifwt(mat_coeff).squeeze(0)
             # remove the padding
             if size[0] % 2 != 0:

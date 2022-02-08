@@ -114,22 +114,20 @@ class WaveletPacket(BaseDict):
             ]
         return graycode_order
 
-    # ignoring missing return type, as recursive nesting is currently not supported
-    # see https://github.com/python/mypy/issues/731
-    def _recursive_dwt(  # type: ignore[no-untyped-def]
-        self, data: torch.Tensor, level: int, path: str
-    ):
+    def _recursive_dwt(self, data: torch.Tensor, level: int, path: str) -> None:
         if not self.max_level:
             raise AssertionError
-        self.data[path] = torch.squeeze(data, 1)
+
+        # TODO: This is a workaround since the convolutional transforms insert a
+        #       squeezable dimension. We should adapt the wavedec code instead.
+        if data.dim() == 3:
+            data = data.squeeze(1)
+
+        self.data[path] = data
         if level < self.max_level:
             res_lo, res_hi = self._get_wavedec(data.shape[-1])(data)
-            return (
-                self._recursive_dwt(res_lo, level + 1, path + "a"),
-                self._recursive_dwt(res_hi, level + 1, path + "d"),
-            )
-        else:
-            self.data[path] = torch.squeeze(data, 1)
+            self._recursive_dwt(res_lo, level + 1, path + "a")
+            self._recursive_dwt(res_hi, level + 1, path + "d")
 
 
 class WaveletPacket2D(BaseDict):
@@ -196,9 +194,6 @@ class WaveletPacket2D(BaseDict):
             max_level = pywt.dwt_max_level(min(data.shape[-2:]), self.wavelet.dec_len)
         self.max_level = max_level
 
-        if data.dim() == 3:
-            data = torch.unsqueeze(data, 1)
-
         self._recursive_dwt2d(data, level=0, path="")
         return self
 
@@ -222,35 +217,32 @@ class WaveletPacket2D(BaseDict):
         else:
             return partial(wavedec2, wavelet=self.wavelet, level=1, mode=self.mode)
 
-    # ignoring missing return type, as recursive nesting is currently not supported
-    # see https://github.com/python/mypy/issues/731
-    def _recursive_dwt2d(  # type: ignore[no-untyped-def]
-        self, data: torch.Tensor, level: int, path: str
-    ):
+    def _recursive_dwt2d(self, data: torch.Tensor, level: int, path: str) -> None:
         if not self.max_level:
             raise AssertionError
+
+        # TODO: This is a workaround since the convolutional transforms insert a
+        #       squeezable dimension. We should adapt the wavedec2 code instead.
+        if data.dim() == 4:
+            data = data.squeeze(1)
+
         self.data[path] = data
         if level < self.max_level:
-            # resa, (resh, resv, resd) = self.wavedec2(
-            #    data, self.wavelet, level=1, mode=self.mode
-            # )
             result_a, (result_h, result_v, result_d) = self._get_wavedec(
                 data.shape[-2:]
             )(data)
             # assert for type checking
             assert not isinstance(result_a, tuple)
-            return (
-                self._recursive_dwt2d(result_a, level + 1, path + "a"),
-                self._recursive_dwt2d(result_h, level + 1, path + "h"),
-                self._recursive_dwt2d(result_v, level + 1, path + "v"),
-                self._recursive_dwt2d(result_d, level + 1, path + "d"),
-            )
-        else:
-            self.data[path] = torch.squeeze(data, 1)
+            self._recursive_dwt2d(result_a, level + 1, path + "a")
+            self._recursive_dwt2d(result_h, level + 1, path + "h")
+            self._recursive_dwt2d(result_v, level + 1, path + "v")
+            self._recursive_dwt2d(result_d, level + 1, path + "d")
 
 
 def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
     """Get the frequency order for a given packet decomposition level.
+
+    Use this code to create two-dimensional frequency orderings.
 
     Args:
         level (int): The number of decomposition scales.
