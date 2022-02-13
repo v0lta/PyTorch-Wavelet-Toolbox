@@ -271,7 +271,7 @@ def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
             ]
         return graycode_order
 
-    def expand_2d_path(path: Tuple[str, ...]) -> Tuple[str, str]:
+    def _expand_2d_path(path: Tuple[str, ...]) -> Tuple[str, str]:
         expanded_paths = {"d": "hh", "h": "hl", "v": "lh", "a": "ll"}
         return (
             "".join([expanded_paths[p][0] for p in path]),
@@ -280,7 +280,7 @@ def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
 
     nodes_dict: Dict[str, Dict[str, Tuple[str, ...]]] = {}
     for (row_path, col_path), node in [
-        (expand_2d_path(node), node) for node in wp_natural_path
+        (_expand_2d_path(node), node) for node in wp_natural_path
     ]:
         nodes_dict.setdefault(row_path, {})[col_path] = node
     graycode_order = _get_graycode_order(level, x="l", y="h")

@@ -158,9 +158,10 @@ def test_packet_harbo_lvl3():
     """From Jensen, La Cour-Harbo, Rippels in Mathematics, Chapter 8 (page 89)."""
     data = np.array([56.0, 40.0, 8.0, 24.0, 48.0, 48.0, 40.0, 16.0])
 
-    class MyHaarFilterBank(object):
+    class _MyHaarFilterBank(object):
         @property
         def filter_bank(self):
+            """Unscaled Haar wavelet filters."""
             return (
                 [1 / 2, 1 / 2.0],
                 [-1 / 2.0, 1 / 2.0],
@@ -168,7 +169,7 @@ def test_packet_harbo_lvl3():
                 [1 / 2.0, -1 / 2.0],
             )
 
-    wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=MyHaarFilterBank())
+    wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=_MyHaarFilterBank())
 
     twp = WaveletPacket(torch.from_numpy(data), wavelet, mode="reflect")
     twp_nodes = twp.get_level(3)

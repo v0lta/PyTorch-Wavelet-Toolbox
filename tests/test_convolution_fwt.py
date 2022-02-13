@@ -247,9 +247,10 @@ def test_conv_fwt():
 def test_ripples_haar_lvl3():
     """Compute example from page 7 of Ripples in Mathematics, Jensen, la Cour-Harbo."""
 
-    class MyHaarFilterBank(object):
+    class _MyHaarFilterBank(object):
         @property
         def filter_bank(self):
+            """Unscaled Haar wavelet filters."""
             return (
                 [1 / 2, 1 / 2.0],
                 [-1 / 2.0, 1 / 2.0],
@@ -258,7 +259,7 @@ def test_ripples_haar_lvl3():
             )
 
     data = torch.tensor([56.0, 40.0, 8.0, 24.0, 48.0, 48.0, 40.0, 16.0])
-    wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=MyHaarFilterBank())
+    wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=_MyHaarFilterBank())
     coeffs = wavedec(data, wavelet, level=3)
     assert torch.squeeze(coeffs[0]).numpy() == 35.0
     assert torch.squeeze(coeffs[1]).numpy() == -3.0

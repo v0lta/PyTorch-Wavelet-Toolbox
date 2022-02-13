@@ -36,7 +36,7 @@ def generate_mackey(
     steps = int(tmax / delta_t) + 200
 
     # multi-dimensional data.
-    def mackey(
+    def _mackey(
         x: torch.Tensor, tau: int, gamma: float = 0.1, beta: float = 0.2, n: int = 10
     ) -> torch.Tensor:
         return beta * x[:, -tau] / (1 + torch.pow(x[:, -tau], n)) - gamma * x[:, -1]
@@ -53,7 +53,7 @@ def generate_mackey(
     x = x0
     # forward_euler
     for _ in range(steps):
-        res = torch.unsqueeze(x[:, -1] + delta_t * mackey(x, tau), -1)
+        res = torch.unsqueeze(x[:, -1] + delta_t * _mackey(x, tau), -1)
         x = torch.cat([x, res], -1)
     discard = 200 + tau
     return x[:, discard:]
