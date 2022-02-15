@@ -5,6 +5,7 @@ import pytest
 import pywt
 import scipy.signal
 import torch
+
 from src.ptwt.conv_transform import _flatten_2d_coeff_lst
 from src.ptwt.matmul_transform import (
     MatrixWavedec,
@@ -12,6 +13,7 @@ from src.ptwt.matmul_transform import (
     construct_boundary_a,
     construct_boundary_s,
 )
+
 from ptwt.matmul_transform_2 import (
     MatrixWavedec2,
     MatrixWaverec2,
