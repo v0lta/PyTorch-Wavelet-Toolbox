@@ -7,8 +7,8 @@ import scipy.misc
 import torch
 from src.ptwt._mackey_glass import MackeyGenerator
 from src.ptwt.conv_transform import (
-    _outer,
     _flatten_2d_coeff_lst,
+    _outer,
     wavedec,
     wavedec2,
     waverec,
