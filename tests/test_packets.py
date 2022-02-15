@@ -191,7 +191,3 @@ def test_packet_harbo_lvl3():
         np_lst.append(wp[node].data)
     np_res = np.concatenate(np_lst)
     assert np.allclose(torch_res, np_res)
-
-
-
-
