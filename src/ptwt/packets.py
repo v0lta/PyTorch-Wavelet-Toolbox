@@ -129,6 +129,33 @@ class WaveletPacket(BaseDict):
             self._recursive_dwt(res_lo, level + 1, path + "a")
             self._recursive_dwt(res_hi, level + 1, path + "d")
 
+    def __getitem__(self, key: str) -> torch.Tensor:
+        """Access the coefficients in the wavelet packets tree.
+
+        Args:
+            key (str): The key of the accessed coefficents. The string may only consist
+                of the following chars: 'a', 'd'.
+
+        Returns:
+            torch.Tensor: The accessed wavelet packet coefficients.
+
+        Raises:
+            ValueError: If the wavelet packet tree is not initialized.
+            KeyError: If no wavelet coefficients are indexed by the specified key.
+        """
+        if self.max_level is None:
+            raise ValueError(
+                "The wavelet packet tree must be initialized via 'transform' before "
+                "its values can be accessed!"
+            )
+        if key not in self and len(key) > self.max_level:
+            raise KeyError(
+                f"The requested level {len(key)} with key '{key}' is too large and "
+                "cannot be accessed! This wavelet packet tree is initialized with "
+                f"maximum level {self.max_level}."
+            )
+        return super().__getitem__(key)
+
 
 class WaveletPacket2D(BaseDict):
     """Two dimensional wavelet packets."""
@@ -237,6 +264,33 @@ class WaveletPacket2D(BaseDict):
             self._recursive_dwt2d(result_h, level + 1, path + "h")
             self._recursive_dwt2d(result_v, level + 1, path + "v")
             self._recursive_dwt2d(result_d, level + 1, path + "d")
+
+    def __getitem__(self, key: str) -> torch.Tensor:
+        """Access the coefficients in the wavelet packets tree.
+
+        Args:
+            key (str): The key of the accessed coefficents. The string may only consist
+                of the following chars: 'a', 'h', 'v', 'd'.
+
+        Returns:
+            torch.Tensor: The accessed wavelet packet coefficients.
+
+        Raises:
+            ValueError: If the wavelet packet tree is not initialized.
+            KeyError: If no wavelet coefficients are indexed by the specified key.
+        """
+        if self.max_level is None:
+            raise ValueError(
+                "The wavelet packet tree must be initialized via 'transform' before "
+                "its values can be accessed!"
+            )
+        if key not in self and len(key) > self.max_level:
+            raise KeyError(
+                f"The requested level {len(key)} with key '{key}' is too large and "
+                "cannot be accessed! This wavelet packet tree is initialized with "
+                f"maximum level {self.max_level}."
+            )
+        return super().__getitem__(key)
 
 
 def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
