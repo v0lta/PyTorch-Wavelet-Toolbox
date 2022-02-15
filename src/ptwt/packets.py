@@ -13,7 +13,7 @@ import torch
 from ._util import Wavelet, _as_wavelet
 from .conv_transform import wavedec, wavedec2
 from .matmul_transform import MatrixWavedec
-from .matmul_transform_2d import MatrixWavedec2d
+from .matmul_transform_2 import MatrixWavedec2
 
 if TYPE_CHECKING:
     BaseDict = collections.UserDict[str, torch.Tensor]
@@ -194,7 +194,7 @@ class WaveletPacket2D(BaseDict):
 
         self.boundary = boundary_orthogonalization
         self.separable = separable
-        self.matrix_wavedec2_dict: Dict[Tuple[int, ...], MatrixWavedec2d] = {}
+        self.matrix_wavedec2_dict: Dict[Tuple[int, ...], MatrixWavedec2] = {}
 
         self.max_level: Optional[int] = None
         if data is not None:
@@ -233,7 +233,7 @@ class WaveletPacket2D(BaseDict):
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_wavedec2_dict.keys():
-                self.matrix_wavedec2_dict[shape] = MatrixWavedec2d(
+                self.matrix_wavedec2_dict[shape] = MatrixWavedec2(
                     self.wavelet,
                     level=1,
                     boundary=self.boundary,

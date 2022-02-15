@@ -53,7 +53,7 @@ def get_filter_tensors(
     return dec_lo_tensor, dec_hi_tensor, rec_lo_tensor, rec_hi_tensor
 
 
-def get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
+def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
     """Compute the required padding.
 
     Args:
@@ -107,12 +107,12 @@ def fwt_pad(
         # convert pywt to pytorch convention.
         mode = "constant"
 
-    padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo))
+    padr, padl = _get_pad(data.shape[-1], len(wavelet.dec_lo))
     data_pad = torch.nn.functional.pad(data, [padl, padr], mode=mode)
     return data_pad
 
 
-def fwt_pad2d(
+def fwt_pad2(
     data: torch.Tensor, wavelet: Union[Wavelet, str], level: int, mode: str = "reflect"
 ) -> torch.Tensor:
     """Pad data for the 2d FWT.
@@ -129,8 +129,8 @@ def fwt_pad2d(
 
     """
     wavelet = _as_wavelet(wavelet)
-    padb, padt = get_pad(data.shape[-2], len(wavelet.dec_lo))
-    padr, padl = get_pad(data.shape[-1], len(wavelet.dec_lo))
+    padb, padt = _get_pad(data.shape[-2], len(wavelet.dec_lo))
+    padr, padl = _get_pad(data.shape[-1], len(wavelet.dec_lo))
     data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
     return data_pad
 
@@ -254,7 +254,7 @@ def wavedec2(
     ] = []
     res_ll = data
     for s in range(level):
-        res_ll = fwt_pad2d(res_ll, wavelet, level=s, mode=mode)
+        res_ll = fwt_pad2(res_ll, wavelet, level=s, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
         result_lst.append((res_lh, res_hl, res_hh))

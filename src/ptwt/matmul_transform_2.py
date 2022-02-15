@@ -20,7 +20,7 @@ from .matmul_transform import (
 from .sparse_math import batch_mm, construct_strided_conv2d_matrix
 
 
-def _construct_a_2d(
+def _construct_a_2(
     wavelet: Union[Wavelet, str],
     height: int,
     width: int,
@@ -59,7 +59,7 @@ def _construct_a_2d(
     return analysis
 
 
-def _construct_s_2d(
+def _construct_s_2(
     wavelet: Union[Wavelet, str],
     height: int,
     width: int,
@@ -109,7 +109,7 @@ def _construct_s_2d(
     return transpose_synthesis
 
 
-def construct_boundary_a2d(
+def construct_boundary_a2(
     wavelet: Union[Wavelet, str],
     height: int,
     width: int,
@@ -138,12 +138,12 @@ def construct_boundary_a2d(
             wavelets.
     """
     wavelet = _as_wavelet(wavelet)
-    a = _construct_a_2d(wavelet, height, width, device, dtype=dtype)
+    a = _construct_a_2(wavelet, height, width, device, dtype=dtype)
     orth_a = orthogonalize(a, wavelet.dec_len ** 2, method=boundary)  # noqa: BLK100
     return orth_a
 
 
-def construct_boundary_s2d(
+def construct_boundary_s2(
     wavelet: Union[Wavelet, str],
     height: int,
     width: int,
@@ -170,14 +170,14 @@ def construct_boundary_s2d(
             inverse fast wavelet transform.
     """
     wavelet = _as_wavelet(wavelet)
-    s = _construct_s_2d(wavelet, height, width, device, dtype=dtype)
+    s = _construct_s_2(wavelet, height, width, device, dtype=dtype)
     orth_s = orthogonalize(
         s.transpose(1, 0), wavelet.rec_len ** 2, method=boundary  # noqa: BLK100
     ).transpose(1, 0)
     return orth_s
 
 
-def _matrix_pad_2d(height: int, width: int) -> Tuple[int, int, Tuple[bool, bool]]:
+def _matrix_pad_2(height: int, width: int) -> Tuple[int, int, Tuple[bool, bool]]:
     pad_tuple = (False, False)
     if height % 2 != 0:
         height += 1
@@ -188,7 +188,7 @@ def _matrix_pad_2d(height: int, width: int) -> Tuple[int, int, Tuple[bool, bool]
     return height, width, pad_tuple
 
 
-class MatrixWavedec2d(object):
+class MatrixWavedec2(object):
     """Experimental sparse matrix 2d wavelet transform.
 
         For a completely pad free transform,
@@ -334,7 +334,7 @@ class MatrixWavedec2d(object):
                 )
                 break
             # the conv matrices require even length inputs.
-            current_height, current_width, pad_tuple = _matrix_pad_2d(
+            current_height, current_width, pad_tuple = _matrix_pad_2(
                 current_height, current_width
             )
             if any(pad_tuple):
@@ -360,7 +360,7 @@ class MatrixWavedec2d(object):
                     (analysis_matrix_rows, analysis_matrix_cols)
                 )
             else:
-                analysis_matrix_2d = construct_boundary_a2d(
+                analysis_matrix_2d = construct_boundary_a2(
                     self.wavelet,
                     current_height,
                     current_width,
@@ -492,7 +492,7 @@ class MatrixWavedec2d(object):
         return split_list[::-1]
 
 
-class MatrixWaverec2d(object):
+class MatrixWaverec2(object):
     """Synthesis or inverse matrix based-wavelet transformation object.
 
     Note:
@@ -619,7 +619,7 @@ class MatrixWaverec2d(object):
                     f"is only computed up to the decomposition level {curr_level-1}.\n"
                 )
                 break
-            current_height, current_width, pad_tuple = _matrix_pad_2d(
+            current_height, current_width, pad_tuple = _matrix_pad_2(
                 current_height, current_width
             )
             if any(pad_tuple):
@@ -643,7 +643,7 @@ class MatrixWaverec2d(object):
                     (synthesis_matrix_rows, synthesis_matrix_cols)
                 )
             else:
-                synthesis_matrix_2d = construct_boundary_s2d(
+                synthesis_matrix_2d = construct_boundary_s2(
                     self.wavelet,
                     current_height,
                     current_width,
@@ -813,7 +813,7 @@ if __name__ == "__main__":
     face = np.mean(scipy.misc.face()[: size[0], : size[1]], -1).astype(np.float64)
     pt_face = torch.tensor(face).cuda()
     wavelet = pywt.Wavelet(wavelet_str)
-    matrixfwt = MatrixWavedec2d(wavelet, level=level)
+    matrixfwt = MatrixWavedec2(wavelet, level=level)
     start_time = time.time()
     mat_coeff = matrixfwt(pt_face.unsqueeze(0))
     total = time.time() - start_time
@@ -822,7 +822,7 @@ if __name__ == "__main__":
     mat_coeff2 = matrixfwt(pt_face.unsqueeze(0))
     total_2 = time.time() - start_time_2
     print("runtime: {:2.2f}".format(total_2))
-    matrixifwt = MatrixWaverec2d(wavelet)
+    matrixifwt = MatrixWaverec2(wavelet)
     reconstruction = matrixifwt(mat_coeff)
     reconstruction2 = matrixifwt(mat_coeff)
     # remove the padding
