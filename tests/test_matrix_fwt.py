@@ -162,7 +162,7 @@ def test_fwt_ifwt_mackey_haar():
     test_lst = []
     for test_no in range(9):
         test_lst.append(
-            np.sum(np.abs(coeffs_max[test_no] - coeffs_mat_max[test_no].T.numpy()))
+            np.sum(np.abs(coeffs_max[test_no] - coeffs_mat_max[test_no].cpu().numpy()))
             < 0.001
         )
     print(test_lst)
@@ -172,7 +172,7 @@ def test_fwt_ifwt_mackey_haar():
     reconstructed_data = matrix_waverec(coeffs_mat_max)
     err1 = torch.mean(torch.abs(pt_data - reconstructed_data))
     print("abs ifwt reconstruction error", err1)
-    assert np.allclose(pt_data.numpy(), reconstructed_data.numpy())
+    assert np.allclose(pt_data.cpu().numpy(), reconstructed_data.cpu().numpy())
 
 
 @pytest.mark.slow

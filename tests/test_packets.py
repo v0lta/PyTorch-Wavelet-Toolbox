@@ -127,6 +127,13 @@ def test_1d_packets(max_lev, wavelet_str, boundary, batch_size):
     )
 
 
+@pytest.mark.slow
+@pytest.mark.parametrize("max_lev", [1, 2, 3, 4])
+def test_boundary_matrix_packets1(max_lev):
+    """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
+    _compare_trees1("db1", max_lev, "zero", "boundary")
+
+
 @pytest.mark.parametrize("level", [1, 2, 3, 4])
 @pytest.mark.parametrize("wavelet_str", ["db2"])
 @pytest.mark.parametrize("pywt_boundary", ["zero"])
@@ -184,3 +191,7 @@ def test_packet_harbo_lvl3():
         np_lst.append(wp[node].data)
     np_res = np.concatenate(np_lst)
     assert np.allclose(torch_res, np_res)
+
+
+
+

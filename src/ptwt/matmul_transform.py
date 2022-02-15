@@ -346,7 +346,8 @@ class MatrixWavedec(object):
             lo, hi = torch.split(coefficients, coefficients.shape[0] // 2, dim=0)
             split_list.append(hi)
         split_list.append(lo)
-        return split_list[::-1]
+        # undo the transpose we used to handle the batch dimension.
+        return [s.T for s in split_list[::-1]]
 
 
 def construct_boundary_a(
@@ -558,7 +559,7 @@ class MatrixWaverec(object):
                 `MatrixWavedec` object.
         """
         level = len(coefficients) - 1
-        input_length = coefficients[-1].shape[0] * 2
+        input_length = coefficients[-1].shape[-1] * 2
 
         re_build = False
         if self.level != level or self.input_length != input_length:
@@ -571,6 +572,9 @@ class MatrixWaverec(object):
                 device=coefficients[-1].device,
                 dtype=coefficients[-1].dtype,
             )
+
+        # transpose the coefficients to handle the batch dimension efficiently.
+        coefficients = [c.T for c in coefficients]
 
         lo = coefficients[0]
         for c_pos, hi in enumerate(coefficients[1:]):

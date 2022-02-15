@@ -144,7 +144,7 @@ def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return a_mul * b_mul
 
 
-def flatten_2d_coeff_lst(
+def _flatten_2d_coeff_lst(
     coeff_lst_2d: List[
         Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
     ],

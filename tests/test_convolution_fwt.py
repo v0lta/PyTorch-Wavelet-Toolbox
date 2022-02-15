@@ -8,7 +8,7 @@ import torch
 from src.ptwt._mackey_glass import MackeyGenerator
 from src.ptwt.conv_transform import (
     _outer,
-    flatten_2d_coeff_lst,
+    _flatten_2d_coeff_lst,
     wavedec,
     wavedec2,
     waverec,
@@ -299,8 +299,8 @@ def test_2d_haar_lvl1():
     # single level haar - 2d
     coeff2d_pywt = pywt.dwt2(face, wavelet, mode="zero")
     coeff2d = wavedec2(torch.from_numpy(face), wavelet, level=1, mode="constant")
-    flat_list_pywt = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
-    flat_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
+    flat_list_pywt = np.concatenate(_flatten_2d_coeff_lst(coeff2d_pywt), -1)
+    flat_list_ptwt = torch.cat(_flatten_2d_coeff_lst(coeff2d), -1)
     cerr = np.mean(np.abs(flat_list_pywt - flat_list_ptwt.numpy()))
     print("haar 2d coeff err,", cerr, ["ok" if cerr < 1e-4 else "failed!"])
     assert np.allclose(flat_list_pywt, flat_list_ptwt.numpy())
@@ -326,8 +326,8 @@ def test_2d_db2_lvl1():
     wavelet = pywt.Wavelet("db2")
     coeff2d_pywt = pywt.dwt2(face, wavelet, mode="reflect")
     coeff2d = wavedec2(torch.from_numpy(face), wavelet, level=1)
-    flat_list_pywt = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
-    flat_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
+    flat_list_pywt = np.concatenate(_flatten_2d_coeff_lst(coeff2d_pywt), -1)
+    flat_list_ptwt = torch.cat(_flatten_2d_coeff_lst(coeff2d), -1)
     cerr = np.mean(np.abs(flat_list_pywt - flat_list_ptwt.numpy()))
     print("db5 2d coeff err,", cerr, ["ok" if cerr < 1e-4 else "failed!"])
     assert np.allclose(flat_list_pywt, flat_list_ptwt.numpy())
@@ -348,8 +348,8 @@ def test_2d_haar_multi():
     wavelet = pywt.Wavelet("haar")
     coeff2d_pywt = pywt.wavedec2(face, wavelet, mode="reflect", level=5)
     coeff2d = wavedec2(torch.from_numpy(face), wavelet, level=5)
-    flat_list_pywt = np.concatenate(flatten_2d_coeff_lst(coeff2d_pywt), -1)
-    flat_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
+    flat_list_pywt = np.concatenate(_flatten_2d_coeff_lst(coeff2d_pywt), -1)
+    flat_list_ptwt = torch.cat(_flatten_2d_coeff_lst(coeff2d), -1)
     cerr = np.mean(np.abs(flat_list_pywt - flat_list_ptwt.numpy()))
     # plt.plot(flat_list_pywt); plt.show()
     # plt.plot(flat_list_ptwt); plt.show()
@@ -400,9 +400,9 @@ def test_2d_wavedec_rec():
                         coeffs.shape == torch.squeeze(coeff2d[pos], 1).shape
                     ), "pywt and ptwt should produce the same shapes."
             flat_coeff_list_pywt = np.concatenate(
-                flatten_2d_coeff_lst(pywt_coeff2d), -1
+                _flatten_2d_coeff_lst(pywt_coeff2d), -1
             )
-            flat_coeff_list_ptwt = torch.cat(flatten_2d_coeff_lst(coeff2d), -1)
+            flat_coeff_list_ptwt = torch.cat(_flatten_2d_coeff_lst(coeff2d), -1)
             cerr = np.mean(np.abs(flat_coeff_list_pywt - flat_coeff_list_ptwt.numpy()))
             print(
                 "wavelet",

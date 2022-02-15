@@ -5,7 +5,7 @@ import pytest
 import pywt
 import scipy.signal
 import torch
-from src.ptwt.conv_transform import flatten_2d_coeff_lst
+from src.ptwt.conv_transform import _flatten_2d_coeff_lst
 from src.ptwt.matmul_transform import (
     MatrixWavedec,
     MatrixWaverec,
@@ -136,8 +136,8 @@ def test_matrix_analysis_fwt_2d_haar(size, level):
     matrixfwt = MatrixWavedec2d(wavelet, level=level)
     mat_coeff = matrixfwt(torch.from_numpy(face))
     conv_coeff = pywt.wavedec2(face, wavelet, level=level, mode="zero")
-    flat_mat_coeff = torch.cat(flatten_2d_coeff_lst(mat_coeff), -1)
-    flat_conv_coeff = np.concatenate(flatten_2d_coeff_lst(conv_coeff), -1)
+    flat_mat_coeff = torch.cat(_flatten_2d_coeff_lst(mat_coeff), -1)
+    flat_conv_coeff = np.concatenate(_flatten_2d_coeff_lst(conv_coeff), -1)
 
     err = np.sum(np.abs(flat_mat_coeff.numpy() - flat_conv_coeff))
     test = np.allclose(flat_mat_coeff.numpy(), flat_conv_coeff)
