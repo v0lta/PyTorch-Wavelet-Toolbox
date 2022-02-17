@@ -12,8 +12,7 @@ from src.ptwt.matmul_transform import (
     construct_boundary_a,
     construct_boundary_s,
 )
-
-from ptwt.matmul_transform_2 import (
+from src.ptwt.matmul_transform_2 import (
     MatrixWavedec2,
     MatrixWaverec2,
     construct_boundary_a2,

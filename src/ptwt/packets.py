@@ -9,7 +9,6 @@ from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Tuple, Union
 import pywt
 import torch
 
-
 from ._util import Wavelet, _as_wavelet
 from .conv_transform import wavedec, wavedec2
 from .matmul_transform import MatrixWavedec
