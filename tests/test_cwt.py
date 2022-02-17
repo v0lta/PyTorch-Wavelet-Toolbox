@@ -28,6 +28,7 @@ continuous_wavelets = [
     "morl",
 ]
 
+
 @pytest.mark.slow
 @pytest.mark.parametrize("cuda", [False, True])
 @pytest.mark.parametrize("wavelet", continuous_wavelets)
