@@ -6,9 +6,9 @@ import scipy.signal as signal
 
 if __name__ == "__main__":
     t = np.linspace(-2, 2, 800, endpoint=False)
-    sig = signal.chirp(t, f0=1, f1=50, t1=10, method="linear")
+    sig = signal.chirp(t, f0=1, f1=12, t1=2, method="linear")
     widths = np.arange(1, 31)
-    cwtmatr_pt, freqs = ptwt.cwt(torch.from_numpy(sig), widths, "mexh")
+    cwtmatr_pt, freqs = ptwt.cwt(torch.from_numpy(sig), widths, "mexh", sampling_period=(4/800)*np.pi)
     cwtmatr = cwtmatr_pt.numpy()
     fig, axs = plt.subplots(2)
     axs[0].plot(t, sig)
