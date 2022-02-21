@@ -54,6 +54,7 @@ class WaveletPacket(BaseDict):
             self.mode = mode
         self.boundary = boundary_orthogonalization
         self._matrix_wavedec_dict: Dict[int, MatrixWavedec] = {}
+        self.max_level: Optional[int] = None
         if data is not None:
             if len(data.shape) == 1:
                 # add a batch dimension.
