@@ -263,25 +263,27 @@ def test_packet_harbo_lvl3():
 
 
 def test_access_errors_1d():
+    """Test expected access errors for 1d packets."""
     twp = WaveletPacket(None, "haar")
     with pytest.raises(ValueError):
-        tmp = twp["a"]
+        twp["a"]
 
     twp.transform(torch.from_numpy(np.random.rand(1, 20)))
 
     with pytest.raises(KeyError):
-        tmp = twp["a" * 100]
+        twp["a" * 100]
 
 
 def test_access_errors_2d():
+    """Test expected access errors for 2d packets."""
     face = misc.face()
     face = np.mean(face, axis=-1).astype(np.float64)
 
     twp = WaveletPacket2D(None, "haar")
     with pytest.raises(ValueError):
-        tmp = twp["a"]
+        twp["a"]
 
     twp.transform(torch.from_numpy(face))
 
     with pytest.raises(KeyError):
-        tmp = twp["a" * 100]
+        twp["a" * 100]
