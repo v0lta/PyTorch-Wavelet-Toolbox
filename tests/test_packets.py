@@ -89,7 +89,7 @@ def _compare_trees2(
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("max_lev", [1, 2, 3, 4])
+@pytest.mark.parametrize("max_lev", [1, 2, 3, 4, None])
 @pytest.mark.parametrize(
     "wavelet_str", ["haar", "db2", "db3", "db4", "db5", "db6", "db7", "db8"]
 )
@@ -107,7 +107,7 @@ def test_2d_packets(max_lev, wavelet_str, boundary, batch_size):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("max_lev", [1, 2, 3, 4])
+@pytest.mark.parametrize("max_lev", [1, 2, 3, 4, None])
 @pytest.mark.parametrize("batch_size", [1, 2])
 def test_boundary_matrix_packets2(max_lev, batch_size):
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
@@ -115,7 +115,7 @@ def test_boundary_matrix_packets2(max_lev, batch_size):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("max_lev", [1, 2, 3, 4])
+@pytest.mark.parametrize("max_lev", [1, 2, 3, 4, None])
 @pytest.mark.parametrize(
     "wavelet_str", ["haar", "db2", "db3", "db4", "db5", "db6", "db7", "db8"]
 )
@@ -133,7 +133,7 @@ def test_1d_packets(max_lev, wavelet_str, boundary, batch_size):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("max_lev", [1, 2, 3, 4])
+@pytest.mark.parametrize("max_lev", [1, 2, 3, 4, None])
 def test_boundary_matrix_packets1(max_lev):
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
     _compare_trees1("db1", max_lev, "zero", "boundary")
