@@ -17,10 +17,25 @@ def _compare_trees1(
     ptwt_boundary: str = "zero",
     length: int = 256,
     batch_size: int = 1,
+    transform_mode: bool = False,
+    multiple_transforms: bool = False,
 ):
     data = np.random.rand(batch_size, length)
     wavelet = pywt.Wavelet(wavelet_str)
-    twp = WaveletPacket(torch.from_numpy(data), wavelet, mode=ptwt_boundary, max_level=max_lev)
+
+    if transform_mode:
+        twp = WaveletPacket(
+            None, wavelet, mode=ptwt_boundary, max_level=max_lev
+        ).transform(torch.from_numpy(data), max_level=max_lev)
+    else:
+        twp = WaveletPacket(
+            torch.from_numpy(data), wavelet, mode=ptwt_boundary, max_level=max_lev
+        )
+
+    # if multiple_transform flag is set, recalculcate the packets
+    if multiple_transforms:
+        twp.transform(torch.from_numpy(data), max_level=max_lev)
+
     nodes = twp.get_level(twp.max_level)
     twp_lst = []
     for node in nodes:
@@ -51,6 +66,8 @@ def _compare_trees2(
     height: int = 256,
     width: int = 256,
     batch_size: int = 1,
+    transform_mode: bool = False,
+    multiple_transforms: bool = False,
 ):
 
     face = misc.face()[:height, :width]
@@ -78,7 +95,20 @@ def _compare_trees2(
 
     # get the PyTorch decomposition
     pt_data = torch.stack([torch.from_numpy(face)] * batch_size, 0)
-    ptwt_wp_tree = WaveletPacket2D(pt_data, wavelet=wavelet, mode=ptwt_boundary, max_level=max_lev)
+
+    if transform_mode:
+        ptwt_wp_tree = WaveletPacket2D(
+            None, wavelet=wavelet, mode=ptwt_boundary
+        ).transform(pt_data, max_level=max_lev)
+    else:
+        ptwt_wp_tree = WaveletPacket2D(
+            pt_data, wavelet=wavelet, mode=ptwt_boundary, max_level=max_lev
+        )
+
+    # if multiple_transform flag is set, recalculcate the packets
+    if multiple_transforms:
+        ptwt_wp_tree.transform(pt_data, max_level=max_lev)
+
     packets = []
     for node in wp_keys:
         packet = ptwt_wp_tree["".join(node)]
@@ -95,7 +125,11 @@ def _compare_trees2(
 )
 @pytest.mark.parametrize("boundary", ["zero", "reflect"])
 @pytest.mark.parametrize("batch_size", [2, 1])
-def test_2d_packets(max_lev, wavelet_str, boundary, batch_size):
+@pytest.mark.parametrize("transform_mode", [False, True])
+@pytest.mark.parametrize("multiple_transforms", [False, True])
+def test_2d_packets(
+    max_lev, wavelet_str, boundary, batch_size, transform_mode, multiple_transforms
+):
     """Ensure pywt and ptwt produce equivalent wavelet 2d packet trees."""
     _compare_trees2(
         wavelet_str,
@@ -103,15 +137,29 @@ def test_2d_packets(max_lev, wavelet_str, boundary, batch_size):
         pywt_boundary=boundary,
         ptwt_boundary=boundary,
         batch_size=batch_size,
+        transform_mode=transform_mode,
+        multiple_transforms=multiple_transforms,
     )
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize("max_lev", [1, 2, 3, 4, None])
 @pytest.mark.parametrize("batch_size", [1, 2])
-def test_boundary_matrix_packets2(max_lev, batch_size):
+@pytest.mark.parametrize("transform_mode", [False, True])
+@pytest.mark.parametrize("multiple_transforms", [False, True])
+def test_boundary_matrix_packets2(
+    max_lev, batch_size, transform_mode, multiple_transforms
+):
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
-    _compare_trees2("db1", max_lev, "zero", "boundary", batch_size=batch_size)
+    _compare_trees2(
+        "db1",
+        max_lev,
+        "zero",
+        "boundary",
+        batch_size=batch_size,
+        transform_mode=transform_mode,
+        multiple_transforms=multiple_transforms,
+    )
 
 
 @pytest.mark.slow
@@ -121,7 +169,11 @@ def test_boundary_matrix_packets2(max_lev, batch_size):
 )
 @pytest.mark.parametrize("boundary", ["zero", "reflect"])
 @pytest.mark.parametrize("batch_size", [2, 1])
-def test_1d_packets(max_lev, wavelet_str, boundary, batch_size):
+@pytest.mark.parametrize("transform_mode", [False, True])
+@pytest.mark.parametrize("multiple_transforms", [False, True])
+def test_1d_packets(
+    max_lev, wavelet_str, boundary, batch_size, transform_mode, multiple_transforms
+):
     """Ensure pywt and ptwt produce equivalent wavelet 1d packet trees."""
     _compare_trees1(
         wavelet_str,
@@ -129,14 +181,25 @@ def test_1d_packets(max_lev, wavelet_str, boundary, batch_size):
         pywt_boundary=boundary,
         ptwt_boundary=boundary,
         batch_size=batch_size,
+        transform_mode=transform_mode,
+        multiple_transforms=multiple_transforms,
     )
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize("max_lev", [1, 2, 3, 4, None])
-def test_boundary_matrix_packets1(max_lev):
+@pytest.mark.parametrize("transform_mode", [False, True])
+@pytest.mark.parametrize("multiple_transforms", [False, True])
+def test_boundary_matrix_packets1(max_lev, transform_mode, multiple_transforms):
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
-    _compare_trees1("db1", max_lev, "zero", "boundary")
+    _compare_trees1(
+        "db1",
+        max_lev,
+        "zero",
+        "boundary",
+        transform_mode=transform_mode,
+        multiple_transforms=multiple_transforms,
+    )
 
 
 @pytest.mark.parametrize("level", [1, 2, 3, 4])
