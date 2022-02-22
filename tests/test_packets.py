@@ -45,7 +45,10 @@ def _compare_trees1(
     np_batches = []
     for batch_index in range(batch_size):
         wp = pywt.WaveletPacket(
-            data=data[batch_index], wavelet=wavelet, mode=pywt_boundary, maxlevel=max_lev,
+            data=data[batch_index],
+            wavelet=wavelet,
+            mode=pywt_boundary,
+            maxlevel=max_lev,
         )
         nodes = [node.path for node in wp.get_level(wp.maxlevel, "freq")]
         np_lst = []
@@ -82,9 +85,7 @@ def _compare_trees2(
             maxlevel=max_lev,
         )
         # Get the full decomposition
-        wp_keys = list(product(
-            ["a", "h", "v", "d"], repeat=wp_tree.maxlevel
-        ))
+        wp_keys = list(product(["a", "h", "v", "d"], repeat=wp_tree.maxlevel))
         np_packets = []
         for node in wp_keys:
             np_packet = wp_tree["".join(node)].data
