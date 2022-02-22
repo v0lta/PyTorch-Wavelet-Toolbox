@@ -20,8 +20,8 @@ def _compare_trees1(
 ):
     data = np.random.rand(batch_size, length)
     wavelet = pywt.Wavelet(wavelet_str)
-    twp = WaveletPacket(torch.from_numpy(data), wavelet, mode=ptwt_boundary)
-    nodes = twp.get_level(max_lev)
+    twp = WaveletPacket(torch.from_numpy(data), wavelet, mode=ptwt_boundary, max_level=max_lev)
+    nodes = twp.get_level(twp.max_level)
     twp_lst = []
     for node in nodes:
         twp_lst.append(twp[node])
@@ -30,15 +30,16 @@ def _compare_trees1(
     np_batches = []
     for batch_index in range(batch_size):
         wp = pywt.WaveletPacket(
-            data=data[batch_index], wavelet=wavelet, mode=pywt_boundary
+            data=data[batch_index], wavelet=wavelet, mode=pywt_boundary, maxlevel=max_lev,
         )
-        nodes = [node.path for node in wp.get_level(max_lev, "freq")]
+        nodes = [node.path for node in wp.get_level(wp.maxlevel, "freq")]
         np_lst = []
         for node in nodes:
             np_lst.append(wp[node].data)
         np_res = np.concatenate(np_lst, -1)
         np_batches.append(np_res)
     np_batches = np.stack(np_batches, 0)
+    assert wp.maxlevel == twp.max_level
     assert np.allclose(torch_res, np_batches)
 
 
@@ -61,9 +62,12 @@ def _compare_trees2(
             data=face,
             wavelet=wavelet,
             mode=pywt_boundary,
+            maxlevel=max_lev,
         )
         # Get the full decomposition
-        wp_keys = list(product(["a", "h", "v", "d"], repeat=max_lev))
+        wp_keys = list(product(
+            ["a", "h", "v", "d"], repeat=wp_tree.maxlevel
+        ))
         np_packets = []
         for node in wp_keys:
             np_packet = wp_tree["".join(node)].data
@@ -74,12 +78,13 @@ def _compare_trees2(
 
     # get the PyTorch decomposition
     pt_data = torch.stack([torch.from_numpy(face)] * batch_size, 0)
-    ptwt_wp_tree = WaveletPacket2D(pt_data, wavelet=wavelet, mode=ptwt_boundary)
+    ptwt_wp_tree = WaveletPacket2D(pt_data, wavelet=wavelet, mode=ptwt_boundary, max_level=max_lev)
     packets = []
     for node in wp_keys:
         packet = ptwt_wp_tree["".join(node)]
         packets.append(packet)
     packets_pt = torch.stack(packets, 1).numpy()
+    assert wp_tree.maxlevel == ptwt_wp_tree.max_level
     assert np.allclose(packets_pt, batch_np_packets)
 
 
