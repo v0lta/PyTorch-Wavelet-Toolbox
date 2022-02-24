@@ -213,7 +213,7 @@ class MatrixWavedec2(object):
         >>> import scipy.misc
         >>> face = scipy.misc.face()[:256, :256, :].astype(np.float32)
         >>> pt_face = torch.tensor(face).permute([2, 0, 1])
-        >>> matrixfwt = ptwt.MatrixWavedec2d(pywt.Wavelet("haar"), level=2)
+        >>> matrixfwt = ptwt.MatrixWavedec2(pywt.Wavelet("haar"), level=2)
         >>> mat_coeff = matrixfwt(pt_face)
 
     """
@@ -506,7 +506,7 @@ class MatrixWaverec2(object):
         >>> import scipy.misc
         >>> face = scipy.misc.face()[:256, :256, :].astype(np.float32)
         >>> pt_face = torch.tensor(face).permute([2, 0, 1])
-        >>> matrixfwt = ptwt.MatrixWavedec2d(pywt.Wavelet("haar"), level=2)
+        >>> matrixfwt = ptwt.MatrixWavedec2(pywt.Wavelet("haar"), level=2)
         >>> mat_coeff = matrixfwt(pt_face)
         >>> matrixifwt = ptwt.MatrixWaverec2(pywt.Wavelet("haar"))
         >>> reconstruction = matrixifwt(mat_coeff)
@@ -709,7 +709,7 @@ class MatrixWaverec2(object):
 
         Args:
             coefficients (list): The coefficient list as returned
-                by the `MatrixWavedec2d`-Object.
+                by the `MatrixWavedec2`-Object.
 
         Returns:
             torch.Tensor: The original signal reconstruction of
