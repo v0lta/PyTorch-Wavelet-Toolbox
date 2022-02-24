@@ -1,9 +1,6 @@
 ptwt package
 ============
 
-Submodules
-----------
-
 ptwt.conv\_transform module
 ---------------------------
 
@@ -20,10 +17,10 @@ ptwt.matmul\_transform module
    :undoc-members:
    :show-inheritance:
 
-ptwt.matmul\_transform\_2d module
+ptwt.matmul\_transform\_2 module
 ---------------------------------
 
-.. automodule:: ptwt.matmul_transform_2d
+.. automodule:: ptwt.matmul_transform_2
    :members:
    :undoc-members:
    :show-inheritance:

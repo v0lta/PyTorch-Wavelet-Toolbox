@@ -3,16 +3,19 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to PyTorch-Wavelet-Toolbox's documentation!
-===================================================
+
+
+.. include:: ../README.rst
+
+
+Use the ptwt package link below to jump to the documentation of all functions.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   readme_link
    modules
-   
+
 
 Indices and tables
 ==================
