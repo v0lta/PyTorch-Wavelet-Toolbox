@@ -508,7 +508,7 @@ class MatrixWaverec2(object):
         >>> pt_face = torch.tensor(face).permute([2, 0, 1])
         >>> matrixfwt = ptwt.MatrixWavedec2d(pywt.Wavelet("haar"), level=2)
         >>> mat_coeff = matrixfwt(pt_face)
-        >>> matrixifwt = ptwt.MatrixWaverec2d(pywt.Wavelet("haar"))
+        >>> matrixifwt = ptwt.MatrixWaverec2(pywt.Wavelet("haar"))
         >>> reconstruction = matrixifwt(mat_coeff)
     """
 
