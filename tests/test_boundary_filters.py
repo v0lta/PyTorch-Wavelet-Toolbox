@@ -12,11 +12,11 @@ from src.ptwt.matmul_transform import (
     construct_boundary_a,
     construct_boundary_s,
 )
-from src.ptwt.matmul_transform_2d import (
-    MatrixWavedec2d,
-    MatrixWaverec2d,
-    construct_boundary_a2d,
-    construct_boundary_s2d,
+from src.ptwt.matmul_transform_2 import (
+    MatrixWavedec2,
+    MatrixWaverec2,
+    construct_boundary_a2,
+    construct_boundary_s2,
 )
 
 
@@ -97,14 +97,14 @@ def test_boundary_transform_1d(wavelet_str, data, level, boundary):
 def test_analysis_synthesis_matrices(size, wavelet_str):
     """Test the 2d analysis and synthesis matrices for various wavelets."""
     wavelet = pywt.Wavelet(wavelet_str)
-    a = construct_boundary_a2d(
+    a = construct_boundary_a2(
         wavelet,
         size[0],
         size[1],
         device=torch.device("cpu"),
         dtype=torch.float64,
     )
-    s = construct_boundary_s2d(
+    s = construct_boundary_s2(
         wavelet,
         size[0],
         size[1],
@@ -133,7 +133,7 @@ def test_matrix_analysis_fwt_2d_haar(size, level):
         scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
     ).astype(np.float64)
     wavelet = pywt.Wavelet("haar")
-    matrixfwt = MatrixWavedec2d(wavelet, level=level)
+    matrixfwt = MatrixWavedec2(wavelet, level=level)
     mat_coeff = matrixfwt(torch.from_numpy(face))
     conv_coeff = pywt.wavedec2(face, wavelet, level=level, mode="zero")
     flat_mat_coeff = torch.cat(_flatten_2d_coeff_lst(mat_coeff), -1)
@@ -169,9 +169,9 @@ def test_boundary_matrix_fwt_2d(wavelet_str, size, level, separable):
         scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
     ).astype(np.float64)
     wavelet = pywt.Wavelet(wavelet_str)
-    matrixfwt = MatrixWavedec2d(wavelet, level=level, separable=separable)
+    matrixfwt = MatrixWavedec2(wavelet, level=level, separable=separable)
     mat_coeff = matrixfwt(torch.from_numpy(face))
-    matrixifwt = MatrixWaverec2d(wavelet, separable=separable)
+    matrixifwt = MatrixWaverec2(wavelet, separable=separable)
     reconstruction = matrixifwt(mat_coeff).squeeze(0)
     # remove the padding
     if size[0] % 2 != 0:
@@ -206,9 +206,9 @@ def test_batched_2d_matrix_fwt_ifwt(wavelet_str, level, size, separable):
     )
     pt_face = torch.from_numpy(face).permute([2, 0, 1])
     wavelet = pywt.Wavelet(wavelet_str)
-    matrixfwt = MatrixWavedec2d(wavelet, level=level, separable=separable)
+    matrixfwt = MatrixWavedec2(wavelet, level=level, separable=separable)
     mat_coeff = matrixfwt(pt_face)
-    matrixifwt = MatrixWaverec2d(wavelet, separable=separable)
+    matrixifwt = MatrixWaverec2(wavelet, separable=separable)
     reconstruction = matrixifwt(mat_coeff)
     err = np.sum(
         np.abs(
@@ -275,9 +275,9 @@ def test_matrix_transform_1d_rebuild(wavelet_str, boundary):
 def test_matrix_transform_2d_rebuild(wavelet_str, separable):
     """Ensure the boundary matrix fwt is invertable."""
     wavelet = pywt.Wavelet(wavelet_str)
-    matrixifwt = MatrixWaverec2d(wavelet, separable=separable)
+    matrixifwt = MatrixWaverec2(wavelet, separable=separable)
     for level in [4, 1, None]:
-        matrixfwt = MatrixWavedec2d(wavelet, level=level, separable=separable)
+        matrixfwt = MatrixWavedec2(wavelet, level=level, separable=separable)
         for size in [[16, 16], [17, 17]]:
             face = np.mean(
                 scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1

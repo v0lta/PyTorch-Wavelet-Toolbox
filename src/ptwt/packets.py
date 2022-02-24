@@ -9,11 +9,10 @@ from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Tuple, Union
 import pywt
 import torch
 
-
 from ._util import Wavelet, _as_wavelet
 from .conv_transform import wavedec, wavedec2
 from .matmul_transform import MatrixWavedec
-from .matmul_transform_2d import MatrixWavedec2d
+from .matmul_transform_2 import MatrixWavedec2
 
 if TYPE_CHECKING:
     BaseDict = collections.UserDict[str, torch.Tensor]
@@ -30,6 +29,7 @@ class WaveletPacket(BaseDict):
         wavelet: Union[Wavelet, str],
         mode: str = "reflect",
         boundary_orthogonalization: str = "qr",
+        max_level: Optional[int] = None,
     ) -> None:
         """Create a wavelet packet decomposition object.
 
@@ -46,6 +46,9 @@ class WaveletPacket(BaseDict):
             boundary_orthogonalization (str): The orthogonalization method
                 to use. Only used if `mode` equals 'boundary'. Choose from
                 'qr' or 'gramschmidt'. Defaults to 'qr'.
+            max_level (int, optional): Value is passed on to `transform`.
+                The highest decomposition level to compute. If None, the maximum level
+                is determined from the input data shape. Defaults to None.
         """
         self.wavelet = _as_wavelet(wavelet)
         if mode == "zero":
@@ -55,11 +58,12 @@ class WaveletPacket(BaseDict):
             self.mode = mode
         self.boundary = boundary_orthogonalization
         self._matrix_wavedec_dict: Dict[int, MatrixWavedec] = {}
+        self.max_level: Optional[int] = None
         if data is not None:
             if len(data.shape) == 1:
                 # add a batch dimension.
                 data = data.unsqueeze(0)
-            self.transform(data)
+            self.transform(data, max_level)
         else:
             self.data = {}
 
@@ -167,6 +171,7 @@ class WaveletPacket2D(BaseDict):
         mode: str = "reflect",
         boundary_orthogonalization: str = "qr",
         separable: bool = False,
+        max_level: Optional[int] = None,
     ) -> None:
         """Create a 2D-Wavelet packet tree.
 
@@ -186,6 +191,9 @@ class WaveletPacket2D(BaseDict):
             separable (bool): If true and the sparse matrix backend is selected,
                 a separable transform is performed, i.e. each image axis is
                 transformed separately. Defaults to False.
+            max_level (int, optional): Value is passed on to `transform`.
+                The highest decomposition level to compute. If None, the maximum level
+                is determined from the input data shape. Defaults to None.
         """
         self.wavelet = _as_wavelet(wavelet)
 
@@ -194,11 +202,11 @@ class WaveletPacket2D(BaseDict):
 
         self.boundary = boundary_orthogonalization
         self.separable = separable
-        self.matrix_wavedec2_dict: Dict[Tuple[int, ...], MatrixWavedec2d] = {}
+        self.matrix_wavedec2_dict: Dict[Tuple[int, ...], MatrixWavedec2] = {}
 
         self.max_level: Optional[int] = None
         if data is not None:
-            self.transform(data)
+            self.transform(data, max_level)
         else:
             self.data = {}
 
@@ -233,7 +241,7 @@ class WaveletPacket2D(BaseDict):
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_wavedec2_dict.keys():
-                self.matrix_wavedec2_dict[shape] = MatrixWavedec2d(
+                self.matrix_wavedec2_dict[shape] = MatrixWavedec2(
                     self.wavelet,
                     level=1,
                     boundary=self.boundary,
