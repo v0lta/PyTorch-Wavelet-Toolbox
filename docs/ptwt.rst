@@ -9,6 +9,22 @@ ptwt.conv\_transform module
    :undoc-members:
    :show-inheritance:
 
+ptwt.packets module
+-------------------
+
+.. automodule:: ptwt.packets
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ptwt.continuous\_transform module
+---------------------------
+
+.. automodule:: ptwt.continuous_transform
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 ptwt.matmul\_transform module
 -----------------------------
 
@@ -21,14 +37,6 @@ ptwt.matmul\_transform\_2 module
 ---------------------------------
 
 .. automodule:: ptwt.matmul_transform_2
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-ptwt.packets module
--------------------
-
-.. automodule:: ptwt.packets
    :members:
    :undoc-members:
    :show-inheritance:
