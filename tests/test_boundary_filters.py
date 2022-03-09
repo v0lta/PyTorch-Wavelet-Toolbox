@@ -125,7 +125,7 @@ def test_analysis_synthesis_matrices(size, wavelet_str):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("size", [(15, 16), (16, 15), (16, 16)])
+@pytest.mark.parametrize("size", [(15, 16), (16, 15), (16, 16), (8, 16), (16, 8)])
 @pytest.mark.parametrize("level", [1, 2, 3])
 def test_matrix_analysis_fwt_2d_haar(size, level):
     """Test the fwt-2d matrix-haar transform, should be equal to the pywt."""
