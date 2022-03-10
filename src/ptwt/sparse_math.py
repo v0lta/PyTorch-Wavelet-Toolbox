@@ -495,7 +495,7 @@ def construct_strided_conv2d_matrix(
             Defaults to 2.
         mode (str): The convolution type.
             Options are 'full', 'valid', 'same' and 'sameshift'.
-            Defaults to 'full'.
+            Defaults to 'full'. Sameshift starts at 1 instead of 0.
 
     Raises:
         ValueError: Raised if an unknown convolution string is

@@ -26,6 +26,7 @@ def _construct_a_2(
     width: int,
     device: Union[torch.device, str],
     dtype: torch.dtype = torch.float64,
+    mode: str = "sameshift"
 ) -> torch.Tensor:
     """Construct a raw two dimensional analysis wavelet transformation matrix.
 
@@ -37,6 +38,9 @@ def _construct_a_2(
         device (torch.device or str): Where to place the matrix.
         dtype (torch.dtype, optional): Desired matrix data-type.
             Defaults to torch.float64.
+        mode (str): The convolution type.
+            Options are 'full', 'valid', 'same' and 'sameshift'.
+            Defaults to 'sameshift'.
 
     Returns:
         torch.Tensor: A sparse fwt analysis matrix.
@@ -51,10 +55,10 @@ def _construct_a_2(
     )
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
     ll, lh, hl, hh = dec_filt.squeeze(1)
-    analysis_ll = construct_strided_conv2d_matrix(ll, height, width, mode="sameshift")
-    analysis_lh = construct_strided_conv2d_matrix(lh, height, width, mode="sameshift")
-    analysis_hl = construct_strided_conv2d_matrix(hl, height, width, mode="sameshift")
-    analysis_hh = construct_strided_conv2d_matrix(hh, height, width, mode="sameshift")
+    analysis_ll = construct_strided_conv2d_matrix(ll, height, width, mode=mode)
+    analysis_lh = construct_strided_conv2d_matrix(lh, height, width, mode=mode)
+    analysis_hl = construct_strided_conv2d_matrix(hl, height, width, mode=mode)
+    analysis_hh = construct_strided_conv2d_matrix(hh, height, width, mode=mode)
     analysis = torch.cat([analysis_ll, analysis_hl, analysis_lh, analysis_hh], 0)
     return analysis
 
@@ -65,6 +69,7 @@ def _construct_s_2(
     width: int,
     device: Union[torch.device, str],
     dtype: torch.dtype = torch.float64,
+    mode: str = "sameshift"
 ) -> torch.Tensor:
     """Construct a raw fast wavelet transformation synthesis matrix.
 
@@ -83,6 +88,9 @@ def _construct_s_2(
             usually cpu or gpu.
         dtype ([type], optional): The data-type the matrix should have.
             Defaults to torch.float64.
+        mode (str): The convolution type.
+            Options are 'full', 'valid', 'same' and 'sameshift'.
+            Defaults to 'sameshift'.
 
     Returns:
         [torch.Tensor]: The generated fast wavelet synthesis matrix.
@@ -93,10 +101,10 @@ def _construct_s_2(
     )
     dec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
     ll, lh, hl, hh = dec_filt.squeeze(1)
-    synthesis_ll = construct_strided_conv2d_matrix(ll, height, width, mode="sameshift")
-    synthesis_lh = construct_strided_conv2d_matrix(lh, height, width, mode="sameshift")
-    synthesis_hl = construct_strided_conv2d_matrix(hl, height, width, mode="sameshift")
-    synthesis_hh = construct_strided_conv2d_matrix(hh, height, width, mode="sameshift")
+    synthesis_ll = construct_strided_conv2d_matrix(ll, height, width, mode=mode)
+    synthesis_lh = construct_strided_conv2d_matrix(lh, height, width, mode=mode)
+    synthesis_hl = construct_strided_conv2d_matrix(hl, height, width, mode=mode)
+    synthesis_hh = construct_strided_conv2d_matrix(hh, height, width, mode=mode)
     synthesis = torch.cat(
         [synthesis_ll, synthesis_hl, synthesis_lh, synthesis_hh], 0
     ).coalesce()
@@ -361,9 +369,9 @@ class MatrixWavedec2(object):
                 )
             else:
                 analysis_matrix_2d = construct_boundary_a2(
-                    self.wavelet,
-                    current_height,
-                    current_width,
+                    wavelet=self.wavelet,
+                    height=current_height,
+                    width=current_width,
                     boundary=self.boundary,
                     device=device,
                     dtype=dtype,

@@ -132,6 +132,7 @@ def test_matrix_analysis_fwt_2d_haar(size, level):
     face = np.mean(
         scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
     ).astype(np.float64)
+    # TODO: Test identity wavelet.
     wavelet = pywt.Wavelet("haar")
     matrixfwt = MatrixWavedec2(wavelet, level=level)
     mat_coeff = matrixfwt(torch.from_numpy(face))
@@ -144,6 +145,7 @@ def test_matrix_analysis_fwt_2d_haar(size, level):
     test2 = np.allclose(mat_coeff[0].numpy(), conv_coeff[0])
     test3 = np.allclose(mat_coeff[1][0].numpy(), conv_coeff[1][0])
     print(size, level, err, test, test2, test3)
+
     assert test and test2 and test3
 
 
