@@ -26,7 +26,7 @@ def _construct_a_2(
     width: int,
     device: Union[torch.device, str],
     dtype: torch.dtype = torch.float64,
-    mode: str = "sameshift"
+    mode: str = "sameshift",
 ) -> torch.Tensor:
     """Construct a raw two dimensional analysis wavelet transformation matrix.
 
@@ -44,6 +44,8 @@ def _construct_a_2(
 
     Returns:
         torch.Tensor: A sparse fwt analysis matrix.
+            The matrices are ordered a,h,v,d or
+            ll, lh, hl, hh.
 
     Note:
         The construced matrix is NOT necessary orthogonal.
@@ -59,7 +61,7 @@ def _construct_a_2(
     analysis_lh = construct_strided_conv2d_matrix(lh, height, width, mode=mode)
     analysis_hl = construct_strided_conv2d_matrix(hl, height, width, mode=mode)
     analysis_hh = construct_strided_conv2d_matrix(hh, height, width, mode=mode)
-    analysis = torch.cat([analysis_ll, analysis_hl, analysis_lh, analysis_hh], 0)
+    analysis = torch.cat([analysis_ll, analysis_lh, analysis_hl, analysis_hh], 0)
     return analysis
 
 
@@ -69,7 +71,7 @@ def _construct_s_2(
     width: int,
     device: Union[torch.device, str],
     dtype: torch.dtype = torch.float64,
-    mode: str = "sameshift"
+    mode: str = "sameshift",
 ) -> torch.Tensor:
     """Construct a raw fast wavelet transformation synthesis matrix.
 
@@ -106,7 +108,7 @@ def _construct_s_2(
     synthesis_hl = construct_strided_conv2d_matrix(hl, height, width, mode=mode)
     synthesis_hh = construct_strided_conv2d_matrix(hh, height, width, mode=mode)
     synthesis = torch.cat(
-        [synthesis_ll, synthesis_hl, synthesis_lh, synthesis_hh], 0
+        [synthesis_ll, synthesis_lh, synthesis_hl, synthesis_hh], 0
     ).coalesce()
     indices = synthesis.indices()
     shape = synthesis.shape
@@ -146,7 +148,7 @@ def construct_boundary_a2(
             wavelets.
     """
     wavelet = _as_wavelet(wavelet)
-    a = _construct_a_2(wavelet, height, width, device, dtype=dtype)
+    a = _construct_a_2(wavelet, height, width, device, dtype=dtype, mode="sameshift")
     orth_a = orthogonalize(a, wavelet.dec_len ** 2, method=boundary)  # noqa: BLK100
     return orth_a
 
@@ -467,36 +469,50 @@ class MatrixWavedec2(object):
                 split_list.append((lh, hl, hh))
             split_list.append(ll)
         else:
-            ll = input_signal.reshape([batch_size, -1]).T
+            ll = input_signal.T.reshape([batch_size, -1]).T
             for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
                 fwt_matrix = cast(torch.Tensor, fwt_matrix)
                 pad = self.pad_list[scale]
                 size = self.size_list[scale]
+                print(pad)
                 if pad[0] or pad[1]:
                     if pad[0] and not pad[1]:
-                        ll_reshape = ll.T.reshape(batch_size, size[0], size[1] - 1)
+                        ll_reshape = ll.T.reshape(
+                            batch_size, size[1] - 1, size[0]
+                        ).transpose(2, 1)
                         ll = torch.nn.functional.pad(ll_reshape, [0, 1])
                     elif pad[1] and not pad[0]:
-                        ll_reshape = ll.T.reshape(batch_size, size[0] - 1, size[1])
+                        ll_reshape = ll.T.reshape(
+                            batch_size, size[1], size[0] - 1
+                        ).transpose(2, 1)
                         ll = torch.nn.functional.pad(ll_reshape, [0, 0, 0, 1])
                     elif pad[0] and pad[1]:
-                        ll_reshape = ll.T.reshape(batch_size, size[0] - 1, size[1] - 1)
+                        ll_reshape = ll.T.reshape(
+                            batch_size, size[1] - 1, size[0] - 1
+                        ).transpose(2, 1)
                         ll = torch.nn.functional.pad(ll_reshape, [0, 1, 0, 1])
-                    ll = ll.reshape([batch_size, -1]).T
+                    ll = ll.T.reshape([batch_size, -1]).T
                 coefficients = torch.sparse.mm(fwt_matrix, ll)
+                # get the ll,
                 four_split = torch.split(
                     coefficients, int(np.prod((size[0] // 2, size[1] // 2)))
                 )
                 reshaped = cast(
                     Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
                     tuple(
-                        (el.T.reshape(batch_size, size[0] // 2, size[1] // 2))
+                        (
+                            el.T.reshape(
+                                batch_size, size[1] // 2, size[0] // 2
+                            ).transpose(2, 1)
+                        )
                         for el in four_split[1:]
                     ),
                 )
                 split_list.append(reshaped)
                 ll = four_split[0]
-            split_list.append(ll.T.reshape(batch_size, size[0] // 2, size[1] // 2))
+            split_list.append(
+                ll.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(2, 1)
+            )
         return split_list[::-1]
 
 
@@ -784,10 +800,10 @@ class MatrixWaverec2(object):
             else:
                 ll = torch.cat(
                     [
-                        ll.reshape([batch_size, -1]),
-                        lh.reshape([batch_size, -1]),
-                        hl.reshape([batch_size, -1]),
-                        hh.reshape([batch_size, -1]),
+                        ll.transpose(2, 1).reshape([batch_size, -1]),
+                        lh.transpose(2, 1).reshape([batch_size, -1]),
+                        hl.transpose(2, 1).reshape([batch_size, -1]),
+                        hh.transpose(2, 1).reshape([batch_size, -1]),
                     ],
                     -1,
                 )
@@ -796,7 +812,7 @@ class MatrixWaverec2(object):
 
             pred_len = [s * 2 for s in curr_shape[-2:]]
             if not self.separable:
-                ll = ll.T.reshape([batch_size] + pred_len)
+                ll = ll.T.reshape([batch_size] + pred_len).transpose(2, 1)
             # remove the padding
             if c_pos < len(coefficients) - 2:
                 next_len = list(coefficients[c_pos + 2][0].shape[-2:])

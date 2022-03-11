@@ -185,6 +185,7 @@ def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     Returns:
         torch.Tensor: Stacked 2d filters of dimension
             [filt_no, 1, height, width].
+            The four filters are ordered ll, lh, hl, hh.
 
     """
     ll = _outer(lo, lo)
