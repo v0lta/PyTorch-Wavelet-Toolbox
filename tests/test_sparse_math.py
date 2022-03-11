@@ -211,7 +211,6 @@ def test_strided_conv_matrix_2d(filter_shape, size, mode):
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
-
 @pytest.mark.parametrize("filter_shape", [(3, 3), (4, 4), (4, 3), (3, 4)])
 @pytest.mark.parametrize(
     "size", [(7, 8), (8, 7), (7, 7), (8, 8), (16, 16), (8, 16), (16, 8)]
@@ -240,7 +239,6 @@ def test_strided_conv_matrix_2d_same(filter_shape, size):
     res_flat_stride = torch.sparse.mm(strided_matrix, face.T.flatten().unsqueeze(-1))
     output_shape = torch_res.shape
     res_mm_stride = np.reshape(res_flat_stride, (output_shape[1], output_shape[0])).T
-    diff_torch = np.mean(np.abs(torch_res.numpy() - res_mm_stride.numpy()))
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
@@ -257,20 +255,34 @@ def _get_2d_same_padding(filter_shape, input_size):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize(
-    "size", [(32, 64), (64, 32)]
-)
+@pytest.mark.parametrize("size", [(256, 512), (512, 256)])
 def test_strided_conv_matrix_2d_sameshift(size):
     """Test strided conv matrix with sameshift padding."""
     stride = 2
     filter_shape = (3, 3)
     # test_filter = torch.rand(filter_shape)
-    test_filter = torch.tensor([[0., 0., 0.],
-                                [0., 1., .1,],
-                                [0., .1, .1]])
-    test_filter2 = torch.tensor([[1., .1, 0.],
-                                [.1, .1, 0.,],
-                                [0., 0., 0.]])
+    test_filter = torch.tensor(
+        [
+            [0.0, 0.0, 0.0],
+            [
+                0.0,
+                1.0,
+                0.1,
+            ],
+            [0.0, 0.1, 0.1],
+        ]
+    )
+    test_filter2 = torch.tensor(
+        [
+            [1.0, 0.1, 0.0],
+            [
+                0.1,
+                0.1,
+                0.0,
+            ],
+            [0.0, 0.0, 0.0],
+        ]
+    )
     test_filter = test_filter.unsqueeze(0).unsqueeze(0)
     test_filter2 = test_filter2.unsqueeze(0).unsqueeze(0)
     face = misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])]
@@ -283,22 +295,21 @@ def test_strided_conv_matrix_2d_sameshift(size):
         face_pad, test_filter2.flip(2, 3), stride=stride
     ).squeeze()
     strided_matrix = construct_strided_conv2d_matrix(
-        test_filter.squeeze(),
-        face.shape[-2],
-        face.shape[-1],
+        filter=test_filter.squeeze(),
+        input_rows=face.shape[-2],
+        input_columns=face.shape[-1],
         stride=stride,
         mode="sameshift",
     )
-    res_flat_stride = torch.sparse.mm(strided_matrix, face.T.flatten().unsqueeze(-1))
+    coefficients = torch.sparse.mm(strided_matrix, face.T.flatten().unsqueeze(-1))
     output_shape = torch_res.shape
-    res_mm_stride = np.reshape(res_flat_stride, (output_shape[1], output_shape[0])).T
+    res_mm_stride = np.reshape(coefficients, (output_shape[1], output_shape[0])).T
     diff_torch = np.mean(np.abs(torch_res.numpy() - res_mm_stride.numpy()))
 
     # import matplotlib.pyplot as plt
     # plt.imshow(
     #     torch.nn.functional.conv2d(input=res_mm_stride.unsqueeze(0).unsqueeze(0),
-    #                                weight=torch_res.unsqueeze(0).unsqueeze(0), 
+    #                                weight=torch_res.unsqueeze(0).unsqueeze(0),
     #                                stride=1, padding=4).squeeze().numpy());
     # plt.show()
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
-
