@@ -182,8 +182,8 @@ def test_boundary_matrix_fwt_2d(wavelet_str, size, level, separable):
 
 
 @pytest.mark.parametrize("wavelet_str", ["db1", "db2"])
-@pytest.mark.parametrize("level", [1])
-@pytest.mark.parametrize("size", [(16, 16)])
+@pytest.mark.parametrize("level", [1, 2])
+@pytest.mark.parametrize("size", [(16, 16), (32, 16), (16, 32)])
 @pytest.mark.parametrize("separable", [False, True])
 def test_batched_2d_matrix_fwt_ifwt(wavelet_str, level, size, separable):
     """Ensure the batched matrix fwt works properly."""
