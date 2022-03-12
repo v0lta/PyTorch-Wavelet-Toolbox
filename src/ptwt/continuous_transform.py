@@ -17,8 +17,6 @@ def _next_fast_len(n: int) -> int:
     Given a number of samples `n`, returns the next power of two
     following this number to take advantage of FFT speedup.
     This fallback is less efficient than `scipy.fftpack.next_fast_len`
-    Taken from:
-    https://github.com/PyWavelets/pywt/blob/master/pywt/_cwt.py
     """
     return int(2 ** np.ceil(np.log2(n)))
 
