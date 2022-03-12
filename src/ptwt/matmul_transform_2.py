@@ -474,7 +474,6 @@ class MatrixWavedec2(object):
                 fwt_matrix = cast(torch.Tensor, fwt_matrix)
                 pad = self.pad_list[scale]
                 size = self.size_list[scale]
-                print(pad)
                 if pad[0] or pad[1]:
                     if pad[0] and not pad[1]:
                         ll_reshape = ll.T.reshape(
@@ -826,42 +825,3 @@ class MatrixWaverec2(object):
 
         return ll
 
-
-if __name__ == "__main__":
-    import scipy
-    import scipy.misc
-    import pywt
-    import time
-
-    size = 32, 32
-    level = 3
-    wavelet_str = "db2"
-    face = np.mean(scipy.misc.face()[: size[0], : size[1]], -1).astype(np.float64)
-    pt_face = torch.tensor(face).cuda()
-    wavelet = pywt.Wavelet(wavelet_str)
-    matrixfwt = MatrixWavedec2(wavelet, level=level)
-    start_time = time.time()
-    mat_coeff = matrixfwt(pt_face.unsqueeze(0))
-    total = time.time() - start_time
-    print("runtime: {:2.2f}".format(total))
-    start_time_2 = time.time()
-    mat_coeff2 = matrixfwt(pt_face.unsqueeze(0))
-    total_2 = time.time() - start_time_2
-    print("runtime: {:2.2f}".format(total_2))
-    matrixifwt = MatrixWaverec2(wavelet)
-    reconstruction = matrixifwt(mat_coeff)
-    reconstruction2 = matrixifwt(mat_coeff)
-    # remove the padding
-    if size[0] % 2 != 0:
-        reconstruction = reconstruction[:-1, :]
-    if size[1] % 2 != 0:
-        reconstruction = reconstruction[:, :-1]
-    err = np.sum(np.abs(reconstruction.cpu().numpy() - face))
-    print(
-        size,
-        str(level).center(4),
-        wavelet_str,
-        "error {:3.3e}".format(err),
-        np.allclose(reconstruction.cpu().numpy(), face),
-    )
-    assert np.allclose(reconstruction.cpu().numpy(), face)
