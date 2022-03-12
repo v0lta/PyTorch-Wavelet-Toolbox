@@ -199,15 +199,6 @@ def test_strided_conv_matrix_2d(filter_shape, size, mode):
             (size[0] - (filter_shape[0])) // 2 + 1,
         ]
     res_mm_stride = np.reshape(res_flat_stride, output_shape).T
-
-    diff_torch = np.mean(np.abs(torch_res.numpy() - res_mm_stride.numpy()))
-    print(
-        str(size).center(8),
-        filter_shape,
-        mode.center(8),
-        "torch-error %2.2e" % diff_torch,
-        np.allclose(torch_res.numpy(), res_mm_stride.numpy()),
-    )
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
@@ -304,12 +295,4 @@ def test_strided_conv_matrix_2d_sameshift(size):
     coefficients = torch.sparse.mm(strided_matrix, face.T.flatten().unsqueeze(-1))
     output_shape = torch_res.shape
     res_mm_stride = np.reshape(coefficients, (output_shape[1], output_shape[0])).T
-    diff_torch = np.mean(np.abs(torch_res.numpy() - res_mm_stride.numpy()))
-
-    # import matplotlib.pyplot as plt
-    # plt.imshow(
-    #     torch.nn.functional.conv2d(input=res_mm_stride.unsqueeze(0).unsqueeze(0),
-    #                                weight=torch_res.unsqueeze(0).unsqueeze(0),
-    #                                stride=1, padding=4).squeeze().numpy());
-    # plt.show()
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())

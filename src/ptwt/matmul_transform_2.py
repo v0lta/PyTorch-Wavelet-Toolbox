@@ -469,7 +469,7 @@ class MatrixWavedec2(object):
                 split_list.append((lh, hl, hh))
             split_list.append(ll)
         else:
-            ll = input_signal.T.reshape([batch_size, -1]).T
+            ll = input_signal.transpose(-2, -1).reshape([batch_size, -1]).T
             for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
                 fwt_matrix = cast(torch.Tensor, fwt_matrix)
                 pad = self.pad_list[scale]
@@ -708,7 +708,9 @@ class MatrixWaverec2(object):
                     torch_dtype = coeff.dtype
                 elif curr_shape != coeff.shape:
                     # TODO: Add check that coeffs are on the same device
-                    raise ValueError("coeffs must have the same shape")
+                    raise ValueError(
+                        "All coeffs on each level must have the same shape"
+                    )
 
         if torch_device is None or curr_shape is None or torch_dtype is None:
             raise ValueError("At least one coefficient parameter must be specified.")
@@ -810,12 +812,12 @@ class MatrixWaverec2(object):
                 ifwt_mat = cast(torch.Tensor, self.ifwt_matrix_list[::-1][c_pos])
                 ll = torch.sparse.mm(ifwt_mat, ll.T)
 
-            pred_len = [s * 2 for s in curr_shape[-2:]]
+            pred_len = [s * 2 for s in curr_shape[-2:][::-1]]
             if not self.separable:
                 ll = ll.T.reshape([batch_size] + pred_len).transpose(2, 1)
             # remove the padding
             if c_pos < len(coefficients) - 2:
-                next_len = list(coefficients[c_pos + 2][0].shape[-2:])
+                next_len = list(coefficients[c_pos + 2][0].shape[-2:])[::-1]
                 if pred_len != next_len:
                     if pred_len[0] != next_len[0]:
                         ll = ll[:, :-1, :]

@@ -181,8 +181,8 @@ def test_boundary_matrix_fwt_2d(wavelet_str, size, level, separable):
         assert np.allclose(test_mat.to_dense().numpy(), np.eye(test_mat.shape[0]))
 
 
-@pytest.mark.parametrize("wavelet_str", ["db2"])
-@pytest.mark.parametrize("level", [3])
+@pytest.mark.parametrize("wavelet_str", ["db1", "db2"])
+@pytest.mark.parametrize("level", [1])
 @pytest.mark.parametrize("size", [(16, 16)])
 @pytest.mark.parametrize("separable", [False, True])
 def test_batched_2d_matrix_fwt_ifwt(wavelet_str, level, size, separable):
@@ -196,23 +196,6 @@ def test_batched_2d_matrix_fwt_ifwt(wavelet_str, level, size, separable):
     mat_coeff = matrixfwt(pt_face)
     matrixifwt = MatrixWaverec2(wavelet, separable=separable)
     reconstruction = matrixifwt(mat_coeff)
-    err = np.sum(
-        np.abs(
-            reconstruction[0].numpy()
-            - face[:, :, 0]
-            + reconstruction[1].numpy()
-            - face[:, :, 1]
-            + reconstruction[2].numpy()
-            - face[:, :, 2]
-        )
-    )
-    print(
-        size,
-        str(level).center(4),
-        wavelet_str,
-        "error {:3.3e}".format(err),
-        np.allclose(reconstruction.permute(1, 2, 0).numpy(), face),
-    )
     assert (
         np.allclose(reconstruction[0].numpy(), face[:, :, 0])
         and np.allclose(reconstruction[1].numpy(), face[:, :, 1])
@@ -235,13 +218,6 @@ def test_matrix_transform_1d_rebuild(wavelet_str, boundary):
             rec = matrix_waverec(coeffs)
             rec_pywt = pywt.waverec(
                 pywt.wavedec(data_torch.numpy(), wavelet, mode="zero"), wavelet
-            )
-            error = np.sum(np.abs(rec_pywt - rec.numpy()))
-            print(
-                "wavelet: {},".format(wavelet_str),
-                "level: {},".format(level),
-                "shape: {},".format(data.shape[-1]),
-                "error {:2.2e}".format(error),
             )
             assert np.allclose(rec.numpy(), rec_pywt)
             # test the operator matrices
