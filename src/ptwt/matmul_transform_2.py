@@ -824,4 +824,3 @@ class MatrixWaverec2(object):
                         ll = ll[:, :, :-1]
 
         return ll
-
