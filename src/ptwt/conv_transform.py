@@ -90,7 +90,7 @@ def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
 def _translate_boundary_strings(pywt_mode: str) -> str:
     """Translate pywt mode strings to pytorch mode strings.
 
-    We support constant, zero and reflect.
+    We support constant, zero, reflect and periodic.
     Unfortunately "constant" has different meanings in the
     pytorch and pywavelet communities.
 
@@ -151,7 +151,7 @@ def fwt_pad2(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         mode (str): The padding mode.
-            Supported modes are "reflect", "zero" and "constant".
+            Supported modes are "reflect", "zero", "constant" and "periodic".
             Defaults to reflect.
 
     Returns:
