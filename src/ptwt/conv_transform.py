@@ -88,14 +88,27 @@ def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
 
 
 def _translate_boundary_strings(pywt_mode: str) -> str:
-    """Translate pywt mode strings to pytorch mode strings."""
+    """Translate pywt mode strings to pytorch mode strings.
+
+    We support constant, zero and reflect.
+    Unfortunately "constant" has different meanings in the
+    pytorch and pywavelet communities.
+
+    Raises:
+        ValueError: If the padding mode is not supported.
+
+    """
     if pywt_mode == "constant":
-        ptmode = "replicate"
+        pt_mode = "replicate"
     elif pywt_mode == "zero":
-        ptmode = "constant"
+        pt_mode = "constant"
+    elif pywt_mode == "reflect":
+        pt_mode = pywt_mode
+    elif pywt_mode == "periodic":
+        pt_mode = "circular"
     else:
-        ptmode = pywt_mode
-    return ptmode
+        raise ValueError("Padding mode not supported.")
+    return pt_mode
 
 
 def fwt_pad(
@@ -108,12 +121,12 @@ def fwt_pad(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         mode (str): The desired way to pad.
-            Supported modes are "reflect", "zero" and "constant".
+            Supported modes are "reflect", "zero", "constant" and "periodic".
             Refection padding mirrors samples along the border.
             Zero padding pads zeros.
             Constant padding replicates border values.
+            periodic padding repeats samples in a cyclic fashing.
             Defaults to reflect.
-
 
     Returns:
         torch.Tensor: A pytorch tensor with the padded input data
@@ -234,7 +247,7 @@ def wavedec2(
         level (int): The number of desired scales.
             Defaults to None.
         mode (str): The padding mode. Options are
-            "reflect", "zero" and "constant"
+            "reflect", "zero", "constant" and "periodic".
             Defaults to "reflect".
 
     Returns:
@@ -382,8 +395,8 @@ def wavedec(
         level (int): The scale level to be computed.
                                Defaults to None.
         mode (str): The desired padding mode. Padding extends the singal along
-            the edges. Supported modes are "reflect", "zero" and "constant".
-            Defaults to "reflect".
+            the edges. Supported modes are "reflect", "zero", "constant"
+            and "periodic". Defaults to "reflect".
 
     Returns:
         list: A list [cA_n, cD_n, cD_n-1, …, cD2, cD1]
