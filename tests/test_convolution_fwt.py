@@ -184,4 +184,4 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     assert np.allclose(flat_coeff_list_pywt, flat_coeff_list_ptwt.numpy())
     rec = waverec2(coeff2d, wavelet)
     rec = rec.numpy().squeeze()
-    assert np.allclose(face, rec[:, :face.shape[1], :face.shape[2]])
+    assert np.allclose(face, rec[:, : face.shape[1], : face.shape[2]])
