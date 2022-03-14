@@ -21,7 +21,7 @@ from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
 @pytest.mark.parametrize("level", [1, 2, 3, None])
 @pytest.mark.parametrize("length", [64, 65])
 @pytest.mark.parametrize("batch_size", [1, 3])
-@pytest.mark.parametrize("mode", ["reflect", "zero", "constant"])
+@pytest.mark.parametrize("mode", ["reflect", "zero", "constant", "periodic"])
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
 def test_conv_fwt(wavelet_string, level, mode, length, batch_size, dtype):
     """Test multiple convolution fwt, for various levels and padding options."""
@@ -155,9 +155,9 @@ def test_outer():
 
 @pytest.mark.slow
 @pytest.mark.parametrize("wavelet_str", ["haar", "db2", "db3", "db4", "db5"])
-@pytest.mark.parametrize("level", [1, 2, 3, 4, 5, None])
+@pytest.mark.parametrize("level", [1, 2, 3, None])
 @pytest.mark.parametrize("size", [(32, 32), (16, 32), (32, 16)])
-@pytest.mark.parametrize("mode", ["reflect", "zero", "constant"])  # "zero"
+@pytest.mark.parametrize("mode", ["reflect", "zero", "constant", "periodic"])
 def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
 
