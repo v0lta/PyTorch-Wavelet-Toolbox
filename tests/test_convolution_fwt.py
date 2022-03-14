@@ -154,9 +154,9 @@ def test_outer():
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("wavelet_str", ["haar", "db2", "db3", "db4", "db5"])
-@pytest.mark.parametrize("level", [1, 2, 3, None])
-@pytest.mark.parametrize("size", [(32, 32), (16, 32), (32, 16)])
+@pytest.mark.parametrize("wavelet_str", ["haar", "db2", "db3", "db4", "sym4"])
+@pytest.mark.parametrize("level", [1, 2, None])
+@pytest.mark.parametrize("size", [(32, 32), (16, 32), (32, 16), (15, 15)])
 @pytest.mark.parametrize("mode", ["reflect", "zero", "constant", "periodic"])
 def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
@@ -184,4 +184,4 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     assert np.allclose(flat_coeff_list_pywt, flat_coeff_list_ptwt.numpy())
     rec = waverec2(coeff2d, wavelet)
     rec = rec.numpy().squeeze()
-    assert np.allclose(face, rec)
+    assert np.allclose(face, rec[:, :face.shape[1], :face.shape[2]])

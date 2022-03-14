@@ -716,10 +716,10 @@ class MatrixWaverec2(object):
 
         if ll is None:
             ll = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
-        if hl is None:
-            hl = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
         if lh is None:
             lh = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
+        if hl is None:
+            hl = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
         if hh is None:
             hh = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
         return (ll, lh, hl, hh), curr_shape, torch_device, torch_dtype
