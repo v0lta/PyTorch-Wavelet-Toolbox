@@ -87,7 +87,18 @@ def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
     return padr, padl
 
 
-def _fwt_pad(
+def _translate_boundary_strings(pywt_mode: str) -> str:
+    """Translate pywt mode strings to pytorch mode strings."""
+    if pywt_mode == "constant":
+        ptmode = "replicate"
+    elif pywt_mode == "zero":
+        ptmode = "constant"
+    else:
+        ptmode = pywt_mode
+    return ptmode
+
+
+def fwt_pad(
     data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str = "reflect"
 ) -> torch.Tensor:
     """Pad the input signal to make the fwt matrix work.
@@ -98,7 +109,11 @@ def _fwt_pad(
             the name of a pywt wavelet.
         mode (str): The desired way to pad.
             Supported modes are "reflect", "zero" and "constant".
+            Refection padding mirrors samples along the border.
+            Zero padding pads zeros.
+            Constant padding replicates border values.
             Defaults to reflect.
+
 
     Returns:
         torch.Tensor: A pytorch tensor with the padded input data
@@ -106,19 +121,14 @@ def _fwt_pad(
     """
     wavelet = _as_wavelet(wavelet)
     # convert pywt to pytorch convention.
-    if mode == "constant":
-        tmode = "replicate"
-    elif mode == "zero":
-        tmode = "constant"
-    else:
-        tmode = mode
+    mode = _translate_boundary_strings(mode)
 
     padr, padl = _get_pad(data.shape[-1], len(wavelet.dec_lo))
-    data_pad = torch.nn.functional.pad(data, [padl, padr], mode=tmode)
+    data_pad = torch.nn.functional.pad(data, [padl, padr], mode=mode)
     return data_pad
 
 
-def _fwt_pad2(
+def fwt_pad2(
     data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str = "reflect"
 ) -> torch.Tensor:
     """Pad data for the 2d FWT.
@@ -127,15 +137,15 @@ def _fwt_pad2(
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode (str): The padding mode. Defaults to 'reflect'.
+        mode (str): The padding mode.
+            Supported modes are "reflect", "zero" and "constant".
+            Defaults to reflect.
 
     Returns:
         The padded output tensor.
 
     """
-    if mode == "zero":
-        # convert pywt to pytorch convention.
-        mode = "constant"
+    mode = _translate_boundary_strings(mode)
 
     wavelet = _as_wavelet(wavelet)
     padb, padt = _get_pad(data.shape[-2], len(wavelet.dec_lo))
@@ -223,8 +233,9 @@ def wavedec2(
             the name of a pywt wavelet.
         level (int): The number of desired scales.
             Defaults to None.
-        mode (str): The padding mode, i.e. zero or reflect.
-            Defaults to reflect.
+        mode (str): The padding mode. Options are
+            "reflect", "zero" and "constant"
+            Defaults to "reflect".
 
     Returns:
         list: A list containing the wavelet coefficients.
@@ -264,7 +275,7 @@ def wavedec2(
     ] = []
     res_ll = data
     for _ in range(level):
-        res_ll = _fwt_pad2(res_ll, wavelet, mode=mode)
+        res_ll = fwt_pad2(res_ll, wavelet, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
         result_lst.append((res_lh, res_hl, res_hh))
@@ -410,7 +421,7 @@ def wavedec(
     result_lst = []
     res_lo = data
     for _ in range(level):
-        res_lo = _fwt_pad(res_lo, wavelet, mode=mode)
+        res_lo = fwt_pad(res_lo, wavelet, mode=mode)
         res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)
         result_lst.append(res_hi.squeeze(1))

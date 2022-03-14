@@ -157,7 +157,7 @@ def test_outer():
 @pytest.mark.parametrize("wavelet_str", ["haar", "db2", "db3", "db4", "db5"])
 @pytest.mark.parametrize("level", [1, 2, 3, 4, 5, None])
 @pytest.mark.parametrize("size", [(32, 32), (16, 32), (32, 16)])
-@pytest.mark.parametrize("mode", ["reflect"])  # "zero"
+@pytest.mark.parametrize("mode", ["reflect", "zero", "constant"])  # "zero"
 def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
 
