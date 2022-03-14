@@ -190,58 +190,25 @@ def test_conv_fwt_db5_lvl3():
         assert np.allclose(mackey_data_1.numpy(), res.numpy())
 
 
-def test_conv_fwt():
+
+@pytest.mark.parametrize("wavelet_string", ["db1", "db2", "db3", "db4", "db5", "sym5"])
+@pytest.mark.parametrize("level", [1, 2, 3, None])
+@pytest.mark.parametrize("mode", ["reflect", "zero"])
+def test_conv_fwt(wavelet_string, level, mode):
     """Test multiple convolution fwt, for various levels and padding options."""
     generator = MackeyGenerator(batch_size=2, tmax=128, delta_t=1, device="cpu")
 
     mackey_data_1 = torch.squeeze(generator())
-    for level in [1, 2, 3, None]:
-        for wavelet_string in ["db1", "db2", "db3", "db4", "db5"]:
-            for mode in ["reflect", "zero"]:
-                wavelet = pywt.Wavelet(wavelet_string)
-                ptcoeff = wavedec(mackey_data_1, wavelet, level=level, mode=mode)
-                pycoeff = pywt.wavedec(
-                    mackey_data_1[0, :].numpy(), wavelet, level=level, mode=mode
-                )
-                cptcoeff = torch.cat(ptcoeff, -1)[0, :]
-                cpycoeff = np.concatenate(pycoeff, -1)
-                err = np.mean(np.abs(cpycoeff - cptcoeff.numpy()))
-                print(
-                    "db5 coefficient error scale 3:",
-                    err,
-                    ["ok" if err < 1e-4 else "failed!"],
-                    "mode",
-                    mode,
-                )
-                assert np.allclose(cptcoeff.numpy(), cpycoeff, atol=1e-6)
-
-                res = waverec(
-                    wavedec(mackey_data_1, wavelet, level=3, mode=mode),
-                    wavelet,
-                )
-                err = torch.mean(torch.abs(mackey_data_1 - res)).numpy()
-                print(
-                    "db5 reconstruction error scale 3:",
-                    err,
-                    ["ok" if err < 1e-4 else "failed!"],
-                    "mode",
-                    mode,
-                )
-                assert np.allclose(mackey_data_1.numpy(), res.numpy())
-
-                res = waverec(
-                    wavedec(mackey_data_1, wavelet, level=4, mode=mode),
-                    wavelet,
-                )
-                err = torch.mean(torch.abs(mackey_data_1 - res)).numpy()
-                print(
-                    "db5 reconstruction error scale 4:",
-                    err,
-                    ["ok" if err < 1e-4 else "failed!"],
-                    "mode",
-                    mode,
-                )
-                assert np.allclose(mackey_data_1.numpy(), res.numpy())
+    wavelet = pywt.Wavelet(wavelet_string)
+    ptcoeff = wavedec(mackey_data_1, wavelet, level=level, mode=mode)
+    pycoeff = pywt.wavedec(
+        mackey_data_1[0, :].numpy(), wavelet, level=level, mode=mode
+    )
+    cptcoeff = torch.cat(ptcoeff, -1)[0, :]
+    cpycoeff = np.concatenate(pycoeff, -1)
+    assert np.allclose(cptcoeff.numpy(), cpycoeff, atol=1e-6)
+    res = waverec(ptcoeff, wavelet)
+    assert np.allclose(mackey_data_1.numpy(), res.numpy())
 
 
 def test_ripples_haar_lvl3():
