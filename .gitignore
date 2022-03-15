@@ -1,6 +1,7 @@
 .vscode/
 runs/
 coverage_html_report/
+htmlcov
 .noseids
 
 # Byte-compiled / optimized / DLL files
