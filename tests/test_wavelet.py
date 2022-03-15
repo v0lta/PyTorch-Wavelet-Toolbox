@@ -16,7 +16,7 @@ from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
         (pywt.wavelist(family="rbio"), False),
     ],
 )
-def test_wavelet_lst(lst: list, is_orth: bool):
+def test_wavelet_lst(lst: list, is_orth: bool) -> None:
     """Test all wavelets in a list."""
     for ws in lst:
         wavelet = pywt.Wavelet(ws)

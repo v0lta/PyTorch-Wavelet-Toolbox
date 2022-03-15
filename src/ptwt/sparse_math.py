@@ -413,10 +413,6 @@ def construct_conv2d_matrix(
     kernel_column_number = filter.shape[-1]
     matrix_block_number = kernel_column_number
 
-    block_matrix_list = []
-    for i in range(matrix_block_number):
-        block_matrix_list.append(construct_conv_matrix(filter[:, i], input_rows, mode))
-
     if mode == "full":
         diag_index = 0
         kronecker_rows = input_columns + kernel_column_number - 1
@@ -428,7 +424,11 @@ def construct_conv2d_matrix(
         diag_index = kernel_column_number - 1
         kronecker_rows = input_columns - kernel_column_number + 1
     else:
-        raise ValueError("unknown conv type.")
+        raise ValueError("unknown conv mode.")
+
+    block_matrix_list = []
+    for i in range(matrix_block_number):
+        block_matrix_list.append(construct_conv_matrix(filter[:, i], input_rows, mode))
 
     diag_values = torch.ones(
         [int(np.min([kronecker_rows, input_columns]))],
@@ -506,9 +506,6 @@ def construct_strided_conv2d_matrix(
         torch.Tensor: The sparse convolution tensor.
     """
     filter_shape = filter.shape
-    convolution_matrix = construct_conv2d_matrix(
-        filter, input_rows, input_columns, mode=mode
-    )
 
     if mode == "full":
         output_rows = filter_shape[0] + input_rows - 1
@@ -521,6 +518,10 @@ def construct_strided_conv2d_matrix(
         output_columns = input_columns
     else:
         raise ValueError("Padding mode not accepted.")
+
+    convolution_matrix = construct_conv2d_matrix(
+        filter, input_rows, input_columns, mode=mode
+    )
 
     output_elements = output_rows * output_columns
     element_numbers = torch.arange(output_elements, device=filter.device).reshape(

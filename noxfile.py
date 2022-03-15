@@ -41,14 +41,17 @@ def mypy(session):
     """Check type hints."""
     session.install(".")
     session.install("mypy")
-    session.run("mypy", "--install-types",
-                "--non-interactive",
-                "--ignore-missing-imports",
-                "--strict",
-                "--no-warn-return-any",
-                "--implicit-reexport",
-                "--allow-untyped-calls",
-                "src", "tests")
+    session.run(
+        "mypy",
+        "--install-types",
+        "--non-interactive",
+        "--ignore-missing-imports",
+        "--strict",
+        "--no-warn-return-any",
+        "--implicit-reexport",
+        "--allow-untyped-calls",
+        "src",
+    )
 
 
 @nox.session(name="format")

@@ -16,7 +16,7 @@ from src.ptwt.sparse_math import (
 )
 
 
-def test_kron():
+def test_kron() -> None:
     """Test the implementation by evaluation.
 
     The example is taken from
@@ -39,7 +39,7 @@ def test_kron():
 @pytest.mark.parametrize("padding", ["full", "same", "valid"])
 def test_conv_matrix(
     test_filter: torch.Tensor, input_signal: torch.Tensor, padding: str
-):
+) -> None:
     """Test the 1d sparse convolution matrix code."""
     conv_matrix = construct_conv_matrix(test_filter, len(input_signal), padding)
     mm_conv_res = torch.sparse.mm(conv_matrix, input_signal.unsqueeze(-1)).squeeze()
@@ -67,7 +67,7 @@ def test_conv_matrix(
     ],
 )
 @pytest.mark.parametrize("mode", ["valid", "same"])
-def test_strided_conv_matrix(test_filter, input_signal, mode):
+def test_strided_conv_matrix(test_filter, input_signal, mode) -> None:
     """Test the strided 1d sparse convolution matrix code."""
     strided_conv_matrix = construct_strided_conv_matrix(
         test_filter, len(input_signal), 2, mode
@@ -123,7 +123,7 @@ def test_strided_conv_matrix(test_filter, input_signal, mode):
 )
 @pytest.mark.parametrize("mode", ["same", "full", "valid"])
 @pytest.mark.parametrize("fully_sparse", [True, False])
-def test_conv_matrix_2d(filter_shape, size, mode, fully_sparse):
+def test_conv_matrix_2d(filter_shape, size, mode, fully_sparse) -> None:
     """Test the validity of the 2d convolution matrix code.
 
     It should be equivalent to signal convolve2d.
@@ -162,7 +162,7 @@ def test_conv_matrix_2d(filter_shape, size, mode, fully_sparse):
     ],
 )
 @pytest.mark.parametrize("mode", ["full", "valid"])
-def test_strided_conv_matrix_2d(filter_shape, size, mode):
+def test_strided_conv_matrix_2d(filter_shape, size, mode) -> None:
     """Test strided convolution matrices with full and valid padding."""
     test_filter = torch.rand(filter_shape)
     test_filter = test_filter.unsqueeze(0).unsqueeze(0)
@@ -204,7 +204,7 @@ def test_strided_conv_matrix_2d(filter_shape, size, mode):
 @pytest.mark.parametrize(
     "size", [(7, 8), (8, 7), (7, 7), (8, 8), (16, 16), (8, 16), (16, 8)]
 )
-def test_strided_conv_matrix_2d_same(filter_shape, size):
+def test_strided_conv_matrix_2d_same(filter_shape, size) -> None:
     """Test strided conv matrix with same padding."""
     stride = 2
     test_filter = torch.rand(filter_shape)
@@ -233,7 +233,7 @@ def test_strided_conv_matrix_2d_same(filter_shape, size):
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
-def _get_2d_same_padding(filter_shape, input_size):
+def _get_2d_same_padding(filter_shape, input_size) -> tuple:
     height_offset = input_size[0] % 2
     width_offset = input_size[1] % 2
     padding = (
@@ -247,7 +247,7 @@ def _get_2d_same_padding(filter_shape, input_size):
 
 @pytest.mark.slow
 @pytest.mark.parametrize("size", [(256, 512), (512, 256)])
-def test_strided_conv_matrix_2d_sameshift(size):
+def test_strided_conv_matrix_2d_sameshift(size) -> None:
     """Test strided conv matrix with sameshift padding."""
     stride = 2
     filter_shape = (3, 3)
@@ -304,7 +304,7 @@ def test_strided_conv_matrix_2d_sameshift(size):
 @pytest.mark.parametrize(
     "function", [construct_conv2d_matrix, construct_strided_conv2d_matrix]
 )
-def test_mode_error_2(mode, function):
+def test_mode_error_2(mode, function) -> None:
     """Test the invalid padding-error."""
     test_filter = torch.rand([3, 3])
     with pytest.raises(ValueError):
@@ -315,14 +315,14 @@ def test_mode_error_2(mode, function):
 @pytest.mark.parametrize(
     "function", [construct_conv_matrix, construct_strided_conv_matrix]
 )
-def test_mode_error(mode, function):
+def test_mode_error(mode, function) -> None:
     """Test the invalid padding-error."""
     test_filter = torch.rand([3, 3])
     with pytest.raises(ValueError):
         _ = function(test_filter, 32, mode=mode)
 
 
-def test_shape_error():
+def test_shape_error() -> None:
     """Check the shape error in the batch_mm function."""
     with pytest.raises(ValueError):
         _ = batch_mm(torch.rand(8, 8), torch.rand(1, 6, 8))
