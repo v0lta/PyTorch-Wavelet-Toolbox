@@ -490,7 +490,7 @@ class MatrixWavedec2(object):
                             batch_size, size[1] - 1, size[0] - 1
                         ).transpose(2, 1)
                         ll = torch.nn.functional.pad(ll_reshape, [0, 1, 0, 1])
-                    ll = ll.T.reshape([batch_size, -1]).T
+                    ll = ll.transpose(2, 1).reshape([batch_size, -1]).T
                 coefficients = torch.sparse.mm(fwt_matrix, ll)
                 # get the ll,
                 four_split = torch.split(
