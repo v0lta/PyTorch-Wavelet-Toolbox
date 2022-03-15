@@ -574,12 +574,3 @@ def batch_mm(matrix: torch.Tensor, matrix_batch: torch.Tensor) -> torch.Tensor:
     # Stack the vector batch into columns. (b, n, k) -> (n, b, k) -> (n, b*k)
     vectors = matrix_batch.transpose(0, 1).reshape(matrix.shape[1], -1)
     return matrix.mm(vectors).reshape(matrix.shape[0], batch_size, -1).transpose(1, 0)
-
-
-if __name__ == "__main__":
-    test_matrix = torch.ones([4, 4]).to_sparse()
-    new_matrix = sparse_replace_row(
-        test_matrix, 1, torch.tensor([1.0, 2, 3, 4]).unsqueeze(0).to_sparse()
-    )
-    print(new_matrix.to_dense())
-    print("stop")
