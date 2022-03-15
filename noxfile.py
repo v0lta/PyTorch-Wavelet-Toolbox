@@ -78,7 +78,7 @@ def check_coverage(session):
 @nox.session(name="coverage-clean")
 def clean_coverage(session):
     """Remove the code coverage website."""
-    session.run("rm", "-r", "coverage_html_report", external=True)
+    session.run("rm", "-r", "htmlcov", external=True)
 
 
 # TODO: add finish
