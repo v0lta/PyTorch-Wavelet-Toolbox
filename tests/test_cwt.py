@@ -5,6 +5,7 @@ import pytest
 import pywt
 import torch
 from scipy import signal
+
 from src.ptwt.continuous_transform import cwt
 
 continuous_wavelets = [

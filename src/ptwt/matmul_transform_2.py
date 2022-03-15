@@ -149,7 +149,7 @@ def construct_boundary_a2(
     """
     wavelet = _as_wavelet(wavelet)
     a = _construct_a_2(wavelet, height, width, device, dtype=dtype, mode="sameshift")
-    orth_a = orthogonalize(a, wavelet.dec_len ** 2, method=boundary)  # noqa: BLK100
+    orth_a = orthogonalize(a, wavelet.dec_len**2, method=boundary)  # noqa: BLK100
     return orth_a
 
 
@@ -182,7 +182,7 @@ def construct_boundary_s2(
     wavelet = _as_wavelet(wavelet)
     s = _construct_s_2(wavelet, height, width, device, dtype=dtype)
     orth_s = orthogonalize(
-        s.transpose(1, 0), wavelet.rec_len ** 2, method=boundary  # noqa: BLK100
+        s.transpose(1, 0), wavelet.rec_len**2, method=boundary  # noqa: BLK100
     ).transpose(1, 0)
     return orth_s
 
@@ -490,7 +490,7 @@ class MatrixWavedec2(object):
                             batch_size, size[1] - 1, size[0] - 1
                         ).transpose(2, 1)
                         ll = torch.nn.functional.pad(ll_reshape, [0, 1, 0, 1])
-                    ll = ll.T.reshape([batch_size, -1]).T
+                    ll = ll.transpose(2, 1).reshape([batch_size, -1]).T
                 coefficients = torch.sparse.mm(fwt_matrix, ll)
                 # get the ll,
                 four_split = torch.split(

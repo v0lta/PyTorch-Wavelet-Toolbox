@@ -7,6 +7,7 @@ import pytest
 import pywt
 import torch
 from scipy import misc
+
 from src.ptwt.packets import WaveletPacket, WaveletPacket2D, get_freq_order
 
 

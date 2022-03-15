@@ -8,7 +8,6 @@ See https://arxiv.org/pdf/2004.09569.pdf for more information.
 from abc import ABC, abstractmethod
 from typing import Tuple
 
-
 import torch
 
 

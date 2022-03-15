@@ -618,9 +618,9 @@ class MatrixWaverec(object):
 
 
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
     import pywt
     import torch
-    import matplotlib.pyplot as plt
 
     a = _construct_a(pywt.Wavelet("haar"), 20, torch.device("cpu"))
     s = _construct_s(pywt.Wavelet("haar"), 20, torch.device("cpu"))
