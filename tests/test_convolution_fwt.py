@@ -5,10 +5,12 @@ import pytest
 import pywt
 import scipy.misc
 import torch
+
 from src.ptwt._mackey_glass import MackeyGenerator
 from src.ptwt.conv_transform import (
     _flatten_2d_coeff_lst,
     _outer,
+    _translate_boundary_strings,
     wavedec,
     wavedec2,
     waverec,
@@ -18,7 +20,7 @@ from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
 
 
 @pytest.mark.parametrize("wavelet_string", ["db1", "db2", "db3", "db4", "db5", "sym5"])
-@pytest.mark.parametrize("level", [1, 2, 3, None])
+@pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("length", [64, 65])
 @pytest.mark.parametrize("batch_size", [1, 3])
 @pytest.mark.parametrize("mode", ["reflect", "zero", "constant", "periodic"])
@@ -119,8 +121,6 @@ def test_2d_db2_lvl1():
     coeff2d = wavedec2(torch.from_numpy(face), wavelet, level=1)
     flat_list_pywt = np.concatenate(_flatten_2d_coeff_lst(coeff2d_pywt), -1)
     flat_list_ptwt = torch.cat(_flatten_2d_coeff_lst(coeff2d), -1)
-    cerr = np.mean(np.abs(flat_list_pywt - flat_list_ptwt.numpy()))
-    print("db5 2d coeff err,", cerr, ["ok" if cerr < 1e-4 else "failed!"])
     assert np.allclose(flat_list_pywt, flat_list_ptwt.numpy())
     # single level db2 - 2d inverse.
     rec = waverec2(coeff2d, wavelet)
@@ -156,7 +156,7 @@ def test_outer():
 @pytest.mark.slow
 @pytest.mark.parametrize("wavelet_str", ["haar", "db2", "db3", "db4", "sym4"])
 @pytest.mark.parametrize("level", [1, 2, None])
-@pytest.mark.parametrize("size", [(32, 32), (16, 32), (32, 16), (15, 15)])
+@pytest.mark.parametrize("size", [(32, 32), (32, 64), (64, 32), (31, 31)])
 @pytest.mark.parametrize("mode", ["reflect", "zero", "constant", "periodic"])
 def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
@@ -185,3 +185,10 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     rec = waverec2(coeff2d, wavelet)
     rec = rec.numpy().squeeze()
     assert np.allclose(face, rec[:, : face.shape[1], : face.shape[2]])
+
+
+@pytest.mark.parametrize("padding_str", ["invalid_padding_name"])
+def test_incorrect_padding(padding_str):
+    """Test expected errors for an invalid padding name."""
+    with pytest.raises(ValueError):
+        _ = _translate_boundary_strings(padding_str)

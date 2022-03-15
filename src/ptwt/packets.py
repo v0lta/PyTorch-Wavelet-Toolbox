@@ -4,7 +4,7 @@
 import collections
 from functools import partial
 from itertools import product
-from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union
 
 import pywt
 import torch

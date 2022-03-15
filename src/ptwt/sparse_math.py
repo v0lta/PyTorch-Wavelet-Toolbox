@@ -447,7 +447,7 @@ def construct_conv2d_matrix(
 
 
 def construct_strided_conv_matrix(
-    filter: torch.Tensor, input_rows: int, stride: int, mode: str = "valid"
+    filter: torch.Tensor, input_rows: int, stride: int = 2, mode: str = "valid"
 ) -> torch.Tensor:
     """Construct a strided convolution matrix.
 
@@ -455,6 +455,7 @@ def construct_strided_conv_matrix(
         filter (torch.Tensor): The filter coefficients to convolve with.
         input_rows (int): The number of rows in the input vector.
         stride (int): The step size of the convolution.
+            Defaults to two.
         mode (str): Choose 'valid', 'same' or 'sameshift'.
             Defaults to 'valid'.
 

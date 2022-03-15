@@ -1,6 +1,7 @@
 """Test the util methods."""
 import pytest
 import pywt
+
 from src.ptwt._util import _as_wavelet
 
 

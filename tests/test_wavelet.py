@@ -2,11 +2,12 @@
 import pytest
 import pywt
 import torch
+
 from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
 
 
 @pytest.mark.parametrize(
-    "lst,orth",
+    "lst, is_orth",
     [
         (pywt.wavelist(family="db"), True),
         (pywt.wavelist(family="sym"), True),
@@ -15,7 +16,7 @@ from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
         (pywt.wavelist(family="rbio"), False),
     ],
 )
-def test_wavelet_lst(lst: list, orth: bool):
+def test_wavelet_lst(lst: list, is_orth: bool):
     """Test all wavelets in a list."""
     for ws in lst:
         wavelet = pywt.Wavelet(ws)
@@ -37,5 +38,5 @@ def test_wavelet_lst(lst: list, orth: bool):
             "prl, %.5f | acl, %.5f | pfacl, %.5f | orth, %.5f "
             % (prl.item(), acl.item(), pacl.item(), orth.item()),
         )
-        if orth is True:
+        if is_orth is True:
             assert orth < 1e-10

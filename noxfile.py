@@ -1,6 +1,7 @@
 """This module implements our CI function calls."""
 import nox
 
+
 @nox.session(name="test")
 def run_test(session):
     """Run pytest."""
@@ -8,7 +9,14 @@ def run_test(session):
     session.install("pytest")
     session.run("pytest")
 
-# TODO: add not slow test
+
+@nox.session(name="fast-test")
+def run_test_fast(session):
+    """Run pytest."""
+    session.install(".")
+    session.install("pytest")
+    session.run("pytest", "-m", "not slow")
+
 
 @nox.session(name="lint")
 def lint(session):
@@ -27,6 +35,7 @@ def lint(session):
     session.install("flake8-bandit==2.1.2", "bandit==1.7.2")
     session.run("flake8", "src", "tests", "noxfile.py")
 
+
 @nox.session(name="typing")
 def mypy(session):
     """Check type hints."""
@@ -34,13 +43,15 @@ def mypy(session):
     session.install("mypy")
     session.run("mypy", "src", "tests")
 
+
 @nox.session(name="format")
 def format(session):
     """Fix common convention problems automatically."""
     session.install("black")
     session.install("isort")
-    session.run("black", "src", "tests", "noxfile.py")
     session.run("isort", "src", "tests", "noxfile.py")
+    session.run("black", "src", "tests", "noxfile.py")
+
 
 @nox.session(name="coverage")
 def check_coverage(session):
@@ -53,7 +64,11 @@ def check_coverage(session):
     finally:
         session.run("coverage", "html")
 
+
 @nox.session(name="coverage-clean")
 def clean_coverage(session):
-    session.run("rm", "-r", "coverage_html_report",
-                external=True)
+    """Remove the code coverage website."""
+    session.run("rm", "-r", "coverage_html_report", external=True)
+
+
+# TODO: add finish

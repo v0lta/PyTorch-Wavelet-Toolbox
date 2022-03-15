@@ -5,6 +5,7 @@ import pytest
 import pywt
 import scipy.signal
 import torch
+
 from src.ptwt.conv_transform import _flatten_2d_coeff_lst
 from src.ptwt.matmul_transform import (
     MatrixWavedec,
@@ -261,3 +262,19 @@ def test_matrix_transform_2d_rebuild(wavelet_str, separable):
                 assert np.allclose(
                     test_mat.to_dense().numpy(), np.eye(test_mat.shape[0])
                 )
+
+
+@pytest.mark.parametrize("operator", [MatrixWavedec2, MatrixWavedec])
+def test_empty_operators(operator):
+    """Check if the error is thrown properly if no matrix was ever built."""
+    matrixfwt = operator("haar")
+    with pytest.raises(ValueError):
+        _ = matrixfwt.sparse_fwt_operator
+
+
+@pytest.mark.parametrize("operator", [MatrixWaverec2, MatrixWaverec])
+def test_empty_inverse_operators(operator):
+    """Check if the error is thrown properly if no matrix was ever built."""
+    matrixifwt = operator("haar")
+    with pytest.raises(ValueError):
+        _ = matrixifwt.sparse_ifwt_operator
