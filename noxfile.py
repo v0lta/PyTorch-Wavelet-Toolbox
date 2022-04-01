@@ -81,15 +81,17 @@ def clean_coverage(session):
     session.run("rm", "-r", "htmlcov", external=True)
 
 
-
 @nox.session(name="build")
 def build(session):
+    """Build a pip package."""
     session.install("wheel")
     session.install("setuptools")
     session.run("python", "setup.py", "-q", "sdist", "bdist_wheel")
 
+
 @nox.session(name="finish")
 def finish(session):
+    """Finish this version increase the version number and upload to pypi."""
     session.install("bump2version")
     session.install("twine")
     session.run("bumpversion", "release", external=True)
