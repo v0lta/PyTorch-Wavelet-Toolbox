@@ -81,10 +81,20 @@ def clean_coverage(session):
     session.run("rm", "-r", "htmlcov", external=True)
 
 
+
+@nox.session(name="build")
+def build(session):
+    session.install("wheel")
+    session.install("setuptools")
+    session.run("python", "setup.py", "-q", "sdist", "bdist_wheel")
+
 @nox.session(name="finish")
 def finish(session):
     session.install("bump2version")
-    session.run("bumpversion", "release", external=True)
-    session.run("git", "push", external=True)
-    session.run("bumpversion", "patch", external=True)
-    session.run("git", "push", external=True)
+    session.install("twine")
+    session.run("bumpversion", "release", "--dry-run", "--verbose", external=True)
+    build(session)
+    session.run("twine", "upload", "-r", "testpypi", "--skip-existing", "dist/*", external=True)
+    # session.run("git", "push", external=True)
+    session.run("bumpversion", "patch", "--dry-run", "--verbose", external=True)
+    # session.run("git", "push", external=True)
