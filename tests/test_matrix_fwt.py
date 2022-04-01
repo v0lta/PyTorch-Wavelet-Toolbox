@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import pywt
 import torch
+
 from src.ptwt._mackey_glass import MackeyGenerator
 from src.ptwt.matmul_transform import (
     MatrixWavedec,

@@ -1,7 +1,6 @@
 """Generate artificial time-series data for debugging purposes."""
 from typing import Optional, Union
 
-import matplotlib.pyplot as plt
 import torch
 
 
@@ -59,30 +58,6 @@ def generate_mackey(
     return x[:, discard:]
 
 
-def _blockify(data: torch.Tensor, block_length: int) -> torch.Tensor:
-    """Blockify the input data series.
-
-       Blocks in the output are replaced with mean values its mean.
-
-    Args:
-        data (torch.Tensor): The block free input
-        block_length (int): The desired length of the anomaly.
-
-    Returns:
-        torch.Tensor: Corrupted output.
-    """
-    batch_size = data.shape[0]
-    steps = data.shape[-1] // block_length
-    block_signal = []
-    for block_no in range(steps):
-        start = block_no * block_length
-        stop = (block_no + 1) * block_length
-        block_mean = torch.mean(data[:, start:stop], dim=-1)
-        block = block_mean * torch.ones([batch_size, block_length], device=data.device)
-        block_signal.append(block)
-    return torch.cat(block_signal).transpose(0, 1)
-
-
 class MackeyGenerator(object):
     """Generates lorenz attractor data in 1 or 3d on the GPU."""
 
@@ -122,21 +97,4 @@ class MackeyGenerator(object):
             device=self.device,
         )
         data_nd = torch.unsqueeze(data_nd, -1)
-        if self.block_size:
-            data_nd = _blockify(data_nd, self.block_size)
-        # print('data_nd_shape', data_nd.shape)
         return data_nd
-
-
-def _main() -> None:
-    mackey = generate_mackey(tmax=1200, delta_t=0.1, rnd=True, device="cuda")
-    block_mackey = _blockify(mackey, 100)
-    print(mackey.shape)
-    plt.plot(mackey[0, :].cpu().numpy())
-    plt.plot(block_mackey[0, :].cpu().numpy())
-    # tikz.save('mackey.tex')
-    plt.show()
-
-
-if __name__ == "__main__":
-    _main()

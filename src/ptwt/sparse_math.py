@@ -413,10 +413,6 @@ def construct_conv2d_matrix(
     kernel_column_number = filter.shape[-1]
     matrix_block_number = kernel_column_number
 
-    block_matrix_list = []
-    for i in range(matrix_block_number):
-        block_matrix_list.append(construct_conv_matrix(filter[:, i], input_rows, mode))
-
     if mode == "full":
         diag_index = 0
         kronecker_rows = input_columns + kernel_column_number - 1
@@ -428,7 +424,11 @@ def construct_conv2d_matrix(
         diag_index = kernel_column_number - 1
         kronecker_rows = input_columns - kernel_column_number + 1
     else:
-        raise ValueError("unknown conv type.")
+        raise ValueError("unknown conv mode.")
+
+    block_matrix_list = []
+    for i in range(matrix_block_number):
+        block_matrix_list.append(construct_conv_matrix(filter[:, i], input_rows, mode))
 
     diag_values = torch.ones(
         [int(np.min([kronecker_rows, input_columns]))],
@@ -447,7 +447,7 @@ def construct_conv2d_matrix(
 
 
 def construct_strided_conv_matrix(
-    filter: torch.Tensor, input_rows: int, stride: int, mode: str = "valid"
+    filter: torch.Tensor, input_rows: int, stride: int = 2, mode: str = "valid"
 ) -> torch.Tensor:
     """Construct a strided convolution matrix.
 
@@ -455,6 +455,7 @@ def construct_strided_conv_matrix(
         filter (torch.Tensor): The filter coefficients to convolve with.
         input_rows (int): The number of rows in the input vector.
         stride (int): The step size of the convolution.
+            Defaults to two.
         mode (str): Choose 'valid', 'same' or 'sameshift'.
             Defaults to 'valid'.
 
@@ -495,7 +496,7 @@ def construct_strided_conv2d_matrix(
             Defaults to 2.
         mode (str): The convolution type.
             Options are 'full', 'valid', 'same' and 'sameshift'.
-            Defaults to 'full'.
+            Defaults to 'full'. Sameshift starts at 1 instead of 0.
 
     Raises:
         ValueError: Raised if an unknown convolution string is
@@ -505,9 +506,6 @@ def construct_strided_conv2d_matrix(
         torch.Tensor: The sparse convolution tensor.
     """
     filter_shape = filter.shape
-    convolution_matrix = construct_conv2d_matrix(
-        filter, input_rows, input_columns, mode=mode
-    )
 
     if mode == "full":
         output_rows = filter_shape[0] + input_rows - 1
@@ -520,6 +518,10 @@ def construct_strided_conv2d_matrix(
         output_columns = input_columns
     else:
         raise ValueError("Padding mode not accepted.")
+
+    convolution_matrix = construct_conv2d_matrix(
+        filter, input_rows, input_columns, mode=mode
+    )
 
     output_elements = output_rows * output_columns
     element_numbers = torch.arange(output_elements, device=filter.device).reshape(
@@ -573,12 +575,3 @@ def batch_mm(matrix: torch.Tensor, matrix_batch: torch.Tensor) -> torch.Tensor:
     # Stack the vector batch into columns. (b, n, k) -> (n, b, k) -> (n, b*k)
     vectors = matrix_batch.transpose(0, 1).reshape(matrix.shape[1], -1)
     return matrix.mm(vectors).reshape(matrix.shape[0], batch_size, -1).transpose(1, 0)
-
-
-if __name__ == "__main__":
-    test_matrix = torch.ones([4, 4]).to_sparse()
-    new_matrix = sparse_replace_row(
-        test_matrix, 1, torch.tensor([1.0, 2, 3, 4]).unsqueeze(0).to_sparse()
-    )
-    print(new_matrix.to_dense())
-    print("stop")

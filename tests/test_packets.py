@@ -7,6 +7,7 @@ import pytest
 import pywt
 import torch
 from scipy import misc
+
 from src.ptwt.packets import WaveletPacket, WaveletPacket2D, get_freq_order
 
 
@@ -168,7 +169,7 @@ def test_boundary_matrix_packets2(
 @pytest.mark.parametrize(
     "wavelet_str", ["haar", "db2", "db3", "db4", "db5", "db6", "db7", "db8"]
 )
-@pytest.mark.parametrize("boundary", ["zero", "reflect"])
+@pytest.mark.parametrize("boundary", ["zero", "reflect", "constant"])
 @pytest.mark.parametrize("batch_size", [2, 1])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])

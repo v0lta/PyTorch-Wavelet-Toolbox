@@ -4,7 +4,7 @@
 import collections
 from functools import partial
 from itertools import product
-from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union
 
 import pywt
 import torch
@@ -51,11 +51,7 @@ class WaveletPacket(BaseDict):
                 is determined from the input data shape. Defaults to None.
         """
         self.wavelet = _as_wavelet(wavelet)
-        if mode == "zero":
-            # translate pywt to PyTorch
-            self.mode = "constant"
-        else:
-            self.mode = mode
+        self.mode = mode
         self.boundary = boundary_orthogonalization
         self._matrix_wavedec_dict: Dict[int, MatrixWavedec] = {}
         self.max_level: Optional[int] = None
@@ -196,10 +192,7 @@ class WaveletPacket2D(BaseDict):
                 is determined from the input data shape. Defaults to None.
         """
         self.wavelet = _as_wavelet(wavelet)
-
-        # translate pywt to PyTorch
-        self.mode = "constant" if mode == "zero" else mode
-
+        self.mode = mode
         self.boundary = boundary_orthogonalization
         self.separable = separable
         self.matrix_wavedec2_dict: Dict[Tuple[int, ...], MatrixWavedec2] = {}

@@ -5,6 +5,7 @@ import pytest
 import pywt
 import scipy.signal
 import torch
+
 from src.ptwt.conv_transform import _flatten_2d_coeff_lst
 from src.ptwt.matmul_transform import (
     MatrixWavedec,
@@ -31,7 +32,9 @@ from src.ptwt.matmul_transform_2 import (
         pywt.Wavelet("db8"),
     ],
 )
-def test_boundary_filter_analysis_and_synthethis_matrices(size, wavelet):
+def test_boundary_filter_analysis_and_synthethis_matrices(
+    size: int, wavelet: pywt.Wavelet
+) -> None:
     """Check 1d the 1d-fwt matrices for orthogonality and invertability."""
     analysis_matrix = construct_boundary_a(
         wavelet, size, boundary="gramschmidt"
@@ -64,7 +67,9 @@ def test_boundary_filter_analysis_and_synthethis_matrices(size, wavelet):
 )
 @pytest.mark.parametrize("level", [2, 1])
 @pytest.mark.parametrize("boundary", ["gramschmidt", "qr"])
-def test_boundary_transform_1d(wavelet_str, data, level, boundary):
+def test_boundary_transform_1d(
+    wavelet_str: str, data: np.ndarray, level: int, boundary: str
+) -> None:
     """Ensure matrix fwt reconstructions are pywt compatible."""
     data_torch = torch.from_numpy(data.astype(np.float64))
     wavelet = pywt.Wavelet(wavelet_str)
@@ -94,7 +99,7 @@ def test_boundary_transform_1d(wavelet_str, data, level, boundary):
 
 @pytest.mark.parametrize("size", [(16, 16), (16, 8), (8, 16)])
 @pytest.mark.parametrize("wavelet_str", ["db1", "db2", "db3", "db4", "db5"])
-def test_analysis_synthesis_matrices(size, wavelet_str):
+def test_analysis_synthesis_matrices2(size: tuple, wavelet_str: str) -> None:
     """Test the 2d analysis and synthesis matrices for various wavelets."""
     wavelet = pywt.Wavelet(wavelet_str)
     a = construct_boundary_a2(
@@ -114,20 +119,13 @@ def test_analysis_synthesis_matrices(size, wavelet_str):
     test_inv = torch.sparse.mm(s, a)
     assert test_inv.shape[0] == test_inv.shape[1], "the diagonal matrix must be square."
     test_eye = torch.eye(test_inv.shape[0])
-    err_mat = test_eye - test_inv
-    err = torch.sum(torch.abs(err_mat.flatten()))
-    print(
-        size,
-        wavelet_str,
-        err.item(),
-        np.allclose(test_inv.to_dense().numpy(), test_eye.numpy()),
-    )
+    assert np.allclose(test_inv.to_dense().numpy(), test_eye.numpy())
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("size", [(15, 16), (16, 15), (16, 16)])
+@pytest.mark.parametrize("size", [(8, 16), (16, 8), (15, 16), (16, 15), (16, 16)])
 @pytest.mark.parametrize("level", [1, 2, 3])
-def test_matrix_analysis_fwt_2d_haar(size, level):
+def test_matrix_analysis_fwt_2d_haar(size: tuple, level: int) -> None:
     """Test the fwt-2d matrix-haar transform, should be equal to the pywt."""
     face = np.mean(
         scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
@@ -138,12 +136,9 @@ def test_matrix_analysis_fwt_2d_haar(size, level):
     conv_coeff = pywt.wavedec2(face, wavelet, level=level, mode="zero")
     flat_mat_coeff = torch.cat(_flatten_2d_coeff_lst(mat_coeff), -1)
     flat_conv_coeff = np.concatenate(_flatten_2d_coeff_lst(conv_coeff), -1)
-
-    err = np.sum(np.abs(flat_mat_coeff.numpy() - flat_conv_coeff))
     test = np.allclose(flat_mat_coeff.numpy(), flat_conv_coeff)
-    test2 = np.allclose(mat_coeff[0].numpy(), conv_coeff[0])
-    test3 = np.allclose(mat_coeff[1][0].numpy(), conv_coeff[1][0])
-    print(size, level, err, test, test2, test3)
+    test2 = np.allclose(mat_coeff[0].squeeze(0).numpy(), conv_coeff[0])
+    test3 = np.allclose(mat_coeff[1][0].squeeze(0).numpy(), conv_coeff[1][0])
     assert test and test2 and test3
 
 
@@ -152,6 +147,8 @@ def test_matrix_analysis_fwt_2d_haar(size, level):
 @pytest.mark.parametrize(
     "size",
     [
+        (32, 16),
+        (16, 32),
         (25, 26),
         (26, 25),
         (25, 25),
@@ -161,9 +158,11 @@ def test_matrix_analysis_fwt_2d_haar(size, level):
         (15, 16),
     ],
 )
-@pytest.mark.parametrize("level", [4, 3, 2, 1, None])
+@pytest.mark.parametrize("level", [1, 2, 3, None])
 @pytest.mark.parametrize("separable", [False, True])
-def test_boundary_matrix_fwt_2d(wavelet_str, size, level, separable):
+def test_boundary_matrix_fwt_2d(
+    wavelet_str: str, size: tuple, level: int, separable: bool
+) -> None:
     """Ensure the boundary matrix fwt is invertable."""
     face = np.mean(
         scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
@@ -178,28 +177,24 @@ def test_boundary_matrix_fwt_2d(wavelet_str, size, level, separable):
         reconstruction = reconstruction[:-1, :]
     if size[1] % 2 != 0:
         reconstruction = reconstruction[:, :-1]
-    err = np.sum(np.abs(reconstruction.numpy() - face))
-    print(
-        size,
-        str(level).center(4),
-        wavelet_str,
-        "error {:3.3e}".format(err),
-        np.allclose(reconstruction.numpy(), face),
-    )
     assert np.allclose(reconstruction.numpy(), face)
     # test the operator matrices
     if not separable and not matrixfwt.padded and not matrixifwt.padded:
+        # padding happens outside of the matrix structure.
+        # our matrices therefore only describe pad-free cases.
         test_mat = torch.sparse.mm(
             matrixifwt.sparse_ifwt_operator, matrixfwt.sparse_fwt_operator
         )
         assert np.allclose(test_mat.to_dense().numpy(), np.eye(test_mat.shape[0]))
 
 
-@pytest.mark.parametrize("wavelet_str", ["db2"])
-@pytest.mark.parametrize("level", [3])
-@pytest.mark.parametrize("size", [(16, 16)])
+@pytest.mark.parametrize("wavelet_str", ["db1", "db2"])
+@pytest.mark.parametrize("level", [1, 2])
+@pytest.mark.parametrize("size", [(16, 16), (32, 16), (16, 32)])
 @pytest.mark.parametrize("separable", [False, True])
-def test_batched_2d_matrix_fwt_ifwt(wavelet_str, level, size, separable):
+def test_batched_2d_matrix_fwt_ifwt(
+    wavelet_str: str, level: int, size: tuple, separable: bool
+):
     """Ensure the batched matrix fwt works properly."""
     face = scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])].astype(
         np.float64
@@ -210,23 +205,6 @@ def test_batched_2d_matrix_fwt_ifwt(wavelet_str, level, size, separable):
     mat_coeff = matrixfwt(pt_face)
     matrixifwt = MatrixWaverec2(wavelet, separable=separable)
     reconstruction = matrixifwt(mat_coeff)
-    err = np.sum(
-        np.abs(
-            reconstruction[0].numpy()
-            - face[:, :, 0]
-            + reconstruction[1].numpy()
-            - face[:, :, 1]
-            + reconstruction[2].numpy()
-            - face[:, :, 2]
-        )
-    )
-    print(
-        size,
-        str(level).center(4),
-        wavelet_str,
-        "error {:3.3e}".format(err),
-        np.allclose(reconstruction.permute(1, 2, 0).numpy(), face),
-    )
     assert (
         np.allclose(reconstruction[0].numpy(), face[:, :, 0])
         and np.allclose(reconstruction[1].numpy(), face[:, :, 1])
@@ -236,7 +214,7 @@ def test_batched_2d_matrix_fwt_ifwt(wavelet_str, level, size, separable):
 
 @pytest.mark.parametrize("wavelet_str", ["db2", "db3", "haar"])
 @pytest.mark.parametrize("boundary", ["qr", "gramschmidt"])
-def test_matrix_transform_1d_rebuild(wavelet_str, boundary):
+def test_matrix_transform_1d_rebuild(wavelet_str: str, boundary: str):
     """Ensure matrix fwt reconstructions are pywt compatible."""
     data_list = [np.random.randn(18), np.random.randn(21)]
     wavelet = pywt.Wavelet(wavelet_str)
@@ -249,13 +227,6 @@ def test_matrix_transform_1d_rebuild(wavelet_str, boundary):
             rec = matrix_waverec(coeffs)
             rec_pywt = pywt.waverec(
                 pywt.wavedec(data_torch.numpy(), wavelet, mode="zero"), wavelet
-            )
-            error = np.sum(np.abs(rec_pywt - rec.numpy()))
-            print(
-                "wavelet: {},".format(wavelet_str),
-                "level: {},".format(level),
-                "shape: {},".format(data.shape[-1]),
-                "error {:2.2e}".format(error),
             )
             assert np.allclose(rec.numpy(), rec_pywt)
             # test the operator matrices
@@ -272,7 +243,7 @@ def test_matrix_transform_1d_rebuild(wavelet_str, boundary):
 @pytest.mark.slow
 @pytest.mark.parametrize("wavelet_str", ["haar", "db4"])
 @pytest.mark.parametrize("separable", [False, True])
-def test_matrix_transform_2d_rebuild(wavelet_str, separable):
+def test_matrix_transform_2d_rebuild(wavelet_str: str, separable: bool) -> None:
     """Ensure the boundary matrix fwt is invertable."""
     wavelet = pywt.Wavelet(wavelet_str)
     matrixifwt = MatrixWaverec2(wavelet, separable=separable)
@@ -299,3 +270,19 @@ def test_matrix_transform_2d_rebuild(wavelet_str, separable):
                 assert np.allclose(
                     test_mat.to_dense().numpy(), np.eye(test_mat.shape[0])
                 )
+
+
+@pytest.mark.parametrize("operator", [MatrixWavedec2, MatrixWavedec])
+def test_empty_operators(operator):
+    """Check if the error is thrown properly if no matrix was ever built."""
+    matrixfwt = operator("haar")
+    with pytest.raises(ValueError):
+        _ = matrixfwt.sparse_fwt_operator
+
+
+@pytest.mark.parametrize("operator", [MatrixWaverec2, MatrixWaverec])
+def test_empty_inverse_operators(operator):
+    """Check if the error is thrown properly if no matrix was ever built."""
+    matrixifwt = operator("haar")
+    with pytest.raises(ValueError):
+        _ = matrixifwt.sparse_ifwt_operator

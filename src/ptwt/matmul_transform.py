@@ -615,14 +615,3 @@ class MatrixWaverec(object):
                     ), "padding error, please open an issue on github"
 
         return lo.T
-
-
-if __name__ == "__main__":
-    import pywt
-    import torch
-    import matplotlib.pyplot as plt
-
-    a = _construct_a(pywt.Wavelet("haar"), 20, torch.device("cpu"))
-    s = _construct_s(pywt.Wavelet("haar"), 20, torch.device("cpu"))
-    plt.spy(torch.sparse.mm(s, a).to_dense(), marker=".")
-    plt.show()

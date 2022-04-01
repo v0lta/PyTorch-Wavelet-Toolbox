@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        python-version: [ 3.8, 3.9 ]
+        python-version: [ 3.8, 3.9, 3.10.2 ]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -17,16 +17,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip install tox
+        run: pip install nox
       - name: Test with pytest
         run:
-          tox -e py
+          nox -s fast-test
   lint:
     name: Lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.8, 3.9 ]
+        python-version: [ 3.8, 3.9, 3.10.2 ]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -34,8 +34,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip install tox
+        run: pip install nox
       - name: Run flake8
-        run: tox -e flake8
+        run: nox -s lint
       - name: Run mypy
-        run: tox -e mypy
+        run: nox -s typing

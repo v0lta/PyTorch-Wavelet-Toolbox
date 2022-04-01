@@ -5,7 +5,9 @@ import pytest
 import scipy.signal
 import torch
 from scipy import misc
+
 from src.ptwt.sparse_math import (
+    batch_mm,
     construct_conv2d_matrix,
     construct_conv_matrix,
     construct_strided_conv2d_matrix,
@@ -14,7 +16,7 @@ from src.ptwt.sparse_math import (
 )
 
 
-def test_kron():
+def test_kron() -> None:
     """Test the implementation by evaluation.
 
     The example is taken from
@@ -37,7 +39,7 @@ def test_kron():
 @pytest.mark.parametrize("padding", ["full", "same", "valid"])
 def test_conv_matrix(
     test_filter: torch.Tensor, input_signal: torch.Tensor, padding: str
-):
+) -> None:
     """Test the 1d sparse convolution matrix code."""
     conv_matrix = construct_conv_matrix(test_filter, len(input_signal), padding)
     mm_conv_res = torch.sparse.mm(conv_matrix, input_signal.unsqueeze(-1)).squeeze()
@@ -65,7 +67,7 @@ def test_conv_matrix(
     ],
 )
 @pytest.mark.parametrize("mode", ["valid", "same"])
-def test_strided_conv_matrix(test_filter, input_signal, mode):
+def test_strided_conv_matrix(test_filter, input_signal, mode) -> None:
     """Test the strided 1d sparse convolution matrix code."""
     strided_conv_matrix = construct_strided_conv_matrix(
         test_filter, len(input_signal), 2, mode
@@ -120,7 +122,8 @@ def test_strided_conv_matrix(test_filter, input_signal, mode):
     ],
 )
 @pytest.mark.parametrize("mode", ["same", "full", "valid"])
-def test_conv_matrix_2d(filter_shape, size, mode):
+@pytest.mark.parametrize("fully_sparse", [True, False])
+def test_conv_matrix_2d(filter_shape, size, mode, fully_sparse) -> None:
     """Test the validity of the 2d convolution matrix code.
 
     It should be equivalent to signal convolve2d.
@@ -134,19 +137,12 @@ def test_conv_matrix_2d(filter_shape, size, mode):
     face = torch.from_numpy(face)
     face = face.unsqueeze(0).unsqueeze(0)
     conv_matrix2d = construct_conv2d_matrix(
-        test_filter.squeeze(), size[0], size[1], mode=mode
+        test_filter.squeeze(), size[0], size[1], mode=mode, fully_sparse=fully_sparse
     )
-    res_flat = torch.sparse.mm(conv_matrix2d, face.T.flatten().unsqueeze(-1))
+    res_flat = torch.sparse.mm(
+        conv_matrix2d, face.transpose(-2, -1).flatten().unsqueeze(-1)
+    )
     res_mm = torch.reshape(res_flat, [res_scipy.shape[1], res_scipy.shape[0]]).T
-
-    diff_scipy = np.mean(np.abs(res_scipy - res_mm.numpy()))
-    print(
-        str(size).center(8),
-        filter_shape,
-        mode.center(5),
-        "scipy-error %2.2e" % diff_scipy,
-        np.allclose(res_scipy, res_mm.numpy()),
-    )
     assert np.allclose(res_scipy, res_mm)
 
 
@@ -166,7 +162,7 @@ def test_conv_matrix_2d(filter_shape, size, mode):
     ],
 )
 @pytest.mark.parametrize("mode", ["full", "valid"])
-def test_strided_conv_matrix_2d(filter_shape, size, mode):
+def test_strided_conv_matrix_2d(filter_shape, size, mode) -> None:
     """Test strided convolution matrices with full and valid padding."""
     test_filter = torch.rand(filter_shape)
     test_filter = test_filter.unsqueeze(0).unsqueeze(0)
@@ -186,7 +182,9 @@ def test_strided_conv_matrix_2d(filter_shape, size, mode):
     strided_matrix = construct_strided_conv2d_matrix(
         test_filter.squeeze(), size[0], size[1], stride=2, mode=mode
     )
-    res_flat_stride = torch.sparse.mm(strided_matrix, face.T.flatten().unsqueeze(-1))
+    res_flat_stride = torch.sparse.mm(
+        strided_matrix, face.transpose(-2, -1).flatten().unsqueeze(-1)
+    )
 
     if mode == "full":
         output_shape = [
@@ -199,15 +197,6 @@ def test_strided_conv_matrix_2d(filter_shape, size, mode):
             (size[0] - (filter_shape[0])) // 2 + 1,
         ]
     res_mm_stride = np.reshape(res_flat_stride, output_shape).T
-
-    diff_torch = np.mean(np.abs(torch_res.numpy() - res_mm_stride.numpy()))
-    print(
-        str(size).center(8),
-        filter_shape,
-        mode.center(8),
-        "torch-error %2.2e" % diff_torch,
-        np.allclose(torch_res.numpy(), res_mm_stride.numpy()),
-    )
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
@@ -215,7 +204,7 @@ def test_strided_conv_matrix_2d(filter_shape, size, mode):
 @pytest.mark.parametrize(
     "size", [(7, 8), (8, 7), (7, 7), (8, 8), (16, 16), (8, 16), (16, 8)]
 )
-def test_strided_conv_matrix_2d_same(filter_shape, size):
+def test_strided_conv_matrix_2d_same(filter_shape, size) -> None:
     """Test strided conv matrix with same padding."""
     stride = 2
     test_filter = torch.rand(filter_shape)
@@ -236,20 +225,15 @@ def test_strided_conv_matrix_2d_same(filter_shape, size):
         stride=stride,
         mode="same",
     )
-    res_flat_stride = torch.sparse.mm(strided_matrix, face.T.flatten().unsqueeze(-1))
+    res_flat_stride = torch.sparse.mm(
+        strided_matrix, face.transpose(-2, -1).flatten().unsqueeze(-1)
+    )
     output_shape = torch_res.shape
     res_mm_stride = np.reshape(res_flat_stride, (output_shape[1], output_shape[0])).T
-    diff_torch = np.mean(np.abs(torch_res.numpy() - res_mm_stride.numpy()))
-    print(
-        str(size).center(8),
-        filter_shape,
-        tuple(output_shape),
-        "torch-error %2.2e" % diff_torch,
-        np.allclose(torch_res.numpy(), res_mm_stride.numpy()),
-    )
+    assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
-def _get_2d_same_padding(filter_shape, input_size):
+def _get_2d_same_padding(filter_shape, input_size) -> tuple:
     height_offset = input_size[0] % 2
     width_offset = input_size[1] % 2
     padding = (
@@ -259,3 +243,86 @@ def _get_2d_same_padding(filter_shape, input_size):
         filter_shape[0] // 2 - 1 + height_offset,
     )
     return padding
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("size", [(256, 512), (512, 256)])
+def test_strided_conv_matrix_2d_sameshift(size) -> None:
+    """Test strided conv matrix with sameshift padding."""
+    stride = 2
+    filter_shape = (3, 3)
+    # test_filter = torch.rand(filter_shape)
+    test_filter = torch.tensor(
+        [
+            [0.0, 0.0, 0.0],
+            [
+                0.0,
+                1.0,
+                0.1,
+            ],
+            [0.0, 0.1, 0.1],
+        ]
+    )
+    test_filter2 = torch.tensor(
+        [
+            [1.0, 0.1, 0.0],
+            [
+                0.1,
+                0.1,
+                0.0,
+            ],
+            [0.0, 0.0, 0.0],
+        ]
+    )
+    test_filter = test_filter.unsqueeze(0).unsqueeze(0)
+    test_filter2 = test_filter2.unsqueeze(0).unsqueeze(0)
+    face = misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])]
+    face = np.mean(face, -1)
+    face = torch.from_numpy(face.astype(np.float32))
+    face = face.unsqueeze(0).unsqueeze(0)
+    padding = _get_2d_same_padding(filter_shape, size)
+    face_pad = torch.nn.functional.pad(face, padding)
+    torch_res = torch.nn.functional.conv2d(
+        face_pad, test_filter2.flip(2, 3), stride=stride
+    ).squeeze()
+    strided_matrix = construct_strided_conv2d_matrix(
+        filter=test_filter.squeeze(),
+        input_rows=face.shape[-2],
+        input_columns=face.shape[-1],
+        stride=stride,
+        mode="sameshift",
+    )
+    coefficients = torch.sparse.mm(
+        strided_matrix, face.transpose(-2, -1).flatten().unsqueeze(-1)
+    )
+    output_shape = torch_res.shape
+    res_mm_stride = np.reshape(coefficients, (output_shape[1], output_shape[0])).T
+    assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
+
+
+@pytest.mark.parametrize("mode", ["invalid_mode"])
+@pytest.mark.parametrize(
+    "function", [construct_conv2d_matrix, construct_strided_conv2d_matrix]
+)
+def test_mode_error_2(mode, function) -> None:
+    """Test the invalid padding-error."""
+    test_filter = torch.rand([3, 3])
+    with pytest.raises(ValueError):
+        _ = function(test_filter, 32, 32, mode=mode)
+
+
+@pytest.mark.parametrize("mode", ["invalid_mode"])
+@pytest.mark.parametrize(
+    "function", [construct_conv_matrix, construct_strided_conv_matrix]
+)
+def test_mode_error(mode, function) -> None:
+    """Test the invalid padding-error."""
+    test_filter = torch.rand([3, 3])
+    with pytest.raises(ValueError):
+        _ = function(test_filter, 32, mode=mode)
+
+
+def test_shape_error() -> None:
+    """Check the shape error in the batch_mm function."""
+    with pytest.raises(ValueError):
+        _ = batch_mm(torch.rand(8, 8), torch.rand(1, 6, 8))

@@ -1,7 +1,6 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
 from typing import Protocol, Sequence, Tuple, Union
 
-
 import pywt
 
 
