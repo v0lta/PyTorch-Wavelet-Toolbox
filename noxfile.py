@@ -81,4 +81,10 @@ def clean_coverage(session):
     session.run("rm", "-r", "htmlcov", external=True)
 
 
-# TODO: add finish
+@nox.session(name="finish")
+def finish(session):
+    session.install("bump2version")
+    session.run("bumpversion", "release", external=True)
+    session.run("git", "push", external=True)
+    session.run("bumpversion", "patch", external=True)
+    session.run("git", "push", external=True)
