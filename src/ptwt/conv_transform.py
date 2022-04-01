@@ -257,7 +257,7 @@ def wavedec2(
               A denotes approximation, H horizontal, V vertical
               and D diagonal coefficients.
 
-    Examples::
+    Example:
         >>> import torch
         >>> import ptwt, pywt
         >>> import numpy as np
@@ -313,7 +313,7 @@ def waverec2(
     Raises:
         ValueError: If `coeffs` is not in the shape as it is returned from `wavedec2`.
 
-    Examples::
+    Example:
         >>> import ptwt, pywt, torch
         >>> import numpy as np
         >>> import scipy.misc
@@ -403,7 +403,7 @@ def wavedec(
         containing the wavelet coefficients. A denotes
         approximation and D detail coefficients.
 
-    Examples:
+    Example:
         >>> import torch
         >>> import ptwt, pywt
         >>> import numpy as np
@@ -453,7 +453,7 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
     Returns:
         torch.Tensor: The reconstructed signal.
 
-    Examples::
+    Example:
         >>> import torch
         >>> import ptwt, pywt
         >>> import numpy as np
