@@ -164,11 +164,11 @@ See https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples for a co
 **Testing**
 
 The ``tests`` folder contains multiple tests to allow independent verification of this toolbox. After cloning the
-repository, and moving into the main directory, and installing ``tox`` with ``pip install tox`` run:
+repository, and moving into the main directory, and installing ``nox`` with ``pip install nox`` run:
 
 .. code-block:: sh
 
-  $ tox -e py
+  $ nox --session test
 
 
 
