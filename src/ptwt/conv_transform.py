@@ -168,7 +168,7 @@ def fwt_pad2(
 
 
 def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    """Torch implementation of numpy's outer for vectors."""
+    """Torch implementation of numpy's outer for 1d vectors."""
     a_flat = torch.reshape(a, [-1])
     b_flat = torch.reshape(b, [-1])
     a_mul = torch.unsqueeze(a_flat, dim=-1)
