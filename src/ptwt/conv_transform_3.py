@@ -150,24 +150,25 @@ def waverec3(
         torch.Tensor: The reconstructed signal.
     """
     wavelet = _as_wavelet(wavelet)
+    # the Union[tensor, dict] idea is coming from pywt. We don't change it here.
+    res_lll: torch.Tensor = coeffs[0]  # type: ignore
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=coeffs[0].device, dtype=coeffs[0].dtype
+        wavelet, flip=False, device=res_lll.device, dtype=res_lll.dtype
     )
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_3d_filt(lo=rec_lo, hi=rec_hi)
-    res_lll = coeffs[0]
 
     for c_pos, coeff_dict in enumerate(coeffs[1:]):
         res_lll = torch.stack(
             [
                 res_lll,
-                coeff_dict["aad"],
-                coeff_dict["ada"],
-                coeff_dict["add"],
-                coeff_dict["daa"],
-                coeff_dict["dad"],
-                coeff_dict["dda"],
-                coeff_dict["ddd"],
+                coeff_dict["aad"],  # type: ignore
+                coeff_dict["ada"],  # type: ignore
+                coeff_dict["add"],  # type: ignore
+                coeff_dict["daa"],  # type: ignore
+                coeff_dict["dad"],  # type: ignore
+                coeff_dict["dda"],  # type: ignore
+                coeff_dict["ddd"],  # type: ignore
             ],
             1,
         )
@@ -183,11 +184,11 @@ def waverec3(
         padb = (2 * filt_len - 3) // 2
         if c_pos < len(coeffs) - 2:
             pred_len = res_lll.shape[-1] - (padl + padr)
-            next_len = coeffs[c_pos + 2]["aad"].shape[-1]
+            next_len = coeffs[c_pos + 2]["aad"].shape[-1]  # type: ignore
             pred_len2 = res_lll.shape[-2] - (padt + padb)
-            next_len2 = coeffs[c_pos + 2]["aad"].shape[-2]
+            next_len2 = coeffs[c_pos + 2]["aad"].shape[-2]  # type: ignore
             pred_len3 = res_lll.shape[-3] - (padfr + padba)
-            next_len3 = coeffs[c_pos + 2]["aad"].shape[-3]
+            next_len3 = coeffs[c_pos + 2]["aad"].shape[-3]  # type: ignore
             if next_len != pred_len:
                 padr += 1
                 pred_len = res_lll.shape[-1] - (padl + padr)
