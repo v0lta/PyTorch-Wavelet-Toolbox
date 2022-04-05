@@ -98,8 +98,8 @@ def wavedec3(
     if data.dim() < 3:
         raise ValueError("Three dimensional inputs required for 3d wavedec.")
     elif data.dim() == 3:
-        # add channels and batch dim.
-        data = data.unsqueeze(0).unsqueeze(0)
+        # add batch dim.
+        data = data.unsqueeze(0)
 
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = get_filter_tensors(
@@ -133,3 +133,89 @@ def wavedec3(
         )
     result_lst.append(res_lll)
     return result_lst[::-1]
+
+
+def waverec3(
+    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    wavelet: Union[Wavelet, str],
+) -> torch.Tensor:
+    """Reconstruct a signal from wavelet coefficients.
+
+    Args:
+        coeffs (list): The wavelet coefficient list produced by wavedec3.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+
+    Returns:
+        torch.Tensor: The reconstructed signal.
+    """
+    wavelet = _as_wavelet(wavelet)
+    _, _, rec_lo, rec_hi = get_filter_tensors(
+        wavelet, flip=False, device=coeffs[0].device, dtype=coeffs[0].dtype
+    )
+    filt_len = rec_lo.shape[-1]
+    rec_filt = _construct_3d_filt(lo=rec_lo, hi=rec_hi)
+    res_lll = coeffs[0]
+
+    for c_pos, coeff_dict in enumerate(coeffs[1:]):
+        res_lll = torch.stack(
+            [
+                res_lll,
+                coeff_dict["aad"],
+                coeff_dict["ada"],
+                coeff_dict["add"],
+                coeff_dict["daa"],
+                coeff_dict["dad"],
+                coeff_dict["dda"],
+                coeff_dict["ddd"],
+            ],
+            1,
+        )
+        res_lll = torch.nn.functional.conv_transpose3d(res_lll, rec_filt, stride=2)
+        res_lll = res_lll.squeeze(1)
+
+        # remove the padding
+        padfr = (2 * filt_len - 3) // 2
+        padba = (2 * filt_len - 3) // 2
+        padl = (2 * filt_len - 3) // 2
+        padr = (2 * filt_len - 3) // 2
+        padt = (2 * filt_len - 3) // 2
+        padb = (2 * filt_len - 3) // 2
+        if c_pos < len(coeffs) - 2:
+            pred_len = res_lll.shape[-1] - (padl + padr)
+            next_len = coeffs[c_pos + 2]["aad"].shape[-1]
+            pred_len2 = res_lll.shape[-2] - (padt + padb)
+            next_len2 = coeffs[c_pos + 2]["aad"].shape[-2]
+            pred_len3 = res_lll.shape[-3] - (padfr + padba)
+            next_len3 = coeffs[c_pos + 2]["aad"].shape[-3]
+            if next_len != pred_len:
+                padr += 1
+                pred_len = res_lll.shape[-1] - (padl + padr)
+                assert (
+                    next_len == pred_len
+                ), "padding error, please open an issue on github "
+            if next_len2 != pred_len2:
+                padb += 1
+                pred_len2 = res_lll.shape[-2] - (padt + padb)
+                assert (
+                    next_len2 == pred_len2
+                ), "padding error, please open an issue on github "
+            if next_len3 != pred_len3:
+                padba += 1
+                pred_len3 = res_lll.shape[-3] - (padba + padfr)
+                assert (
+                    next_len3 == pred_len3
+                ), "padding error, please open an issue on github "
+        if padt > 0:
+            res_lll = res_lll[..., padt:, :]
+        if padb > 0:
+            res_lll = res_lll[..., :-padb, :]
+        if padl > 0:
+            res_lll = res_lll[..., padl:]
+        if padr > 0:
+            res_lll = res_lll[..., :-padr]
+        if padfr > 0:
+            res_lll = res_lll[..., padfr:, :, :]
+        if padba > 0:
+            res_lll = res_lll[..., :-padba, :, :]
+    return res_lll

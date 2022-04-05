@@ -5,14 +5,13 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt.conv_transform_3 import wavedec3
+from src.ptwt.conv_transform_3 import wavedec3, waverec3
 
 
 # TODO: test batch dim!
 @pytest.mark.parametrize(
     "shape",
     [
-        (64, 64, 64),
         (64, 64, 64),
         (31, 64, 64),
         (64, 31, 64),
@@ -21,8 +20,8 @@ from src.ptwt.conv_transform_3 import wavedec3
         (32, 32, 32),
     ],
 )
-@pytest.mark.parametrize("wavelet", ["haar", "db2"])
-@pytest.mark.parametrize("level", [1, 2, 3])
+@pytest.mark.parametrize("wavelet", ["haar", "db2", "db4"])
+@pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("mode", ["zero", "constant", "periodic"])
 def test_wavedec3(shape: list, wavelet: str, level: int, mode: str):
     """Test the conv2d-code."""
@@ -46,3 +45,28 @@ def test_incorrect_dims():
     data = np.random.randn(64, 64)
     with pytest.raises(ValueError):
         _ = wavedec3(torch.from_numpy(data), "haar")
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        (64, 64, 64),
+        (31, 64, 64),
+        (64, 31, 64),
+        (64, 64, 31),
+        (31, 31, 31),
+        (32, 32, 32),
+    ],
+)
+@pytest.mark.parametrize("wavelet", ["haar", "db2", "db4"])
+@pytest.mark.parametrize("level", [1, 2, None])
+@pytest.mark.parametrize("mode", ["zero", "constant", "periodic"])
+def test_waverec3(shape: list, wavelet: str, level: int, mode: str):
+    """Ensure the 3d analysis transform is invertible."""
+    data = np.random.randn(*shape)
+    data = torch.from_numpy(data).unsqueeze(0)
+    ptwc = wavedec3(data, wavelet, level=level, mode=mode)
+    rec = waverec3(ptwc, wavelet)
+    assert np.allclose(
+        rec.numpy()[..., : shape[0], : shape[1], : shape[2]], data.numpy()
+    )
