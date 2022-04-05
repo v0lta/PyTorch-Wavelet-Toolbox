@@ -28,7 +28,9 @@ def test_wavedec3(shape: list, wavelet: str, level: int, mode: str):
     """Test the conv2d-code."""
     data = np.random.randn(*shape)
     pywc = pywt.wavedecn(data, wavelet, level=level, mode=mode)
-    ptwc = wavedec3(torch.from_numpy(data).unsqueeze(0), wavelet, level=level, mode=mode)
+    ptwc = wavedec3(
+        torch.from_numpy(data).unsqueeze(0), wavelet, level=level, mode=mode
+    )
 
     for pywc_res, ptwc_res in zip(pywc, ptwc):
         if type(pywc_res) is np.ndarray:

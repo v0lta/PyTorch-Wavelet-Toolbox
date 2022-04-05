@@ -82,7 +82,7 @@ def wavedec3(
             [batch_size, length, height, width]
         wavelet (Union[Wavelet, str]): The wavelet to be used.
         level (Optional[int]): The maximum decomposition level.
-            Defaults to None. 
+            Defaults to None.
         mode (str): The padding mode. Options are
             "zero", "constant" or "periodic".
             Defaults to "zero".
