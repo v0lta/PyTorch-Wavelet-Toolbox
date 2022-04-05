@@ -82,8 +82,10 @@ def wavedec3(
             [batch_size, length, height, width]
         wavelet (Union[Wavelet, str]): The wavelet to be used.
         level (Optional[int]): The maximum decomposition level.
-            Defaults to None.
-        mode (str): The padding mode. Defaults to "zero".
+            Defaults to None. 
+        mode (str): The padding mode. Options are
+            "zero", "constant" or "periodic".
+            Defaults to "zero".
 
     Returns:
         list: A list with the lll coefficients and dicts with filter
@@ -96,7 +98,8 @@ def wavedec3(
     if data.dim() < 3:
         raise ValueError("Three dimensional inputs required for 3d wavedec.")
     elif data.dim() == 3:
-        data = data.unsqueeze(0)
+        # add channels and batch dim.
+        data = data.unsqueeze(0).unsqueeze(0)
 
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = get_filter_tensors(
@@ -112,8 +115,8 @@ def wavedec3(
     result_lst: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
     res_lll = data
     for _ in range(level):
-        res_lll = _fwt_pad3(res_lll, wavelet, mode=mode)
-        res = torch.nn.functional.conv3d(res_lll.unsqueeze(1), dec_filt, stride=2)
+        res_lll = _fwt_pad3(res_lll.unsqueeze(1), wavelet, mode=mode)
+        res = torch.nn.functional.conv3d(res_lll, dec_filt, stride=2)
         res_lll, res_llh, res_lhl, res_lhh, res_hll, res_hlh, res_hhl, res_hhh = [
             sr.squeeze(1) for sr in torch.split(res, 1, 1)
         ]
