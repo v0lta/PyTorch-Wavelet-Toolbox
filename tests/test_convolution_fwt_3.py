@@ -8,7 +8,7 @@ import torch
 from src.ptwt.conv_transform_3 import wavedec3, waverec3
 
 
-# TODO: test batch dim!
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "shape",
     [
@@ -70,3 +70,6 @@ def test_waverec3(shape: list, wavelet: str, level: int, mode: str):
     assert np.allclose(
         rec.numpy()[..., : shape[0], : shape[1], : shape[2]], data.numpy()
     )
+
+
+# TODO: test batch dim!
