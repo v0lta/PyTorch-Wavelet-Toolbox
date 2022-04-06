@@ -10,7 +10,8 @@ import numpy as np
 import torch
 
 from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported
-from .conv_transform import construct_2d_filt, get_filter_tensors
+from .conv_transform import get_filter_tensors
+from .conv_transform_2 import construct_2d_filt
 from .matmul_transform import (
     cat_sparse_identity_matrix,
     construct_boundary_a,

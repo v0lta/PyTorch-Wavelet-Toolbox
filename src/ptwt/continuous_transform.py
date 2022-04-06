@@ -52,6 +52,17 @@ def cwt(
     Returns:
         Tuple[torch.Tensor, np.ndarray]: A tuple with the transformation matrix
             and frequencies in this order.
+
+    Example:
+        >>> import torch, ptwt
+        >>> import numpy as np
+        >>> import scipy.signal as signal
+        >>> t = np.linspace(-2, 2, 800, endpoint=False)
+        >>> sig = signal.chirp(t, f0=1, f1=12, t1=2, method="linear")
+        >>> widths = np.arange(1, 31)
+        >>> cwtmatr, freqs = ptwt.cwt(
+        >>>     torch.from_numpy(sig), widths, "mexh", sampling_period=(4 / 800) * np.pi
+        >>> )
     """
     # accept array_like input; make a copy to ensure a contiguous array
     if not isinstance(wavelet, (ContinuousWavelet, Wavelet)):

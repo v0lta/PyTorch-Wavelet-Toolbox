@@ -2,6 +2,7 @@
 from typing import Protocol, Sequence, Tuple, Union
 
 import pywt
+import torch
 
 
 class Wavelet(Protocol):
@@ -38,3 +39,12 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
 
 def _is_boundary_mode_supported(boundary_mode: str) -> bool:
     return boundary_mode == "qr" or boundary_mode == "gramschmidt"
+
+
+def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    """Torch implementation of numpy's outer for 1d vectors."""
+    a_flat = torch.reshape(a, [-1])
+    b_flat = torch.reshape(b, [-1])
+    a_mul = torch.unsqueeze(a_flat, dim=-1)
+    b_mul = torch.unsqueeze(b_flat, dim=0)
+    return a_mul * b_mul

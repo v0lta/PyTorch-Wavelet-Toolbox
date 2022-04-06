@@ -6,16 +6,15 @@ import pywt
 import scipy.misc
 import torch
 
-from src.ptwt._mackey_glass import MackeyGenerator
+from src.ptwt._util import _outer
 from src.ptwt.conv_transform import (
     _flatten_2d_coeff_lst,
-    _outer,
     _translate_boundary_strings,
     wavedec,
-    wavedec2,
     waverec,
-    waverec2,
 )
+from src.ptwt._mackey_glass import MackeyGenerator
+from src.ptwt.conv_transform_2 import wavedec2, waverec2
 from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
 
 
