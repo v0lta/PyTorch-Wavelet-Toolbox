@@ -50,12 +50,13 @@ def test_incorrect_dims():
 @pytest.mark.parametrize(
     "shape",
     [
-        (64, 64, 64),
-        (31, 64, 64),
-        (64, 31, 64),
-        (64, 64, 31),
-        (31, 31, 31),
-        (32, 32, 32),
+        (1, 64, 64, 64),
+        (2, 64, 64, 64),
+        (3, 31, 64, 64),
+        (3, 64, 31, 64),
+        (3, 64, 64, 31),
+        (3, 31, 31, 31),
+        (3, 32, 32, 32),
     ],
 )
 @pytest.mark.parametrize("wavelet", ["haar", "db2", "db4"])
@@ -64,12 +65,9 @@ def test_incorrect_dims():
 def test_waverec3(shape: list, wavelet: str, level: int, mode: str):
     """Ensure the 3d analysis transform is invertible."""
     data = np.random.randn(*shape)
-    data = torch.from_numpy(data).unsqueeze(0)
+    data = torch.from_numpy(data)
     ptwc = wavedec3(data, wavelet, level=level, mode=mode)
     rec = waverec3(ptwc, wavelet)
     assert np.allclose(
-        rec.numpy()[..., : shape[0], : shape[1], : shape[2]], data.numpy()
+        rec.numpy()[..., : shape[1], : shape[2], : shape[3]], data.numpy()
     )
-
-
-# TODO: test batch dim!
