@@ -1,17 +1,12 @@
-"""Code for three dimensional transforms."""
+"""Code for three dimensional padding transforms."""
 
 from typing import Dict, List, Optional, Union
 
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet
-from .conv_transform import (
-    _get_pad,
-    _outer,
-    _translate_boundary_strings,
-    get_filter_tensors,
-)
+from ._util import Wavelet, _as_wavelet, _outer
+from .conv_transform import _get_pad, _translate_boundary_strings, get_filter_tensors
 
 
 def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
@@ -88,8 +83,9 @@ def wavedec3(
             Defaults to "zero".
 
     Returns:
-        list: A list with the lll coefficients and dicts with filter
-            order strings as keys.
+        list: A list with the lll coefficients and dictionaries
+            with the filter order strings ("aad", "ada", "add",
+            "daa", "dad", "dda", "ddd") as keys.
 
     Raises:
         ValueError: If the input has fewer than 3 dimensions.

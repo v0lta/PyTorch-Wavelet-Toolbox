@@ -9,18 +9,35 @@ ptwt.conv\_transform module
    :undoc-members:
    :show-inheritance:
 
-ptwt.packets module
--------------------
+ptwt.conv\_transform 2D module
+---------------------------
 
-.. automodule:: ptwt.packets
+.. automodule:: ptwt.conv_transform_2
    :members:
    :undoc-members:
    :show-inheritance:
+
+ptwt.conv\_transform 3D module
+---------------------------
+
+.. automodule:: ptwt.conv_transform_3
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 ptwt.continuous\_transform module
 ---------------------------
 
 .. automodule:: ptwt.continuous_transform
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ptwt.packets module
+-------------------
+
+.. automodule:: ptwt.packets
    :members:
    :undoc-members:
    :show-inheritance:

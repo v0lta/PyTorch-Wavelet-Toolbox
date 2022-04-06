@@ -10,7 +10,8 @@ import pywt
 import torch
 
 from ._util import Wavelet, _as_wavelet
-from .conv_transform import wavedec, wavedec2
+from .conv_transform import wavedec
+from .conv_transform_2 import wavedec2
 from .matmul_transform import MatrixWavedec
 from .matmul_transform_2 import MatrixWavedec2
 

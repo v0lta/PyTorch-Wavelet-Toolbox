@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from torch.nn.parameter import Parameter
 import pywt
-from src.ptwt.conv_transform import wavedec, waverec
+from ptwt.conv_transform import wavedec, waverec
 
 
 class WaveletLayer(torch.nn.Module):
