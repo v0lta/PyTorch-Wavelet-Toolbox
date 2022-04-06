@@ -1,4 +1,4 @@
-"""Code for three dimensional padding transforms."""
+"""Code for three dimensional padded transforms."""
 
 from typing import Dict, List, Optional, Union
 

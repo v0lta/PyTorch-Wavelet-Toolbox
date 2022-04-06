@@ -1,4 +1,4 @@
-"""This module implements two dimensional padding based wavelet transforms."""
+"""This module implements two dimensional padded wavelet transforms."""
 
 
 from typing import List, Optional, Tuple, Union

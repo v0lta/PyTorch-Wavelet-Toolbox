@@ -9,16 +9,16 @@ ptwt.conv\_transform module
    :undoc-members:
    :show-inheritance:
 
-ptwt.conv\_transform 2D module
----------------------------
+ptwt.conv\_transform\_2 module
+------------------------------
 
 .. automodule:: ptwt.conv_transform_2
    :members:
    :undoc-members:
    :show-inheritance:
 
-ptwt.conv\_transform 3D module
----------------------------
+ptwt.conv\_transform\_3 module
+------------------------------
 
 .. automodule:: ptwt.conv_transform_3
    :members:
@@ -27,7 +27,7 @@ ptwt.conv\_transform 3D module
 
 
 ptwt.continuous\_transform module
----------------------------
+---------------------------------
 
 .. automodule:: ptwt.continuous_transform
    :members:
@@ -51,7 +51,7 @@ ptwt.matmul\_transform module
    :show-inheritance:
 
 ptwt.matmul\_transform\_2 module
----------------------------------
+--------------------------------
 
 .. automodule:: ptwt.matmul_transform_2
    :members:
