@@ -1,6 +1,6 @@
 #### Cwt chirp analysis
-To run this example, clone the repository and type
-```ipython examples/continuous_chirp_analysis/cwt_chirp_analysis.py```
+To run this example, type
+```python cwt_chirp_analysis.py```
 
 The result should look like this:
 

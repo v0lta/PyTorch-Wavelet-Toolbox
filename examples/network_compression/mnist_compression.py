@@ -14,7 +14,7 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 from wavelet_linear import WaveletLayer
 from torch.utils.tensorboard.writer import SummaryWriter
-from src.ptwt.wavelets_learnable import ProductFilter
+from ptwt.wavelets_learnable import ProductFilter
 
 
 def compute_parameter_total(net):

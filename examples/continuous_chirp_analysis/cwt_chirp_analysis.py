@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-import src.ptwt as ptwt
+import ptwt
 import matplotlib.pyplot as plt
 import scipy.signal as signal
 
