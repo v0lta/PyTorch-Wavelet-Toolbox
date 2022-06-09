@@ -1,5 +1,5 @@
 ## Wavelet-Packets for deepfake analysis
-This analysis considers 128 by 128-pixel images from [StyleGAN](https://github.com/NVlabs/stylegan) and [Flickr-Faces-HQ](https://github.com/NVlabs/ffhq-dataset)
+This analysis considers 128 by 128-pixel images from [StyleGAN](https://github.com/NVlabs/stylegan) and [Flickr-Faces-HQ](https://github.com/NVlabs/ffhq-dataset).
 
 Flickr-Faces-HQ images depict real people, such as the person below:
 
