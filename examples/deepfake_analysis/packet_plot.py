@@ -78,6 +78,7 @@ def generate_frequency_packet_image(packet_array: np.ndarray, degree: int):
 
 
 def load_image(path_to_file: str) -> torch.Tensor:
+    
     image = Image.open(path_to_file)
     tensor = torch.from_numpy(np.nan_to_num(np.array(image), posinf=255, neginf=0))
     return tensor

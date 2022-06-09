@@ -2,18 +2,22 @@
 This analysis considers 128 by 128-pixel images from [StyleGAN](https://github.com/NVlabs/stylegan) and [Flickr-Faces-HQ](https://github.com/NVlabs/ffhq-dataset)
 
 Flickr-Faces-HQ images depict real people, such as the person below:
+
 ![real person](real.png)
 
 Generative adversarial networks allow the generation of fake images at scale. See the example image below? 
+
 ![fake person](fake.png)
 
 How can we identify the fake? Wavelet packets can help.
 
-![packet plot](mean_packet_plot.png)
+![packet comparison](packet_comparison.png)
 
 The plot above shows the mean packet plots of 70k fake and real images each. The fakes tend to have more energy in high-frequency bands.
 
-![packet comparison](packet_comparison.png)
+
+![packet plot](mean_packet_plot.png)
+
 
 The second plot confirms the previous observation. Gan-generated images tend to produce different high-frequency packages. The higher frequency packets appear on the left of the graph.
 
