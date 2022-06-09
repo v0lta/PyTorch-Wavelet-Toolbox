@@ -5,11 +5,11 @@ Flickr-Faces-HQ images depict real people, such as the person below:
 
 ![real person](real.png)
 
-Generative adversarial networks allow the generation of fake images at scale. See the example image below? 
+Generative adversarial networks allow the generation of fake images at scale. Does the picture below seem real? 
 
 ![fake person](fake.png)
 
-How can we identify the fake? Wavelet packets can help.
+How can we identify the fake? Wavelet packets can help!
 
 ![packet comparison](packet_comparison.png)
 
