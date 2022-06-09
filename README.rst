@@ -26,6 +26,8 @@ Pytorch Wavelet Toolbox (`ptwt`)
     :target: https://github.com/psf/black
     :alt: Black code style
 
+.. image:: https://static.pepy.tech/personalized-badge/ptwt?period=total&units=international_system&left_color=black&right_color=brightgreen&left_text=Downloads
+ :target: https://pepy.tech/project/ptwt
 
 
 
@@ -145,7 +147,7 @@ Reconsidering the 1d case, try:
 The process for the 2d transforms ``MatrixWavedec2``, ``MatrixWaverec2`` works similarly.
 By default, a non-separable transformation is used.
 To use a separable transformation, pass ``separable=True`` to ``MatrixWavedec2`` and ``MatrixWaverec2``.
-Separable transformations use a 1d transformation along both axes which might be faster since less matrix entries
+Separable transformations use a 1d transformation along both axes, which might be faster since fewer matrix entries
 have to be orthogonalized.
 
 
@@ -157,7 +159,7 @@ from pywt,
 - Adaptive product-filters
 - and optimizable orthogonal-wavelets are supported.
 
-See https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples for a complete implementation.
+See https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples/network_compression/ for a complete implementation.
 
 
 **Testing**
