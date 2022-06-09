@@ -77,12 +77,12 @@ def generate_frequency_packet_image(packet_array: np.ndarray, degree: int):
     return np.concatenate(image, 0)
 
 
-def load_image(path_to_file):
+def load_image(path_to_file: str) -> torch.Tensor:
     image = Image.open(path_to_file)
     tensor = torch.from_numpy(np.nan_to_num(np.array(image), posinf=255, neginf=0))
     return tensor
 
-def process_images(tensor, paths):
+def process_images(tensor: torch.Tensor, paths: list) -> torch.Tensor:
     tensor = torch.mean(tensor/255., -1)
     packets = ptwt.WaveletPacket2D(tensor, pywt.Wavelet("Haar"))
 
@@ -95,7 +95,7 @@ def process_images(tensor, paths):
     return torch.log(torch.abs(wp_pt) + 1e-12)
 
 
-def load_images(path):
+def load_images(path: str) -> list:
     image_list = []
     for root, _, files in os.walk(path, topdown=False):
         for name in tqdm(files):
