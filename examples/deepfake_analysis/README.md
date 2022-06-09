@@ -13,7 +13,7 @@ How can we identify the fake? Wavelet packets can help!
 
 ![packet comparison](packet_comparison.png)
 
-The plot above shows the mean packet plots of 70k fake and real images each. The fakes tend to have more energy in high-frequency bands.
+The plot above shows log-scaled mean absolute packet plots of 70k fake and real images each. The fakes tend to have more energy in high-frequency bands.
 
 
 ![packet plot](mean_packet_plot.png)
