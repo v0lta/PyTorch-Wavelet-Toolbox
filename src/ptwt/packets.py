@@ -30,7 +30,7 @@ class WaveletPacket(BaseDict):
         wavelet: Union[Wavelet, str],
         mode: str = "reflect",
         boundary_orthogonalization: str = "qr",
-        max_level: Optional[int] = None,
+        maxlevel: Optional[int] = None,
     ) -> None:
         """Create a wavelet packet decomposition object.
 
@@ -47,7 +47,7 @@ class WaveletPacket(BaseDict):
             boundary_orthogonalization (str): The orthogonalization method
                 to use. Only used if `mode` equals 'boundary'. Choose from
                 'qr' or 'gramschmidt'. Defaults to 'qr'.
-            max_level (int, optional): Value is passed on to `transform`.
+            maxlevel (int, optional): Value is passed on to `transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
         """
@@ -55,31 +55,31 @@ class WaveletPacket(BaseDict):
         self.mode = mode
         self.boundary = boundary_orthogonalization
         self._matrix_wavedec_dict: Dict[int, MatrixWavedec] = {}
-        self.max_level: Optional[int] = None
+        self.maxlevel: Optional[int] = None
         if data is not None:
             if len(data.shape) == 1:
                 # add a batch dimension.
                 data = data.unsqueeze(0)
-            self.transform(data, max_level)
+            self.transform(data, maxlevel)
         else:
             self.data = {}
 
     def transform(
-        self, data: torch.Tensor, max_level: Optional[int] = None
+        self, data: torch.Tensor, maxlevel: Optional[int] = None
     ) -> "WaveletPacket":
         """Calculate the 1d wavelet packet transform for the input data.
 
         Args:
             data (torch.Tensor): The input data array of shape [time]
                 or [batch_size, time].
-            max_level (int, optional): The highest decomposition level to compute.
+            maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
         """
         self.data = {}
-        if max_level is None:
-            max_level = pywt.dwt_max_level(data.shape[-1], self.wavelet.dec_len)
-        self.max_level = max_level
+        if maxlevel is None:
+            maxlevel = pywt.dwt_max_level(data.shape[-1], self.wavelet.dec_len)
+        self.maxlevel = maxlevel
         self._recursive_dwt(data, level=0, path="")
         return self
 
@@ -116,7 +116,7 @@ class WaveletPacket(BaseDict):
         return graycode_order
 
     def _recursive_dwt(self, data: torch.Tensor, level: int, path: str) -> None:
-        if not self.max_level:
+        if not self.maxlevel:
             raise AssertionError
 
         # TODO: This is a workaround since the convolutional transforms insert a
@@ -125,7 +125,7 @@ class WaveletPacket(BaseDict):
             data = data.squeeze(1)
 
         self.data[path] = data
-        if level < self.max_level:
+        if level < self.maxlevel:
             res_lo, res_hi = self._get_wavedec(data.shape[-1])(data)
             self._recursive_dwt(res_lo, level + 1, path + "a")
             self._recursive_dwt(res_hi, level + 1, path + "d")
@@ -144,16 +144,16 @@ class WaveletPacket(BaseDict):
             ValueError: If the wavelet packet tree is not initialized.
             KeyError: If no wavelet coefficients are indexed by the specified key.
         """
-        if self.max_level is None:
+        if self.maxlevel is None:
             raise ValueError(
                 "The wavelet packet tree must be initialized via 'transform' before "
                 "its values can be accessed!"
             )
-        if key not in self and len(key) > self.max_level:
+        if key not in self and len(key) > self.maxlevel:
             raise KeyError(
                 f"The requested level {len(key)} with key '{key}' is too large and "
                 "cannot be accessed! This wavelet packet tree is initialized with "
-                f"maximum level {self.max_level}."
+                f"maximum level {self.maxlevel}."
             )
         return super().__getitem__(key)
 

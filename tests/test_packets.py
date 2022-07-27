@@ -288,3 +288,21 @@ def test_access_errors_2d():
 
     with pytest.raises(KeyError):
         twp["a" * 100]
+
+
+def test_inverse_packet_1d():
+    signal = np.random.randn(1, 100)
+    wavelet = "db1"
+    mode = "reflect"
+    wp = pywt.WaveletPacket(signal, wavelet, mode=mode, maxlevel=3)
+    wp['aaa'].data *= 0 
+    import matplotlib.pyplot as plt;
+    plt.plot(signal[0])
+    plt.plot(wp.reconstruct()[0])
+    plt.show()
+
+    ptwp = WaveletPacket(torch.from_numpy(signal), wavelet, mode=mode, maxlevel=3)
+
+    # TODO: write reconstruct.
+
+    print('stop')
