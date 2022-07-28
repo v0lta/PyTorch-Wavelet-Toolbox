@@ -50,6 +50,23 @@ class WaveletPacket(BaseDict):
             maxlevel (int, optional): Value is passed on to `transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
+
+        Example:
+            >>> import torch, pywt, ptwt
+            >>> import numpy as np
+            >>> import scipy.signal
+            >>> import matplotlib.pyplot as plt
+            >>> t = np.linspace(0, 10, 1500)
+            >>> w = scipy.signal.chirp(t, f0=1, f1=50, t1=10, method="linear")
+            >>> wp = ptwt.WaveletPacket(data=torch.from_numpy(w.astype(np.float32)),
+                    wavelet=pywt.Wavelet("db3"), mode="reflect")
+            >>> np_lst = []
+            >>> for node in wp.get_level(5):
+            >>>     np_lst.append(wp[node])
+            >>> viz = np.stack(np_lst).squeeze()
+            >>> plt.imshow(np.abs(viz))
+            >>> plt.show()
+
         """
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
