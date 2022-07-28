@@ -157,5 +157,3 @@ if __name__ == '__main__':
     plt.ylabel('magnitude')
     plt.legend()
     plt.show()
-
-    print("stop")
