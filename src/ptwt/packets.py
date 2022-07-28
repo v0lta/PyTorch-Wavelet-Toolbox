@@ -223,7 +223,11 @@ class WaveletPacket(BaseDict):
 
 
 class WaveletPacket2D(BaseDict):
-    """Two dimensional wavelet packets."""
+    """Two dimensional wavelet packets.
+
+    Example code illustrating the use of this class is available at:
+    https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples/deepfake_analysis
+    """
 
     def __init__(
         self,
