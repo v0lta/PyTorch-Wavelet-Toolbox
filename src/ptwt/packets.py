@@ -4,7 +4,7 @@
 import collections
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union, Any
 
 import pywt
 import torch
@@ -84,7 +84,7 @@ class WaveletPacket(BaseDict):
         self._recursive_dwt(data, level=0, path="")
         return self
 
-    def reconstruct(self):
+    def reconstruct(self) -> None:
         """Recursively reconstruct the input starting from the leaf nodes.
 
         Reconstruction replaces the input-data originally assigned to this object.
@@ -104,11 +104,14 @@ class WaveletPacket(BaseDict):
             >>> ptwp.reconstruct()
             >>> print(ptwp[""])
         """
+        if self.maxlevel is None:
+            self.maxlevel = pywt.dwt_maxlevel(self[""].shape[-1], self.wavelet.dec_len)
+
         for level in reversed(range(self.maxlevel)):
             for node in self.get_level(level):
                 data_a = self[node + "a"]
                 data_b = self[node + "d"]
-                rec = self._get_waverec(data_a.shape[-1])((data_a, data_b))
+                rec = self._get_waverec(data_a.shape[-1])([data_a, data_b])
                 self[node] = rec
 
     def _get_wavedec(
@@ -127,7 +130,7 @@ class WaveletPacket(BaseDict):
     def _get_waverec(
         self,
         length: int,
-    ) -> Callable[[torch.Tensor], List[torch.Tensor]]:
+    ) -> Callable[[List[torch.Tensor]], torch.Tensor]:
         if self.mode == "boundary":
             if length not in self._matrix_waverec_dict.keys():
                 self._matrix_waverec_dict[length] = MatrixWaverec(
@@ -271,7 +274,7 @@ class WaveletPacket2D(BaseDict):
         self._recursive_dwt2d(data, level=0, path="")
         return self
 
-    def reconstruct(self):
+    def reconstruct(self) -> None:
         """Recursively reconstruct the input starting from the leaf nodes.
 
         Note:
@@ -279,6 +282,11 @@ class WaveletPacket2D(BaseDict):
            since changes in all other nodes will be replaced with
            a reconstruction from the leafs.
         """
+        if self.maxlevel is None:
+            self.maxlevel = pywt.dwt_maxlevel(min(
+                self[""].shape[-2:]),
+                self.wavelet.dec_len)
+
         for level in reversed(range(self.maxlevel)):
             for node in self.get_natural_order(level):
                 if self.mode == "boundary":
@@ -300,7 +308,7 @@ class WaveletPacket2D(BaseDict):
                     )
                     self[node] = rec.squeeze(1)
 
-    def get_natural_order(self, level: int) -> list:
+    def get_natural_order(self, level: int) -> List[str]:
         """Get the natural ordering for a given decomposition level.
 
         Args:
@@ -333,10 +341,8 @@ class WaveletPacket2D(BaseDict):
 
     def _get_waverec(
         self, shape: Tuple[int, ...]
-    ) -> Callable[
-        [torch.Tensor],
-        List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
-    ]:
+    ) -> Callable[[Any], # TODO: Get the acutal type working.
+                  torch.Tensor]:
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_waverec2_dict.keys():

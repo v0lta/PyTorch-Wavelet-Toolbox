@@ -770,7 +770,7 @@ class MatrixWaverec2(object):
             )
 
         batch_size = coefficients[-1][0].shape[0]
-        ll = coefficients[0]
+        ll: torch.Tensor = coefficients[0]  # type: ignore
         if not isinstance(ll, torch.Tensor):
             raise ValueError(
                 "First element of coeffs must be the approximation coefficient tensor."
