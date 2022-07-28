@@ -79,7 +79,7 @@ class WaveletPacket(BaseDict):
         """
         self.data = {}
         if maxlevel is None:
-            maxlevel = pywt.dwt_maxlevel(data.shape[-1], self.wavelet.dec_len)
+            maxlevel = pywt.dwt_max_level(data.shape[-1], self.wavelet.dec_len)
         self.maxlevel = maxlevel
         self._recursive_dwt(data, level=0, path="")
         return self
@@ -105,7 +105,7 @@ class WaveletPacket(BaseDict):
             >>> print(ptwp[""])
         """
         if self.maxlevel is None:
-            self.maxlevel = pywt.dwt_maxlevel(self[""].shape[-1], self.wavelet.dec_len)
+            self.maxlevel = pywt.dwt_max_level(self[""].shape[-1], self.wavelet.dec_len)
 
         for level in reversed(range(self.maxlevel)):
             for node in self.get_level(level):
@@ -268,7 +268,7 @@ class WaveletPacket2D(BaseDict):
         """
         self.data = {}
         if maxlevel is None:
-            maxlevel = pywt.dwt_maxlevel(min(data.shape[-2:]), self.wavelet.dec_len)
+            maxlevel = pywt.dwt_max_level(min(data.shape[-2:]), self.wavelet.dec_len)
         self.maxlevel = maxlevel
 
         self._recursive_dwt2d(data, level=0, path="")
@@ -283,7 +283,7 @@ class WaveletPacket2D(BaseDict):
            a reconstruction from the leafs.
         """
         if self.maxlevel is None:
-            self.maxlevel = pywt.dwt_maxlevel(
+            self.maxlevel = pywt.dwt_max_level(
                 min(self[""].shape[-2:]), self.wavelet.dec_len
             )
 
