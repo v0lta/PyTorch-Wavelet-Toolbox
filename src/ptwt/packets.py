@@ -4,7 +4,6 @@
 import collections
 from functools import partial
 from itertools import product
-from pickle import FALSE
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union
 
 import pywt
@@ -80,7 +79,7 @@ class WaveletPacket(BaseDict):
         """
         self.data = {}
         if maxlevel is None:
-            maxlevel = pywt.dwt_max_level(data.shape[-1], self.wavelet.dec_len)
+            maxlevel = pywt.dwt_maxlevel(data.shape[-1], self.wavelet.dec_len)
         self.maxlevel = maxlevel
         self._recursive_dwt(data, level=0, path="")
         return self
@@ -88,9 +87,22 @@ class WaveletPacket(BaseDict):
     def reconstruct(self):
         """Recursively reconstruct the input starting from the leaf nodes.
 
-        Warning:
-           Only changes to leaf node data impacts the results, since changes in all other nodes
-           will be replaced with a reconstruction from the leafs.
+        Reconstruction replaces the input-data originally assigned to this object.
+
+        Note:
+           Only changes to leaf node data impacts the results,
+           since changes in all other nodes will be replaced with
+           a reconstruction from the leafs.
+
+        Example:
+            >>> import numpy as np
+            >>> import ptwt, torch
+            >>> signal = np.random.randn(1, 16)
+            >>> ptwp = ptwt.WaveletPacket(torch.from_numpy(signal), "haar",
+                    mode="boundary", maxlevel=2)
+            >>> ptwp["aa"].data *= 0
+            >>> ptwp.reconstruct()
+            >>> print(ptwp[""])
         """
         for level in reversed(range(self.maxlevel)):
             for node in self.get_level(level):
@@ -119,7 +131,7 @@ class WaveletPacket(BaseDict):
         if self.mode == "boundary":
             if length not in self._matrix_waverec_dict.keys():
                 self._matrix_waverec_dict[length] = MatrixWaverec(
-                    self.wavelet, level=1, boundary=self.boundary
+                    self.wavelet, boundary=self.boundary
                 )
             return self._matrix_waverec_dict[length]
         else:
@@ -200,7 +212,7 @@ class WaveletPacket2D(BaseDict):
         mode: str = "reflect",
         boundary_orthogonalization: str = "qr",
         separable: bool = False,
-        max_level: Optional[int] = None,
+        maxlevel: Optional[int] = None,
     ) -> None:
         """Create a 2D-Wavelet packet tree.
 
@@ -220,7 +232,7 @@ class WaveletPacket2D(BaseDict):
             separable (bool): If true and the sparse matrix backend is selected,
                 a separable transform is performed, i.e. each image axis is
                 transformed separately. Defaults to False.
-            max_level (int, optional): Value is passed on to `transform`.
+            maxlevel (int, optional): Value is passed on to `transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
         """
@@ -229,15 +241,16 @@ class WaveletPacket2D(BaseDict):
         self.boundary = boundary_orthogonalization
         self.separable = separable
         self.matrix_wavedec2_dict: Dict[Tuple[int, ...], MatrixWavedec2] = {}
+        self.matrix_waverec2_dict: Dict[Tuple[int, ...], MatrixWaverec2] = {}
 
-        self.max_level: Optional[int] = None
+        self.maxlevel: Optional[int] = None
         if data is not None:
-            self.transform(data, max_level)
+            self.transform(data, maxlevel)
         else:
             self.data = {}
 
     def transform(
-        self, data: torch.Tensor, max_level: Optional[int] = None
+        self, data: torch.Tensor, maxlevel: Optional[int] = None
     ) -> "WaveletPacket2D":
         """Calculate the 2d wavelet packet transform for the input data.
 
@@ -246,17 +259,57 @@ class WaveletPacket2D(BaseDict):
         Args:
             data (torch.tensor): The input data tensor
                 of shape [batch_size, height, width]
-            max_level (int, optional): The highest decomposition level to compute.
+            maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
         """
         self.data = {}
-        if max_level is None:
-            max_level = pywt.dwt_max_level(min(data.shape[-2:]), self.wavelet.dec_len)
-        self.max_level = max_level
+        if maxlevel is None:
+            maxlevel = pywt.dwt_maxlevel(min(data.shape[-2:]), self.wavelet.dec_len)
+        self.maxlevel = maxlevel
 
         self._recursive_dwt2d(data, level=0, path="")
         return self
+
+    def reconstruct(self):
+        """Recursively reconstruct the input starting from the leaf nodes.
+
+        Note:
+           Only changes to leaf node data impacts the results,
+           since changes in all other nodes will be replaced with
+           a reconstruction from the leafs.
+        """
+        for level in reversed(range(self.maxlevel)):
+            for node in self.get_natural_order(level):
+                if self.mode == "boundary":
+                    data_a = self[node + "a"]
+                    data_h = self[node + "h"]
+                    data_v = self[node + "v"]
+                    data_d = self[node + "d"]
+                    rec = self._get_waverec(data_a.shape[-2:])(
+                        (data_a, (data_h, data_v, data_d))
+                    )
+                    self[node] = rec
+                else:
+                    data_a = self[node + "a"].unsqueeze(1)
+                    data_h = self[node + "h"].unsqueeze(1)
+                    data_v = self[node + "v"].unsqueeze(1)
+                    data_d = self[node + "d"].unsqueeze(1)
+                    rec = self._get_waverec(data_a.shape[-2:])(
+                        (data_a, (data_h, data_v, data_d))
+                    )
+                    self[node] = rec.squeeze(1)
+
+    def get_natural_order(self, level: int) -> list:
+        """Get the natural ordering for a given decomposition level.
+
+        Args:
+            level (int): The decomposition level.
+
+        Returns:
+            list: A list with the filter order strings.
+        """
+        return ["".join(p) for p in list(product(["a", "h", "v", "d"], repeat=level))]
 
     def _get_wavedec(
         self, shape: Tuple[int, ...]
@@ -278,8 +331,27 @@ class WaveletPacket2D(BaseDict):
         else:
             return partial(wavedec2, wavelet=self.wavelet, level=1, mode=self.mode)
 
+    def _get_waverec(
+        self, shape: Tuple[int, ...]
+    ) -> Callable[
+        [torch.Tensor],
+        List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    ]:
+        if self.mode == "boundary":
+            shape = tuple(shape)
+            if shape not in self.matrix_waverec2_dict.keys():
+                self.matrix_waverec2_dict[shape] = MatrixWaverec2(
+                    self.wavelet,
+                    boundary=self.boundary,
+                    separable=self.separable,
+                )
+            fun = self.matrix_waverec2_dict[shape]
+            return fun
+        else:
+            return partial(waverec2, wavelet=self.wavelet)
+
     def _recursive_dwt2d(self, data: torch.Tensor, level: int, path: str) -> None:
-        if not self.max_level:
+        if not self.maxlevel:
             raise AssertionError
 
         # TODO: This is a workaround since the convolutional transforms insert a
@@ -288,7 +360,7 @@ class WaveletPacket2D(BaseDict):
             data = data.squeeze(1)
 
         self.data[path] = data
-        if level < self.max_level:
+        if level < self.maxlevel:
             result_a, (result_h, result_v, result_d) = self._get_wavedec(
                 data.shape[-2:]
             )(data)
@@ -313,16 +385,16 @@ class WaveletPacket2D(BaseDict):
             ValueError: If the wavelet packet tree is not initialized.
             KeyError: If no wavelet coefficients are indexed by the specified key.
         """
-        if self.max_level is None:
+        if self.maxlevel is None:
             raise ValueError(
                 "The wavelet packet tree must be initialized via 'transform' before "
                 "its values can be accessed!"
             )
-        if key not in self and len(key) > self.max_level:
+        if key not in self and len(key) > self.maxlevel:
             raise KeyError(
                 f"The requested level {len(key)} with key '{key}' is too large and "
                 "cannot be accessed! This wavelet packet tree is initialized with "
-                f"maximum level {self.max_level}."
+                f"maximum level {self.maxlevel}."
             )
         return super().__getitem__(key)
 

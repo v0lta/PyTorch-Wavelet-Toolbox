@@ -295,6 +295,7 @@ def test_access_errors_2d():
 @pytest.mark.parametrize("length", [64, 128])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
 def test_inverse_packet_1d(level, base_key, length, wavelet):
+    """Test the 1d reconstruction code."""
     signal = np.random.randn(1, length)
     mode = "reflect"
     wp = pywt.WaveletPacket(signal, wavelet, mode=mode, maxlevel=level)
@@ -304,3 +305,50 @@ def test_inverse_packet_1d(level, base_key, length, wavelet):
     wp.reconstruct(update=True)
     ptwp.reconstruct()
     assert np.allclose(wp[""].data, ptwp[""].numpy()[:, :length])
+
+
+@pytest.mark.parametrize("level", [1, 3])
+@pytest.mark.parametrize("base_key", ["a", "h", "d"])
+@pytest.mark.parametrize("size", [(32, 32), (32, 64)])
+@pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
+def test_inverse_packet_2d(level, base_key, size, wavelet):
+    """Test the 2d reconstruction code."""
+    signal = np.random.randn(1, size[0], size[1])
+    mode = "reflect"
+    wp = pywt.WaveletPacket2D(signal, wavelet, mode=mode, maxlevel=level)
+    ptwp = WaveletPacket2D(torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level)
+    wp[base_key * level].data *= 0
+    ptwp[base_key * level].data *= 0
+    wp.reconstruct(update=True)
+    ptwp.reconstruct()
+    assert np.allclose(wp[""].data, ptwp[""].numpy()[:, : size[0], : size[1]])
+
+
+def test_boundary_packet_1d():
+    """Test the 2d boundary reconstruction code."""
+    signal = np.random.randn(1, 16)
+    wp = pywt.WaveletPacket(signal, "haar", mode="zero", maxlevel=2)
+    ptwp = WaveletPacket(torch.from_numpy(signal), "haar", mode="boundary", maxlevel=2)
+    wp["aa"].data *= 0
+    ptwp["aa"].data *= 0
+    wp.reconstruct(update=True)
+    ptwp.reconstruct()
+    assert np.allclose(wp[""].data, ptwp[""].numpy()[:, :16])
+
+
+def test_boundary_packet_2d():
+    """Test the 2d boundary reconstruction code."""
+    size = (16, 16)
+    level = 2
+    base_key = "h"
+    wavelet = "haar"
+    signal = np.random.randn(1, size[0], size[1])
+    wp = pywt.WaveletPacket2D(signal, wavelet, mode="zero", maxlevel=level)
+    ptwp = WaveletPacket2D(
+        torch.from_numpy(signal), wavelet, mode="boundary", maxlevel=level
+    )
+    wp[base_key * level].data *= 0
+    ptwp[base_key * level].data *= 0
+    wp.reconstruct(update=True)
+    ptwp.reconstruct()
+    assert np.allclose(wp[""].data, ptwp[""].numpy()[:, : size[0], : size[1]])
