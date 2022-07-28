@@ -4,7 +4,7 @@
 import collections
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union, Any
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import pywt
 import torch
@@ -283,9 +283,9 @@ class WaveletPacket2D(BaseDict):
            a reconstruction from the leafs.
         """
         if self.maxlevel is None:
-            self.maxlevel = pywt.dwt_maxlevel(min(
-                self[""].shape[-2:]),
-                self.wavelet.dec_len)
+            self.maxlevel = pywt.dwt_maxlevel(
+                min(self[""].shape[-2:]), self.wavelet.dec_len
+            )
 
         for level in reversed(range(self.maxlevel)):
             for node in self.get_natural_order(level):
@@ -341,8 +341,7 @@ class WaveletPacket2D(BaseDict):
 
     def _get_waverec(
         self, shape: Tuple[int, ...]
-    ) -> Callable[[Any], # TODO: Get the acutal type working.
-                  torch.Tensor]:
+    ) -> Callable[[Any], torch.Tensor]:  # TODO: Get the acutal type working.
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_waverec2_dict.keys():
