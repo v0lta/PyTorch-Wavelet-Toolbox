@@ -4,16 +4,17 @@
 import collections
 from functools import partial
 from itertools import product
+from pickle import FALSE
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union
 
 import pywt
 import torch
 
 from ._util import Wavelet, _as_wavelet
-from .conv_transform import wavedec
-from .conv_transform_2 import wavedec2
-from .matmul_transform import MatrixWavedec
-from .matmul_transform_2 import MatrixWavedec2
+from .conv_transform import wavedec, waverec
+from .conv_transform_2 import wavedec2, waverec2
+from .matmul_transform import MatrixWavedec, MatrixWaverec
+from .matmul_transform_2 import MatrixWavedec2, MatrixWaverec2
 
 if TYPE_CHECKING:
     BaseDict = collections.UserDict[str, torch.Tensor]
@@ -55,6 +56,7 @@ class WaveletPacket(BaseDict):
         self.mode = mode
         self.boundary = boundary_orthogonalization
         self._matrix_wavedec_dict: Dict[int, MatrixWavedec] = {}
+        self._matrix_waverec_dict: Dict[int, MatrixWaverec] = {}
         self.maxlevel: Optional[int] = None
         if data is not None:
             if len(data.shape) == 1:
@@ -83,6 +85,20 @@ class WaveletPacket(BaseDict):
         self._recursive_dwt(data, level=0, path="")
         return self
 
+    def reconstruct(self):
+        """Recursively reconstruct the input starting from the leaf nodes.
+
+        Warning:
+           Only changes to leaf node data impacts the results, since changes in all other nodes
+           will be replaced with a reconstruction from the leafs.
+        """
+        for level in reversed(range(self.maxlevel)):
+            for node in self.get_level(level):
+                data_a = self[node + "a"]
+                data_b = self[node + "d"]
+                rec = self._get_waverec(data_a.shape[-1])((data_a, data_b))
+                self[node] = rec
+
     def _get_wavedec(
         self,
         length: int,
@@ -95,6 +111,19 @@ class WaveletPacket(BaseDict):
             return self._matrix_wavedec_dict[length]
         else:
             return partial(wavedec, wavelet=self.wavelet, level=1, mode=self.mode)
+
+    def _get_waverec(
+        self,
+        length: int,
+    ) -> Callable[[torch.Tensor], List[torch.Tensor]]:
+        if self.mode == "boundary":
+            if length not in self._matrix_waverec_dict.keys():
+                self._matrix_waverec_dict[length] = MatrixWaverec(
+                    self.wavelet, level=1, boundary=self.boundary
+                )
+            return self._matrix_waverec_dict[length]
+        else:
+            return partial(waverec, wavelet=self.wavelet)
 
     def get_level(self, level: int) -> List[str]:
         """Return the graycode ordered paths to the filter tree nodes.
@@ -113,7 +142,10 @@ class WaveletPacket(BaseDict):
             graycode_order = [x + path for path in graycode_order] + [
                 y + path for path in graycode_order[::-1]
             ]
-        return graycode_order
+        if level == 0:
+            return [""]
+        else:
+            return graycode_order
 
     def _recursive_dwt(self, data: torch.Tensor, level: int, path: str) -> None:
         if not self.maxlevel:
