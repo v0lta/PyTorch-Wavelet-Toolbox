@@ -364,7 +364,10 @@ class WaveletPacket2D(BaseDict):
 
     def _get_waverec(
         self, shape: Tuple[int, ...]
-    ) -> Callable[[Tuple[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]], torch.Tensor]:
+    ) -> Callable[
+        [Tuple[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+        torch.Tensor,
+    ]:
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_waverec2_dict.keys():
@@ -374,7 +377,7 @@ class WaveletPacket2D(BaseDict):
                     separable=self.separable,
                 )
             fun = self.matrix_waverec2_dict[shape]
-            return fun # type: ignore
+            return fun  # type: ignore
         else:
             return partial(waverec2, wavelet=self.wavelet)
 
