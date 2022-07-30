@@ -4,7 +4,7 @@
 import collections
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union
 
 import pywt
 import torch
@@ -364,7 +364,7 @@ class WaveletPacket2D(BaseDict):
 
     def _get_waverec(
         self, shape: Tuple[int, ...]
-    ) -> Callable[[Any], torch.Tensor]:  # TODO: Get the acutal type working.
+    ) -> Callable[[Tuple[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]], torch.Tensor]:
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_waverec2_dict.keys():
@@ -374,7 +374,7 @@ class WaveletPacket2D(BaseDict):
                     separable=self.separable,
                 )
             fun = self.matrix_waverec2_dict[shape]
-            return fun
+            return fun # type: ignore
         else:
             return partial(waverec2, wavelet=self.wavelet)
 
