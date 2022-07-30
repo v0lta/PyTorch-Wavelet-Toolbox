@@ -101,7 +101,7 @@ class WaveletPacket(BaseDict):
         self._recursive_dwt(data, level=0, path="")
         return self
 
-    def reconstruct(self) -> None:
+    def reconstruct(self) -> "WaveletPacket":
         """Recursively reconstruct the input starting from the leaf nodes.
 
         Reconstruction replaces the input-data originally assigned to this object.
@@ -130,6 +130,7 @@ class WaveletPacket(BaseDict):
                 data_b = self[node + "d"]
                 rec = self._get_waverec(data_a.shape[-1])([data_a, data_b])
                 self[node] = rec
+        return self
 
     def _get_wavedec(
         self,
@@ -295,7 +296,7 @@ class WaveletPacket2D(BaseDict):
         self._recursive_dwt2d(data, level=0, path="")
         return self
 
-    def reconstruct(self) -> None:
+    def reconstruct(self) -> "WaveletPacket2D":
         """Recursively reconstruct the input starting from the leaf nodes.
 
         Note:
@@ -328,6 +329,7 @@ class WaveletPacket2D(BaseDict):
                         (data_a, (data_h, data_v, data_d))
                     )
                     self[node] = rec.squeeze(1)
+        return self
 
     def get_natural_order(self, level: int) -> List[str]:
         """Get the natural ordering for a given decomposition level.

@@ -37,7 +37,7 @@ Welcome to the PyTorch wavelet toolbox. This package implements:
 - ``MatrixWavedec`` and ``MatrixWaverec`` provide sparse-matrix-based fast wavelet transforms with boundary filters,
 - 2d sparse-matrix transforms with separable & non-separable boundary filters are available (experimental),
 - ``cwt`` computes a one-dimensional continuous forward transform,
-- single and two-dimensional wavelet packet forward transforms are available via the ``WaveletPacket`` and ``WaveletPacket2D`` objects,
+- single and two-dimensional wavelet packet forward and backward transforms are available via the ``WaveletPacket`` and ``WaveletPacket2D`` objects,
 - finally, this package provides adaptive wavelet support (experimental).
 
 This toolbox supports pywt-wavelets. Complete documentation is available:

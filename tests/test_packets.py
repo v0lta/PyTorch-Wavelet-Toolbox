@@ -26,18 +26,18 @@ def _compare_trees1(
 
     if transform_mode:
         twp = WaveletPacket(
-            None, wavelet, mode=ptwt_boundary, max_level=max_lev
-        ).transform(torch.from_numpy(data), max_level=max_lev)
+            None, wavelet, mode=ptwt_boundary, maxlevel=max_lev
+        ).transform(torch.from_numpy(data), maxlevel=max_lev)
     else:
         twp = WaveletPacket(
-            torch.from_numpy(data), wavelet, mode=ptwt_boundary, max_level=max_lev
+            torch.from_numpy(data), wavelet, mode=ptwt_boundary, maxlevel=max_lev
         )
 
     # if multiple_transform flag is set, recalculcate the packets
     if multiple_transforms:
-        twp.transform(torch.from_numpy(data), max_level=max_lev)
+        twp.transform(torch.from_numpy(data), maxlevel=max_lev)
 
-    nodes = twp.get_level(twp.max_level)
+    nodes = twp.get_level(twp.maxlevel)
     twp_lst = []
     for node in nodes:
         twp_lst.append(twp[node])
@@ -58,7 +58,7 @@ def _compare_trees1(
         np_res = np.concatenate(np_lst, -1)
         np_batches.append(np_res)
     np_batches = np.stack(np_batches, 0)
-    assert wp.maxlevel == twp.max_level
+    assert wp.maxlevel == twp.maxlevel
     assert np.allclose(torch_res, np_batches)
 
 
@@ -101,22 +101,22 @@ def _compare_trees2(
     if transform_mode:
         ptwt_wp_tree = WaveletPacket2D(
             None, wavelet=wavelet, mode=ptwt_boundary
-        ).transform(pt_data, max_level=max_lev)
+        ).transform(pt_data, maxlevel=max_lev)
     else:
         ptwt_wp_tree = WaveletPacket2D(
-            pt_data, wavelet=wavelet, mode=ptwt_boundary, max_level=max_lev
+            pt_data, wavelet=wavelet, mode=ptwt_boundary, maxlevel=max_lev
         )
 
     # if multiple_transform flag is set, recalculcate the packets
     if multiple_transforms:
-        ptwt_wp_tree.transform(pt_data, max_level=max_lev)
+        ptwt_wp_tree.transform(pt_data, maxlevel=max_lev)
 
     packets = []
     for node in wp_keys:
         packet = ptwt_wp_tree["".join(node)]
         packets.append(packet)
     packets_pt = torch.stack(packets, 1).numpy()
-    assert wp_tree.maxlevel == ptwt_wp_tree.max_level
+    assert wp_tree.maxlevel == ptwt_wp_tree.maxlevel
     assert np.allclose(packets_pt, batch_np_packets)
 
 
@@ -292,11 +292,12 @@ def test_access_errors_2d():
 
 @pytest.mark.parametrize("level", [1, 2, 3])
 @pytest.mark.parametrize("base_key", ["a", "d"])
-@pytest.mark.parametrize("length", [64, 128])
+@pytest.mark.parametrize("length", [63, 64, 128])
+@pytest.mark.parametrize("batch_size", [1, 2])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
-def test_inverse_packet_1d(level, base_key, length, wavelet):
+def test_inverse_packet_1d(level, base_key, length, batch_size, wavelet):
     """Test the 1d reconstruction code."""
-    signal = np.random.randn(1, length)
+    signal = np.random.randn(batch_size, length)
     mode = "reflect"
     wp = pywt.WaveletPacket(signal, wavelet, mode=mode, maxlevel=level)
     ptwp = WaveletPacket(torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level)
@@ -309,11 +310,11 @@ def test_inverse_packet_1d(level, base_key, length, wavelet):
 
 @pytest.mark.parametrize("level", [1, 3])
 @pytest.mark.parametrize("base_key", ["a", "h", "d"])
-@pytest.mark.parametrize("size", [(32, 32), (32, 64)])
+@pytest.mark.parametrize("size", [(1, 32, 32), (2, 31, 64)])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
 def test_inverse_packet_2d(level, base_key, size, wavelet):
     """Test the 2d reconstruction code."""
-    signal = np.random.randn(1, size[0], size[1])
+    signal = np.random.randn(size[0], size[1], size[2])
     mode = "reflect"
     wp = pywt.WaveletPacket2D(signal, wavelet, mode=mode, maxlevel=level)
     ptwp = WaveletPacket2D(torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level)
@@ -321,10 +322,10 @@ def test_inverse_packet_2d(level, base_key, size, wavelet):
     ptwp[base_key * level].data *= 0
     wp.reconstruct(update=True)
     ptwp.reconstruct()
-    assert np.allclose(wp[""].data, ptwp[""].numpy()[:, : size[0], : size[1]])
+    assert np.allclose(wp[""].data, ptwp[""].numpy()[:, : size[1], : size[2]])
 
 
-def test_boundary_packet_1d():
+def test_inverse_boundary_packet_1d():
     """Test the 2d boundary reconstruction code."""
     signal = np.random.randn(1, 16)
     wp = pywt.WaveletPacket(signal, "haar", mode="zero", maxlevel=2)
@@ -336,7 +337,7 @@ def test_boundary_packet_1d():
     assert np.allclose(wp[""].data, ptwp[""].numpy()[:, :16])
 
 
-def test_boundary_packet_2d():
+def test_inverse_boundary_packet_2d():
     """Test the 2d boundary reconstruction code."""
     size = (16, 16)
     level = 2
