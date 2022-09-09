@@ -4,4 +4,7 @@ compressed linear layer.
 
 See https://arxiv.org/pdf/2004.09569v3.pdf for a detailed description of the method.
 
-To run it clone install `ptwt` and run ```python mnist_compression.py```.
+Running this example requires the following steps:
+  - clone this repository,
+  - install `ptwt`,
+  - and execute ```python mnist_compression.py```.
