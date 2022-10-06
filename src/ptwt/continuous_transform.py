@@ -7,8 +7,9 @@ from typing import Tuple, Union
 import numpy as np
 import torch
 from pywt import ContinuousWavelet, DiscreteContinuousWavelet, Wavelet
-from pywt._functions import integrate_wavelet, scale2frequency
+from pywt._functions import scale2frequency
 from torch.fft import fft, ifft
+import warnings
 
 
 def _next_fast_len(n: int) -> int:
@@ -65,7 +66,7 @@ def cwt(
         >>> )
     """
     # accept array_like input; make a copy to ensure a contiguous array
-    if not isinstance(wavelet, (ContinuousWavelet, Wavelet)):
+    if not isinstance(wavelet, (ContinuousWavelet, Wavelet, DifferentiableWavelet)):
         wavelet = DiscreteContinuousWavelet(wavelet)
     if type(scales) is torch.Tensor:
         scales = scales.numpy()
@@ -75,7 +76,7 @@ def cwt(
     #    raise np.AxisError("axis must be a scalar.")
 
     precision = 10
-    int_psi, x = integrate_wavelet(wavelet, precision=precision)
+    int_psi, x = _integrate_wavelet(wavelet, precision=precision)
     if type(wavelet) is ContinuousWavelet:
         int_psi = np.conj(int_psi) if wavelet.complex_cwt else int_psi
     int_psi = torch.tensor(int_psi, device=data.device)
@@ -121,6 +122,8 @@ def cwt(
     out_tensor = torch.stack(out)
     if type(wavelet) is Wavelet:
         out_tensor = out_tensor.real
+    elif isinstance(wavelet, DifferentiableWavelet):
+        out_tensor = out_tensor # TODO: fixme
     else:
         out_tensor = out_tensor if wavelet.complex_cwt else out_tensor.real
 
@@ -129,3 +132,107 @@ def cwt(
         frequencies = np.array([frequencies])
     frequencies /= sampling_period
     return out_tensor, frequencies
+
+
+def _integrate_wavelet(wavelet, precision=8):
+    """
+    Ported from:
+    https://github.com/PyWavelets/pywt/blob/cef09e7f419aaf4c39b9f778bdc2d54b32fd7337/pywt/_functions.py#L60
+
+    Modified to enable gradient flow through the cwt.
+
+    Integrate `psi` wavelet function from -Inf to x using the rectangle
+    integration method.
+    Parameters
+    ----------
+    wavelet : Wavelet instance or str
+        Wavelet to integrate.  If a string, should be the name of a wavelet.
+    precision : int, optional
+        Precision that will be used for wavelet function
+        approximation computed with the wavefun(level=precision)
+        Wavelet's method (default: 8).
+    Returns
+    -------
+    [int_psi, x] :
+        for orthogonal wavelets
+    [int_psi_d, int_psi_r, x] :
+        for other wavelets
+    Examples
+    --------
+    >>> from pywt import Wavelet, _integrate_wavelet
+    >>> wavelet1 = Wavelet('db2')
+    >>> [int_psi, x] = _integrate_wavelet(wavelet1, precision=5)
+    >>> wavelet2 = Wavelet('bior1.3')
+    >>> [int_psi_d, int_psi_r, x] = _integrate_wavelet(wavelet2, precision=5)
+    """
+
+    def _integrate(arr, step):
+        if type(arr) is np.ndarray:
+            integral = np.cumsum(arr)
+        else:
+            integral = torch.cumsum(arr, -1)
+        integral *= step
+        return integral
+
+    if type(wavelet) in (tuple, list):
+        msg = ("Integration of a general signal is deprecated "
+               "and will be removed in a future version of pywt.")
+        warnings.warn(msg, DeprecationWarning)
+    elif not isinstance(wavelet, (Wavelet, ContinuousWavelet, DifferentiableWavelet)):
+        wavelet = DiscreteContinuousWavelet(wavelet)
+
+    if type(wavelet) in (tuple, list):
+        psi, x = np.asarray(wavelet[0]), np.asarray(wavelet[1])
+        step = x[1] - x[0]
+        return _integrate(psi, step), x
+
+    functions_approximations = wavelet.wavefun(precision)
+
+    if len(functions_approximations) == 2:      # continuous wavelet
+        psi, x = functions_approximations
+        step = x[1] - x[0]
+        return _integrate(psi, step), x
+
+    elif len(functions_approximations) == 3:    # orthogonal wavelet
+        _, psi, x = functions_approximations
+        step = x[1] - x[0]
+        return _integrate(psi, step), x
+
+    else:                                       # biorthogonal wavelet
+        _, psi_d, _, psi_r, x = functions_approximations
+        step = x[1] - x[0]
+        return _integrate(psi_d, step), _integrate(psi_r, step), x
+
+
+class DifferentiableWavelet(torch.nn.Module, ContinuousWavelet):
+    pass
+
+class Shannon_Wavelet(DifferentiableWavelet):
+    """A differentiable Shannon wavelet."""
+
+    def __init__(self, name='shan1-1'):
+        """Create a trainable shannon wavelet.
+
+        Args:
+            bandwidth (int): _description_
+            center (int): _description_
+        """
+        super().__init__()
+        self.bandwidth = torch.tensor(self.bandwidth_frequency)
+        self.center = torch.tensor(self.center_frequency)
+
+    def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
+        shannon = \
+            torch.sqrt(self.bandwidth) \
+                * (torch.sin(torch.pi*self.bandwidth*grid_values)
+                   / (torch.pi*self.bandwidth*grid_values) ) \
+                * torch.exp(1j*2*torch.pi*self.center*grid_values)
+        return shannon
+
+    def wavefun(self, precision: int, dtype=torch.float64) -> torch.Tensor:
+        length = 2**precision
+        grid = torch.linspace(self.lower_bound,
+                              self.upper_bound,
+                              length,
+                              dtype=dtype)
+        return self(grid), grid
