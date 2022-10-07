@@ -2,8 +2,7 @@
 
 Based on https://github.com/PyWavelets/pywt/blob/master/pywt/_cwt.py
 """
-import warnings
-from typing import Tuple, Union
+from typing import Any, Tuple, Union
 
 import numpy as np
 import torch
@@ -141,7 +140,9 @@ def cwt(
     return out_tensor, frequencies
 
 
-def _integrate_wavelet(wavelet, precision=8):
+def _integrate_wavelet(
+    wavelet: Union[ContinuousWavelet, str], precision: int = 8
+) -> Any:
     """
     Integrate `psi` wavelet function from -Inf to x using rectangle integration.
 
@@ -174,29 +175,25 @@ def _integrate_wavelet(wavelet, precision=8):
     >>> [int_psi_d, int_psi_r, x] = _integrate_wavelet(wavelet2, precision=5)
     """
 
-    def _integrate(arr, step):
+    def _integrate(
+        arr: Union[np.ndarray, torch.Tensor],  # type: ignore
+        step: Union[np.ndarray, torch.Tensor],  # type: ignore
+    ) -> Union[np.ndarray, torch.Tensor]:  # type: ignore
         if type(arr) is np.ndarray:
             integral = np.cumsum(arr)
-        else:
+        elif type(arr) is torch.Tensor:
             integral = torch.cumsum(arr, -1)
+        else:
+            raise TypeError("Only ndarrays or tensors are integratable.")
         integral *= step
         return integral
 
-    if type(wavelet) in (tuple, list):
-        msg = (
-            "Integration of a general signal is deprecated "
-            "and will be removed in a future version of pywt."
-        )
-        warnings.warn(msg, DeprecationWarning)
+    if type(wavelet) is str:
+        wavelet = DiscreteContinuousWavelet(wavelet)
     elif not isinstance(
         wavelet, (Wavelet, ContinuousWavelet, DifferentiableContinuousWavelet)
     ):
         wavelet = DiscreteContinuousWavelet(wavelet)
-
-    if type(wavelet) in (tuple, list):
-        psi, x = np.asarray(wavelet[0]), np.asarray(wavelet[1])
-        step = x[1] - x[0]
-        return _integrate(psi, step), x
 
     functions_approximations = wavelet.wavefun(precision)
 
@@ -216,11 +213,15 @@ def _integrate_wavelet(wavelet, precision=8):
         return _integrate(psi_d, step), _integrate(psi_r, step), x
 
 
-class DifferentiableContinuousWavelet(torch.nn.Module, ContinuousWavelet):
+class DifferentiableContinuousWavelet(
+    torch.nn.Module, ContinuousWavelet  # type: ignore
+):
     """A base class for learnable Continuous Wavelets."""
 
-    def wavefun(self):
-        """Evaluate the wavelet on a grid."""
+    def wavefun(
+        self, precision: int, dtype: torch.dtype = torch.float64
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Define a grid and evaluate the wavelet on it."""
         raise NotImplementedError
 
 
@@ -251,8 +252,13 @@ class ShannonWavelet(DifferentiableContinuousWavelet):
         )
         return shannon
 
-    def wavefun(self, precision: int, dtype=torch.float64) -> torch.Tensor:
+    def wavefun(
+        self, precision: int, dtype: torch.dtype = torch.float64
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Define a grid and evaluate the wavelet on it."""
         length = 2**precision
-        grid = torch.linspace(self.lower_bound, self.upper_bound, length, dtype=dtype)
+        # load the bounds from untyped pywt code.
+        lower_bound: float = float(self.lower_bound)  # type: ignore
+        upper_bound: float = float(self.upper_bound)  # type: ignore
+        grid = torch.linspace(lower_bound, upper_bound, length, dtype=dtype)
         return self(grid), grid
