@@ -79,16 +79,19 @@ def test_cwt_batched(wavelet):
     assert np.allclose(freqs, freqs_pt)
 
 
-def test_nn_schannon_wavefun(grid_size: int = 10):
+@pytest.mark.parametrize("type", ['shan1-1'])
+@pytest.mark.parametrize("grid_size", [8, 9, 10])
+def test_nn_schannon_wavefun(type: str, grid_size: int):
     
-    pywt_shannon = pywt.ContinuousWavelet('shan1-1')
-    ptwt_shannon = Shannon_Wavelet('shan1-1')
+    pywt_shannon = pywt.ContinuousWavelet(type)
+    ptwt_shannon = Shannon_Wavelet(type)
 
     pywt_sample = pywt_shannon.wavefun(grid_size)
     ptwt_sample = ptwt_shannon.wavefun(grid_size)
 
+    assert np.allclose(pywt_sample[0], ptwt_sample[0].numpy())
     assert np.allclose(pywt_sample[1], ptwt_sample[1].numpy())
-    assert np.allclose(pywt_sample[0], ptwt_sample[0].numpy(), atol=1e-5) # TODO: Fixme!
+
 
 
 
@@ -104,6 +107,6 @@ def test_nn_cwt(
     scales_np = scales.numpy() if type(scales) is torch.Tensor else scales
     cwtmatr, freqs = pywt.cwt(data=sig, scales=scales_np, wavelet=pywt_shannon)
     sig = torch.from_numpy(sig)
-    cwtmatr_pt, freqs_pt = cwt(sig, scales, ptwt_shannon)
+    cwtmatr_pt, freqs_pt = cwt(data=sig, scales=scales, wavelet=ptwt_shannon)
     assert np.allclose(np.abs(cwtmatr_pt.numpy()), np.abs(cwtmatr)) # TODO: Fixme!!
     assert np.allclose(freqs, freqs_pt)

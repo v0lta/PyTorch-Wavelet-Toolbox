@@ -66,7 +66,7 @@ def cwt(
         >>> )
     """
     # accept array_like input; make a copy to ensure a contiguous array
-    if not isinstance(wavelet, (ContinuousWavelet, Wavelet, DifferentiableWavelet)):
+    if not isinstance(wavelet, (ContinuousWavelet, Wavelet, DifferentiableContinuousWavelet)):
         wavelet = DiscreteContinuousWavelet(wavelet)
     if type(scales) is torch.Tensor:
         scales = scales.numpy()
@@ -122,7 +122,7 @@ def cwt(
     out_tensor = torch.stack(out)
     if type(wavelet) is Wavelet:
         out_tensor = out_tensor.real
-    elif isinstance(wavelet, DifferentiableWavelet):
+    elif isinstance(wavelet, DifferentiableContinuousWavelet):
         out_tensor = out_tensor # TODO: fixme
     else:
         out_tensor = out_tensor if wavelet.complex_cwt else out_tensor.real
@@ -178,7 +178,7 @@ def _integrate_wavelet(wavelet, precision=8):
         msg = ("Integration of a general signal is deprecated "
                "and will be removed in a future version of pywt.")
         warnings.warn(msg, DeprecationWarning)
-    elif not isinstance(wavelet, (Wavelet, ContinuousWavelet, DifferentiableWavelet)):
+    elif not isinstance(wavelet, (Wavelet, ContinuousWavelet, DifferentiableContinuousWavelet)):
         wavelet = DiscreteContinuousWavelet(wavelet)
 
     if type(wavelet) in (tuple, list):
@@ -204,10 +204,12 @@ def _integrate_wavelet(wavelet, precision=8):
         return _integrate(psi_d, step), _integrate(psi_r, step), x
 
 
-class DifferentiableWavelet(torch.nn.Module, ContinuousWavelet):
+class DifferentiableContinuousWavelet(torch.nn.Module, ContinuousWavelet):
+    """A base class for learnable Continuous Wavelets."""    
     pass
 
-class Shannon_Wavelet(DifferentiableWavelet):
+
+class Shannon_Wavelet(DifferentiableContinuousWavelet):
     """A differentiable Shannon wavelet."""
 
     def __init__(self, name='shan1-1'):
@@ -218,8 +220,11 @@ class Shannon_Wavelet(DifferentiableWavelet):
             center (int): _description_
         """
         super().__init__()
-        self.bandwidth = torch.tensor(self.bandwidth_frequency)
-        self.center = torch.tensor(self.center_frequency)
+        self.dtype = torch.float64
+        # Use torch.nn.Parameter
+        self.bandwidth = torch.tensor(self.bandwidth_frequency,
+            dtype=self.dtype)
+        self.center = torch.tensor(self.center_frequency, dtype=self.dtype)
 
     def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
         shannon = \
