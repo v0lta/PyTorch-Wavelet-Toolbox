@@ -217,17 +217,6 @@ class DifferentiableContinuousWavelet(
     torch.nn.Module, ContinuousWavelet  # type: ignore
 ):
     """A base class for learnable Continuous Wavelets."""
-
-    def wavefun(
-        self, precision: int, dtype: torch.dtype = torch.float64
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Define a grid and evaluate the wavelet on it."""
-        raise NotImplementedError
-
-
-class _ShannonWavelet(DifferentiableContinuousWavelet):
-    """A differentiable Shannon wavelet."""
-
     def __init__(self, name: str = "shan1-1"):
         """Create a trainable shannon wavelet."""
         super().__init__()
@@ -240,6 +229,13 @@ class _ShannonWavelet(DifferentiableContinuousWavelet):
             torch.sqrt(torch.tensor(self.center_frequency, dtype=self.dtype))
         )
 
+
+    def __call__(
+        self, precision: int, dtype: torch.dtype = torch.float64
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Return numerical values for the wavelet on a grid."""
+        raise NotImplementedError
+
     @property
     def bandwidth(self) -> torch.Tensor:
         return self.bandwidth_par * self.bandwidth_par
@@ -247,6 +243,22 @@ class _ShannonWavelet(DifferentiableContinuousWavelet):
     @property
     def center(self) -> torch.Tensor:
         return self.center_par * self.center_par
+
+
+    def wavefun(
+        self, precision: int, dtype: torch.dtype = torch.float64
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Define a grid and evaluate the wavelet on it."""
+        length = 2**precision
+        # load the bounds from untyped pywt code.
+        lower_bound: float = float(self.lower_bound)  # type: ignore
+        upper_bound: float = float(self.upper_bound)  # type: ignore
+        grid = torch.linspace(lower_bound, upper_bound, length, dtype=dtype)
+        return self(grid), grid
+
+
+class _ShannonWavelet(DifferentiableContinuousWavelet):
+    """A differentiable Shannon wavelet."""
 
     def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
         """Return numerical values for the wavelet on a grid."""
@@ -260,13 +272,16 @@ class _ShannonWavelet(DifferentiableContinuousWavelet):
         )
         return shannon
 
-    def wavefun(
-        self, precision: int, dtype: torch.dtype = torch.float64
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Define a grid and evaluate the wavelet on it."""
-        length = 2**precision
-        # load the bounds from untyped pywt code.
-        lower_bound: float = float(self.lower_bound)  # type: ignore
-        upper_bound: float = float(self.upper_bound)  # type: ignore
-        grid = torch.linspace(lower_bound, upper_bound, length, dtype=dtype)
-        return self(grid), grid
+
+class _ComplexMorletWavelet(DifferentiableContinuousWavelet):
+    """A differentiable Shannon wavelet."""
+
+
+    def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
+        """Return numerical values for the wavelet on a grid."""
+        morlet = (
+            1./torch.sqrt(torch.pi*self.bandwidth) * \
+            torch.exp(-grid_values**2/self.bandwidth) \
+            * torch.exp(1j * 2 * torch.pi * self.center * grid_values)
+        )
+        return morlet
