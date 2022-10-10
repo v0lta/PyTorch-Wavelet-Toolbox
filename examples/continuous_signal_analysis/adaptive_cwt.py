@@ -1,7 +1,6 @@
 import torch
 import numpy as np
 import src.ptwt as ptwt
-import pywt
 import matplotlib.pyplot as plt
 import scipy.signal as signal
 from src.ptwt.continuous_transform import _ShannonWavelet

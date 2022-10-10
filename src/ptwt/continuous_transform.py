@@ -2,7 +2,6 @@
 
 Based on https://github.com/PyWavelets/pywt/blob/master/pywt/_cwt.py
 """
-from inspect import Parameter
 from typing import Any, Tuple, Union
 
 import numpy as np
@@ -242,12 +241,12 @@ class _ShannonWavelet(DifferentiableContinuousWavelet):
         )
 
     @property
-    def bandwidth(self):
-        return self.bandwidth_par*self.bandwidth_par
+    def bandwidth(self) -> torch.Tensor:
+        return self.bandwidth_par * self.bandwidth_par
 
     @property
-    def center(self):
-        return self.center_par*self.center_par
+    def center(self) -> torch.Tensor:
+        return self.center_par * self.center_par
 
     def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
         """Return numerical values for the wavelet on a grid."""
