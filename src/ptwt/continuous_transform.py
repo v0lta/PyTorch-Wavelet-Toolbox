@@ -217,6 +217,7 @@ class DifferentiableContinuousWavelet(
     torch.nn.Module, ContinuousWavelet  # type: ignore
 ):
     """A base class for learnable Continuous Wavelets."""
+
     def __init__(self, name: str = "shan1-1"):
         """Create a trainable shannon wavelet."""
         super().__init__()
@@ -229,7 +230,6 @@ class DifferentiableContinuousWavelet(
             torch.sqrt(torch.tensor(self.center_frequency, dtype=self.dtype))
         )
 
-
     def __call__(
         self, precision: int, dtype: torch.dtype = torch.float64
     ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -238,12 +238,13 @@ class DifferentiableContinuousWavelet(
 
     @property
     def bandwidth(self) -> torch.Tensor:
+        """Square the bandwith parameter to ensure positive values."""
         return self.bandwidth_par * self.bandwidth_par
 
     @property
     def center(self) -> torch.Tensor:
+        """Square the bandwith parameter to ensure positive values."""
         return self.center_par * self.center_par
-
 
     def wavefun(
         self, precision: int, dtype: torch.dtype = torch.float64
@@ -276,12 +277,12 @@ class _ShannonWavelet(DifferentiableContinuousWavelet):
 class _ComplexMorletWavelet(DifferentiableContinuousWavelet):
     """A differentiable Shannon wavelet."""
 
-
     def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
         """Return numerical values for the wavelet on a grid."""
         morlet = (
-            1./torch.sqrt(torch.pi*self.bandwidth) * \
-            torch.exp(-grid_values**2/self.bandwidth) \
+            1.0
+            / torch.sqrt(torch.pi * self.bandwidth)
+            * torch.exp(-(grid_values**2) / self.bandwidth)
             * torch.exp(1j * 2 * torch.pi * self.center * grid_values)
         )
         return morlet
