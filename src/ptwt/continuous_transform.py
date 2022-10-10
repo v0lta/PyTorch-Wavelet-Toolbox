@@ -226,7 +226,7 @@ class DifferentiableContinuousWavelet(
         raise NotImplementedError
 
 
-class ShannonWavelet(DifferentiableContinuousWavelet):
+class _ShannonWavelet(DifferentiableContinuousWavelet):
     """A differentiable Shannon wavelet."""
 
     def __init__(self, name: str = "shan1-1"):

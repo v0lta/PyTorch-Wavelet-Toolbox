@@ -4,7 +4,7 @@ import src.ptwt as ptwt
 import pywt
 import matplotlib.pyplot as plt
 import scipy.signal as signal
-from src.ptwt.continuous_transform import ShannonWavelet
+from src.ptwt.continuous_transform import _ShannonWavelet
 
 if __name__ == "__main__":
     t = np.linspace(-2, 2, 800, endpoint=False)
@@ -12,9 +12,7 @@ if __name__ == "__main__":
     sig = np.sin(t*3*np.pi)
     sig += np.sin(t*10*np.pi)
     widths = np.arange(1, 31)
-    wavelet = ShannonWavelet(name='shan10-10')
-    # wavelet = pywt.ContinuousWavelet(name='shan12-9')
-    # wavelet = pywt.ContinuousWavelet(name='mexh')
+    wavelet = _ShannonWavelet(name='shan10-10')
     optimizer = torch.optim.Adam(wavelet.parameters(), lr=1e-3)
     sig = torch.from_numpy(sig)
     iterations = 150

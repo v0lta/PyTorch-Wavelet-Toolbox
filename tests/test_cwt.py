@@ -7,7 +7,7 @@ import pywt
 import torch
 from scipy import signal
 
-from src.ptwt.continuous_transform import ShannonWavelet, cwt
+from src.ptwt.continuous_transform import _ShannonWavelet, cwt
 
 continuous_wavelets = [
     "cgau1",
@@ -83,7 +83,7 @@ def test_cwt_batched(wavelet):
 def test_nn_schannon_wavefun(type: str, grid_size: int):
     """Test the wavelet sampling for the differentiable shannon example."""
     pywt_shannon = pywt.ContinuousWavelet(type)
-    ptwt_shannon = ShannonWavelet(type)
+    ptwt_shannon = _ShannonWavelet(type)
 
     pywt_sample = pywt_shannon.wavefun(grid_size)
     ptwt_sample = ptwt_shannon.wavefun(grid_size)
@@ -97,7 +97,7 @@ def test_nn_schannon_wavefun(type: str, grid_size: int):
 def test_nn_cwt(samples: int, scales: Union[np.ndarray, torch.Tensor, float]) -> None:
     """Test the cwt using a differentiable continuous wavelet."""
     pywt_shannon = pywt.ContinuousWavelet("shan1-1")
-    ptwt_shannon = ShannonWavelet("shan1-1")
+    ptwt_shannon = _ShannonWavelet("shan1-1")
     t = np.linspace(-1, 1, samples, endpoint=False)
     sig = signal.chirp(t, f0=1, f1=50, t1=10, method="linear")
     scales_np = scales.numpy() if type(scales) is torch.Tensor else scales
