@@ -231,8 +231,7 @@ class DifferentiableContinuousWavelet(
         )
 
     def __call__(
-        self, precision: int, dtype: torch.dtype = torch.float64
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        self,  grid_values: torch.Tensor) -> torch.Tensor:
         """Return numerical values for the wavelet on a grid."""
         raise NotImplementedError
 
