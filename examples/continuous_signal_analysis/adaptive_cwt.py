@@ -24,6 +24,7 @@ if __name__ == "__main__":
             sig, widths, wavelet, sampling_period=(4 / 800) * np.pi
         )
         norm = torch.linalg.norm(torch.abs(cwtmatr_pt))
+        # probably not a good cost. TODO: Find something better.
         cost = torch.abs(torch.sum(sig*sig) - torch.sum(cwtmatr_pt*cwtmatr_pt)) + 1e-5*norm
         cost.backward()
         optimizer.step()
@@ -49,4 +50,4 @@ if __name__ == "__main__":
     axs[1].set_xlabel("time")
     axs[1].set_ylabel("frequency")
     plt.show()
-    pass
+
