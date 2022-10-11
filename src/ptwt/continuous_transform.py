@@ -73,8 +73,10 @@ def cwt(
         scales = scales.numpy()
     elif np.isscalar(scales):
         scales = np.array([scales])
-    # if not np.isscalar(axis):
-    #    raise np.AxisError("axis must be a scalar.")
+
+    if isinstance(wavelet, DifferentiableContinuousWavelet):
+        if data.is_cuda:
+            wavelet = wavelet.cuda()
 
     precision = 10
     int_psi, x = _integrate_wavelet(wavelet, precision=precision)
@@ -85,9 +87,10 @@ def cwt(
         int_psi = torch.conj(int_psi) if wavelet.complex_cwt else int_psi
     else:
         int_psi = torch.tensor(int_psi, device=data.device)
+        x = torch.tensor(x, device=data.device)
 
     # convert int_psi, x to the same precision as the data
-    x = np.asarray(x, dtype=data.cpu().numpy().real.dtype)
+    # x = np.asarray(x, dtype=data.cpu().numpy().real.dtype)
 
     size_scale0 = -1
     fft_data = None
@@ -95,10 +98,13 @@ def cwt(
     out = []
     for scale in scales:
         step = x[1] - x[0]
-        j = np.arange(scale * (x[-1] - x[0]) + 1) / (scale * step)
-        j = j.astype(int)  # floor
+        j = torch.arange(scale * (x[-1] - x[0]) + 1, device=data.device) / (
+            scale * step
+        )
+        j = torch.floor(j).type(torch.long)
         if j[-1] >= len(int_psi):
-            j = np.extract(j < len(int_psi), j)
+            # j = np.extract(j < len(int_psi), j)
+            j = torch.masked_select(j, j < len(int_psi))
         int_psi_scale = int_psi[j].flip(0)
 
         # The padding is selected for:
@@ -133,7 +139,7 @@ def cwt(
         out_tensor = out_tensor if wavelet.complex_cwt else out_tensor.real
 
     with torch.no_grad():
-        frequencies = scale2frequency(wavelet, scales, precision)
+        frequencies = scale2frequency(wavelet.cpu(), scales, precision)
         if np.isscalar(frequencies):
             frequencies = np.array([frequencies])
     frequencies /= sampling_period
@@ -230,8 +236,7 @@ class DifferentiableContinuousWavelet(
             torch.sqrt(torch.tensor(self.center_frequency, dtype=self.dtype))
         )
 
-    def __call__(
-        self,  grid_values: torch.Tensor) -> torch.Tensor:
+    def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
         """Return numerical values for the wavelet on a grid."""
         raise NotImplementedError
 
@@ -253,7 +258,13 @@ class DifferentiableContinuousWavelet(
         # load the bounds from untyped pywt code.
         lower_bound: float = float(self.lower_bound)  # type: ignore
         upper_bound: float = float(self.upper_bound)  # type: ignore
-        grid = torch.linspace(lower_bound, upper_bound, length, dtype=dtype)
+        grid = torch.linspace(
+            lower_bound,
+            upper_bound,
+            length,
+            dtype=dtype,
+            device=self.bandwidth_par.device,
+        )
         return self(grid), grid
 
 

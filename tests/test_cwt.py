@@ -94,7 +94,10 @@ def test_nn_schannon_wavefun(type: str, grid_size: int):
 
 @pytest.mark.parametrize("scales", [np.arange(1, 16), 5.0, torch.arange(1, 15)])
 @pytest.mark.parametrize("samples", [31, 32])
-def test_nn_cwt(samples: int, scales: Union[np.ndarray, torch.Tensor, float]) -> None:
+@pytest.mark.parametrize("cuda", [False, True])
+def test_nn_cwt(
+    samples: int, scales: Union[np.ndarray, torch.Tensor, float], cuda: bool
+) -> None:
     """Test the cwt using a differentiable continuous wavelet."""
     pywt_shannon = pywt.ContinuousWavelet("shan1-1")
     ptwt_shannon = _ShannonWavelet("shan1-1")
@@ -103,6 +106,9 @@ def test_nn_cwt(samples: int, scales: Union[np.ndarray, torch.Tensor, float]) ->
     scales_np = scales.numpy() if type(scales) is torch.Tensor else scales
     cwtmatr, freqs = pywt.cwt(data=sig, scales=scales_np, wavelet=pywt_shannon)
     sig = torch.from_numpy(sig)
+    if cuda:
+        if torch.cuda.is_available():
+            sig = sig.cuda()
     cwtmatr_pt, freqs_pt = cwt(data=sig, scales=scales, wavelet=ptwt_shannon)
-    assert np.allclose(cwtmatr_pt.detach().numpy(), cwtmatr)
+    assert np.allclose(cwtmatr_pt.detach().cpu().numpy(), cwtmatr)
     assert np.allclose(freqs, freqs_pt)
