@@ -134,12 +134,13 @@ def cwt(
     if type(wavelet) is Wavelet:
         out_tensor = out_tensor.real
     elif isinstance(wavelet, DifferentiableContinuousWavelet):
-        out_tensor = out_tensor  # TODO: fixme
+        out_tensor = out_tensor if wavelet.complex_cwt else out_tensor.real
+        wavelet = wavelet.cpu()
     else:
         out_tensor = out_tensor if wavelet.complex_cwt else out_tensor.real
 
     with torch.no_grad():
-        frequencies = scale2frequency(wavelet.cpu(), scales, precision)
+        frequencies = scale2frequency(wavelet, scales, precision)
         if np.isscalar(frequencies):
             frequencies = np.array([frequencies])
     frequencies /= sampling_period
