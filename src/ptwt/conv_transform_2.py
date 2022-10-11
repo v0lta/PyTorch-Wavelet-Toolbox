@@ -67,8 +67,7 @@ def wavedec2(
     """Non seperated two dimensional wavelet transform.
 
     Args:
-        data (torch.Tensor): The input data tensor of shape
-            [batch_size, height, width].
+        data (torch.Tensor): The input data tensor with up to three dimensions.
             2d inputs are interpreted as [height, width],
             3d inputs are interpreted as [batch_size, height, width].
         wavelet (Wavelet or str): A pywt wavelet compatible object or
@@ -86,6 +85,9 @@ def wavedec2(
               A denotes approximation, H horizontal, V vertical
               and D diagonal coefficients.
 
+    Raises:
+        ValueError: If the dimensionality of the input data tensor is unsupported.
+
     Example:
         >>> import torch
         >>> import ptwt, pywt
@@ -102,6 +104,13 @@ def wavedec2(
         data = data.unsqueeze(0).unsqueeze(0)
     elif data.dim() == 3:
         data = data.unsqueeze(1)
+    elif data.dim() == 4:
+        raise ValueError(
+            "Wavedec2 does not support four input dimensions. \
+             Optionally-batched two dimensional inputs work."
+        )
+    elif data.dim() == 1:
+        raise ValueError("Wavedec2 needs more than one input dimension to work.")
 
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = get_filter_tensors(
