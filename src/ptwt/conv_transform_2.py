@@ -68,7 +68,7 @@ def wavedec2(
 
     Args:
         data (torch.Tensor): The input data tensor of shape
-            [batch_size, 1, height, width].
+            [batch_size, height, width].
             2d inputs are interpreted as [height, width],
             3d inputs are interpreted as [batch_size, height, width].
         wavelet (Wavelet or str): A pywt wavelet compatible object or
@@ -102,6 +102,8 @@ def wavedec2(
         data = data.unsqueeze(0).unsqueeze(0)
     elif data.dim() == 3:
         data = data.unsqueeze(1)
+    elif data.dim() == 4:
+        raise
 
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = get_filter_tensors(

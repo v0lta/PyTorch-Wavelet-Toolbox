@@ -98,9 +98,9 @@ def cwt(
     out = []
     for scale in scales:
         step = x[1] - x[0]
-        j = torch.arange(scale * (x[-1] - x[0]) + 1, device=data.device) / (
-            scale * step
-        )
+        j = torch.arange(
+            scale * (x[-1] - x[0]) + 1, device=data.device, dtype=data.dtype
+        ) / (scale * step)
         j = torch.floor(j).type(torch.long)
         if j[-1] >= len(int_psi):
             # j = np.extract(j < len(int_psi), j)
