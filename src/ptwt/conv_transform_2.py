@@ -102,8 +102,6 @@ def wavedec2(
         data = data.unsqueeze(0).unsqueeze(0)
     elif data.dim() == 3:
         data = data.unsqueeze(1)
-    elif data.dim() == 4:
-        raise
 
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = get_filter_tensors(
