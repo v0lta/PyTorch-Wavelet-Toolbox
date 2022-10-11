@@ -19,7 +19,7 @@ The plot above shows log-scaled mean absolute packet plots of 70k fake and real 
 ![packet plot](mean_packet_plot.png)
 
 
-The second plot confirms the previous observation. Gan-generated images tend to produce different high-frequency packages. The higher frequency packets appear on the left of the graph.
+The second plot confirms the previous observation. Gan-generated images tend to produce different high-frequency packages. The higher-frequency packets appear on the left of the graph.
 
 Recreating these experiments requires roughly 8GB of free disc space and 10GB of free RAM. 
 To reproduce these plots:
