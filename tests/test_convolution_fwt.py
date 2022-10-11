@@ -191,3 +191,17 @@ def test_incorrect_padding(padding_str):
     """Test expected errors for an invalid padding name."""
     with pytest.raises(ValueError):
         _ = _translate_boundary_strings(padding_str)
+
+
+def test_input_4d_dimension_error():
+    """Test the error for 4d inputs to wavedec2."""
+    with pytest.raises(ValueError):
+        data = torch.randn(50, 20, 128, 128)
+        wavedec2(data, "haar", 4)
+
+
+def test_input_1d_dimension_error():
+    """Test the error for 1d inputs to wavedec2."""
+    with pytest.raises(ValueError):
+        data = torch.randn(50)
+        wavedec2(data, "haar", 4)
