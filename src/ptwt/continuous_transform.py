@@ -76,7 +76,7 @@ def cwt(
 
     if isinstance(wavelet, DifferentiableContinuousWavelet):
         if data.is_cuda:
-            wavelet = wavelet.cuda()
+            wavelet.cuda()
 
     precision = 10
     int_psi, x = _integrate_wavelet(wavelet, precision=precision)
@@ -135,7 +135,7 @@ def cwt(
         out_tensor = out_tensor.real
     elif isinstance(wavelet, DifferentiableContinuousWavelet):
         out_tensor = out_tensor if wavelet.complex_cwt else out_tensor.real
-        wavelet = wavelet.cpu()
+        wavelet.cpu()
     else:
         out_tensor = out_tensor if wavelet.complex_cwt else out_tensor.real
 
@@ -144,6 +144,11 @@ def cwt(
         if np.isscalar(frequencies):
             frequencies = np.array([frequencies])
     frequencies /= sampling_period
+
+    if isinstance(wavelet, DifferentiableContinuousWavelet):
+        if data.is_cuda:
+            wavelet.cuda()
+
     return out_tensor, frequencies
 
 
@@ -225,9 +230,11 @@ class DifferentiableContinuousWavelet(
 ):
     """A base class for learnable Continuous Wavelets."""
 
-    def __init__(self, name: str = "shan1-1"):
+    def __init__(self, name: str):
         """Create a trainable shannon wavelet."""
         super().__init__()
+        super(ContinuousWavelet, self).__init__()
+
         self.dtype = torch.float64
         # Use torch nn parameter
         self.bandwidth_par = torch.nn.Parameter(
