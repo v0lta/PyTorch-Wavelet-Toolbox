@@ -66,7 +66,7 @@ def cwt(
     """
     # accept array_like input; make a copy to ensure a contiguous array
     if not isinstance(
-        wavelet, (ContinuousWavelet, Wavelet, DifferentiableContinuousWavelet)
+        wavelet, (ContinuousWavelet, Wavelet, _DifferentiableContinuousWavelet)
     ):
         wavelet = DiscreteContinuousWavelet(wavelet)
     if type(scales) is torch.Tensor:
@@ -74,7 +74,7 @@ def cwt(
     elif np.isscalar(scales):
         scales = np.array([scales])
 
-    if isinstance(wavelet, DifferentiableContinuousWavelet):
+    if isinstance(wavelet, _DifferentiableContinuousWavelet):
         if data.is_cuda:
             wavelet.cuda()
 
@@ -83,7 +83,7 @@ def cwt(
     if type(wavelet) is ContinuousWavelet:
         int_psi = np.conj(int_psi) if wavelet.complex_cwt else int_psi
         int_psi = torch.tensor(int_psi, device=data.device)
-    elif isinstance(wavelet, DifferentiableContinuousWavelet):
+    elif isinstance(wavelet, _DifferentiableContinuousWavelet):
         int_psi = torch.conj(int_psi) if wavelet.complex_cwt else int_psi
     else:
         int_psi = torch.tensor(int_psi, device=data.device)
@@ -133,7 +133,7 @@ def cwt(
     out_tensor = torch.stack(out)
     if type(wavelet) is Wavelet:
         out_tensor = out_tensor.real
-    elif isinstance(wavelet, DifferentiableContinuousWavelet):
+    elif isinstance(wavelet, _DifferentiableContinuousWavelet):
         out_tensor = out_tensor if wavelet.complex_cwt else out_tensor.real
         wavelet.cpu()
     else:
@@ -145,7 +145,7 @@ def cwt(
             frequencies = np.array([frequencies])
     frequencies /= sampling_period
 
-    if isinstance(wavelet, DifferentiableContinuousWavelet):
+    if isinstance(wavelet, _DifferentiableContinuousWavelet):
         if data.is_cuda:
             wavelet.cuda()
 
@@ -203,7 +203,7 @@ def _integrate_wavelet(
     if type(wavelet) is str:
         wavelet = DiscreteContinuousWavelet(wavelet)
     elif not isinstance(
-        wavelet, (Wavelet, ContinuousWavelet, DifferentiableContinuousWavelet)
+        wavelet, (Wavelet, ContinuousWavelet, _DifferentiableContinuousWavelet)
     ):
         wavelet = DiscreteContinuousWavelet(wavelet)
 
@@ -225,7 +225,7 @@ def _integrate_wavelet(
         return _integrate(psi_d, step), _integrate(psi_r, step), x
 
 
-class DifferentiableContinuousWavelet(
+class _DifferentiableContinuousWavelet(
     torch.nn.Module, ContinuousWavelet  # type: ignore
 ):
     """A base class for learnable Continuous Wavelets."""
@@ -276,7 +276,7 @@ class DifferentiableContinuousWavelet(
         return self(grid), grid
 
 
-class _ShannonWavelet(DifferentiableContinuousWavelet):
+class _ShannonWavelet(_DifferentiableContinuousWavelet):
     """A differentiable Shannon wavelet."""
 
     def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
@@ -292,7 +292,7 @@ class _ShannonWavelet(DifferentiableContinuousWavelet):
         return shannon
 
 
-class _ComplexMorletWavelet(DifferentiableContinuousWavelet):
+class _ComplexMorletWavelet(_DifferentiableContinuousWavelet):
     """A differentiable Shannon wavelet."""
 
     def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
