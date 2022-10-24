@@ -10,6 +10,6 @@ module supports gradient descent optimization of wavelet filters
 with soft constraints.
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 3
 
    ptwt
