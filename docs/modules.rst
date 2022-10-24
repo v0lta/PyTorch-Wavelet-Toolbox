@@ -1,4 +1,4 @@
-Pytorch Wavelet Toolbox (`ptwt`)
+`ptwt` module list
 ================================
 
 The Toolbox provides padded fast wavelet transforms

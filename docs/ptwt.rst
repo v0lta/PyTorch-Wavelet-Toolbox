@@ -1,5 +1,5 @@
-ptwt package
-============
+ptwt docstrings
+===============
 
 ptwt.conv\_transform module
 ---------------------------
