@@ -176,7 +176,7 @@ repository, and moving into the main directory, and installing ``nox`` with ``pi
 📖 Citation
 """""""""""
 
-If you find this work useful, please consider citing:
+If you use this work in a scientific context please cite:
 
 .. code-block::
 
@@ -189,6 +189,10 @@ If you find this work useful, please consider citing:
     month = jul,
     url = {https://hdl.handle.net/20.500.11811/9245}
   }
+
+If you use the boundary wavelet support please additionaly cite:
+
+.. code-block::
 
   @thesis{Blanke2021,
     author = {Felix Blanke},
