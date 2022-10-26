@@ -173,8 +173,8 @@ repository, and moving into the main directory, and installing ``nox`` with ``pi
 
 
 
-📖 Citation
-"""""""""""
+Citation
+""""""""
 
 If you use this work in a scientific context please cite:
 
