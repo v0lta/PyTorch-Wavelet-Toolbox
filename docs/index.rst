@@ -12,9 +12,9 @@ Use the ptwt package link below to jump to the documentation of all functions.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: jaxwt module overview:
 
-   modules
+   ptwt
 
 
 
