@@ -71,7 +71,7 @@ html_theme_options = {
     'github_repo': 'PyTorch-Wavelet-Toolbox',
     'github_banner': 'true',
     'show_related': 'true',
-    'page_width': 'auto',
+    'page_width': '1600px',
     'sidebar_width': '250px'
 }
 
