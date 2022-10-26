@@ -69,7 +69,7 @@ convolution. Consider the following example:
   import torch
   import numpy as np
   import pywt
-  import ptwt  # use " from src import ptwt " if you cloned the repo instead of using pip.
+  import ptwt  # use "from src import ptwt" for a cloned the repo
   
   # generate an input of even length.
   data = np.array([0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0])
@@ -81,7 +81,8 @@ convolution. Consider the following example:
   print(ptwt.wavedec(data_torch, wavelet, mode='zero', level=2))
   
   # invert the fwt.
-  print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero'), wavelet))
+  print(ptwt.waverec(ptwt.wavedec(data_torch, wavelet, mode='zero'),
+                     wavelet))
 
 
 The functions ``wavedec`` and ``waverec`` compute the 1d-fwt and its inverse.
@@ -129,7 +130,7 @@ Reconsidering the 1d case, try:
   import torch
   import numpy as np
   import pywt
-  import ptwt  # use " from src import ptwt " if you cloned the repo instead of using pip.
+  import ptwt  # use "from src import ptwt" for a cloned the repo
   
   # generate an input of even length.
   data = np.array([0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0])
