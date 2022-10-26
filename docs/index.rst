@@ -8,6 +8,10 @@
 .. include:: ../README.rst
 
 
+
+Full documentation
+==================
+
 Use the ptwt package link below to jump to the documentation of all functions.
 
 .. toctree::
