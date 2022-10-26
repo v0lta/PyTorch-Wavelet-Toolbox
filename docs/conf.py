@@ -70,14 +70,10 @@ html_theme_options = {
     'github_user': 'v0lta',
     'github_repo': 'PyTorch-Wavelet-Toolbox',
     'github_banner': 'true',
-    'show_related': 'true'
+    'show_related': 'true',
+    'page_width': 'auto',
+    'sidebar_width': '250px'
 }
-
-
-# html_theme_options = {
-#     "sidebarwidth": "350",
-# }
-
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
