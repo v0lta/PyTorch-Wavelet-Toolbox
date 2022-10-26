@@ -190,7 +190,7 @@ If you use this work in a scientific context please cite:
     url = {https://hdl.handle.net/20.500.11811/9245}
   }
 
-If you use the boundary wavelet support please additionaly cite:
+If you use the boundary wavelet support please additionally cite:
 
 .. code-block::
 
