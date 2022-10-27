@@ -27,6 +27,6 @@ To reproduce these plots:
 2. Extract the image pairs here.
 3. Run `python packet_plot.py`
 
-You can read more about GAN-detection in the paper [Wavelet-Packets for Deepfake Image Analysis and Detection](https://arxiv.org/pdf/2106.09369.pdf). 
+You can read more about GAN-detection in the paper [Wavelet-Packets for Deepfake Image Analysis and Detection](https://rdcu.be/cUIRt). 
 A complete project building gan-detectors on top of wavelets is available at:
 https://github.com/gan-police/frequency-forensics
