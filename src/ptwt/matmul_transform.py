@@ -157,7 +157,7 @@ class MatrixWavedec(object):
         >>> data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
         >>> data_torch = torch.from_numpy(data.astype(np.float32))
         >>> matrix_wavedec = ptwt.MatrixWavedec(
-                pywt.Wavelet('haar'), level=2)
+        >>>     pywt.Wavelet('haar'), level=2)
         >>> coefficients = matrix_wavedec(data_torch)
     """
 
@@ -418,10 +418,10 @@ class MatrixWaverec(object):
         >>> data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
         >>> data_torch = torch.from_numpy(data.astype(np.float32))
         >>> matrix_wavedec = ptwt.MatrixWavedec(
-                pywt.Wavelet('haar'), level=2)
+        >>>     pywt.Wavelet('haar'), level=2)
         >>> coefficients = matrix_wavedec(data_torch)
         >>> matrix_waverec = ptwt.MatrixWaverec(
-                pywt.Wavelet('haar'))
+        >>>     pywt.Wavelet('haar'))
         >>> reconstruction = matrix_waverec(coefficients)
     """
 

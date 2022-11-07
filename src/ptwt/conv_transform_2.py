@@ -94,10 +94,10 @@ def wavedec2(
         >>> import numpy as np
         >>> import scipy.misc
         >>> face = np.transpose(scipy.misc.face(),
-                                [2, 0, 1]).astype(np.float64)
+        >>>                     [2, 0, 1]).astype(np.float64)
         >>> pytorch_face = torch.tensor(face)
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
-                                         level=2, mode="zero")
+        >>>                              level=2, mode="zero")
 
     """
     if data.dim() == 2:
@@ -156,10 +156,10 @@ def waverec2(
         >>> import numpy as np
         >>> import scipy.misc
         >>> face = np.transpose(scipy.misc.face(),
-                                [2, 0, 1]).astype(np.float64)
+        >>>                     [2, 0, 1]).astype(np.float64)
         >>> pytorch_face = torch.tensor(face)
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
-                                         level=2, mode="constant")
+        >>>                              level=2, mode="constant")
         >>> reconstruction = ptwt.waverec2(coefficients, pywt.Wavelet("haar"))
 
     """

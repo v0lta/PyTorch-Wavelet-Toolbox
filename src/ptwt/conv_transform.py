@@ -206,7 +206,7 @@ def wavedec(
         >>> data_torch = torch.from_numpy(data.astype(np.float32))
         >>> # compute the forward fwt coefficients
         >>> ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
-                         mode='zero', level=2)
+        >>>              mode='zero', level=2)
 
     """
     if data.dim() == 1:
@@ -256,8 +256,8 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
         >>> data_torch = torch.from_numpy(data.astype(np.float32))
         >>> # invert the fast wavelet transform.
         >>> ptwt.waverec(ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
-                                      mode='zero', level=2),
-                         pywt.Wavelet('haar'))
+        >>>                           mode='zero', level=2),
+        >>>              pywt.Wavelet('haar'))
 
     """
     _, _, rec_lo, rec_hi = get_filter_tensors(

@@ -59,7 +59,7 @@ class WaveletPacket(BaseDict):
             >>> t = np.linspace(0, 10, 1500)
             >>> w = scipy.signal.chirp(t, f0=1, f1=50, t1=10, method="linear")
             >>> wp = ptwt.WaveletPacket(data=torch.from_numpy(w.astype(np.float32)),
-                    wavelet=pywt.Wavelet("db3"), mode="reflect")
+            >>>     wavelet=pywt.Wavelet("db3"), mode="reflect")
             >>> np_lst = []
             >>> for node in wp.get_level(5):
             >>>     np_lst.append(wp[node])
@@ -116,7 +116,7 @@ class WaveletPacket(BaseDict):
             >>> import ptwt, torch
             >>> signal = np.random.randn(1, 16)
             >>> ptwp = ptwt.WaveletPacket(torch.from_numpy(signal), "haar",
-                    mode="boundary", maxlevel=2)
+            >>>     mode="boundary", maxlevel=2)
             >>> ptwp["aa"].data *= 0
             >>> ptwp.reconstruct()
             >>> print(ptwp[""])
