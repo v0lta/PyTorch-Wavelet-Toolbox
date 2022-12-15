@@ -39,7 +39,6 @@ def cwt(
             ``f = pywt.scale2frequency(wavelet, scale)/sampling_period`` to determine
             what physical frequency, ``f``. Here, ``f`` is in hertz when the
             ``sampling_period`` is given in seconds.
-            wavelet (str or Wavelet of ContinuousWavelet): The wavelet to work with.
         wavelet (ContinuousWavelet or str): The continuous wavelet to work with.
         sampling_period (float): Sampling period for the frequencies output (optional).
             The values computed for ``coefs`` are independent of the choice of
