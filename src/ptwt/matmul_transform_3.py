@@ -1,5 +1,7 @@
-""" Implement 3D seperable boundary transforms."""
+"""Implement 3D seperable boundary transforms."""
+
 
 class MatrixWavedec3(object):
-    pass
+    """Compute 3d seperable transforms."""
 
+    pass

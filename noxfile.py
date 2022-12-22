@@ -21,9 +21,8 @@ def run_test_fast(session):
 @nox.session(name="lint")
 def lint(session):
     """Check code conventions."""
-    session.install("flake8==4.0.1")
+    session.install("flake8")
     session.install(
-        "flake8-colors",
         "flake8-black",
         "flake8-docstrings",
         "flake8-bugbear",
@@ -32,7 +31,6 @@ def lint(session):
         "pydocstyle",
         "darglint",
     )
-    session.install("flake8-bandit==2.1.2", "bandit==1.7.2")
     session.run("flake8", "src", "tests", "noxfile.py")
 
 

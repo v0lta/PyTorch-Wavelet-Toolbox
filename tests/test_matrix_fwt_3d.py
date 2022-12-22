@@ -1,18 +1,41 @@
+"""Test the 3d matrix-fwt code."""
+
 from typing import List
 
-import pytest
 import numpy as np
-import torch
+import pytest
 import pywt
+import torch
+
 import src.ptwt as ptwt
 
 
-def _cat_batch_list(batch_list: List) -> List:
-    cat_list = []
-    for batch_el in batch_list:
-        cat_list.append(
-            
-        )
+def _expand_dims(batch_list):
+    for pos, bel in enumerate(batch_list):
+        if type(bel) is np.ndarray:
+            batch_list[pos] = np.expand_dims(bel, 0)
+        else:
+            for key, item in batch_list[pos].items():
+                batch_list[pos][key] = np.expand_dims(item, 0)
+    return batch_list
+
+
+def _cat_batch_list(batch_lists: List) -> List:
+    cat_list = None
+    for batch_list in batch_lists:
+        batch_list = _expand_dims(batch_list)
+        if not cat_list:
+            cat_list = batch_list
+        else:
+            for pos, (cat_el, batch_el) in enumerate(zip(cat_list, batch_list)):
+                if type(cat_el) == np.ndarray:
+                    cat_list[pos] = np.concatenate([cat_el, batch_el])
+                elif type(cat_el) == dict:
+                    for key, tensor in cat_el.items():
+                        cat_el[key] = np.concatenate([tensor, batch_el[key]])
+                else:
+                    raise NotImplementedError()
+    return cat_list
 
 
 @pytest.mark.parametrize(
@@ -36,11 +59,22 @@ def test_waverec3(shape: list, wavelet: str, level: int, mode: str):
     data = torch.from_numpy(data)
     ptwc = ptwt.wavedec3(data, wavelet, level=level, mode=mode)
     batch_list = []
-    for _ in range(data.shape[0]):
-        pywc = pywt.wavedecn(data.numpy(), wavelet, level=level, mode=mode)
+    for batch_no in range(data.shape[0]):
+        pywc = pywt.wavedecn(data[batch_no].numpy(), wavelet, level=level, mode=mode)
         batch_list.append(pywc)
-    
+    cat_pywc = _cat_batch_list(batch_list)
 
+    # ensure the coefficients are identical.
+    test_list = []
+    for a, b in zip(ptwc, cat_pywc):
+        if type(a) is torch.Tensor:
+            test_list.append(not np.allclose(a, b))
+        else:
+            test_list.extend([not np.allclose(a[key], b[key]) for key in a.keys()])
+
+    assert not any(test_list)
+
+    # ensure the results are invertible.
     rec = ptwt.waverec3(ptwc, wavelet)
     assert np.allclose(
         rec.numpy()[..., : shape[1], : shape[2], : shape[3]], data.numpy()
