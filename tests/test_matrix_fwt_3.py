@@ -10,7 +10,7 @@ import torch
 import src.ptwt as ptwt
 
 
-def _expand_dims(batch_list):
+def _expand_dims(batch_list: List) -> List:
     for pos, bel in enumerate(batch_list):
         if type(bel) is np.ndarray:
             batch_list[pos] = np.expand_dims(bel, 0)
@@ -64,7 +64,7 @@ def test_waverec3(shape: list, wavelet: str, level: int, mode: str):
         batch_list.append(pywc)
     cat_pywc = _cat_batch_list(batch_list)
 
-    # ensure the coefficients are identical.
+    # ensure ptwt and pywt coefficients are identical.
     test_list = []
     for a, b in zip(ptwc, cat_pywc):
         if type(a) is torch.Tensor:
@@ -74,7 +74,7 @@ def test_waverec3(shape: list, wavelet: str, level: int, mode: str):
 
     assert not any(test_list)
 
-    # ensure the results are invertible.
+    # ensure the transforms are invertible.
     rec = ptwt.waverec3(ptwc, wavelet)
     assert np.allclose(
         rec.numpy()[..., : shape[1], : shape[2], : shape[3]], data.numpy()

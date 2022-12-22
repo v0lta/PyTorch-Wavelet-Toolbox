@@ -1,6 +1,6 @@
 """PyTorch compatible cwt code.
 
-Based on https://github.com/PyWavelets/pywt/blob/master/pywt/_cwt.py
+This module is based on pywt's cwt implementation.
 """
 from typing import Any, Tuple, Union
 
