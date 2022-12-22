@@ -31,13 +31,16 @@ def test_fwt_ifwt_haar(level: int, length: int) -> None:
     coeffs = pywt.wavedec(data, wavelet, level=level)
     matrix_wavedec = MatrixWavedec(wavelet, level)
     coeffs_matfwt = matrix_wavedec(torch.from_numpy(data))
-    test_list = [not np.allclose(cmfwt.numpy(), cpywt) for cmfwt, cpywt in zip(coeffs_matfwt, coeffs)]
+    test_list = [
+        not np.allclose(cmfwt.numpy(), cpywt)
+        for cmfwt, cpywt in zip(coeffs_matfwt, coeffs)
+    ]
     assert not any(test_list)
 
 
 @pytest.mark.slow
 def test_fwt_ifwt_mackey_haar_cuda() -> None:
-    """Test the Haar case for a long signal on GPU"""
+    """Test the Haar case for a long signal on GPU."""
     wavelet = pywt.Wavelet("haar")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1, device=device)
@@ -46,7 +49,10 @@ def test_fwt_ifwt_mackey_haar_cuda() -> None:
     coeffs = pywt.wavedec(pt_data.cpu().numpy(), wavelet, level=9)
     matrix_wavedec = MatrixWavedec(wavelet, 9)
     coeffs_matfwt = matrix_wavedec(pt_data)
-    test_list = [not np.allclose(cmfwt.cpu().numpy(), cpywt) for cmfwt, cpywt in zip(coeffs_matfwt, coeffs)]
+    test_list = [
+        not np.allclose(cmfwt.cpu().numpy(), cpywt)
+        for cmfwt, cpywt in zip(coeffs_matfwt, coeffs)
+    ]
     assert not any(test_list)
     # test the inverse fwt.
     matrix_waverec = MatrixWaverec(wavelet)
@@ -55,7 +61,7 @@ def test_fwt_ifwt_mackey_haar_cuda() -> None:
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("level", [1, 2, 3, 4 ,None])
+@pytest.mark.parametrize("level", [1, 2, 3, 4, None])
 @pytest.mark.parametrize("wavelet", ["db2", "db3", "db4", "sym5"])
 def test_fwt_ifwt_mackey_db2(level: int, wavelet: str) -> None:
     """Test multiple wavelets and levels for a long signal."""
