@@ -234,7 +234,7 @@ class MatrixWavedec2(object):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         boundary: str = "qr",
-        separable: bool = False,
+        separable: bool = True,
     ):
         """Create a new matrix fwt object.
 
@@ -254,7 +254,7 @@ class MatrixWavedec2(object):
             separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis. This is significantly
                 faster than a non-separable transformation since only a small constant-
-                size part of the matrices must be orthogonalized. Defaults to False.
+                size part of the matrices must be orthogonalized. Defaults to True.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -519,11 +519,6 @@ class MatrixWavedec2(object):
 class MatrixWaverec2(object):
     """Synthesis or inverse matrix based-wavelet transformation object.
 
-    Note:
-        Constructing the fwt matrix is expensive.
-        The matrix is, therefore, constructed only
-        once and stored for later use.
-
     Example:
         >>> import ptwt, torch, pywt
         >>> import numpy as np
@@ -540,7 +535,7 @@ class MatrixWaverec2(object):
         self,
         wavelet: Union[Wavelet, str],
         boundary: str = "qr",
-        separable: bool = False,
+        separable: bool = True,
     ):
         """Create the inverse matrix based fast wavelet transformation.
 
@@ -555,7 +550,8 @@ class MatrixWaverec2(object):
             separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis. This is significantly
                 faster than a non-separable transformation since only a small constant-
-                size part of the matrices must be orthogonalized. Defaults to False.
+                size part of the matrices must be orthogonalized. For invertability the analysis
+                and synthesis values must be identical! Defaults to True.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.

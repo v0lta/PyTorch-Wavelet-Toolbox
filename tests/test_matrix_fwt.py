@@ -10,6 +10,8 @@ from src.ptwt.matmul_transform import (
     MatrixWaverec,
     _construct_a,
     _construct_s,
+    construct_boundary_a,
+    construct_boundary_s,
 )
 from tests._mackey_glass import MackeyGenerator
 
@@ -74,3 +76,108 @@ def test_fwt_ifwt_mackey_db2(level: int, wavelet: str) -> None:
     matrix_waverec = MatrixWaverec(wavelet)
     reconstructed_data = matrix_waverec(coeffs_mat_max)
     assert np.allclose(reconstructed_data.cpu().numpy(), pt_data.cpu().numpy())
+
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("size", [24, 64, 128, 256])
+@pytest.mark.parametrize(
+    "wavelet",
+    [
+        pywt.Wavelet("db2"),
+        pywt.Wavelet("db4"),
+        pywt.Wavelet("db6"),
+        pywt.Wavelet("db8"),
+    ],
+)
+def test_boundary_filter_analysis_and_synthethis_matrices(
+    size: int, wavelet: pywt.Wavelet
+) -> None:
+    """Check 1d the 1d-fwt matrices for orthogonality and invertability."""
+    analysis_matrix = construct_boundary_a(
+        wavelet, size, boundary="gramschmidt"
+    ).to_dense()
+    synthesis_matrix = construct_boundary_s(
+        wavelet, size, boundary="gramschmidt"
+    ).to_dense()
+    # s_db2 = construct_s(pywt.Wavelet("db8"), size)
+    # test_eye_inv = torch.sparse.mm(a_db8, s_db2.to_dense()).numpy()
+    test_eye_orth = torch.mm(analysis_matrix.transpose(1, 0), analysis_matrix).numpy()
+    test_eye_inv = torch.mm(analysis_matrix, synthesis_matrix).numpy()
+    err_inv = np.mean(np.abs(test_eye_inv - np.eye(size)))
+    err_orth = np.mean(np.abs(test_eye_orth - np.eye(size)))
+    print(wavelet.name, "orthogonal error", err_orth, "size", size)
+    print(wavelet.name, "inverse error", err_inv, "size", size)
+    assert err_orth < 1e-8
+    assert err_inv < 1e-8
+
+
+@pytest.mark.parametrize("wavelet_str", ["db2", "db3", "haar"])
+@pytest.mark.parametrize(
+    "data",
+    [
+        np.random.randn(32),
+        np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0]),
+        np.array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0]),
+        np.random.randn(18),
+        np.random.randn(19),
+    ],
+)
+@pytest.mark.parametrize("level", [2, 1])
+@pytest.mark.parametrize("boundary", ["gramschmidt", "qr"])
+def test_boundary_transform_1d(
+    wavelet_str: str, data: np.ndarray, level: int, boundary: str
+) -> None:
+    """Ensure matrix fwt reconstructions are pywt compatible."""
+    data_torch = torch.from_numpy(data.astype(np.float64))
+    wavelet = pywt.Wavelet(wavelet_str)
+    matrix_wavedec = MatrixWavedec(wavelet, level=level, boundary=boundary)
+    coeffs = matrix_wavedec(data_torch)
+    matrix_waverec = MatrixWaverec(wavelet, boundary=boundary)
+    rec = matrix_waverec(coeffs)
+    rec_pywt = pywt.waverec(
+        pywt.wavedec(data_torch.numpy(), wavelet, mode="zero"), wavelet
+    )
+    error = np.sum(np.abs(rec_pywt - rec.numpy()))
+    print(
+        "wavelet: {},".format(wavelet_str),
+        "level: {},".format(level),
+        "shape: {},".format(data.shape[-1]),
+        "error {:2.2e}".format(error),
+    )
+    assert np.allclose(rec.numpy(), rec_pywt)
+    # test the operator matrices
+    if not matrix_wavedec.padded and not matrix_waverec.padded:
+        test_mat = torch.sparse.mm(
+            matrix_waverec.sparse_ifwt_operator,
+            matrix_wavedec.sparse_fwt_operator,
+        )
+        assert np.allclose(test_mat.to_dense().numpy(), np.eye(test_mat.shape[0]))
+
+
+@pytest.mark.parametrize("wavelet_str", ["db2", "db3", "haar"])
+@pytest.mark.parametrize("boundary", ["qr", "gramschmidt"])
+def test_matrix_transform_1d_rebuild(wavelet_str: str, boundary: str):
+    """Ensure matrix fwt reconstructions are pywt compatible."""
+    data_list = [np.random.randn(18), np.random.randn(21)]
+    wavelet = pywt.Wavelet(wavelet_str)
+    matrix_waverec = MatrixWaverec(wavelet, boundary=boundary)
+    for level in [2, 1]:
+        matrix_wavedec = MatrixWavedec(wavelet, level=level, boundary=boundary)
+        for data in data_list:
+            data_torch = torch.from_numpy(data.astype(np.float64))
+            coeffs = matrix_wavedec(data_torch)
+            rec = matrix_waverec(coeffs)
+            rec_pywt = pywt.waverec(
+                pywt.wavedec(data_torch.numpy(), wavelet, mode="zero"), wavelet
+            )
+            assert np.allclose(rec.numpy(), rec_pywt)
+            # test the operator matrices
+            if not matrix_wavedec.padded and not matrix_waverec.padded:
+                test_mat = torch.sparse.mm(
+                    matrix_waverec.sparse_ifwt_operator,
+                    matrix_wavedec.sparse_fwt_operator,
+                )
+                assert np.allclose(
+                    test_mat.to_dense().numpy(), np.eye(test_mat.shape[0])
+                )
