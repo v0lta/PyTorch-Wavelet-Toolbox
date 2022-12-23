@@ -34,8 +34,7 @@ def test_fwt_ifwt_haar(level: int, length: int) -> None:
     matrix_wavedec = MatrixWavedec(wavelet, level)
     coeffs_matfwt = matrix_wavedec(torch.from_numpy(data))
     test_list = [
-        np.allclose(cmfwt.numpy(), cpywt)
-        for cmfwt, cpywt in zip(coeffs_matfwt, coeffs)
+        np.allclose(cmfwt.numpy(), cpywt) for cmfwt, cpywt in zip(coeffs_matfwt, coeffs)
     ]
     assert all(test_list)
 
@@ -76,7 +75,6 @@ def test_fwt_ifwt_mackey_db2(level: int, wavelet: str) -> None:
     matrix_waverec = MatrixWaverec(wavelet)
     reconstructed_data = matrix_waverec(coeffs_mat_max)
     assert np.allclose(reconstructed_data.cpu().numpy(), pt_data.cpu().numpy())
-
 
 
 @pytest.mark.slow

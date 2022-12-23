@@ -1,25 +1,21 @@
 """Implement 3D seperable boundary transforms."""
-import numpy as np
-
-from typing import List, Optional, Tuple, Union
+import sys
 from functools import partial
+from typing import List, Optional, Tuple, Union
 
+import numpy as np
+import torch
 
 from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported
-from .conv_transform import get_filter_tensors
-from .matmul_transform import (
-    cat_sparse_identity_matrix,
-    construct_boundary_a,
-    construct_boundary_s,
-    orthogonalize,
-)
-from .sparse_math import batch_mm, construct_strided_conv2d_matrix
-import torch
-import sys
+
+# from .conv_transform import get_filter_tensors
+from .matmul_transform import construct_boundary_a  # construct_boundary_s,
+from .sparse_math import batch_mm
 
 
-def _matrix_pad_3(depth: int, height: int, width: int
-        ) -> Tuple[int, int, int, Tuple[bool, bool, bool]]:
+def _matrix_pad_3(
+    depth: int, height: int, width: int
+) -> Tuple[int, int, int, Tuple[bool, bool, bool]]:
     pad_tuple = (False, False, False)
     if height % 2 != 0:
         height += 1
@@ -42,7 +38,7 @@ class MatrixWavedec3(object):
         level: Optional[int] = None,
         boundary: str = "qr",
     ):
-        self.wavelet = wavelet
+        self.wavelet = _as_wavelet(wavelet)
         self.level = level
         self.boundary = boundary
 
@@ -66,9 +62,11 @@ class MatrixWavedec3(object):
         filt_len = self.wavelet.dec_len
         current_depth, current_height, current_width = self.input_signal_shape
         for curr_level in range(1, self.level + 1):
-            if (current_height < filt_len
+            if (
+                current_height < filt_len
                 or current_width < filt_len
-                or current_depth < filt_len):
+                or current_depth < filt_len
+            ):
                 # we have reached the max decomposition depth.
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
@@ -89,20 +87,28 @@ class MatrixWavedec3(object):
             self.pad_list.append(pad_tuple)
             self.size_list.append((current_depth, current_height, current_width))
 
-            matrix_construction_fun = partial(construct_boundary_a, wavelet=self.wavelet,
-                boundary=self.boundary, device=device, dtype=dtype)
-            analysis_matrics = [matrix_construction_fun(dimension_length) for dimension_length in
-                (current_depth, current_height, current_width)]
-     
+            matrix_construction_fun = partial(
+                construct_boundary_a,
+                wavelet=self.wavelet,
+                boundary=self.boundary,
+                device=device,
+                dtype=dtype,
+            )
+            analysis_matrics = [
+                matrix_construction_fun(dimension_length)
+                for dimension_length in (current_depth, current_height, current_width)
+            ]
+
             self.fwt_matrix_list.append(analysis_matrics)
 
-            current_depth, current_height, current_width = \
-                current_depth // 2, current_height // 2, current_width // 2
+            current_depth, current_height, current_width = (
+                current_depth // 2,
+                current_height // 2,
+                current_width // 2,
+            )
         self.size_list.append((current_depth, current_height, current_width))
 
-
-    def __call__(
-        self, input_signal: torch.Tensor) -> List:
+    def __call__(self, input_signal: torch.Tensor) -> List:
         if input_signal.dim() == 3:
             # add batch dim to unbatched input
             input_signal = input_signal.unsqueeze(0)

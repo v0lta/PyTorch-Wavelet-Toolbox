@@ -6,20 +6,14 @@ import pywt
 import scipy.signal
 import torch
 
-from src.ptwt.matmul_transform import (
-    MatrixWavedec,
-    MatrixWaverec,
-)
-
 from src.ptwt.conv_transform import _flatten_2d_coeff_lst
+from src.ptwt.matmul_transform import MatrixWavedec, MatrixWaverec
 from src.ptwt.matmul_transform_2 import (
     MatrixWavedec2,
     MatrixWaverec2,
     construct_boundary_a2,
     construct_boundary_s2,
 )
-
-
 
 
 @pytest.mark.parametrize("size", [(16, 16), (16, 8), (8, 16)])
@@ -137,8 +131,6 @@ def test_batched_2d_matrix_fwt_ifwt(
     )
 
 
-
-
 @pytest.mark.slow
 @pytest.mark.parametrize("wavelet_str", ["haar", "db4"])
 @pytest.mark.parametrize("separable", [False, True])
@@ -171,8 +163,6 @@ def test_matrix_transform_2d_rebuild(wavelet_str: str, separable: bool) -> None:
                 )
 
 
-
-
 def test_seperable_haar_2d():
     batch_size = 1
     test_data = torch.rand(batch_size, 32, 32).type(torch.float64)
@@ -187,9 +177,12 @@ def test_seperable_haar_2d():
     # flatten list
     ptwtres = [tensor for tensor_list in ptwtres_nested for tensor in tensor_list]
 
-    assert all([np.allclose(pywt_test, ptwt_test.numpy()) 
-        for pywt_test, ptwt_test in zip(pywtres, ptwtres)])
-
+    assert all(
+        [
+            np.allclose(pywt_test, ptwt_test.numpy())
+            for pywt_test, ptwt_test in zip(pywtres, ptwtres)
+        ]
+    )
 
 
 @pytest.mark.parametrize("operator", [MatrixWavedec2, MatrixWavedec])
@@ -212,4 +205,3 @@ def test_empty_inverse_operators(operator) -> None:
         matrixifwt = operator("haar")
     with pytest.raises(ValueError):
         _ = matrixifwt.sparse_ifwt_operator
-
