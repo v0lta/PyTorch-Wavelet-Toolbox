@@ -1,7 +1,8 @@
 """Implement 3D seperable boundary transforms."""
 import sys
+from collections import namedtuple
 from functools import partial
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, TypedDict, Union
 
 import numpy as np
 import torch
@@ -10,23 +11,25 @@ from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported
 
 # from .conv_transform import get_filter_tensors
 from .matmul_transform import construct_boundary_a  # construct_boundary_s,
-from .sparse_math import batch_mm
+from .sparse_math import _batch_dim_mm
+
+pad_tuple = namedtuple("pad", ("depth", "height", "width"))
 
 
 def _matrix_pad_3(
     depth: int, height: int, width: int
 ) -> Tuple[int, int, int, Tuple[bool, bool, bool]]:
-    pad_tuple = (False, False, False)
+    pad_depth, pad_height, pad_width = (False, False, False)
     if height % 2 != 0:
         height += 1
-        pad_tuple = (pad_tuple[0], True, pad_tuple[2])
+        pad_height = True
     if width % 2 != 0:
         width += 1
-        pad_tuple = (True, pad_tuple[1], pad_tuple[2])
+        pad_width = True
     if depth % 2 != 0:
         depth += 1
-        pad_tuple = (pad_tuple[0], pad_tuple[1], True)
-    return depth, height, width, pad_tuple
+        pad_depth = True
+    return depth, height, width, pad_tuple(pad_depth, pad_height, pad_width)
 
 
 class MatrixWavedec3(object):
@@ -36,11 +39,28 @@ class MatrixWavedec3(object):
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
-        boundary: str = "qr",
+        boundary: Optional[str] = "qr",
     ):
+        """Create a *seperable* three dimensional fast boundary wavelet transform.
+
+        Args:
+            wavelet (Union[Wavelet, str]): The wavelet to use.
+            level (Optional[int]): The desired decompositon level.
+                Defaults to None.
+            boundary (Optional[str]): The matrix orthogonalization method.
+                Defaults to "qr".
+
+        Raises:
+            NotImplementedError: If the chosen orthogonalization method
+                is not implemented.
+            ValueError: If the analysis and synthesis filters do not have
+                the same length.
+        """
         self.wavelet = _as_wavelet(wavelet)
         self.level = level
         self.boundary = boundary
+        self.input_signal_shape: Optional[Tuple[int, int, int]] = None
+        self.fwt_matrix_list: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
 
         if not _is_boundary_mode_supported(self.boundary):
             raise NotImplementedError
@@ -80,7 +100,7 @@ class MatrixWavedec3(object):
                 break
             # the conv matrices require even length inputs.
             current_depth, current_height, current_width, pad_tuple = _matrix_pad_3(
-                current_depth, current_height, current_width
+                depth=current_depth, height=current_height, width=current_width
             )
             if any(pad_tuple):
                 self.padded = True
@@ -95,7 +115,7 @@ class MatrixWavedec3(object):
                 dtype=dtype,
             )
             analysis_matrics = [
-                matrix_construction_fun(dimension_length)
+                matrix_construction_fun(length=dimension_length)
                 for dimension_length in (current_depth, current_height, current_width)
             ]
 
@@ -108,7 +128,23 @@ class MatrixWavedec3(object):
             )
         self.size_list.append((current_depth, current_height, current_width))
 
-    def __call__(self, input_signal: torch.Tensor) -> List:
+    def __call__(
+        self, input_signal: torch.Tensor
+    ) -> List[Union[torch.Tensor, TypedDict[str, torch.Tensor]]]:
+        """Compute a seperable 3d-boundary wavelet transform.
+
+        Args:
+            input_signal (torch.Tensor): An input signal of shape
+                [batch_size, depth, height, width].
+
+        Raises:
+            ValueError: If the input dimensions dont work.
+
+        Returns:
+            List[Union[torch.Tensor, TypedDict[str, torch.Tensor]]]:
+                A list with the approximation coefficients,
+                and a coefficeint dict for each scale.
+        """
         if input_signal.dim() == 3:
             # add batch dim to unbatched input
             input_signal = input_signal.unsqueeze(0)
@@ -145,21 +181,36 @@ class MatrixWavedec3(object):
         split_list = []
         ll = input_signal
         for scale, fwt_mats in enumerate(self.fwt_matrix_list):
-            fwt_depth_matrix, fwt_row_matrix, fwt_col_matrix = fwt_mats
-            pad = self.pad_list[scale]
+            # fwt_depth_matrix, fwt_row_matrix, fwt_col_matrix = fwt_mats
+            pad_tuple = self.pad_list[scale]
             current_depth, current_height, current_width = self.size_list[scale]
-            if pad[0] or pad[1] or pad[2]:
-                if pad[0] and not pad[1] and not pad[2]:
-                    ll = torch.nn.functional.pad(ll, [0, 1])
-                elif pad[1] and not pad[0] and not pad[2]:
-                    ll = torch.nn.functional.pad(ll, [0, 0, 0, 1])
-                elif pad[0] and pad[1] and not pad[2]:
-                    ll = torch.nn.functional.pad(ll, [0, 1, 0, 1])
-            ll = batch_mm(fwt_col_matrix, ll.transpose(-2, -1)).transpose(-2, -1)
-            ll = batch_mm(fwt_row_matrix, ll)
-            a_coeffs, d_coeffs = torch.split(ll, current_height // 2, dim=-2)
-            ll, lh = torch.split(a_coeffs, current_width // 2, dim=-1)
-            hl, hh = torch.split(d_coeffs, current_width // 2, dim=-1)
-            split_list.append((lh, hl, hh))
+            if pad_tuple.width:
+                ll = torch.nn.functional.pad(ll, [0, 1])
+            elif pad_tuple.height:
+                ll = torch.nn.functional.pad(ll, [0, 0, 0, 1])
+            elif pad_tuple.depth:
+                ll = torch.nn.functional.pad(ll, [0, 0, 0, 0, 0, 1])
+
+            for dim, mat in enumerate(fwt_mats[::-1]):
+                ll = _batch_dim_mm(mat, ll, dim=(-1) * (dim + 1))
+
+            coeff_a, coeff_d = torch.split(ll, current_depth // 2, dim=-3)
+            coeff_aa, coeff_ad = torch.split(coeff_a, current_height // 2, dim=-2)
+            coeff_da, coeff_dd = torch.split(coeff_d, current_height // 2, dim=-2)
+            ll, coeff_aad = torch.split(coeff_aa, current_width // 2, dim=-1)
+            coeff_ada, coeff_add = torch.split(coeff_ad, current_width // 2, dim=-1)
+            coeff_daa, coeff_dad = torch.split(coeff_da, current_width // 2, dim=-1)
+            coeff_dda, coeff_ddd = torch.split(coeff_dd, current_width // 2, dim=-1)
+            split_list.append(
+                {
+                    "aad": coeff_aad,
+                    "ada": coeff_ada,
+                    "add": coeff_add,
+                    "daa": coeff_daa,
+                    "dad": coeff_dad,
+                    "dda": coeff_dda,
+                    "ddd": coeff_ddd,
+                }
+            )
         split_list.append(ll)
         return split_list[::-1]

@@ -164,6 +164,7 @@ def test_matrix_transform_2d_rebuild(wavelet_str: str, separable: bool) -> None:
 
 
 def test_seperable_haar_2d():
+    """See if the separable haar coefficients are correct."""
     batch_size = 1
     test_data = torch.rand(batch_size, 32, 32).type(torch.float64)
 

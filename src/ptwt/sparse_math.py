@@ -575,3 +575,23 @@ def batch_mm(matrix: torch.Tensor, matrix_batch: torch.Tensor) -> torch.Tensor:
     # Stack the vector batch into columns. (b, n, k) -> (n, b, k) -> (n, b*k)
     vectors = matrix_batch.transpose(0, 1).reshape(matrix.shape[1], -1)
     return matrix.mm(vectors).reshape(matrix.shape[0], batch_size, -1).transpose(1, 0)
+
+
+def _batch_dim_mm(
+    matrix: torch.Tensor, batch_tensor: torch.Tensor, dim: int
+) -> torch.Tensor:
+    """Multiply batch_tensor with matrix along the dimensions specified in dim.
+
+    Args:
+        matrix (torch.Tensor): A matrix of shape [m, n]
+        batch_tensor (torch.Tensor): A tensor with a selected dim of length n.
+        dim (int): The position of the desired dimension.
+
+    Returns:
+        torch.Tensor: The multiplication result.
+    """
+    dim_length = batch_tensor.shape[dim]
+    res = torch.sparse.mm(
+        matrix, batch_tensor.transpose(dim, -1).reshape(-1, dim_length).T
+    ).T
+    return res.reshape(batch_tensor.shape).transpose(-1, dim)

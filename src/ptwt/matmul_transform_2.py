@@ -549,8 +549,9 @@ class MatrixWaverec2(object):
             separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis. This is significantly
                 faster than a non-separable transformation since only a small constant-
-                size part of the matrices must be orthogonalized. For invertability the analysis
-                and synthesis values must be identical! Defaults to True.
+                size part of the matrices must be orthogonalized.
+                For invertability the analysis and synthesis values must be identical!
+                Defaults to True.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
