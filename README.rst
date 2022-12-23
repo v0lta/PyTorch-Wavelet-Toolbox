@@ -26,6 +26,10 @@ Pytorch Wavelet Toolbox (`ptwt`)
     :target: https://github.com/psf/black
     :alt: Black code style
 
+.. image:: https://static.pepy.tech/personalized-badge/ptwt?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=Downloads
+ :target: https://pepy.tech/project/ptwt
+
+
 
 
 Welcome to the PyTorch wavelet toolbox. This package implements:

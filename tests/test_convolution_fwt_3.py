@@ -68,11 +68,11 @@ def test_waverec3(shape: list, wavelet: str, level: int, mode: str) -> None:
     test_list = []
     for a, b in zip(ptwc, cat_pywc):
         if type(a) is torch.Tensor:
-            test_list.append(not np.allclose(a, b))
+            test_list.append(np.allclose(a, b))
         else:
-            test_list.extend([not np.allclose(a[key], b[key]) for key in a.keys()])
+            test_list.extend([np.allclose(a[key], b[key]) for key in a.keys()])
 
-    assert not any(test_list)
+    assert all(test_list)
 
     # ensure the transforms are invertible.
     rec = ptwt.waverec3(ptwc, wavelet)

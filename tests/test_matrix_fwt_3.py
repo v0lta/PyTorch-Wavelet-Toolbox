@@ -8,74 +8,22 @@ import pywt
 import torch
 
 import src.ptwt as ptwt
+from src.ptwt.matmul_transform import construct_boundary_a
 
 
-def _expand_dims(batch_list: List) -> List:
-    for pos, bel in enumerate(batch_list):
-        if type(bel) is np.ndarray:
-            batch_list[pos] = np.expand_dims(bel, 0)
-        else:
-            for key, item in batch_list[pos].items():
-                batch_list[pos][key] = np.expand_dims(item, 0)
-    return batch_list
+def batch_dim_mm(matrix: torch.Tensor, batch_tensor: torch.Tensor, axis: int):
+    dim_length = batch_tensor.shape[axis]
+    res = torch.sparse.mm(matrix, batch_tensor.transpose(axis, -1).reshape(-1, dim_length).T).T
+    return res.reshape(batch_tensor.shape).transpose(-1, axis)
 
 
-def _cat_batch_list(batch_lists: List) -> List:
-    cat_list = None
-    for batch_list in batch_lists:
-        batch_list = _expand_dims(batch_list)
-        if not cat_list:
-            cat_list = batch_list
-        else:
-            for pos, (cat_el, batch_el) in enumerate(zip(cat_list, batch_list)):
-                if type(cat_el) == np.ndarray:
-                    cat_list[pos] = np.concatenate([cat_el, batch_el])
-                elif type(cat_el) == dict:
-                    for key, tensor in cat_el.items():
-                        cat_el[key] = np.concatenate([tensor, batch_el[key]])
-                else:
-                    raise NotImplementedError()
-    return cat_list
+@pytest.mark.parametrize("axis", [1, 2, 3])
+def test_single_dim_mm(axis: int):
+    length = 10
+    test_tensor = torch.rand(4, length, length, length).type(torch.float64)
 
-
-@pytest.mark.parametrize(
-    "shape",
-    [
-        (1, 64, 64, 64),
-        (2, 64, 64, 64),
-        (3, 31, 64, 64),
-        (3, 64, 31, 64),
-        (3, 64, 64, 31),
-        (3, 31, 31, 31),
-        (3, 32, 32, 32),
-    ],
-)
-@pytest.mark.parametrize("wavelet", ["haar", "db2", "db4"])
-@pytest.mark.parametrize("level", [1, 2, None])
-@pytest.mark.parametrize("mode", ["zero", "constant", "periodic"])
-def test_waverec3(shape: list, wavelet: str, level: int, mode: str):
-    """Ensure the 3d analysis transform is invertible."""
-    data = np.random.randn(*shape)
-    data = torch.from_numpy(data)
-    ptwc = ptwt.wavedec3(data, wavelet, level=level, mode=mode)
-    batch_list = []
-    for batch_no in range(data.shape[0]):
-        pywc = pywt.wavedecn(data[batch_no].numpy(), wavelet, level=level, mode=mode)
-        batch_list.append(pywc)
-    cat_pywc = _cat_batch_list(batch_list)
-
-    # ensure ptwt and pywt coefficients are identical.
-    test_list = []
-    for a, b in zip(ptwc, cat_pywc):
-        if type(a) is torch.Tensor:
-            test_list.append(not np.allclose(a, b))
-        else:
-            test_list.extend([not np.allclose(a[key], b[key]) for key in a.keys()])
-
-    assert not any(test_list)
-
-    # ensure the transforms are invertible.
-    rec = ptwt.waverec3(ptwc, wavelet)
-    assert np.allclose(
-        rec.numpy()[..., : shape[1], : shape[2], : shape[3]], data.numpy()
-    )
+    pywt_dec_lo, pywt_dec_hi = pywt.wavedec(test_tensor.numpy(), pywt.Wavelet("Haar"), axis=axis, level=1)
+    haar_mat = construct_boundary_a(pywt.Wavelet("haar"), length=length)
+    dec_lo, dec_hi = batch_dim_mm(haar_mat, test_tensor, axis=axis).split(length//2, axis)
+    assert np.allclose(pywt_dec_lo, dec_lo.numpy())
+    assert np.allclose(pywt_dec_hi, dec_hi.numpy())

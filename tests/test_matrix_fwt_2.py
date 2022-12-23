@@ -171,6 +171,27 @@ def test_matrix_transform_2d_rebuild(wavelet_str: str, separable: bool) -> None:
                 )
 
 
+
+
+def test_seperable_haar_2d():
+    batch_size = 1
+    test_data = torch.rand(batch_size, 32, 32).type(torch.float64)
+
+    pywt_1d_sep = pywt.wavedec(test_data.numpy(), "haar", level=1, axis=-1)
+    pywtll, pywtlh = pywt.wavedec(pywt_1d_sep[0], "haar", level=1, axis=-2)
+    pywthl, pywthh = pywt.wavedec(pywt_1d_sep[1], "haar", level=1, axis=-2)
+    # TODO: double check this!
+    pywtres = (pywtll, pywthl, pywtlh, pywthh)
+
+    ptwtres_nested = MatrixWavedec2("haar", 1)(test_data)
+    # flatten list
+    ptwtres = [tensor for tensor_list in ptwtres_nested for tensor in tensor_list]
+
+    assert all([np.allclose(pywt_test, ptwt_test.numpy()) 
+        for pywt_test, ptwt_test in zip(pywtres, ptwtres)])
+
+
+
 @pytest.mark.parametrize("operator", [MatrixWavedec2, MatrixWavedec])
 def test_empty_operators(operator) -> None:
     """Check if the error is thrown properly if no matrix was ever built."""

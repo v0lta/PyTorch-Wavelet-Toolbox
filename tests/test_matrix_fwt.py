@@ -34,10 +34,10 @@ def test_fwt_ifwt_haar(level: int, length: int) -> None:
     matrix_wavedec = MatrixWavedec(wavelet, level)
     coeffs_matfwt = matrix_wavedec(torch.from_numpy(data))
     test_list = [
-        not np.allclose(cmfwt.numpy(), cpywt)
+        np.allclose(cmfwt.numpy(), cpywt)
         for cmfwt, cpywt in zip(coeffs_matfwt, coeffs)
     ]
-    assert not any(test_list)
+    assert all(test_list)
 
 
 @pytest.mark.slow
@@ -52,10 +52,10 @@ def test_fwt_ifwt_mackey_haar_cuda() -> None:
     matrix_wavedec = MatrixWavedec(wavelet, 9)
     coeffs_matfwt = matrix_wavedec(pt_data)
     test_list = [
-        not np.allclose(cmfwt.cpu().numpy(), cpywt)
+        np.allclose(cmfwt.cpu().numpy(), cpywt)
         for cmfwt, cpywt in zip(coeffs_matfwt, coeffs)
     ]
-    assert not any(test_list)
+    assert all(test_list)
     # test the inverse fwt.
     matrix_waverec = MatrixWaverec(wavelet)
     reconstructed_data = matrix_waverec(coeffs_matfwt)
