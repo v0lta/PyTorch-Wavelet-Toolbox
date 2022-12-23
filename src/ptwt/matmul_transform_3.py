@@ -2,7 +2,7 @@
 import sys
 from collections import namedtuple
 from functools import partial
-from typing import List, Optional, Tuple, TypedDict, Union
+from typing import List, Optional, Tuple, Dict, Union
 
 import numpy as np
 import torch
@@ -130,7 +130,7 @@ class MatrixWavedec3(object):
 
     def __call__(
         self, input_signal: torch.Tensor
-    ) -> List[Union[torch.Tensor, TypedDict[str, torch.Tensor]]]:
+    ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
         """Compute a seperable 3d-boundary wavelet transform.
 
         Args:
