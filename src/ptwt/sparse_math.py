@@ -591,7 +591,7 @@ def _batch_dim_mm(
         torch.Tensor: The multiplication result.
     """
     dim_length = batch_tensor.shape[dim]
-    res = torch.sparse.mm(
-        matrix, batch_tensor.transpose(dim, -1).reshape(-1, dim_length).T
-    ).T
-    return res.reshape(batch_tensor.shape).transpose(-1, dim)
+    permuted_tensor = batch_tensor.transpose(dim, -1)
+    permuted_shape = permuted_tensor.shape
+    res = torch.sparse.mm(matrix, permuted_tensor.reshape(-1, dim_length).T).T
+    return res.reshape(list(permuted_shape[:-1]) + [matrix.shape[0]]).transpose(-1, dim)

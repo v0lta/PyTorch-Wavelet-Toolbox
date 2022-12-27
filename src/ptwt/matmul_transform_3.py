@@ -1,8 +1,7 @@
 """Implement 3D seperable boundary transforms."""
 import sys
-from collections import namedtuple
 from functools import partial
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, NamedTuple
 
 import numpy as np
 import torch
@@ -13,12 +12,17 @@ from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
 
-pad_tuple = namedtuple("pad", ("depth", "height", "width"))
+
+class PadTuple(NamedTuple):
+    """Replaces PadTuple = namedtuple("PadTuple", ("depth", "height", "width"))"""
+    depth: bool
+    height: bool
+    width: bool
 
 
 def _matrix_pad_3(
     depth: int, height: int, width: int
-) -> Tuple[int, int, int, Tuple[bool, bool, bool]]:
+) -> Tuple[int, int, int, PadTuple]:
     pad_depth, pad_height, pad_width = (False, False, False)
     if height % 2 != 0:
         height += 1
@@ -29,7 +33,7 @@ def _matrix_pad_3(
     if depth % 2 != 0:
         depth += 1
         pad_depth = True
-    return depth, height, width, pad_tuple(pad_depth, pad_height, pad_width)
+    return depth, height, width, PadTuple(pad_depth, pad_height, pad_width)
 
 
 class MatrixWavedec3(object):
@@ -60,7 +64,7 @@ class MatrixWavedec3(object):
         self.level = level
         self.boundary = boundary
         self.input_signal_shape: Optional[Tuple[int, int, int]] = None
-        self.fwt_matrix_list: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
+        self.fwt_matrix_list: List[List[torch.Tensor]] = []
 
         if not _is_boundary_mode_supported(self.boundary):
             raise NotImplementedError
@@ -99,12 +103,12 @@ class MatrixWavedec3(object):
                 )
                 break
             # the conv matrices require even length inputs.
-            current_depth, current_height, current_width, pad_tuple = _matrix_pad_3(
+            current_depth, current_height, current_width, PadTuple = _matrix_pad_3(
                 depth=current_depth, height=current_height, width=current_width
             )
-            if any(pad_tuple):
+            if any(PadTuple):
                 self.padded = True
-            self.pad_list.append(pad_tuple)
+            self.pad_list.append(PadTuple)
             self.size_list.append((current_depth, current_height, current_width))
 
             matrix_construction_fun = partial(
@@ -178,24 +182,24 @@ class MatrixWavedec3(object):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
-        split_list = []
+        split_list: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
         ll = input_signal
         for scale, fwt_mats in enumerate(self.fwt_matrix_list):
             # fwt_depth_matrix, fwt_row_matrix, fwt_col_matrix = fwt_mats
-            pad_tuple = self.pad_list[scale]
+            PadTuple = self.pad_list[scale]
             # current_depth, current_height, current_width = self.size_list[scale]
-            if pad_tuple.width:
+            if PadTuple.width:
                 ll = torch.nn.functional.pad(ll, [0, 1])
-            elif pad_tuple.height:
+            elif PadTuple.height:
                 ll = torch.nn.functional.pad(ll, [0, 0, 0, 1])
-            elif pad_tuple.depth:
+            elif PadTuple.depth:
                 ll = torch.nn.functional.pad(ll, [0, 0, 0, 0, 0, 1])
 
             for dim, mat in enumerate(fwt_mats[::-1]):
                 ll = _batch_dim_mm(mat, ll, dim=(-1) * (dim + 1))
 
             def _split_rec(
-                tensor: torch.Tensor, key: str, depth: int, dict: Dict
+                tensor: torch.Tensor, key: str, depth: int, dict: Dict[str, torch.Tensor]
             ) -> None:
                 if key:
                     dict[key] = tensor
@@ -205,7 +209,7 @@ class MatrixWavedec3(object):
                     _split_rec(ca, "a" + key, depth, dict)
                     _split_rec(cd, "d" + key, depth, dict)
 
-            coeff_dict = {}
+            coeff_dict: Dict[str, torch.Tensor] = {}
             _split_rec(ll, "", 3, coeff_dict)
             ll = coeff_dict["aaa"]
             result_keys = list(
@@ -244,7 +248,7 @@ class MatrixWaverec3(object):
         """
         self.wavelet = _as_wavelet(wavelet)
         self.boundary = boundary
-        self.ifwt_matrix_list = []
+        self.ifwt_matrix_list: List[List[torch.Tensor]] = []
         self.input_signal_shape: Optional[Tuple[int, int, int]] = None
         self.level: Optional[int] = None
 
@@ -284,10 +288,10 @@ class MatrixWaverec3(object):
                 )
                 break
             # the conv matrices require even length inputs.
-            current_depth, current_height, current_width, pad_tuple = _matrix_pad_3(
+            current_depth, current_height, current_width, PadTuple = _matrix_pad_3(
                 depth=current_depth, height=current_height, width=current_width
             )
-            if any(pad_tuple):
+            if any(PadTuple):
                 self.padded = True
 
             matrix_construction_fun = partial(
@@ -322,10 +326,13 @@ class MatrixWaverec3(object):
             torch.Tensor: A reconstruction of the original signal.
 
         Raises:
-            ValueError: If the appoximation coefficients arent tensors.
+            ValueError: If the data structure is inconsistent.
         """
         level = len(coefficients) - 1
-        depth, height, width = tuple(c * 2 for c in coefficients[-1]["ddd"].shape[-3:])
+        if type(coefficients[-1]) is dict:
+            depth, height, width = tuple(c * 2 for c in coefficients[-1]["ddd"].shape[-3:])
+        else:
+            raise ValueError("Waverec3 expects dicts of tensors.")
 
         re_build = False
         if (
@@ -362,7 +369,7 @@ class MatrixWaverec3(object):
                     ).format(type(coeff_dict))
                 )
 
-            def _cat_coeff_recursive(dict):
+            def _cat_coeff_recursive(dict: Dict[str, torch.Tensor]) -> torch.Tensor:
                 done_dict = {}
                 a_initial_keys = list(filter(lambda x: x[0] == "a", dict.keys()))
                 for a_key in a_initial_keys:
@@ -378,7 +385,7 @@ class MatrixWaverec3(object):
             coeff_dict["a" * len(list(coeff_dict.keys())[-1])] = ll
             ll = _cat_coeff_recursive(coeff_dict)
 
-            for dim, mat in enumerate(self.ifwt_matrix_list[c_pos]):
+            for dim, mat in enumerate(self.ifwt_matrix_list[level - 1 - c_pos][::-1]):
                 ll = _batch_dim_mm(mat, ll, dim=(-1) * (dim + 1))
 
         return ll

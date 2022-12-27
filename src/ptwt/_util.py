@@ -1,5 +1,5 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
-from typing import Protocol, Sequence, Tuple, Union
+from typing import Protocol, Sequence, Tuple, Union, Optional
 
 import pywt
 import torch
@@ -37,7 +37,7 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
         return wavelet
 
 
-def _is_boundary_mode_supported(boundary_mode: str) -> bool:
+def _is_boundary_mode_supported(boundary_mode: Union[str, Optional[str]]) -> bool:
     return boundary_mode == "qr" or boundary_mode == "gramschmidt"
 
 
