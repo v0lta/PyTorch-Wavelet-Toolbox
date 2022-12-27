@@ -6,7 +6,7 @@ import pywt
 import torch
 
 from src.ptwt.matmul_transform import construct_boundary_a
-from src.ptwt.matmul_transform_3 import MatrixWavedec3
+from src.ptwt.matmul_transform_3 import MatrixWavedec3, MatrixWaverec3
 from src.ptwt.sparse_math import _batch_dim_mm
 
 
@@ -56,6 +56,8 @@ def test_boundary_wavedec3_level1_haar():
 
     ptwtres = MatrixWavedec3("haar", 1)(test_data)
 
+    assert len(pywtres) == len(ptwtres)
+
     test_list = []
     for pywt_el, ptwt_el in zip(pywtres, ptwtres):
         if type(pywt_el) is np.ndarray:
@@ -63,5 +65,14 @@ def test_boundary_wavedec3_level1_haar():
         else:
             for key in pywt_el.keys():
                 test_list.append(np.allclose(pywt_el[key], ptwt_el[key].numpy()))
-
     assert all(test_list)
+
+
+def test_boundary_wavedec3_inverse():
+    """Ensure the 3d matrix wavedec is invertible."""
+    batch_size = 1
+    test_data = torch.rand(batch_size, 32, 32, 32).type(torch.float64)
+    ptwtres = MatrixWavedec3("haar", 1)(test_data)
+    rec = MatrixWaverec3("haar")(ptwtres)
+
+    assert np.allclose(test_data.numpy(), rec.numpy())
