@@ -1,7 +1,7 @@
 """Implement 3D seperable boundary transforms."""
 import sys
 from functools import partial
-from typing import Dict, List, Optional, Tuple, Union, NamedTuple
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -14,7 +14,8 @@ from .sparse_math import _batch_dim_mm
 
 
 class PadTuple(NamedTuple):
-    """Replaces PadTuple = namedtuple("PadTuple", ("depth", "height", "width"))"""
+    """Replaces PadTuple = namedtuple("PadTuple", ("depth", "height", "width"))."""
+
     depth: bool
     height: bool
     width: bool
@@ -103,12 +104,12 @@ class MatrixWavedec3(object):
                 )
                 break
             # the conv matrices require even length inputs.
-            current_depth, current_height, current_width, PadTuple = _matrix_pad_3(
+            current_depth, current_height, current_width, pad_tuple = _matrix_pad_3(
                 depth=current_depth, height=current_height, width=current_width
             )
-            if any(PadTuple):
+            if any(pad_tuple):
                 self.padded = True
-            self.pad_list.append(PadTuple)
+            self.pad_list.append(pad_tuple)
             self.size_list.append((current_depth, current_height, current_width))
 
             matrix_construction_fun = partial(
@@ -186,20 +187,23 @@ class MatrixWavedec3(object):
         ll = input_signal
         for scale, fwt_mats in enumerate(self.fwt_matrix_list):
             # fwt_depth_matrix, fwt_row_matrix, fwt_col_matrix = fwt_mats
-            PadTuple = self.pad_list[scale]
+            pad_tuple = self.pad_list[scale]
             # current_depth, current_height, current_width = self.size_list[scale]
-            if PadTuple.width:
+            if pad_tuple.width:
                 ll = torch.nn.functional.pad(ll, [0, 1])
-            elif PadTuple.height:
+            elif pad_tuple.height:
                 ll = torch.nn.functional.pad(ll, [0, 0, 0, 1])
-            elif PadTuple.depth:
+            elif pad_tuple.depth:
                 ll = torch.nn.functional.pad(ll, [0, 0, 0, 0, 0, 1])
 
             for dim, mat in enumerate(fwt_mats[::-1]):
                 ll = _batch_dim_mm(mat, ll, dim=(-1) * (dim + 1))
 
             def _split_rec(
-                tensor: torch.Tensor, key: str, depth: int, dict: Dict[str, torch.Tensor]
+                tensor: torch.Tensor,
+                key: str,
+                depth: int,
+                dict: Dict[str, torch.Tensor],
             ) -> None:
                 if key:
                     dict[key] = tensor
@@ -288,10 +292,10 @@ class MatrixWaverec3(object):
                 )
                 break
             # the conv matrices require even length inputs.
-            current_depth, current_height, current_width, PadTuple = _matrix_pad_3(
+            current_depth, current_height, current_width, pad_tuple = _matrix_pad_3(
                 depth=current_depth, height=current_height, width=current_width
             )
-            if any(PadTuple):
+            if any(pad_tuple):
                 self.padded = True
 
             matrix_construction_fun = partial(
@@ -330,7 +334,9 @@ class MatrixWaverec3(object):
         """
         level = len(coefficients) - 1
         if type(coefficients[-1]) is dict:
-            depth, height, width = tuple(c * 2 for c in coefficients[-1]["ddd"].shape[-3:])
+            depth, height, width = tuple(
+                c * 2 for c in coefficients[-1]["ddd"].shape[-3:]
+            )
         else:
             raise ValueError("Waverec3 expects dicts of tensors.")
 

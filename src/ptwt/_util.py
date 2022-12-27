@@ -1,5 +1,5 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
-from typing import Protocol, Sequence, Tuple, Union, Optional
+from typing import Optional, Protocol, Sequence, Tuple, Union
 
 import pywt
 import torch
