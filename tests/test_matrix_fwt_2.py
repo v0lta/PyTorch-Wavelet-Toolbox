@@ -151,7 +151,6 @@ def test_matrix_transform_2d_rebuild(wavelet_str: str, separable: bool) -> None:
                 reconstruction = reconstruction[:-1, :]
             if size[1] % 2 != 0:
                 reconstruction = reconstruction[:, :-1]
-            # err = np.sum(np.abs(reconstruction.numpy() - face))
             assert np.allclose(reconstruction.numpy(), face)
             # test the operator matrices
             if not separable and not matrixfwt.padded and not matrixifwt.padded:
@@ -163,16 +162,15 @@ def test_matrix_transform_2d_rebuild(wavelet_str: str, separable: bool) -> None:
                 )
 
 
-def test_seperable_haar_2d():
+def test_separable_haar_2d():
     """See if the separable haar coefficients are correct."""
     batch_size = 1
     test_data = torch.rand(batch_size, 32, 32).type(torch.float64)
 
-    pywt_1d_sep = pywt.wavedec(test_data.numpy(), "haar", level=1, axis=-1)
-    pywtll, pywtlh = pywt.wavedec(pywt_1d_sep[0], "haar", level=1, axis=-2)
-    pywthl, pywthh = pywt.wavedec(pywt_1d_sep[1], "haar", level=1, axis=-2)
-    # TODO: double check this!
-    pywtres = (pywtll, pywthl, pywtlh, pywthh)
+    pywtl, pywth = pywt.wavedec(test_data.numpy(), "haar", level=1, axis=-1)
+    pywtll, pywthl = pywt.wavedec(pywtl, "haar", level=1, axis=-2)
+    pywtlh, pywthh = pywt.wavedec(pywth, "haar", level=1, axis=-2)
+    pywtres = (pywtll, pywtlh, pywthl, pywthh)
 
     ptwtres_nested = MatrixWavedec2("haar", 1)(test_data)
     # flatten list

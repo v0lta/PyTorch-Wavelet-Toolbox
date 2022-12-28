@@ -400,7 +400,8 @@ class MatrixWavedec2(object):
 
         Returns:
             (list): The resulting coefficients per level stored in
-            a pywt style list.
+            a pywt style list. The list is ordered as:
+            (ll, (lh, hl, hh), ...)
 
         Raises:
             ValueError: If the decomposition level is not a positive integer
@@ -465,7 +466,7 @@ class MatrixWavedec2(object):
                 a_coeffs, d_coeffs = torch.split(ll, current_height // 2, dim=-2)
                 ll, lh = torch.split(a_coeffs, current_width // 2, dim=-1)
                 hl, hh = torch.split(d_coeffs, current_width // 2, dim=-1)
-                # TODO: double check!
+
                 split_list.append((lh, hl, hh))
             split_list.append(ll)
         else:

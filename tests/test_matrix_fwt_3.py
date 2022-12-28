@@ -56,11 +56,8 @@ def test_boundary_wavedec3_level1_haar(shape):
             "ddd": pyhhh,
         },
     ]
-
     ptwtres = MatrixWavedec3("haar", 1)(test_data)
-
     assert len(pywtres) == len(ptwtres)
-
     test_list = []
     for pywt_el, ptwt_el in zip(pywtres, ptwtres):
         if type(pywt_el) is np.ndarray:
@@ -71,17 +68,17 @@ def test_boundary_wavedec3_level1_haar(shape):
     assert all(test_list)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("level", [1, 2, 3, None])
 @pytest.mark.parametrize(
     "shape", [[31, 32, 33], [63, 35, 32], [32, 62, 31], [32, 32, 64]]
 )
 def test_boundary_wavedec3_inverse(level, shape):
-    """Ensure the 3d matrix wavedec is invertible."""
+    """Ensure the 3d matrix wavedec is invertible and the paddings works for odd axes."""
     batch_size = 1
     test_data = torch.rand(batch_size, shape[0], shape[1], shape[2]).type(torch.float64)
     ptwtres = MatrixWavedec3("haar", level)(test_data)
     rec = MatrixWaverec3("haar")(ptwtres)
-
     assert np.allclose(
         test_data.numpy(), rec[:, : shape[0], : shape[1], : shape[2]].numpy()
     )
