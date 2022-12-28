@@ -71,10 +71,9 @@ def test_boundary_wavedec3_level1_haar(shape):
     assert all(test_list)
 
 
-# TODO: Test odd entry padding!!!
 @pytest.mark.parametrize("level", [1, 2, 3, None])
 @pytest.mark.parametrize(
-    "shape", [[32, 32, 32], [64, 32, 32], [32, 64, 32], [32, 32, 64]]
+    "shape", [[31, 32, 33], [63, 35, 32], [32, 62, 31], [32, 32, 64]]
 )
 def test_boundary_wavedec3_inverse(level, shape):
     """Ensure the 3d matrix wavedec is invertible."""

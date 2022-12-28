@@ -190,10 +190,10 @@ class MatrixWavedec3(object):
             pad_tuple = self.pad_list[scale]
             # current_depth, current_height, current_width = self.size_list[scale]
             if pad_tuple.width:
-                ll = torch.nn.functional.pad(ll, [0, 1])
-            elif pad_tuple.height:
-                ll = torch.nn.functional.pad(ll, [0, 0, 0, 1])
-            elif pad_tuple.depth:
+                ll = torch.nn.functional.pad(ll, [0, 1, 0, 0, 0, 0])
+            if pad_tuple.height:
+                ll = torch.nn.functional.pad(ll, [0, 0, 0, 1, 0, 0])
+            if pad_tuple.depth:
                 ll = torch.nn.functional.pad(ll, [0, 0, 0, 0, 0, 1])
 
             for dim, mat in enumerate(fwt_mats[::-1]):
@@ -380,7 +380,11 @@ class MatrixWaverec3(object):
                 a_initial_keys = list(filter(lambda x: x[0] == "a", dict.keys()))
                 for a_key in a_initial_keys:
                     d_key = "d" + a_key[1:]
-                    cat_tensor = torch.cat([dict[a_key], dict[d_key]], dim=-len(a_key))
+                    cat_d = dict[d_key]
+                    d_shape = cat_d.shape
+                    # undo any analysis padding.
+                    cat_a = dict[a_key][:, : d_shape[1], : d_shape[2], : d_shape[3]]
+                    cat_tensor = torch.cat([cat_a, cat_d], dim=-len(a_key))
                     if a_key[1:]:
                         done_dict[a_key[1:]] = cat_tensor
                     else:
