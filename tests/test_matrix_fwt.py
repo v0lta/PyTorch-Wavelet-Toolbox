@@ -64,7 +64,7 @@ def test_fwt_ifwt_mackey_haar_cuda() -> None:
 @pytest.mark.slow
 @pytest.mark.parametrize("level", [1, 2, 3, 4, None])
 @pytest.mark.parametrize("wavelet", ["db2", "db3", "db4", "sym5"])
-def test_fwt_ifwt_mackey_db2(level: int, wavelet: str) -> None:
+def test_fwt_ifwt_mackey(level: int, wavelet: str) -> None:
     """Test multiple wavelets and levels for a long signal."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     wavelet = pywt.Wavelet(wavelet)

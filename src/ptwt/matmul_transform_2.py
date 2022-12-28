@@ -401,7 +401,8 @@ class MatrixWavedec2(object):
         Returns:
             (list): The resulting coefficients per level stored in
             a pywt style list. The list is ordered as:
-            (ll, (lh, hl, hh), ...)
+            (ll, (lh, hl, hh), ...), with 'l' for low-pass and
+            'h' for high pass filters.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer

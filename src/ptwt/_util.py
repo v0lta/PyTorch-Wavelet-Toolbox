@@ -22,7 +22,7 @@ class Wavelet(Protocol):
     ]
 
     def __len__(self) -> int:
-        """Return the number of filters."""
+        """Return the number of filter coefficients."""
         return len(self.dec_lo)
 
 
