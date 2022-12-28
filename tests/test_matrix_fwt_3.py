@@ -74,7 +74,7 @@ def test_boundary_wavedec3_level1_haar(shape):
     "shape", [[31, 32, 33], [63, 35, 32], [32, 62, 31], [32, 32, 64]]
 )
 def test_boundary_wavedec3_inverse(level, shape):
-    """Ensure the 3d matrix wavedec is invertible and the paddings works for odd axes."""
+    """Test the 3d matrix wavedec and the padding for odd axes."""
     batch_size = 1
     test_data = torch.rand(batch_size, shape[0], shape[1], shape[2]).type(torch.float64)
     ptwtres = MatrixWavedec3("haar", level)(test_data)

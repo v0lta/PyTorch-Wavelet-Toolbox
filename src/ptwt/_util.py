@@ -4,6 +4,8 @@ from typing import Optional, Protocol, Sequence, Tuple, Union
 import pywt
 import torch
 
+from src.ptwt.wavelets_learnable import WaveletFilter
+
 
 class Wavelet(Protocol):
     """Wavelet object interface, based on the pywt wavelet object."""
@@ -18,6 +20,10 @@ class Wavelet(Protocol):
     filter_bank: Tuple[
         Sequence[float], Sequence[float], Sequence[float], Sequence[float]
     ]
+
+    def __len__(self) -> int:
+        """Return the number of filters."""
+        return len(self.dec_lo)
 
 
 def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
@@ -37,6 +43,13 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
         return wavelet
 
 
+def _as_device(device: Union[torch.device, str]) -> torch.device:
+    if isinstance(device, str):
+        return torch.device(device)
+    else:
+        return device
+
+
 def _is_boundary_mode_supported(boundary_mode: Union[str, Optional[str]]) -> bool:
     return boundary_mode == "qr" or boundary_mode == "gramschmidt"
 
@@ -48,3 +61,15 @@ def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     a_mul = torch.unsqueeze(a_flat, dim=-1)
     b_mul = torch.unsqueeze(b_flat, dim=0)
     return a_mul * b_mul
+
+
+def _get_len(wavelet: Union[str, Tuple[torch.Tensor], pywt.Wavelet]) -> int:
+    """Get number of filter coefficients for various wavelet data types."""
+    if isinstance(wavelet, str):
+        return len(_as_wavelet(wavelet))
+    elif isinstance(wavelet, WaveletFilter) or isinstance(wavelet, pywt.Wavelet):
+        return len(wavelet)
+    elif isinstance(wavelet, tuple):
+        return wavelet[0].shape[0]
+    else:
+        raise ValueError

@@ -5,7 +5,22 @@ from typing import List, Optional, Sequence, Tuple, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet
+from ._util import Wavelet, _as_wavelet, _get_len, _as_device
+
+
+def _create_tensor(
+    filter: Sequence[float], flip: bool, device: torch.device, dtype: torch.dtype
+) -> torch.Tensor:
+    if flip:
+        if isinstance(filter, torch.Tensor):
+            return filter.flip(-1).unsqueeze(0).to(device)
+        else:
+            return torch.tensor(filter[::-1], device=device, dtype=dtype).unsqueeze(0)
+    else:
+        if isinstance(filter, torch.Tensor):
+            return filter.unsqueeze(0).to(device)
+        else:
+            return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
 
 
 def get_filter_tensors(
@@ -20,7 +35,7 @@ def get_filter_tensors(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
         flip (bool): If true filters are flipped.
-        device (torch.device) : PyTorch target device.
+        device (torch.device or str) : PyTorch target device.
         dtype (torch.dtype): The data type sets the precision of the
                computation. Default: torch.float32.
 
@@ -30,26 +45,16 @@ def get_filter_tensors(
 
     """
     wavelet = _as_wavelet(wavelet)
+    device = _as_device(device)
 
-    def _create_tensor(filter: Sequence[float]) -> torch.Tensor:
-        if flip:
-            if isinstance(filter, torch.Tensor):
-                return filter.flip(-1).unsqueeze(0).to(device)
-            else:
-                return torch.tensor(filter[::-1], device=device, dtype=dtype).unsqueeze(
-                    0
-                )
-        else:
-            if isinstance(filter, torch.Tensor):
-                return filter.unsqueeze(0).to(device)
-            else:
-                return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
-
-    dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
-    dec_lo_tensor = _create_tensor(dec_lo)
-    dec_hi_tensor = _create_tensor(dec_hi)
-    rec_lo_tensor = _create_tensor(rec_lo)
-    rec_hi_tensor = _create_tensor(rec_hi)
+    if isinstance(wavelet, tuple):
+        dec_lo, dec_hi, rec_lo, rec_hi = wavelet
+    else:
+        dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
+    dec_lo_tensor = _create_tensor(dec_lo, flip, device, dtype)
+    dec_hi_tensor = _create_tensor(dec_hi, flip, device, dtype)
+    rec_lo_tensor = _create_tensor(rec_lo, flip, device, dtype)
+    rec_hi_tensor = _create_tensor(rec_hi, flip, device, dtype)
     return dec_lo_tensor, dec_hi_tensor, rec_lo_tensor, rec_hi_tensor
 
 
@@ -116,6 +121,8 @@ def fwt_pad(
 ) -> torch.Tensor:
     """Pad the input signal to make the fwt matrix work.
 
+    The padding assumes the last axis is transformed.
+
     Args:
         data (torch.Tensor): Input data [batch_size, 1, time]
         wavelet (Wavelet or str): A pywt wavelet compatible object or
@@ -136,7 +143,7 @@ def fwt_pad(
     # convert pywt to pytorch convention.
     mode = _translate_boundary_strings(mode)
 
-    padr, padl = _get_pad(data.shape[-1], len(wavelet.dec_lo))
+    padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
     data_pad = torch.nn.functional.pad(data, [padl, padr], mode=mode)
     return data_pad
 
