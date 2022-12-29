@@ -48,6 +48,9 @@ class MatrixWavedec3(object):
     ):
         """Create a *separable* three-dimensional fast boundary wavelet transform.
 
+        Input signals should have the shape [batch_size, depth, height, width],
+        this object transforms the last three dimensions.
+
         Args:
             wavelet (Union[Wavelet, str]): The wavelet to use.
             level (Optional[int]): The desired decomposition level.
