@@ -252,9 +252,10 @@ class MatrixWavedec2(object):
                 Choose 'gramschmidt' if 'qr' runs out of memory.
                 Defaults to 'qr'.
             separable (bool): If this flag is set, a separable transformation
-                is used, i.e. a 1d transformation along each axis. This is significantly
-                faster than a non-separable transformation since only a small constant-
-                size part of the matrices must be orthogonalized. Defaults to True.
+                is used, i.e. a 1d transformation along each axis. 
+                Matrix construction is significantly faster for separable transformations
+                since only a small constant-size part of the matrices must be orthogonalized.
+                Defaults to True.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
