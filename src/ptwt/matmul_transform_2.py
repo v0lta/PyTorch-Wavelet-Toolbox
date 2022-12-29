@@ -216,7 +216,8 @@ class MatrixWavedec2(object):
         For longer wavelets, high level transforms, and large
         input images this may take a while.
         The matrix is therefore constructed only once.
-        It can be accessed via the sparse_fwt_operator property.
+        In the non separable case, it can be accessed via 
+        the sparse_fwt_operator property.
 
     Example:
         >>> import ptwt, torch, pywt
