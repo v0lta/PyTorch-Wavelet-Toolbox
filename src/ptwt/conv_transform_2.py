@@ -1,4 +1,8 @@
-"""This module implements two dimensional padded wavelet transforms."""
+"""This module implements two-dimensional padded wavelet transforms.
+
+The implementation relies on torch.nn.functional.conv2d and
+torch.nn.functional.conv_transpose2d under the hood.
+"""
 
 
 from typing import List, Optional, Tuple, Union
@@ -6,21 +10,23 @@ from typing import List, Optional, Tuple, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _outer
+from ._util import Wavelet, _as_wavelet, _get_len, _outer
 from .conv_transform import _get_pad, _translate_boundary_strings, get_filter_tensors
 
 
 def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct two dimensional filters using outer products.
+    """Construct two-dimensional filters using outer products.
 
     Args:
         lo (torch.Tensor): Low-pass input filter.
         hi (torch.Tensor): High-pass input filter
 
     Returns:
-        torch.Tensor: Stacked 2d filters of dimension
-            [filt_no, 1, height, width].
-            The four filters are ordered ll, lh, hl, hh.
+        torch.Tensor: Stacked 2d-filters of dimension
+
+        [filt_no, 1, height, width].
+
+        The four filters are ordered ll, lh, hl, hh.
 
     """
     ll = _outer(lo, lo)
@@ -32,18 +38,23 @@ def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     return filt
 
 
-def fwt_pad2(
+def _fwt_pad2(
     data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str = "reflect"
 ) -> torch.Tensor:
     """Pad data for the 2d FWT.
+
+    This function pads along the last two axes.
 
     Args:
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         mode (str): The padding mode.
-            Supported modes are "reflect", "zero", "constant" and "periodic".
-            Defaults to reflect.
+            Supported modes are::
+
+                "reflect", "zero", "constant", "periodic".
+
+            "reflect" is the default mode.
 
     Returns:
         The padded output tensor.
@@ -52,8 +63,8 @@ def fwt_pad2(
     mode = _translate_boundary_strings(mode)
 
     wavelet = _as_wavelet(wavelet)
-    padb, padt = _get_pad(data.shape[-2], len(wavelet.dec_lo))
-    padr, padl = _get_pad(data.shape[-1], len(wavelet.dec_lo))
+    padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
+    padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
     data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
     return data_pad
 
@@ -64,26 +75,31 @@ def wavedec2(
     level: Optional[int] = None,
     mode: str = "reflect",
 ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-    """Non seperated two dimensional wavelet transform.
+    """Non separated two-dimensional wavelet transform.
 
     Args:
         data (torch.Tensor): The input data tensor with up to three dimensions.
             2d inputs are interpreted as [height, width],
             3d inputs are interpreted as [batch_size, height, width].
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet.
+            the name of a pywt wavelet. Refer to the output of
+            ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
         level (int): The number of desired scales.
             Defaults to None.
-        mode (str): The padding mode. Options are
-            "reflect", "zero", "constant" and "periodic".
-            Defaults to "reflect".
+        mode (str): The padding mode. Options are::
+
+                "reflect", "zero", "constant", "periodic".
+
+            This function defaults to "reflect".
 
     Returns:
         list: A list containing the wavelet coefficients.
-              The coefficients are in pywt order. That is:
-              [cAn, (cHn, cVn, cDn), … (cH1, cV1, cD1)] .
-              A denotes approximation, H horizontal, V vertical
-              and D diagonal coefficients.
+        The coefficients are in pywt order. That is::
+
+            [cAn, (cHn, cVn, cDn), … (cH1, cV1, cD1)] .
+
+        A denotes approximation, H horizontal, V vertical
+        and D diagonal coefficients.
 
     Raises:
         ValueError: If the dimensionality of the input data tensor is unsupported.
@@ -107,7 +123,7 @@ def wavedec2(
     elif data.dim() == 4:
         raise ValueError(
             "Wavedec2 does not support four input dimensions. \
-             Optionally-batched two dimensional inputs work."
+             Optionally-batched two-dimensional inputs work."
         )
     elif data.dim() == 1:
         raise ValueError("Wavedec2 needs more than one input dimension to work.")
@@ -126,7 +142,7 @@ def wavedec2(
     ] = []
     res_ll = data
     for _ in range(level):
-        res_ll = fwt_pad2(res_ll, wavelet, mode=mode)
+        res_ll = _fwt_pad2(res_ll, wavelet, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
         result_lst.append((res_lh, res_hl, res_hh))
@@ -142,6 +158,12 @@ def waverec2(
 
     Args:
         coeffs (list): The wavelet coefficient list produced by wavedec2.
+            The coefficients must be in pywt order. That is::
+
+            [cAn, (cHn, cVn, cDn), … (cH1, cV1, cD1)] .
+
+            A denotes approximation, H horizontal, V vertical,
+            and D diagonal coefficients.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
 
@@ -149,7 +171,7 @@ def waverec2(
         torch.Tensor: The reconstructed signal.
 
     Raises:
-        ValueError: If `coeffs` is not in the shape as it is returned from `wavedec2`.
+        ValueError: If `coeffs` is not in a shape as returned from `wavedec2`.
 
     Example:
         >>> import ptwt, pywt, torch

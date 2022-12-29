@@ -1,4 +1,7 @@
-"""Code for three dimensional padded transforms."""
+"""Code for three dimensional padded transforms.
+
+The functions here are based on torch.nn.functional.conv3d and it's transpose.
+"""
 
 from typing import Dict, List, Optional, Union
 
@@ -17,9 +20,11 @@ def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
         hi (torch.Tensor): High-pass input filter
 
     Returns:
-        torch.Tensor: Stacked 3d filters of dimension
-            [8, 1, length, height, width].
-            The four filters are ordered ll, lh, hl, hh.
+        torch.Tensor: Stacked 3d filters of dimension::
+
+        [8, 1, length, height, width].
+
+        The four filters are ordered ll, lh, hl, hh.
 
     """
     dim_size = lo.shape[-1]
@@ -40,7 +45,9 @@ def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
 def _fwt_pad3(
     data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str
 ) -> torch.Tensor:
-    """Pad data for the 2d FWT.
+    """Pad data for the 3d-FWT.
+
+    This function pads the last three axes.
 
     Args:
         data (torch.Tensor): Input data with 4 dimensions.
@@ -70,25 +77,35 @@ def wavedec3(
     level: Optional[int] = None,
     mode: str = "zero",
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
-    """Compute a three dimensional wavelet transform.
+    """Compute a three-dimensional wavelet transform.
 
     Args:
         data (torch.Tensor): The input data of shape
             [batch_size, length, height, width]
-        wavelet (Union[Wavelet, str]): The wavelet to be used.
+        wavelet (Union[Wavelet, str]): The wavelet to transform with.
+            ``pywt.wavelist(kind='discrete')`` lists possible choices.
         level (Optional[int]): The maximum decomposition level.
-            Defaults to None.
-        mode (str): The padding mode. Options are
+            This argument defaults to None.
+        mode (str): The padding mode. Possible options are
             "zero", "constant" or "periodic".
             Defaults to "zero".
 
     Returns:
         list: A list with the lll coefficients and dictionaries
-            with the filter order strings ("aad", "ada", "add",
-            "daa", "dad", "dda", "ddd") as keys.
+        with the filter order strings::
+
+        ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
+
+        as keys. With a for the low pass or approximation filter and
+        d for the high-pass or detail filter.
 
     Raises:
-        ValueError: If the input has fewer than 3 dimensions.
+        ValueError: If the input has fewer than three dimensions.
+
+    Example:
+        >>> import ptwt, torch
+        >>> data = torch.randn(5, 16, 16, 16)
+        >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
 
     """
     if data.dim() < 3:
@@ -143,7 +160,15 @@ def waverec3(
             the name of a pywt wavelet.
 
     Returns:
-        torch.Tensor: The reconstructed signal.
+        torch.Tensor: The reconstructed four-dimensional signal of shape
+        [batch, depth, height, width].
+
+    Example:
+        >>> import ptwt, torch
+        >>> data = torch.randn(5, 16, 16, 16)
+        >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
+        >>> reconstruction = ptwt.waverec3(transformed, "haar")
+
     """
     wavelet = _as_wavelet(wavelet)
     # the Union[tensor, dict] idea is coming from pywt. We don't change it here.

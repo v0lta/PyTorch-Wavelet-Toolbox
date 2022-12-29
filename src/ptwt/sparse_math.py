@@ -323,6 +323,9 @@ def construct_conv_matrix(
     """Construct a convolution matrix.
 
     Full, valid and same, padding are supported.
+    For reference see:
+    https://github.com/RoyiAvital/StackExchangeCodes/blob/\
+    master/StackOverflow/Q2080835/CreateConvMtxSparse.m
 
     Args:
         filter (torch.tensor): The 1d-filter to convolve with.
@@ -337,10 +340,6 @@ def construct_conv_matrix(
     Raises:
         ValueError: If the padding is not 'full', 'same' or 'valid'.
 
-    Note:
-        For reference see:
-        https://github.com/RoyiAvital/StackExchangeCodes/blob/\
-            master/StackOverflow/Q2080835/CreateConvMtxSparse.m
     """
     filter_length = len(filter)
 

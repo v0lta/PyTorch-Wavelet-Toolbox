@@ -4,7 +4,7 @@ from typing import Optional, Protocol, Sequence, Tuple, Union
 import pywt
 import torch
 
-from src.ptwt.wavelets_learnable import WaveletFilter
+from .wavelets_learnable import WaveletFilter
 
 
 class Wavelet(Protocol):
@@ -44,6 +44,7 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
 
 
 def _as_device(device: Union[torch.device, str]) -> torch.device:
+    """Convert a string to a device if necessary."""
     if isinstance(device, str):
         return torch.device(device)
     else:

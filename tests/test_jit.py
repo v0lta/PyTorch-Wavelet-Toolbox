@@ -34,8 +34,7 @@ def _set_up_wavelet_tuple(wavelet, dtype):
 @pytest.mark.parametrize("length", [64, 65])
 @pytest.mark.parametrize("batch_size", [1, 3])
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
-@pytest.mark.parametrize("mode", ["reflect", "zero"])
-def test_conv_fwt_jit(wavelet_string, level, mode, length, batch_size, dtype):
+def test_conv_fwt_jit(wavelet_string, level, length, batch_size, dtype):
     """Test multiple convolution fwt, for various levels and padding options."""
     generator = MackeyGenerator(
         batch_size=batch_size, tmax=length, delta_t=1, device="cpu"

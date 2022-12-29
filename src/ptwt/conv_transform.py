@@ -1,11 +1,14 @@
-"""Fast wavelet transformation code with edge-padding."""
+"""Fast wavelet transformations based on torch.nn.functional.conv1d and its transpose.
+
+This module treats boundaries with edge-padding.
+"""
 # Created by moritz wolter, 14.04.20
 from typing import List, Optional, Sequence, Tuple, Union
 
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _get_len, _as_device
+from ._util import Wavelet, _as_device, _as_wavelet, _get_len
 
 
 def _create_tensor(
@@ -33,9 +36,9 @@ def get_filter_tensors(
 
     Args:
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-                the name of a pywt wavelet.
-        flip (bool): If true filters are flipped.
-        device (torch.device or str) : PyTorch target device.
+            the name of a pywt wavelet.
+        flip (bool): Flip filters left-right, if true.
+        device (torch.device or str): PyTorch target device.
         dtype (torch.dtype): The data type sets the precision of the
                computation. Default: torch.float32.
 
@@ -63,10 +66,12 @@ def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
 
     Args:
         data_len (int): The length of the input vector.
-        filt_len (int): The length of the used filter.
+        filt_len (int): The size of the used filter.
 
     Returns:
-        tuple: The numbers to attach on the edges of the input.
+        Tuple: The first entry specifies how many numbers
+            to attach on the right. The second
+            entry covers the left side.
 
     """
     # pad to ensure we see all filter positions and
@@ -93,11 +98,11 @@ def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
 
 
 def _translate_boundary_strings(pywt_mode: str) -> str:
-    """Translate pywt mode strings to pytorch mode strings.
+    """Translate pywt mode strings to PyTorch mode strings.
 
-    We support constant, zero, reflect and periodic.
-    Unfortunately "constant" has different meanings in the
-    pytorch and pywavelet communities.
+    We support constant, zero, reflect, and periodic.
+    Unfortunately, "constant" has different meanings in the
+    Pytorch and PyWavelet communities.
 
     Raises:
         ValueError: If the padding mode is not supported.
@@ -116,27 +121,29 @@ def _translate_boundary_strings(pywt_mode: str) -> str:
     return pt_mode
 
 
-def fwt_pad(
+def _fwt_pad(
     data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str = "reflect"
 ) -> torch.Tensor:
     """Pad the input signal to make the fwt matrix work.
 
-    The padding assumes the last axis is transformed.
+    The padding assumes a future step will transform the last axis.
 
     Args:
         data (torch.Tensor): Input data [batch_size, 1, time]
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode (str): The desired way to pad.
-            Supported modes are "reflect", "zero", "constant" and "periodic".
+        mode (str): The desired way to pad. The following methods are supported::
+
+                "reflect", "zero", "constant", "periodic".
+
             Refection padding mirrors samples along the border.
             Zero padding pads zeros.
             Constant padding replicates border values.
-            periodic padding repeats samples in a cyclic fashing.
-            Defaults to reflect.
+            Periodic padding cyclically repeats samples.
+            This function defaults to reflect.
 
     Returns:
-        torch.Tensor: A pytorch tensor with the padded input data
+        torch.Tensor: A PyTorch tensor with the padded input data
 
     """
     wavelet = _as_wavelet(wavelet)
@@ -193,14 +200,22 @@ def wavedec(
                              2d inputs are interpreted as [batch_size, time].
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+            Please consider the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         level (int): The scale level to be computed.
                                Defaults to None.
-        mode (str): The desired padding mode. Padding extends the singal along
-            the edges. Supported modes are "reflect", "zero", "constant"
-            and "periodic". Defaults to "reflect".
+        mode (str): The desired padding mode. Padding extends the signal along
+            the edges. Supported methods are::
+
+                "reflect", "zero", "constant", "periodic".
+
+            Defaults to "reflect".
 
     Returns:
-        list: A list [cA_n, cD_n, cD_n-1, …, cD2, cD1]
+        list: A list::
+
+            [cA_n, cD_n, cD_n-1, …, cD2, cD1]
+
         containing the wavelet coefficients. A denotes
         approximation and D detail coefficients.
 
@@ -235,7 +250,7 @@ def wavedec(
     result_lst = []
     res_lo = data
     for _ in range(level):
-        res_lo = fwt_pad(res_lo, wavelet, mode=mode)
+        res_lo = _fwt_pad(res_lo, wavelet, mode=mode)
         res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)
         result_lst.append(res_hi.squeeze(1))

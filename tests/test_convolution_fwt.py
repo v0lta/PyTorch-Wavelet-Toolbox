@@ -153,7 +153,9 @@ def test_outer():
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("wavelet_str", ["haar", "db2", "db3", "db4", "sym4"])
+@pytest.mark.parametrize(
+    "wavelet_str", ["haar", "db2", "db3", "db4", "sym4", "rbio2.4", "coif3", "bior2.2"]
+)
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("size", [(32, 32), (32, 64), (64, 32), (31, 31)])
 @pytest.mark.parametrize("mode", ["reflect", "zero", "constant", "periodic"])

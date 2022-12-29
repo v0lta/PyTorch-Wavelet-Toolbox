@@ -140,7 +140,7 @@ def construct_boundary_a2(
         device (torch.device): Where to place the matrix. Either on
             the CPU or GPU.
         boundary (str): The method to use for matrix orthogonalization.
-            Choose qr or gramschmidt. Defaults to qr.
+            Choose "qr" or "gramschmidt". Defaults to "qr".
         dtype (torch.dtype, optional): The desired data-type for the matrix.
             Defaults to torch.float64.
 
@@ -400,9 +400,11 @@ class MatrixWavedec2(object):
 
         Returns:
             (list): The resulting coefficients per level stored in
-            a pywt style list. The list is ordered as:
-            (ll, (lh, hl, hh), ...), with 'l' for low-pass and
-            'h' for high pass filters.
+            a pywt style list. The list is ordered as::
+
+                (ll, (lh, hl, hh), ...)
+
+            with 'l' for low-pass and 'h' for high pass filters.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer
