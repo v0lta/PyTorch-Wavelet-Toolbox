@@ -5,4 +5,5 @@ from .conv_transform_2 import wavedec2, waverec2
 from .conv_transform_3 import wavedec3, waverec3
 from .matmul_transform import MatrixWavedec, MatrixWaverec
 from .matmul_transform_2 import MatrixWavedec2, MatrixWaverec2
+from .matmul_transform_3 import MatrixWavedec3, MatrixWaverec3
 from .packets import WaveletPacket, WaveletPacket2D

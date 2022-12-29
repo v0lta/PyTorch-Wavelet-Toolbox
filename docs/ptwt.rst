@@ -60,6 +60,14 @@ ptwt.matmul\_transform\_2 module
    :undoc-members:
    :show-inheritance:
 
+ptwt.matmul\_transform\_3 module
+--------------------------------
+
+.. automodule:: ptwt.matmul_transform_3
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 ptwt.sparse\_math module
 ------------------------
 

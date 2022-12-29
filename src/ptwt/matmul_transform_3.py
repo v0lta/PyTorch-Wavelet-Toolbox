@@ -1,4 +1,4 @@
-"""Implement 3D seperable boundary transforms."""
+"""Implement 3D separable boundary transforms."""
 import sys
 from functools import partial
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
@@ -38,7 +38,7 @@ def _matrix_pad_3(
 
 
 class MatrixWavedec3(object):
-    """Compute 3d seperable transforms."""
+    """Compute 3d separable transforms."""
 
     def __init__(
         self,
@@ -46,11 +46,11 @@ class MatrixWavedec3(object):
         level: Optional[int] = None,
         boundary: Optional[str] = "qr",
     ):
-        """Create a *seperable* three dimensional fast boundary wavelet transform.
+        """Create a *separable* three-dimensional fast boundary wavelet transform.
 
         Args:
             wavelet (Union[Wavelet, str]): The wavelet to use.
-            level (Optional[int]): The desired decompositon level.
+            level (Optional[int]): The desired decomposition level.
                 Defaults to None.
             boundary (Optional[str]): The matrix orthogonalization method.
                 Defaults to "qr".
@@ -136,7 +136,7 @@ class MatrixWavedec3(object):
     def __call__(
         self, input_signal: torch.Tensor
     ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
-        """Compute a seperable 3d-boundary wavelet transform.
+        """Compute a separable 3d-boundary wavelet transform.
 
         Args:
             input_signal (torch.Tensor): An input signal of shape
@@ -148,7 +148,7 @@ class MatrixWavedec3(object):
         Returns:
             List[Union[torch.Tensor, TypedDict[str, torch.Tensor]]]:
                 A list with the approximation coefficients,
-                and a coefficeint dict for each scale.
+                and a coefficient dict for each scale.
         """
         if input_signal.dim() == 3:
             # add batch dim to unbatched input
@@ -228,14 +228,14 @@ class MatrixWavedec3(object):
 
 
 class MatrixWaverec3(object):
-    """Reconstruct a signal from 3d-seperable-fwt coefficients."""
+    """Reconstruct a signal from 3d-separable-fwt coefficients."""
 
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
         boundary: str = "qr",
     ):
-        """Compute a three dimensional seperable boundary wavlet synthesis transform.
+        """Compute a three-dimensional separable boundary wavelet synthesis transform.
 
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
@@ -248,7 +248,7 @@ class MatrixWaverec3(object):
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
-            ValueError: If the wavelet filters have different lenghts.
+            ValueError: If the wavelet filters have different lengths.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.boundary = boundary
@@ -320,7 +320,7 @@ class MatrixWaverec3(object):
     def __call__(
         self, coefficients: List[Union[torch.Tensor, Dict[str, torch.Tensor]]]
     ) -> torch.Tensor:
-        """Recustruct a batched 3d-signal from it's coefficients.
+        """Reconstruct a batched 3d-signal from it's coefficients.
 
         Args:
             coefficients (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
