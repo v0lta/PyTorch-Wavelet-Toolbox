@@ -13,8 +13,8 @@ from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
 
 
-class PadTuple(NamedTuple):
-    """Replaces PadTuple = namedtuple("PadTuple", ("depth", "height", "width"))."""
+class _PadTuple(NamedTuple):
+    """Replaces _PadTuple = namedtuple("_PadTuple", ("depth", "height", "width"))."""
 
     depth: bool
     height: bool
@@ -23,7 +23,7 @@ class PadTuple(NamedTuple):
 
 def _matrix_pad_3(
     depth: int, height: int, width: int
-) -> Tuple[int, int, int, PadTuple]:
+) -> Tuple[int, int, int, _PadTuple]:
     pad_depth, pad_height, pad_width = (False, False, False)
     if height % 2 != 0:
         height += 1
@@ -34,7 +34,7 @@ def _matrix_pad_3(
     if depth % 2 != 0:
         depth += 1
         pad_depth = True
-    return depth, height, width, PadTuple(pad_depth, pad_height, pad_width)
+    return depth, height, width, _PadTuple(pad_depth, pad_height, pad_width)
 
 
 class MatrixWavedec3(object):
