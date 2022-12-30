@@ -392,7 +392,6 @@ class MatrixWaverec3(object):
                         done_dict[a_key[1:]] = cat_tensor
                     else:
                         return cat_tensor
-
                 return _cat_coeff_recursive(done_dict)
 
             coeff_dict["a" * len(list(coeff_dict.keys())[-1])] = ll
