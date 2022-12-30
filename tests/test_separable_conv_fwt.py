@@ -27,7 +27,7 @@ def test_separable_conv(shape, level) -> None:
     flat_pywt_res.extend(details)
 
     pt_data = torch.from_numpy(data).unsqueeze(0).type(torch.float64)
-    ptwt_res = _separable_conv_wavedecn(pt_data, "haar", mode="reflect", levels=level)
+    ptwt_res = _separable_conv_wavedecn(pt_data, "haar", mode="reflect", level=level)
     ptwt_res_lists = [ptwt_res[0]]
     # product a proper order.
     ptwt_res_lists.extend(
