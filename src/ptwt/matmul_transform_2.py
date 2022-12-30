@@ -216,7 +216,8 @@ class MatrixWavedec2(object):
         For longer wavelets, high level transforms, and large
         input images this may take a while.
         The matrix is therefore constructed only once.
-        It can be accessed via the sparse_fwt_operator property.
+        In the non separable case, it can be accessed via
+        the sparse_fwt_operator property.
 
     Example:
         >>> import ptwt, torch, pywt
@@ -252,9 +253,10 @@ class MatrixWavedec2(object):
                 Choose 'gramschmidt' if 'qr' runs out of memory.
                 Defaults to 'qr'.
             separable (bool): If this flag is set, a separable transformation
-                is used, i.e. a 1d transformation along each axis. This is significantly
-                faster than a non-separable transformation since only a small constant-
-                size part of the matrices must be orthogonalized. Defaults to True.
+                is used, i.e. a 1d transformation along each axis.
+                Matrix construction is significantly faster for separable
+                transformations since only a small constant-size part of the
+                matrices must be orthogonalized. Defaults to True.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -436,7 +438,10 @@ class MatrixWavedec2(object):
             re_build = True
 
         if self.level is None:
-            self.level = int(np.min([np.log2(height), np.log2(width)]))
+            wlen = len(self.wavelet)
+            self.level = int(
+                np.min([np.log2(height / (wlen - 1)), np.log2(width / (wlen - 1))])
+            )
             re_build = True
         elif self.level <= 0:
             raise ValueError("level must be a positive integer.")

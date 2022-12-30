@@ -13,8 +13,8 @@ from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
 
 
-class PadTuple(NamedTuple):
-    """Replaces PadTuple = namedtuple("PadTuple", ("depth", "height", "width"))."""
+class _PadTuple(NamedTuple):
+    """Replaces _PadTuple = namedtuple("_PadTuple", ("depth", "height", "width"))."""
 
     depth: bool
     height: bool
@@ -23,7 +23,7 @@ class PadTuple(NamedTuple):
 
 def _matrix_pad_3(
     depth: int, height: int, width: int
-) -> Tuple[int, int, int, PadTuple]:
+) -> Tuple[int, int, int, _PadTuple]:
     pad_depth, pad_height, pad_width = (False, False, False)
     if height % 2 != 0:
         height += 1
@@ -34,7 +34,7 @@ def _matrix_pad_3(
     if depth % 2 != 0:
         depth += 1
         pad_depth = True
-    return depth, height, width, PadTuple(pad_depth, pad_height, pad_width)
+    return depth, height, width, _PadTuple(pad_depth, pad_height, pad_width)
 
 
 class MatrixWavedec3(object):
@@ -47,6 +47,9 @@ class MatrixWavedec3(object):
         boundary: Optional[str] = "qr",
     ):
         """Create a *separable* three-dimensional fast boundary wavelet transform.
+
+        Input signals should have the shape [batch_size, depth, height, width],
+        this object transforms the last three dimensions.
 
         Args:
             wavelet (Union[Wavelet, str]): The wavelet to use.
@@ -173,7 +176,16 @@ class MatrixWavedec3(object):
             re_build = True
 
         if self.level is None:
-            self.level = int(np.min([np.log2(depth), np.log2(height), np.log2(width)]))
+            wlen = len(self.wavelet)
+            self.level = int(
+                np.min(
+                    [
+                        np.log2(depth / (wlen - 1)),
+                        np.log2(height / (wlen - 1)),
+                        np.log2(width / (wlen - 1)),
+                    ]
+                )
+            )
             re_build = True
         elif self.level <= 0:
             raise ValueError("level must be a positive integer.")
@@ -389,7 +401,6 @@ class MatrixWaverec3(object):
                         done_dict[a_key[1:]] = cat_tensor
                     else:
                         return cat_tensor
-
                 return _cat_coeff_recursive(done_dict)
 
             coeff_dict["a" * len(list(coeff_dict.keys())[-1])] = ll

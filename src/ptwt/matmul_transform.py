@@ -326,7 +326,8 @@ class MatrixWavedec(object):
             re_build = True
 
         if self.level is None:
-            self.level = int(np.log2(length))
+            wlen = len(self.wavelet)
+            self.level = int(np.log2(length / (wlen - 1)))
             re_build = True
         elif self.level <= 0:
             raise ValueError("level must be a positive integer.")
