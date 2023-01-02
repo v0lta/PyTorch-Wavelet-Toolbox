@@ -43,7 +43,7 @@ def _separable_conv_dwtn_(
         current_axis = len(key) + 1
         transposed = input.transpose(-current_axis, -1)
         flat = transposed.reshape(-1, transposed.shape[-1])
-        res_a, res_d = wavedec(flat, wavelet, 1, mode)
+        res_a, res_d = wavedec(flat, wavelet, level=1, mode=mode)
         res_a = res_a.reshape(list(transposed.shape[:-1]) + [res_a.shape[-1]])
         res_d = res_d.reshape(list(transposed.shape[:-1]) + [res_d.shape[-1]])
         res_a = res_a.transpose(-1, -current_axis)
