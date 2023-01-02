@@ -8,6 +8,12 @@ import torch
 from src.ptwt.separable_conv_transform import (
     _separable_conv_wavedecn,
     _separable_conv_waverecn,
+    fswavedec,
+    fswavedec2,
+    fswavedec3,
+    fswaverec,
+    fswaverec2,
+    fswaverec3,
 )
 
 
@@ -41,7 +47,7 @@ def test_separable_conv(shape, level) -> None:
     flat_ptwt_res = [
         tensor.numpy() for tensor_list in ptwt_res_lists for tensor in tensor_list
     ]
-
+    # pywt and ptwt should produce identical coefficients.
     pywt_fine_scale = list(filter(lambda x: x.shape == approx.shape, flat_pywt_res))
     assert all(
         [
@@ -54,4 +60,31 @@ def test_separable_conv(shape, level) -> None:
     assert np.allclose(rec.numpy(), data)
 
 
-# TODO: Test padding!!!
+@pytest.mark.parametrize("shape", [(5, 64), (5, 65), (5, 29)])
+@pytest.mark.parametrize("wavelet", ["haar", "db3", "sym5"])
+def test_example_fs1d(shape, wavelet):
+    """Test 1d fully separable padding."""
+    data = torch.randn(*shape).type(torch.float64)
+    coeff = fswavedec(data, wavelet, level=2)
+    rec = fswaverec(coeff, wavelet)
+    assert np.allclose(data.numpy(), rec[: shape[0], : shape[1]].numpy())
+
+
+@pytest.mark.parametrize("shape", [(5, 64, 64), (5, 65, 65), (5, 29, 29)])
+@pytest.mark.parametrize("wavelet", ["haar", "db3", "sym5"])
+def test_example_fs2d(shape, wavelet):
+    """Test 2d fully separable padding."""
+    data = torch.randn(*shape).type(torch.float64)
+    coeff = fswavedec2(data, wavelet, level=2)
+    rec = fswaverec2(coeff, wavelet)
+    assert np.allclose(data.numpy(), rec[[slice(0, s) for s in shape]].numpy())
+
+
+@pytest.mark.parametrize("shape", [(5, 64, 64, 64), (5, 65, 65, 65), (5, 29, 29, 29)])
+@pytest.mark.parametrize("wavelet", ["haar", "db3", "sym5"])
+def test_example_fs3d(shape, wavelet):
+    """Test 3d fully separable padding."""
+    data = torch.randn(*shape).type(torch.float64)
+    coeff = fswavedec3(data, wavelet, level=2)
+    rec = fswaverec3(coeff, wavelet)
+    assert np.allclose(data.numpy(), rec[[slice(0, s) for s in shape]].numpy())

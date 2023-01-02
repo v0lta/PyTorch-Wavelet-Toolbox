@@ -10,7 +10,7 @@ import numpy as np
 import pywt
 import torch
 
-from src.ptwt.conv_transform import wavedec, waverec
+from .conv_transform import wavedec, waverec
 
 
 def _separable_conv_dwtn_(
@@ -168,3 +168,210 @@ def _separable_conv_waverecn(
         level_dict["a" * max(map(len, keys))] = approx  # type: ignore
         approx = _separable_conv_idwtn(level_dict, wavelet)  # type: ignore
     return approx
+
+
+def fswavedec(
+    input: torch.Tensor,
+    wavelet: Union[str, pywt.Wavelet],
+    mode: str = "reflect",
+    level: Optional[int] = None,
+) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+    """Compute a fully separable 1D-padded analysis wavelet transform.
+
+    Args:
+        input (torch.Tensor): An input signal of shape [batch, length].
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet. Refer to the output of
+            ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
+        mode (str): The padding mode. Options are::
+
+                "reflect", "zero", "constant", "periodic".
+
+            This function defaults to "reflect".
+        level (int): The number of desired scales.
+            Defaults to None.
+
+
+    Raises:
+        ValueError: If the input is not a batched 1d-signal.
+
+    Returns:
+        List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+            The transformed signal.
+
+    Example:
+        >>> import torch
+        >>> import ptwt
+        >>> data = torch.randn(5,10)
+        >>> coeff = ptwt.fswavedec(data, "haar", level=2)
+
+    """
+    if len(input.shape) == 1:
+        input = input.unsqueeze(0)
+    if len(input.shape) != 2:
+        raise ValueError("Batched 1d inputs required for a 1d transform.")
+    return _separable_conv_wavedecn(input, wavelet, mode, level)
+
+
+def fswavedec2(
+    input: torch.Tensor,
+    wavelet: Union[str, pywt.Wavelet],
+    mode: str = "reflect",
+    level: Optional[int] = None,
+) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+    """Compute a fully separable 2D-padded analysis wavelet transform.
+
+    Args:
+        input (torch.Tensor): An input signal of shape [batch, height, width].
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet. Refer to the output of
+            ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
+        mode (str): The padding mode. Options are::
+
+                "reflect", "zero", "constant", "periodic".
+
+            This function defaults to "reflect".
+        level (int): The number of desired scales.
+            Defaults to None.
+
+    Raises:
+        ValueError: If the input is not a batched 2d-signal.
+
+    Returns:
+        List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+            The transformed signal.
+
+    Example:
+        >>> import torch
+        >>> import ptwt
+        >>> data = torch.randn(5, 10, 10)
+        >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
+
+    """
+    if len(input.shape) == 2:
+        input = input.unsqueeze(0)
+    if len(input.shape) != 3:
+        raise ValueError("Batched 2d inputs required for a 2d transform.")
+    return _separable_conv_wavedecn(input, wavelet, mode, level)
+
+
+def fswavedec3(
+    input: torch.Tensor,
+    wavelet: Union[str, pywt.Wavelet],
+    mode: str = "reflect",
+    level: Optional[int] = None,
+) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+    """Compute a fully separable 3D-padded analysis wavelet transform.
+
+    Args:
+        input (torch.Tensor): An input signal of shape [batch, height, width].
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet. Refer to the output of
+            ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
+        mode (str): The padding mode. Options are::
+
+                "reflect", "zero", "constant", "periodic".
+
+            This function defaults to "reflect".
+        level (int): The number of desired scales.
+            Defaults to None.
+
+    Raises:
+        ValueError: If the input is not a batched 2d-signal.
+
+    Returns:
+        List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+            The transformed signal.
+
+    Example:
+        >>> import torch
+        >>> import ptwt
+        >>> data = torch.randn(5, 10, 10, 10)
+        >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
+    """
+    if len(input.shape) == 3:
+        input = input.unsqueeze(0)
+    if len(input.shape) != 4:
+        raise ValueError("Batched 3d inputs required for a 3d transform.")
+
+    return _separable_conv_wavedecn(input, wavelet, mode, level)
+
+
+def fswaverec(
+    coeff_list: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    wavelet: Union[str, pywt.Wavelet],
+) -> torch.Tensor:
+    """Compute a fully separable 1D-padded synthesis wavelet transform.
+
+    Args:
+        coeff_list (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
+            The wavelet coefficients as computed by `fswavedec`.
+        wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
+            synthesis transform.
+
+    Returns:
+        torch.Tensor: A reconstruction of the signal encoded in the
+            wavelet coefficients.
+
+    Example:
+        >>> import torch
+        >>> import ptwt
+        >>> data = torch.randn(5,10)
+        >>> coeff = ptwt.fswavedec(data, "haar", level=2)
+        >>> rec = ptwt.fswaverec(coeff, "haar")
+    """
+    return _separable_conv_waverecn(coeff_list, wavelet)
+
+
+def fswaverec2(
+    coeff_list: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    wavelet: Union[str, pywt.Wavelet],
+) -> torch.Tensor:
+    """Compute a fully separable 2D-padded synthesis wavelet transform.
+
+    Args:
+        coeff_list (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
+            The wavelet coefficients as computed by `fswavedec2`.
+        wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
+            synthesis transform.
+
+    Returns:
+        torch.Tensor: A reconstruction of the signal encoded in the
+            wavelet coefficients.
+
+    Example:
+        >>> import torch
+        >>> import ptwt
+        >>> data = torch.randn(5, 10, 10)
+        >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
+        >>> rec = ptwt.fswaverec2(coeff, "haar")
+
+    """
+    return _separable_conv_waverecn(coeff_list, wavelet)
+
+
+def fswaverec3(
+    coeff_list: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    wavelet: Union[str, pywt.Wavelet],
+) -> torch.Tensor:
+    """Compute a fully separable 3D-padded synthesis wavelet transform.
+
+    Args:
+        coeff_list (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
+            The wavelet coefficients as computed by `fswavedec3`.
+        wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
+            synthesis transform.
+
+    Returns:
+        torch.Tensor: A reconstruction of the signal encoded in the
+            wavelet coefficients.
+
+    Example:
+        >>> import torch
+        >>> import ptwt
+        >>> data = torch.randn(5, 10, 10, 10)
+        >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
+        >>> rec = ptwt.fswaverec3(coeff, "haar")
+
+    """
+    return _separable_conv_waverecn(coeff_list, wavelet)
