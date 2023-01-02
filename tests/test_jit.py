@@ -27,7 +27,8 @@ def _set_up_wavelet_tuple(wavelet, dtype):
         torch.tensor(wavelet.rec_hi).type(dtype),
     )
 
-def jit_wavedec_fun(data, wavelet, level, mode='reflect'):
+
+def _jit_wavedec_fun(data, wavelet, level, mode="reflect"):
     return ptwt.wavedec(data, wavelet, mode, level)
 
 
@@ -38,7 +39,7 @@ def jit_wavedec_fun(data, wavelet, level, mode='reflect'):
 @pytest.mark.parametrize("batch_size", [1, 3])
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
 def test_conv_fwt_jit(wavelet_string, level, length, batch_size, dtype):
-    """Test multiple convolution fwt, for various levels and padding options."""
+    """Test jitting a convolution fwt, for various levels and padding options."""
     generator = MackeyGenerator(
         batch_size=batch_size, tmax=length, delta_t=1, device="cpu"
     )
@@ -49,7 +50,9 @@ def test_conv_fwt_jit(wavelet_string, level, length, batch_size, dtype):
 
     with pytest.warns(None):
         jit_wavedec = torch.jit.trace(
-            jit_wavedec_fun, (mackey_data_1, wavelet, torch.tensor(level)), strict=False
+            _jit_wavedec_fun,
+            (mackey_data_1, wavelet, torch.tensor(level)),
+            strict=False,
         )
         ptcoeff = jit_wavedec(mackey_data_1, wavelet, level=torch.tensor(level))
         jit_waverec = torch.jit.trace(ptwt.waverec, (ptcoeff, wavelet))
