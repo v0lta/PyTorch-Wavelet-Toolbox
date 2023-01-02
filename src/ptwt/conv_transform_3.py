@@ -74,8 +74,8 @@ def _fwt_pad3(
 def wavedec3(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
-    level: Optional[int] = None,
     mode: str = "zero",
+    level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a three-dimensional wavelet transform.
 
@@ -84,11 +84,11 @@ def wavedec3(
             [batch_size, length, height, width]
         wavelet (Union[Wavelet, str]): The wavelet to transform with.
             ``pywt.wavelist(kind='discrete')`` lists possible choices.
-        level (Optional[int]): The maximum decomposition level.
-            This argument defaults to None.
         mode (str): The padding mode. Possible options are
             "zero", "constant" or "periodic".
             Defaults to "zero".
+        level (Optional[int]): The maximum decomposition level.
+            This argument defaults to None.
 
     Returns:
         list: A list with the lll coefficients and dictionaries

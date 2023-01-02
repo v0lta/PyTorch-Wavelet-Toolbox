@@ -189,8 +189,8 @@ def _flatten_2d_coeff_lst(
 def wavedec(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
-    level: Optional[int] = None,
     mode: str = "reflect",
+    level: Optional[int] = None,
 ) -> List[torch.Tensor]:
     """Compute the analysis (forward) 1d fast wavelet transform.
 
