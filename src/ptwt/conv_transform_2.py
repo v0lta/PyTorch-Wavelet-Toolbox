@@ -72,8 +72,8 @@ def _fwt_pad2(
 def wavedec2(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
-    level: Optional[int] = None,
     mode: str = "reflect",
+    level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
     """Non separated two-dimensional wavelet transform.
 
@@ -84,13 +84,13 @@ def wavedec2(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
-        level (int): The number of desired scales.
-            Defaults to None.
         mode (str): The padding mode. Options are::
 
                 "reflect", "zero", "constant", "periodic".
 
             This function defaults to "reflect".
+        level (int): The number of desired scales.
+            Defaults to None.
 
     Returns:
         list: A list containing the wavelet coefficients.

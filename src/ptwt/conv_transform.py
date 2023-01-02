@@ -202,14 +202,14 @@ def wavedec(
             the name of a pywt wavelet.
             Please consider the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        level (int): The scale level to be computed.
-                               Defaults to None.
         mode (str): The desired padding mode. Padding extends the signal along
             the edges. Supported methods are::
 
                 "reflect", "zero", "constant", "periodic".
 
             Defaults to "reflect".
+        level (int): The scale level to be computed.
+                               Defaults to None.
 
     Returns:
         list: A list::
