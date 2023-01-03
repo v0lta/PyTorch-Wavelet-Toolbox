@@ -119,6 +119,7 @@ def wavedec2(
     if data.dim() == 2:
         data = data.unsqueeze(0).unsqueeze(0)
     elif data.dim() == 3:
+        # add a channel dimension for torch.
         data = data.unsqueeze(1)
     elif data.dim() == 4:
         raise ValueError(
@@ -145,8 +146,8 @@ def wavedec2(
         res_ll = _fwt_pad2(res_ll, wavelet, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
-        result_lst.append((res_lh, res_hl, res_hh))
-    result_lst.append(res_ll)
+        result_lst.append(tuple(r.squeeze(1) for r in (res_lh, res_hl, res_hh)))
+    result_lst.append(res_ll.squeeze(1))
     return result_lst[::-1]
 
 
@@ -168,7 +169,7 @@ def waverec2(
             the name of a pywt wavelet.
 
     Returns:
-        torch.Tensor: The reconstructed signal.
+        torch.Tensor: The reconstructed signal of shape [batch, height, width].
 
     Raises:
         ValueError: If `coeffs` is not in a shape as returned from `wavedec2`.
@@ -200,10 +201,12 @@ def waverec2(
 
     res_ll = coeffs[0]
     for c_pos, res_lh_hl_hh in enumerate(coeffs[1:]):
-        res_ll = torch.cat(
+        res_ll = torch.stack(
             [res_ll, res_lh_hl_hh[0], res_lh_hl_hh[1], res_lh_hl_hh[2]], 1
         )
-        res_ll = torch.nn.functional.conv_transpose2d(res_ll, rec_filt, stride=2)
+        res_ll = torch.nn.functional.conv_transpose2d(
+            res_ll, rec_filt, stride=2
+        ).squeeze(1)
 
         # remove the padding
         padl = (2 * filt_len - 3) // 2

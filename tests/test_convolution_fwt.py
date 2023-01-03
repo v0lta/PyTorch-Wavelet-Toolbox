@@ -162,7 +162,7 @@ def test_outer():
 def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
 
-    Wavedec2 and waverec2 invert each other.
+    wavedec2 and waverec2 must invert each other.
     """
     face = np.transpose(
         scipy.misc.face()[256 : (512 + size[0]), 256 : (512 + size[1])], [2, 0, 1]
@@ -174,11 +174,11 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
         if type(coeffs) is tuple:
             for tuple_pos, tuple_el in enumerate(coeffs):
                 assert (
-                    tuple_el.shape == torch.squeeze(coeff2d[pos][tuple_pos], 1).shape
+                    tuple_el.shape == coeff2d[pos][tuple_pos].shape
                 ), "pywt and ptwt should produce the same shapes."
         else:
             assert (
-                coeffs.shape == torch.squeeze(coeff2d[pos], 1).shape
+                coeffs.shape == coeff2d[pos].shape
             ), "pywt and ptwt should produce the same shapes."
     flat_coeff_list_pywt = np.concatenate(_flatten_2d_coeff_lst(pywt_coeff2d), -1)
     flat_coeff_list_ptwt = torch.cat(_flatten_2d_coeff_lst(coeff2d), -1)
