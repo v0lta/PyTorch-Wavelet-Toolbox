@@ -28,8 +28,8 @@ def _set_up_wavelet_tuple(wavelet, dtype):
     )
 
 
-def _jit_wavedec_fun(data, wavelet, level, mode="reflect"):
-    return ptwt.wavedec(data, wavelet, mode, level)
+def _to_jit_wavedec_fun(data, wavelet, level):
+    return ptwt.wavedec(data, wavelet, "reflect", level)
 
 
 @pytest.mark.slow
@@ -50,7 +50,7 @@ def test_conv_fwt_jit(wavelet_string, level, length, batch_size, dtype):
 
     with pytest.warns(None):
         jit_wavedec = torch.jit.trace(
-            _jit_wavedec_fun,
+            _to_jit_wavedec_fun,
             (mackey_data_1, wavelet, torch.tensor(level)),
             strict=False,
         )
@@ -58,3 +58,50 @@ def test_conv_fwt_jit(wavelet_string, level, length, batch_size, dtype):
         jit_waverec = torch.jit.trace(ptwt.waverec, (ptcoeff, wavelet))
         res = jit_waverec(ptcoeff, wavelet)
     assert np.allclose(mackey_data_1.numpy(), res.numpy()[:, : mackey_data_1.shape[-1]])
+
+
+def _to_jit_wavedec_2(data, wavelet):
+    """Ensure uniform datatypes in lists for the tracer.
+
+    Going from List[Union[torch.Tensor, List[torch.Tensor]]] to List[torch.Tensor]
+    means we have to stack the lists in the output.
+    """
+    coeff = ptwt.wavedec2(data, wavelet, "reflect", 2)
+    coeff2 = []
+    for c in coeff:
+        if isinstance(c, torch.Tensor):
+            coeff2.append(c)
+        else:
+            coeff2.append(torch.stack(c))
+    return coeff2
+
+
+def _to_jit_waverec_2(data, wavelet):
+    """Undo the stacking from the jit wavedec2 wrapper."""
+    d_unstack = [data[0]]
+    for c in data[1:]:
+        d_unstack.append(list(sc.squeeze(0) for sc in torch.split(c, 1, dim=0)))
+    rec = ptwt.waverec2(d_unstack, wavelet)
+    return rec
+
+
+def test_conv_fwt_jit_2d():
+    """Test the jit compilation feature for the wavedec2 function."""
+    data = torch.randn(10, 20, 20).type(torch.float64)
+    wavelet = pywt.Wavelet("db4")
+    coeff = _to_jit_wavedec_2(data, wavelet)
+    rec = _to_jit_waverec_2(coeff, wavelet)
+    assert np.allclose(rec.squeeze(1).numpy(), data.numpy())
+
+    wavelet = _set_up_wavelet_tuple(wavelet, dtype=torch.float64)
+    with pytest.warns(None):
+        jit_wavedec2 = torch.jit.trace(
+            _to_jit_wavedec_2,
+            (data, wavelet),
+            strict=False,
+        )
+        jit_ptcoeff = jit_wavedec2(data, wavelet)
+        # unstack the lists.
+        jit_waverec = torch.jit.trace(_to_jit_waverec_2, (jit_ptcoeff, wavelet))
+        rec = jit_waverec(jit_ptcoeff, wavelet)
+    assert np.allclose(rec.squeeze(1).numpy(), data.numpy(), atol=1e-7)
