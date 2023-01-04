@@ -146,7 +146,7 @@ def wavedec2(
         res_ll = _fwt_pad2(res_ll, wavelet, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
-        result_lst.append(tuple(r.squeeze(1) for r in (res_lh, res_hl, res_hh)))
+        result_lst.append(tuple(r.squeeze(1) for r in (res_lh, res_hl, res_hh))) # type: ignore
     result_lst.append(res_ll.squeeze(1))
     return result_lst[::-1]
 

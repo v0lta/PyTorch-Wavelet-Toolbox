@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _outer, _get_len
+from ._util import Wavelet, _as_wavelet, _get_len, _outer
 from .conv_transform import _get_pad, _translate_boundary_strings, get_filter_tensors
 
 

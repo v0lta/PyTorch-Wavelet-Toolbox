@@ -108,11 +108,10 @@ def test_conv_fwt_jit_2d():
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy(), atol=1e-7)
 
 
-
 def _to_jit_wavedec_3(data, wavelet):
     """Ensure uniform datatypes in lists for the tracer.
 
-    Going from List[Union[torch.Tensor, List[torch.Tensor]]] to List[torch.Tensor]
+    Going from List[Union[torch.Tensor, Dict[str, torch.Tensor]]] to List[torch.Tensor]
     means we have to stack the lists in the output.
     """
     assert data.shape == (10, 20, 20, 20), "Changing the chape requires re-tracing."
@@ -126,18 +125,21 @@ def _to_jit_wavedec_3(data, wavelet):
             coeff2.append(torch.stack([c[key] for key in keys]))
     return coeff2
 
+
 def _to_jit_waverec_3(data, wavelet):
-    """Undo the stacking from the jit wavedec2 wrapper."""
+    """Undo the stacking from the jit wavedec3 wrapper."""
     d_unstack = [data[0]]
     keys = ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
     for c in data[1:]:
-        d_unstack.append({key: sc.squeeze(0) for sc, key in zip(torch.split(c, 1, dim=0), keys)})
+        d_unstack.append(
+            {key: sc.squeeze(0) for sc, key in zip(torch.split(c, 1, dim=0), keys)}
+        )
     rec = ptwt.waverec3(d_unstack, wavelet)
     return rec
 
 
 def test_conv_fwt_jit_3d():
-    """Test the jit compilation feature for the wavedec2 function."""
+    """Test the jit compilation feature for the wavedec3 function."""
     data = torch.randn(10, 20, 20, 20).type(torch.float64)
     wavelet = pywt.Wavelet("db4")
     coeff = _to_jit_wavedec_3(data, wavelet)
