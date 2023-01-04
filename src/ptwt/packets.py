@@ -321,10 +321,10 @@ class WaveletPacket2D(BaseDict):
                     )
                     self[node] = rec
                 else:
-                    data_a = self[node + "a"].unsqueeze(1)
-                    data_h = self[node + "h"].unsqueeze(1)
-                    data_v = self[node + "v"].unsqueeze(1)
-                    data_d = self[node + "d"].unsqueeze(1)
+                    data_a = self[node + "a"]
+                    data_h = self[node + "h"]
+                    data_v = self[node + "v"]
+                    data_d = self[node + "d"]
                     rec = self._get_waverec(data_a.shape[-2:])(
                         (data_a, (data_h, data_v, data_d))
                     )
