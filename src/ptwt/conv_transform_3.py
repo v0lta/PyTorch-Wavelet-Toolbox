@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _outer
+from ._util import Wavelet, _as_wavelet, _outer, _get_len
 from .conv_transform import _get_pad, _translate_boundary_strings, get_filter_tensors
 
 
@@ -62,9 +62,9 @@ def _fwt_pad3(
     mode = _translate_boundary_strings(mode)
 
     wavelet = _as_wavelet(wavelet)
-    pad_back, pad_front = _get_pad(data.shape[-3], len(wavelet.dec_lo))
-    pad_bottom, pad_top = _get_pad(data.shape[-2], len(wavelet.dec_lo))
-    pad_right, pad_left = _get_pad(data.shape[-1], len(wavelet.dec_lo))
+    pad_back, pad_front = _get_pad(data.shape[-3], _get_len(wavelet))
+    pad_bottom, pad_top = _get_pad(data.shape[-2], _get_len(wavelet))
+    pad_right, pad_left = _get_pad(data.shape[-1], _get_len(wavelet))
     data_pad = torch.nn.functional.pad(
         data, [pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back], mode=mode
     )
