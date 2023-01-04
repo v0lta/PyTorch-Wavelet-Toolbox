@@ -5,7 +5,9 @@ torch.nn.functional.conv_transpose2d under the hood.
 """
 
 
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, TypeVar
+
+TensorOrTensorList = TypeVar("TensorOrTensorList", torch.Tensor, List[torch.Tensor])
 
 import pywt
 import torch
@@ -109,7 +111,7 @@ def wavedec2(
         >>> import ptwt, pywt
         >>> import numpy as np
         >>> import scipy.misc
-        >>> face = np.transpose(scipy.misc.face(),
+        >>> face = np.transpose(scipy.datasets.face(),
         >>>                     [2, 0, 1]).astype(np.float64)
         >>> pytorch_face = torch.tensor(face)
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
@@ -146,7 +148,8 @@ def wavedec2(
         res_ll = _fwt_pad2(res_ll, wavelet, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
-        result_lst.append(tuple(r.squeeze(1) for r in (res_lh, res_hl, res_hh))) # type: ignore
+        to_append = (res_lh.squeeze(1), res_hl.squeeze(1), res_hh.squeeze(1))
+        result_lst.append(to_append)
     result_lst.append(res_ll.squeeze(1))
     return result_lst[::-1]
 
@@ -178,7 +181,7 @@ def waverec2(
         >>> import ptwt, pywt, torch
         >>> import numpy as np
         >>> import scipy.misc
-        >>> face = np.transpose(scipy.misc.face(),
+        >>> face = np.transpose(scipy.datasets.face(),
         >>>                     [2, 0, 1]).astype(np.float64)
         >>> pytorch_face = torch.tensor(face)
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),

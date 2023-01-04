@@ -106,7 +106,7 @@ To test an example run:
   import numpy as np
   import scipy.misc
 
-  face = np.transpose(scipy.misc.face(),
+  face = np.transpose(scipy.datasets.face(),
                           [2, 0, 1]).astype(np.float64)
   pytorch_face = torch.tensor(face)
   coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),

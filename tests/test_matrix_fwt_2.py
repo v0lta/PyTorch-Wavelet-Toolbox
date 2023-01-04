@@ -47,7 +47,7 @@ def test_analysis_synthesis_matrices2(size: tuple, wavelet_str: str) -> None:
 def test_matrix_analysis_fwt_2d_haar(size: tuple, level: int) -> None:
     """Test the fwt-2d matrix-haar transform, should be equal to the pywt."""
     face = np.mean(
-        scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
+        scipy.datasets.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
     ).astype(np.float64)
     wavelet = pywt.Wavelet("haar")
     matrixfwt = MatrixWavedec2(wavelet, level=level, separable=False)
@@ -84,7 +84,7 @@ def test_boundary_matrix_fwt_2d(
 ) -> None:
     """Ensure the boundary matrix fwt is invertable."""
     face = np.mean(
-        scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
+        scipy.datasets.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
     ).astype(np.float64)
     wavelet = pywt.Wavelet(wavelet_str)
     matrixfwt = MatrixWavedec2(wavelet, level=level, separable=separable)
@@ -115,7 +115,7 @@ def test_batched_2d_matrix_fwt_ifwt(
     wavelet_str: str, level: int, size: tuple, separable: bool
 ):
     """Ensure the batched matrix fwt works properly."""
-    face = scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])].astype(
+    face = scipy.datasets.face()[256 : (256 + size[0]), 256 : (256 + size[1])].astype(
         np.float64
     )
     pt_face = torch.from_numpy(face).permute([2, 0, 1])
@@ -142,7 +142,7 @@ def test_matrix_transform_2d_rebuild(wavelet_str: str, separable: bool) -> None:
         matrixfwt = MatrixWavedec2(wavelet, level=level, separable=separable)
         for size in [[16, 16], [17, 17]]:
             face = np.mean(
-                scipy.misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
+                scipy.datasets.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
             ).astype(np.float64)
             mat_coeff = matrixfwt(torch.from_numpy(face))
             reconstruction = matrixifwt(mat_coeff).squeeze(0)
