@@ -73,7 +73,7 @@ def cwt(
     elif np.isscalar(scales):
         scales = np.array([scales])
 
-    if isinstance(wavelet, _DifferentiableContinuousWavelet):
+    if isinstance(wavelet, torch.nn.Module):
         if data.is_cuda:
             wavelet.cuda()
 
@@ -82,7 +82,7 @@ def cwt(
     if type(wavelet) is ContinuousWavelet:
         int_psi = np.conj(int_psi) if wavelet.complex_cwt else int_psi
         int_psi = torch.tensor(int_psi, device=data.device)
-    elif isinstance(wavelet, _DifferentiableContinuousWavelet):
+    elif isinstance(wavelet, torch.nn.Module):
         int_psi = torch.conj(int_psi) if wavelet.complex_cwt else int_psi
     else:
         int_psi = torch.tensor(int_psi, device=data.device)

@@ -5,8 +5,10 @@ import numpy as np
 import pytest
 import pywt
 import torch
+from scipy import signal
 
 import src.ptwt as ptwt
+from ptwt.continuous_transform import _ShannonWavelet
 from tests._mackey_glass import MackeyGenerator
 
 
@@ -48,7 +50,7 @@ def test_conv_fwt_jit(wavelet_string, level, length, batch_size, dtype):
     wavelet = pywt.Wavelet(wavelet_string)
     wavelet = _set_up_wavelet_tuple(wavelet, dtype)
 
-    with pytest.warns(None):
+    with pytest.warns(Warning):
         jit_wavedec = torch.jit.trace(
             _to_jit_wavedec_fun,
             (mackey_data_1, wavelet, torch.tensor(level)),
@@ -95,7 +97,7 @@ def test_conv_fwt_jit_2d():
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy())
 
     wavelet = _set_up_wavelet_tuple(wavelet, dtype=torch.float64)
-    with pytest.warns(None):
+    with pytest.warns(Warning):
         jit_wavedec2 = torch.jit.trace(
             _to_jit_wavedec_2,
             (data, wavelet),
@@ -147,7 +149,7 @@ def test_conv_fwt_jit_3d():
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy())
 
     wavelet = _set_up_wavelet_tuple(wavelet, dtype=torch.float64)
-    with pytest.warns(None):
+    with pytest.warns(Warning):
         jit_wavedec2 = torch.jit.trace(
             _to_jit_wavedec_3,
             (data, wavelet),
@@ -158,3 +160,28 @@ def test_conv_fwt_jit_3d():
         jit_waverec = torch.jit.trace(_to_jit_waverec_3, (jit_ptcoeff, wavelet))
         rec = jit_waverec(jit_ptcoeff, wavelet)
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy(), atol=1e-7)
+
+
+def _to_jit_cwt(sig):
+    widths = torch.arange(1, 31)
+    wavelet = _ShannonWavelet("shan0.1-0.4")
+    sampling_period = (4 / 800) * np.pi
+    cwtmatr, _ = ptwt.cwt(sig, widths, wavelet, sampling_period=sampling_period)
+    return cwtmatr
+
+
+def test_cwt_jit():
+    """Test cwt jitting."""
+    t = np.linspace(-2, 2, 800, endpoint=False)
+    sig = torch.from_numpy(signal.chirp(t, f0=1, f1=12, t1=2, method="linear"))
+    with pytest.warns(Warning):
+        jit_cwt = torch.jit.trace(_to_jit_cwt, (sig), strict=False)
+    jitcwtmatr = jit_cwt(sig)
+
+    cwtmatr, _ = ptwt.cwt(
+        sig,
+        torch.arange(1, 31),
+        pywt.ContinuousWavelet("shan0.1-0.4"),
+        sampling_period=(4 / 800) * np.pi,
+    )
+    assert np.allclose(jitcwtmatr.numpy(), cwtmatr.numpy())
