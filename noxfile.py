@@ -46,8 +46,6 @@ def mypy(session):
         "--ignore-missing-imports",
         "--strict",
         "--no-warn-return-any",
-        "--implicit-reexport",
-        "--allow-untyped-calls",
         "--explicit-package-bases",
         "src",
     )

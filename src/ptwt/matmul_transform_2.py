@@ -12,13 +12,12 @@ import torch
 from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported
 from .conv_transform import get_filter_tensors
 from .conv_transform_2 import construct_2d_filt
-from .matmul_transform import (
+from .matmul_transform import construct_boundary_a, construct_boundary_s, orthogonalize
+from .sparse_math import (
+    batch_mm,
     cat_sparse_identity_matrix,
-    construct_boundary_a,
-    construct_boundary_s,
-    orthogonalize,
+    construct_strided_conv2d_matrix,
 )
-from .sparse_math import batch_mm, construct_strided_conv2d_matrix
 
 
 def _construct_a_2(

@@ -3,8 +3,8 @@
 import numpy as np
 import pytest
 import pywt
-from scipy import datasets
 import torch
+from scipy import datasets
 
 from src.ptwt._util import _outer
 from src.ptwt.conv_transform import (
