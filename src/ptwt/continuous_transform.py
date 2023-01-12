@@ -224,23 +224,30 @@ def _integrate_wavelet(
         return _integrate(psi_d, step), _integrate(psi_r, step), x
 
 
+
+class _WaveletParameter(torch.nn.Parameter):
+    pass
+
+
 class _DifferentiableContinuousWavelet(
     torch.nn.Module, ContinuousWavelet  # type: ignore
 ):
     """A base class for learnable Continuous Wavelets."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, requires_grad: bool =True):
         """Create a trainable shannon wavelet."""
         super().__init__()
         super(ContinuousWavelet, self).__init__()
 
         self.dtype = torch.float64
         # Use torch nn parameter
-        self.bandwidth_par = torch.nn.Parameter(
-            torch.sqrt(torch.tensor(self.bandwidth_frequency, dtype=self.dtype))
+        self.bandwidth_par = _WaveletParameter(
+            torch.sqrt(torch.tensor(self.bandwidth_frequency, dtype=self.dtype)),
+            requires_grad=requires_grad
         )
-        self.center_par = torch.nn.Parameter(
-            torch.sqrt(torch.tensor(self.center_frequency, dtype=self.dtype))
+        self.center_par = _WaveletParameter(
+            torch.sqrt(torch.tensor(self.center_frequency, dtype=self.dtype)),
+            requires_grad=requires_grad
         )
 
     def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
