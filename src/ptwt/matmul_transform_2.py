@@ -222,8 +222,8 @@ class MatrixWavedec2(object):
     Example:
         >>> import ptwt, torch, pywt
         >>> import numpy as np
-        >>> import scipy.misc
-        >>> face = scipy.datasets.face()[:256, :256, :].astype(np.float32)
+        >>> from scipy import datasets
+        >>> face = datasets.face()[:256, :256, :].astype(np.float32)
         >>> pt_face = torch.tensor(face).permute([2, 0, 1])
         >>> matrixfwt = ptwt.MatrixWavedec2(pywt.Wavelet("haar"), level=2)
         >>> mat_coeff = matrixfwt(pt_face)
@@ -530,8 +530,8 @@ class MatrixWaverec2(object):
     Example:
         >>> import ptwt, torch, pywt
         >>> import numpy as np
-        >>> import scipy.misc
-        >>> face = scipy.datasets.face()[:256, :256, :].astype(np.float32)
+        >>> from scipy import datasets
+        >>> face = datasets.face()[:256, :256, :].astype(np.float32)
         >>> pt_face = torch.tensor(face).permute([2, 0, 1])
         >>> matrixfwt = ptwt.MatrixWavedec2(pywt.Wavelet("haar"), level=2)
         >>> mat_coeff = matrixfwt(pt_face)
