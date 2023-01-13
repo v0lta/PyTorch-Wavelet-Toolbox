@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import scipy.signal
 import torch
-from scipy import misc
+from scipy import datasets
 
 from src.ptwt.sparse_math import (
     batch_mm,
@@ -130,7 +130,7 @@ def test_conv_matrix_2d(filter_shape, size, mode, fully_sparse) -> None:
     """
     test_filter = torch.rand(filter_shape)
     test_filter = test_filter.unsqueeze(0).unsqueeze(0)
-    face = misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])]
+    face = datasets.face()[256 : (256 + size[0]), 256 : (256 + size[1])]
     face = np.mean(face, -1).astype(np.float32)
     res_scipy = scipy.signal.convolve2d(face, test_filter.squeeze().numpy(), mode=mode)
 
@@ -166,7 +166,7 @@ def test_strided_conv_matrix_2d(filter_shape, size, mode) -> None:
     """Test strided convolution matrices with full and valid padding."""
     test_filter = torch.rand(filter_shape)
     test_filter = test_filter.unsqueeze(0).unsqueeze(0)
-    face = misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])]
+    face = datasets.face()[256 : (256 + size[0]), 256 : (256 + size[1])]
     face = np.mean(face, -1)
     face = torch.from_numpy(face.astype(np.float32))
     face = face.unsqueeze(0).unsqueeze(0)
@@ -209,7 +209,7 @@ def test_strided_conv_matrix_2d_same(filter_shape, size) -> None:
     stride = 2
     test_filter = torch.rand(filter_shape)
     test_filter = test_filter.unsqueeze(0).unsqueeze(0)
-    face = misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])]
+    face = datasets.face()[256 : (256 + size[0]), 256 : (256 + size[1])]
     face = np.mean(face, -1)
     face = torch.from_numpy(face.astype(np.float32))
     face = face.unsqueeze(0).unsqueeze(0)
@@ -276,7 +276,7 @@ def test_strided_conv_matrix_2d_sameshift(size) -> None:
     )
     test_filter = test_filter.unsqueeze(0).unsqueeze(0)
     test_filter2 = test_filter2.unsqueeze(0).unsqueeze(0)
-    face = misc.face()[256 : (256 + size[0]), 256 : (256 + size[1])]
+    face = datasets.face()[256 : (256 + size[0]), 256 : (256 + size[1])]
     face = np.mean(face, -1)
     face = torch.from_numpy(face.astype(np.float32))
     face = face.unsqueeze(0).unsqueeze(0)

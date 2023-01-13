@@ -4,8 +4,6 @@ from typing import Optional, Protocol, Sequence, Tuple, Union
 import pywt
 import torch
 
-from .wavelets_learnable import WaveletFilter
-
 
 class Wavelet(Protocol):
     """Wavelet object interface, based on the pywt wavelet object."""
@@ -64,13 +62,9 @@ def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return a_mul * b_mul
 
 
-def _get_len(wavelet: Union[str, Tuple[torch.Tensor], pywt.Wavelet]) -> int:
+def _get_len(wavelet: Union[Tuple[torch.Tensor, ...], str, Wavelet]) -> int:
     """Get number of filter coefficients for various wavelet data types."""
-    if isinstance(wavelet, str):
-        return len(_as_wavelet(wavelet))
-    elif isinstance(wavelet, WaveletFilter) or isinstance(wavelet, pywt.Wavelet):
-        return len(wavelet)
-    elif isinstance(wavelet, tuple):
+    if isinstance(wavelet, tuple):
         return wavelet[0].shape[0]
     else:
-        raise ValueError
+        return len(_as_wavelet(wavelet))

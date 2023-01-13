@@ -3,8 +3,8 @@
 import numpy as np
 import pytest
 import pywt
-import scipy.misc
 import torch
+from scipy import datasets
 
 from src.ptwt._util import _outer
 from src.ptwt.conv_transform import (
@@ -96,7 +96,7 @@ def test_2d_haar_lvl1():
     """Test a 2d-Haar wavelet conv-fwt."""
     # ------------------------- 2d haar wavelet tests -----------------------
     face = np.transpose(
-        scipy.datasets.face()[128 : (512 + 128), 256 : (512 + 256)], [2, 0, 1]
+        datasets.face()[128 : (512 + 128), 256 : (512 + 256)], [2, 0, 1]
     ).astype(np.float64)
     wavelet = pywt.Wavelet("haar")
     # single level haar - 2d
@@ -113,7 +113,7 @@ def test_2d_db2_lvl1():
     """Test a 2d-db2 wavelet conv-fwt."""
     # single level db2 - 2d
     face = np.transpose(
-        scipy.datasets.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
+        datasets.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
     ).astype(np.float64)
     wavelet = pywt.Wavelet("db2")
     coeff2d_pywt = pywt.dwt2(face, wavelet, mode="reflect")
@@ -130,7 +130,7 @@ def test_2d_haar_multi():
     """Test a 2d-db2 wavelet level 5 conv-fwt."""
     # multi level haar - 2d
     face = np.transpose(
-        scipy.datasets.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
+        datasets.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
     ).astype(np.float64)
     wavelet = pywt.Wavelet("haar")
     coeff2d_pywt = pywt.wavedec2(face, wavelet, mode="reflect", level=5)
@@ -165,7 +165,7 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     wavedec2 and waverec2 must invert each other.
     """
     face = np.transpose(
-        scipy.datasets.face()[256 : (512 + size[0]), 256 : (512 + size[1])], [2, 0, 1]
+        datasets.face()[256 : (512 + size[0]), 256 : (512 + size[1])], [2, 0, 1]
     ).astype(np.float64)
     wavelet = pywt.Wavelet(wavelet_str)
     coeff2d = wavedec2(torch.from_numpy(face), wavelet, mode=mode, level=level)

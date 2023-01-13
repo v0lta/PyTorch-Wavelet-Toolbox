@@ -108,8 +108,8 @@ def wavedec2(
         >>> import torch
         >>> import ptwt, pywt
         >>> import numpy as np
-        >>> import scipy.misc
-        >>> face = np.transpose(scipy.datasets.face(),
+        >>> from scipy import datasets
+        >>> face = np.transpose(datasets.face(),
         >>>                     [2, 0, 1]).astype(np.float64)
         >>> pytorch_face = torch.tensor(face)
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
@@ -178,8 +178,8 @@ def waverec2(
     Example:
         >>> import ptwt, pywt, torch
         >>> import numpy as np
-        >>> import scipy.misc
-        >>> face = np.transpose(scipy.datasets.face(),
+        >>> from scipy import datasets
+        >>> face = np.transpose(datasets.face(),
         >>>                     [2, 0, 1]).astype(np.float64)
         >>> pytorch_face = torch.tensor(face)
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
