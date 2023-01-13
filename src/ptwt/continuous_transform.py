@@ -49,8 +49,9 @@ def cwt(
         ValueError: If a scale is too small for the input signal.
 
     Returns:
-        Tuple[torch.Tensor, np.ndarray]: A tuple with the transformation matrix
-            and frequencies in this order.
+        Tuple[torch.Tensor, np.ndarray]: The first tuple-element contains
+            the transformation matrix of shape [scales, batch, time.].
+            The second element contains an array with frequency information.
 
     Example:
         >>> import torch, ptwt
