@@ -246,7 +246,7 @@ class _DifferentiableContinuousWavelet(
         )
         self.center_par = _WaveletParameter(
             torch.sqrt(torch.tensor(self.center_frequency, dtype=self.dtype)),
-            requires_grad=True
+            requires_grad=True,
         )
 
     def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
