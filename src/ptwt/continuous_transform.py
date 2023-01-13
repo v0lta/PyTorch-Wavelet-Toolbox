@@ -233,7 +233,7 @@ class _DifferentiableContinuousWavelet(
 ):
     """A base class for learnable Continuous Wavelets."""
 
-    def __init__(self, name: str, requires_grad: bool = True):
+    def __init__(self, name: str):
         """Create a trainable shannon wavelet."""
         super().__init__()
         super(ContinuousWavelet, self).__init__()
@@ -242,11 +242,11 @@ class _DifferentiableContinuousWavelet(
         # Use torch nn parameter
         self.bandwidth_par = _WaveletParameter(
             torch.sqrt(torch.tensor(self.bandwidth_frequency, dtype=self.dtype)),
-            requires_grad=requires_grad,
+            requires_grad=True,
         )
         self.center_par = _WaveletParameter(
             torch.sqrt(torch.tensor(self.center_frequency, dtype=self.dtype)),
-            requires_grad=requires_grad,
+            requires_grad=True
         )
 
     def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
