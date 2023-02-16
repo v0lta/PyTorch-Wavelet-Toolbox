@@ -732,9 +732,9 @@ class MatrixWaverec2(object):
         for entries in coefficients[1:]:
             for entry in entries:
                 if torch_device != entry.device:
-                    raise ValueError("coeffs must be on the same device")
+                    raise ValueError("coefficients must be on the same device")
                 elif torch_dtype != entry.dtype:
-                    raise ValueError("coeffs must have the same dtype")
+                    raise ValueError("coefficients must have the same dtype")
 
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
@@ -743,17 +743,17 @@ class MatrixWaverec2(object):
             )
 
         for c_pos, coeff_tuple in enumerate(coefficients[1:]):
+            curr_shape = ll.shape
             if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
                 raise ValueError(
-                    (
-                        "Unexpected detail coefficient type: {}. Detail coefficients "
-                        "must be a 3-tuple of tensors as returned by MatrixWavedec2."
-                    ).format(type(coeff_tuple))
+                    f"Unexpected detail coefficient type: {type(coeff_tuple)}. Detail "
+                    "coefficients must be a 3-tuple of tensors as returned by "
+                    "MatrixWavedec2."
                 )
             for coeff in coeff_tuple:
-                if coeff.shape != ll.shape:
+                if coeff.shape != curr_shape:
                     raise ValueError(
-                        "All coeffs on each level must have the same shape"
+                        "All coefficients on each level must have the same shape"
                     )
 
             lh, hl, hh = coeff_tuple
@@ -765,7 +765,7 @@ class MatrixWaverec2(object):
                 a_coeffs = torch.cat((ll, lh), -1)
                 d_coeffs = torch.cat((hl, hh), -1)
                 coeff_tensor = torch.cat((a_coeffs, d_coeffs), -2)
-                if len(ll.shape) == 2:
+                if len(curr_shape) == 2:
                     coeff_tensor = coeff_tensor.unsqueeze(0)
                 ll = batch_mm(
                     synthesis_matrix_cols, coeff_tensor.transpose(-2, -1)

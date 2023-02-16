@@ -73,7 +73,6 @@ def _compare_trees2(
     transform_mode: bool = False,
     multiple_transforms: bool = False,
 ):
-
     face = datasets.face()[:height, :width]
     face = np.mean(face, axis=-1).astype(np.float64)
     wavelet = pywt.Wavelet(wavelet_str)
