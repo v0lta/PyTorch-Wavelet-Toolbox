@@ -568,10 +568,18 @@ class MatrixWaverec(object):
             self.input_length = input_length
             re_build = True
 
+        torch_device = coefficients[0].device
+        torch_dtype = coefficients[0].dtype
+        for coeff in coefficients[1:]:
+            if torch_device != coeff.device:
+                raise ValueError("coefficients must be on the same device")
+            elif torch_dtype != coeff.dtype:
+                raise ValueError("coefficients must have the same dtype")
+
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
-                device=coefficients[-1].device,
-                dtype=coefficients[-1].dtype,
+                device=torch_device,
+                dtype=torch_dtype,
             )
 
         # transpose the coefficients to handle the batch dimension efficiently.
