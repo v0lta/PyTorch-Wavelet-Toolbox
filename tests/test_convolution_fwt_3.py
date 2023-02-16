@@ -41,6 +41,7 @@ def _cat_batch_list(batch_lists: List) -> List:
 @pytest.mark.parametrize(
     "shape",
     [
+        (1, 31, 32, 33),
         (1, 64, 64, 64),
         (2, 64, 64, 64),
         (3, 31, 64, 64),
@@ -48,6 +49,7 @@ def _cat_batch_list(batch_lists: List) -> List:
         (3, 64, 64, 31),
         (3, 31, 31, 31),
         (3, 32, 32, 32),
+        (3, 31, 32, 33),
     ],
 )
 @pytest.mark.parametrize("wavelet", ["haar", "db2", "db4"])
