@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _get_len, _outer
+from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _outer
 from .conv_transform import _get_pad, _translate_boundary_strings, get_filter_tensors
 
 
@@ -114,6 +114,9 @@ def wavedec3(
         # add batch dim.
         data = data.unsqueeze(0)
 
+    if not _is_dtype_supported(data.dtype):
+        raise ValueError(f"Input dtype {data.dtype} not supported")
+
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -172,24 +175,51 @@ def waverec3(
     """
     wavelet = _as_wavelet(wavelet)
     # the Union[tensor, dict] idea is coming from pywt. We don't change it here.
-    res_lll: torch.Tensor = coeffs[0]  # type: ignore
+    res_lll = coeffs[0]
+    if not isinstance(res_lll, torch.Tensor):
+        raise ValueError(
+            "First element of coeffs must be the approximation coefficient tensor."
+        )
+
+    torch_device = res_lll.device
+    torch_dtype = res_lll.dtype
+
+    if not _is_dtype_supported(torch_dtype):
+        if not _is_dtype_supported(torch_dtype):
+            raise ValueError(f"Input dtype {torch_dtype} not supported")
+
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=res_lll.device, dtype=res_lll.dtype
+        wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_3d_filt(lo=rec_lo, hi=rec_hi)
 
     for c_pos, coeff_dict in enumerate(coeffs[1:]):
+        if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
+            raise ValueError(
+                f"Unexpected detail coefficient type: {type(coeff_dict)}. Detail "
+                "coefficients must be a dict containing 7 tensors as returned by "
+                "wavedec3."
+            )
+        for coeff in coeff_dict.values():
+            if torch_device != coeff.device:
+                raise ValueError("coefficients must be on the same device")
+            elif torch_dtype != coeff.dtype:
+                raise ValueError("coefficients must have the same dtype")
+            elif res_lll.shape != coeff.shape:
+                raise ValueError(
+                    "All coefficients on each level must have the same shape"
+                )
         res_lll = torch.stack(
             [
                 res_lll,
-                coeff_dict["aad"],  # type: ignore
-                coeff_dict["ada"],  # type: ignore
-                coeff_dict["add"],  # type: ignore
-                coeff_dict["daa"],  # type: ignore
-                coeff_dict["dad"],  # type: ignore
-                coeff_dict["dda"],  # type: ignore
-                coeff_dict["ddd"],  # type: ignore
+                coeff_dict["aad"],
+                coeff_dict["ada"],
+                coeff_dict["add"],
+                coeff_dict["daa"],
+                coeff_dict["dad"],
+                coeff_dict["dda"],
+                coeff_dict["ddd"],
             ],
             1,
         )

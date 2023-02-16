@@ -8,7 +8,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_device, _as_wavelet, _get_len
+from ._util import Wavelet, _as_device, _as_wavelet, _get_len, _is_dtype_supported
 
 
 def _create_tensor(
@@ -219,6 +219,9 @@ def wavedec(
         containing the wavelet coefficients. A denotes
         approximation and D detail coefficients.
 
+    Raises:
+        ValueError: If the dtype of the input data tensor is unsupported.
+
     Example:
         >>> import torch
         >>> import ptwt, pywt
@@ -237,6 +240,9 @@ def wavedec(
     elif data.dim() == 2:
         # assume batched time series
         data = data.unsqueeze(1)
+
+    if not _is_dtype_supported(data.dtype):
+        raise ValueError(f"Input dtype {data.dtype} not supported")
 
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -269,6 +275,10 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
     Returns:
         torch.Tensor: The reconstructed signal.
 
+    Raises:
+        ValueError: If the dtype of the coeffs tensor is unsupported or if the
+            coefficients have incompatible shapes.
+
     Example:
         >>> import torch
         >>> import ptwt, pywt
@@ -282,8 +292,19 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
         >>>              pywt.Wavelet('haar'))
 
     """
+    torch_device = coeffs[0].device
+    torch_dtype = coeffs[0].dtype
+    if not _is_dtype_supported(torch_dtype):
+        raise ValueError(f"Input dtype {torch_dtype} not supported")
+
+    for coeff in coeffs[1:]:
+        if torch_device != coeff.device:
+            raise ValueError("coefficients must be on the same device")
+        elif torch_dtype != coeff.dtype:
+            raise ValueError("coefficients must have the same dtype")
+
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=coeffs[-1].device, dtype=coeffs[-1].dtype
+        wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
     filt = torch.stack([rec_lo, rec_hi], 0)

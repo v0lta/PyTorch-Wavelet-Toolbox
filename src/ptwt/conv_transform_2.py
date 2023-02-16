@@ -10,7 +10,7 @@ from typing import List, Optional, Tuple, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _get_len, _outer
+from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _outer
 from .conv_transform import _get_pad, _translate_boundary_strings, get_filter_tensors
 
 
@@ -102,7 +102,8 @@ def wavedec2(
         and D diagonal coefficients.
 
     Raises:
-        ValueError: If the dimensionality of the input data tensor is unsupported.
+        ValueError: If the dimensionality or the dtype of the input data tensor
+            is unsupported.
 
     Example:
         >>> import torch
@@ -128,6 +129,9 @@ def wavedec2(
         )
     elif data.dim() == 1:
         raise ValueError("Wavedec2 needs more than one input dimension to work.")
+
+    if not _is_dtype_supported(data.dtype):
+        raise ValueError(f"Input dtype {data.dtype} not supported")
 
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = get_filter_tensors(
@@ -189,22 +193,46 @@ def waverec2(
     """
     wavelet = _as_wavelet(wavelet)
 
-    if not isinstance(coeffs[0], torch.Tensor):
+    res_ll = coeffs[0]
+    if not isinstance(res_ll, torch.Tensor):
         raise ValueError(
             "First element of coeffs must be the approximation coefficient tensor."
         )
 
+    torch_device = res_ll.device
+    torch_dtype = res_ll.dtype
+
+    if not _is_dtype_supported(torch_dtype):
+        raise ValueError(f"Input dtype {torch_dtype} not supported")
+
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=coeffs[0].device, dtype=coeffs[0].dtype
+        wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
     rec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
 
-    res_ll = coeffs[0]
-    for c_pos, res_lh_hl_hh in enumerate(coeffs[1:]):
-        res_ll = torch.stack(
-            [res_ll, res_lh_hl_hh[0], res_lh_hl_hh[1], res_lh_hl_hh[2]], 1
-        )
+    for c_pos, coeff_tuple in enumerate(coeffs[1:]):
+        if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
+            raise ValueError(
+                f"Unexpected detail coefficient type: {type(coeff_tuple)}. Detail "
+                "coefficients must be a 3-tuple of tensors as returned by "
+                "wavedec2."
+            )
+
+        curr_shape = res_ll.shape
+        for coeff in coeff_tuple:
+            if torch_device != coeff.device:
+                raise ValueError("coefficients must be on the same device")
+            elif torch_dtype != coeff.dtype:
+                raise ValueError("coefficients must have the same dtype")
+            elif coeff.shape != curr_shape:
+                raise ValueError(
+                    "All coefficients on each level must have the same shape"
+                )
+
+        res_lh, res_hl, res_hh = coeff_tuple
+
+        res_ll = torch.stack([res_ll, res_lh, res_hl, res_hh], 1)
         res_ll = torch.nn.functional.conv_transpose2d(
             res_ll, rec_filt, stride=2
         ).squeeze(1)
