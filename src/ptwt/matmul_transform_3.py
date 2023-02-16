@@ -6,7 +6,12 @@ from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported, _is_dtype_supported
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _is_boundary_mode_supported,
+    _is_dtype_supported,
+)
 
 # from .conv_transform import get_filter_tensors
 from .matmul_transform import construct_boundary_a, construct_boundary_s
@@ -369,27 +374,39 @@ class MatrixWaverec3(object):
             self.level = level
             re_build = True
 
-        if not self.ifwt_matrix_list or re_build:
-            self._construct_synthesis_matrices(
-                device=coefficients[-1]["ddd"].device,
-                dtype=coefficients[-1]["ddd"].dtype,
-            )
-
-        ll: torch.Tensor = coefficients[0]  # type: ignore
+        ll = coefficients[0]
         if not isinstance(ll, torch.Tensor):
             raise ValueError(
                 "First element of coeffs must be the approximation coefficient tensor."
             )
 
-        for c_pos, coeff_dict in enumerate(coefficients[1:]):
-            if not isinstance(coeff_dict, dict):
+        for coeff_dict in coefficients[1:]:
+            if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
                 raise ValueError(
-                    (
-                        "Unexpected detail coefficient type: {}. Detail coefficients "
-                        "must be a 3-tuple of tensors as returned by MatrixWavedec2."
-                    ).format(type(coeff_dict))
+                    f"Unexpected detail coefficient type: {type(coeff_dict)}. Detail "
+                    "coefficients must be a dict containing 7 tensors as returned by "
+                    "MatrixWavedec2."
                 )
+            for coeff in coeff_dict.values():
+                if torch_device != coeff.device:
+                    raise ValueError("coefficients must be on the same device")
+                elif torch_dtype != coeff.dtype:
+                    raise ValueError("coefficients must have the same dtype")
 
+        torch_device = ll.device
+        torch_dtype = ll.dtype
+
+        if not _is_dtype_supported(torch_dtype):
+            if not _is_dtype_supported(torch_dtype):
+                raise ValueError(f"Input dtype {torch_dtype} not supported")
+
+        if not self.ifwt_matrix_list or re_build:
+            self._construct_synthesis_matrices(
+                device=torch_device,
+                dtype=torch_dtype,
+            )
+
+        for c_pos, coeff_dict in enumerate(coefficients[1:]):
             def _cat_coeff_recursive(dict: Dict[str, torch.Tensor]) -> torch.Tensor:
                 done_dict = {}
                 a_initial_keys = list(filter(lambda x: x[0] == "a", dict.keys()))
