@@ -579,27 +579,8 @@ class MatrixWaverec(object):
 
         lo = coefficients[0]
         for c_pos, hi in enumerate(coefficients[1:]):
-            torch_device = None
-            curr_shape: Optional[torch.Size] = None
-            dtype = None
-            for coeff in [lo, hi]:
-                if coeff is not None:
-                    if curr_shape is None:
-                        curr_shape = coeff.shape
-                        torch_device = coeff.device
-                        dtype = coeff.dtype
-                    elif curr_shape != coeff.shape:
-                        # TODO: Add check that coeffs are on the same device
-                        raise ValueError("coeffs must have the same shape")
-
-            if curr_shape is None:
-                raise ValueError(
-                    "At least one coefficient parameter must be specified."
-                )
-            if lo is None:
-                lo = torch.zeros(curr_shape, device=torch_device, dtype=dtype)
-            if hi is None:
-                hi = torch.zeros(curr_shape, device=torch_device, dtype=dtype)
+            if lo.shape != hi.shape:
+                raise ValueError("coefficients must have the same shape")
 
             lo = torch.cat([lo, hi], 0)
             lo = torch.sparse.mm(self.ifwt_matrix_list[::-1][c_pos], lo)
