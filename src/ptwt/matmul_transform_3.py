@@ -405,6 +405,10 @@ class MatrixWaverec3(object):
                     raise ValueError("coefficients must be on the same device")
                 elif torch_dtype != coeff.dtype:
                     raise ValueError("coefficients must have the same dtype")
+                elif ll.shape != coeff.shape:
+                    raise ValueError(
+                        "All coefficients on each level must have the same shape"
+                    )
 
             def _cat_coeff_recursive(dict: Dict[str, torch.Tensor]) -> torch.Tensor:
                 done_dict = {}
