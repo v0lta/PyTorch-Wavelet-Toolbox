@@ -204,20 +204,20 @@ class MatrixWavedec3(object):
             )
 
         split_list: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
-        ll = input_signal
+        lll = input_signal
         for scale, fwt_mats in enumerate(self.fwt_matrix_list):
             # fwt_depth_matrix, fwt_row_matrix, fwt_col_matrix = fwt_mats
             pad_tuple = self.pad_list[scale]
             # current_depth, current_height, current_width = self.size_list[scale]
             if pad_tuple.width:
-                ll = torch.nn.functional.pad(ll, [0, 1, 0, 0, 0, 0])
+                lll = torch.nn.functional.pad(lll, [0, 1, 0, 0, 0, 0])
             if pad_tuple.height:
-                ll = torch.nn.functional.pad(ll, [0, 0, 0, 1, 0, 0])
+                lll = torch.nn.functional.pad(lll, [0, 0, 0, 1, 0, 0])
             if pad_tuple.depth:
-                ll = torch.nn.functional.pad(ll, [0, 0, 0, 0, 0, 1])
+                lll = torch.nn.functional.pad(lll, [0, 0, 0, 0, 0, 1])
 
             for dim, mat in enumerate(fwt_mats[::-1]):
-                ll = _batch_dim_mm(mat, ll, dim=(-1) * (dim + 1))
+                lll = _batch_dim_mm(mat, lll, dim=(-1) * (dim + 1))
 
             def _split_rec(
                 tensor: torch.Tensor,
@@ -234,8 +234,8 @@ class MatrixWavedec3(object):
                     _split_rec(cd, "d" + key, depth, dict)
 
             coeff_dict: Dict[str, torch.Tensor] = {}
-            _split_rec(ll, "", 3, coeff_dict)
-            ll = coeff_dict["aaa"]
+            _split_rec(lll, "", 3, coeff_dict)
+            lll = coeff_dict["aaa"]
             result_keys = list(
                 filter(lambda x: len(x) == 3 and not x == "aaa", coeff_dict.keys())
             )
@@ -243,7 +243,7 @@ class MatrixWavedec3(object):
                 key: tensor for key, tensor in coeff_dict.items() if key in result_keys
             }
             split_list.append(coeff_dict)
-        split_list.append(ll)
+        split_list.append(lll)
         return split_list[::-1]
 
 
@@ -337,6 +337,22 @@ class MatrixWaverec3(object):
                 current_width // 2,
             )
 
+    def _cat_coeff_recursive(self, input_dict: Dict[str, torch.Tensor]) -> torch.Tensor:
+        done_dict = {}
+        a_initial_keys = list(filter(lambda x: x[0] == "a", input_dict.keys()))
+        for a_key in a_initial_keys:
+            d_key = "d" + a_key[1:]
+            cat_d = input_dict[d_key]
+            d_shape = cat_d.shape
+            # undo any analysis padding.
+            cat_a = input_dict[a_key][:, : d_shape[1], : d_shape[2], : d_shape[3]]
+            cat_tensor = torch.cat([cat_a, cat_d], dim=-len(a_key))
+            if a_key[1:]:
+                done_dict[a_key[1:]] = cat_tensor
+            else:
+                return cat_tensor
+        return self._cat_coeff_recursive(done_dict)
+
     def __call__(
         self, coefficients: List[Union[torch.Tensor, Dict[str, torch.Tensor]]]
     ) -> torch.Tensor:
@@ -374,14 +390,14 @@ class MatrixWaverec3(object):
             self.level = level
             re_build = True
 
-        ll = coefficients[0]
-        if not isinstance(ll, torch.Tensor):
+        lll = coefficients[0]
+        if not isinstance(lll, torch.Tensor):
             raise ValueError(
                 "First element of coeffs must be the approximation coefficient tensor."
             )
 
-        torch_device = ll.device
-        torch_dtype = ll.dtype
+        torch_device = lll.device
+        torch_dtype = lll.dtype
 
         if not _is_dtype_supported(torch_dtype):
             if not _is_dtype_supported(torch_dtype):
@@ -398,38 +414,22 @@ class MatrixWaverec3(object):
                 raise ValueError(
                     f"Unexpected detail coefficient type: {type(coeff_dict)}. Detail "
                     "coefficients must be a dict containing 7 tensors as returned by "
-                    "MatrixWavedec2."
+                    "MatrixWavedec3."
                 )
             for coeff in coeff_dict.values():
                 if torch_device != coeff.device:
                     raise ValueError("coefficients must be on the same device")
                 elif torch_dtype != coeff.dtype:
                     raise ValueError("coefficients must have the same dtype")
-                elif ll.shape != coeff.shape:
+                elif lll.shape != coeff.shape:
                     raise ValueError(
                         "All coefficients on each level must have the same shape"
                     )
 
-            def _cat_coeff_recursive(dict: Dict[str, torch.Tensor]) -> torch.Tensor:
-                done_dict = {}
-                a_initial_keys = list(filter(lambda x: x[0] == "a", dict.keys()))
-                for a_key in a_initial_keys:
-                    d_key = "d" + a_key[1:]
-                    cat_d = dict[d_key]
-                    d_shape = cat_d.shape
-                    # undo any analysis padding.
-                    cat_a = dict[a_key][:, : d_shape[1], : d_shape[2], : d_shape[3]]
-                    cat_tensor = torch.cat([cat_a, cat_d], dim=-len(a_key))
-                    if a_key[1:]:
-                        done_dict[a_key[1:]] = cat_tensor
-                    else:
-                        return cat_tensor
-                return _cat_coeff_recursive(done_dict)
-
-            coeff_dict["a" * len(list(coeff_dict.keys())[-1])] = ll
-            ll = _cat_coeff_recursive(coeff_dict)
+            coeff_dict["a" * len(list(coeff_dict.keys())[-1])] = lll
+            lll = self._cat_coeff_recursive(coeff_dict)
 
             for dim, mat in enumerate(self.ifwt_matrix_list[level - 1 - c_pos][::-1]):
-                ll = _batch_dim_mm(mat, ll, dim=(-1) * (dim + 1))
+                lll = _batch_dim_mm(mat, lll, dim=(-1) * (dim + 1))
 
-        return ll
+        return lll
