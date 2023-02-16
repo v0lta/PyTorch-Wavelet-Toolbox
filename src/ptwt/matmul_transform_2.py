@@ -9,7 +9,12 @@ from typing import List, Optional, Tuple, Union, cast
 import numpy as np
 import torch
 
-from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _is_boundary_mode_supported,
+    _is_dtype_supported,
+)
 from .conv_transform import get_filter_tensors
 from .conv_transform_2 import construct_2d_filt
 from .matmul_transform import construct_boundary_a, construct_boundary_s, orthogonalize
@@ -427,6 +432,9 @@ class MatrixWavedec2(object):
 
         batch_size, height, width = input_signal.shape
 
+        if not _is_dtype_supported(input_signal.dtype):
+            raise ValueError(f"Input dtype {input_signal.dtype} not supported")
+
         re_build = False
         if (
             self.input_signal_shape is None
@@ -735,6 +743,9 @@ class MatrixWaverec2(object):
                     raise ValueError("coefficients must be on the same device")
                 elif torch_dtype != entry.dtype:
                     raise ValueError("coefficients must have the same dtype")
+
+        if not _is_dtype_supported(torch_dtype):
+            raise ValueError(f"Input dtype {torch_dtype} not supported")
 
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(

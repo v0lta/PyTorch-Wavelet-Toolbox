@@ -6,7 +6,7 @@ from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported
+from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported, _is_dtype_supported
 
 # from .conv_transform import get_filter_tensors
 from .matmul_transform import construct_boundary_a, construct_boundary_s
@@ -164,6 +164,9 @@ class MatrixWavedec3(object):
             )
 
         _, depth, height, width = input_signal.shape
+
+        if not _is_dtype_supported(input_signal.dtype):
+            raise ValueError(f"Input dtype {input_signal.dtype} not supported")
 
         re_build = False
         if (

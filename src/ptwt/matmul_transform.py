@@ -13,7 +13,12 @@ from typing import List, Optional, Union
 import numpy as np
 import torch
 
-from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _is_boundary_mode_supported,
+    _is_dtype_supported,
+)
 from .conv_transform import get_filter_tensors
 from .sparse_math import (
     _orth_by_gram_schmidt,
@@ -313,6 +318,9 @@ class MatrixWavedec(object):
                 "[batch_size, length]."
             )
 
+        if not _is_dtype_supported(input_signal.dtype):
+            raise ValueError(f"Input dtype {input_signal.dtype} not supported")
+
         if input_signal.shape[-1] % 2 != 0:
             # odd length input
             # print('input length odd, padding a zero on the right')
@@ -575,6 +583,9 @@ class MatrixWaverec(object):
                 raise ValueError("coefficients must be on the same device")
             elif torch_dtype != coeff.dtype:
                 raise ValueError("coefficients must have the same dtype")
+
+        if not _is_dtype_supported(torch_dtype):
+            raise ValueError(f"Input dtype {torch_dtype} not supported")
 
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
