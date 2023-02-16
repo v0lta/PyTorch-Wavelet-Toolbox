@@ -720,18 +720,26 @@ class MatrixWaverec2(object):
             self.level = level
             re_build = True
 
-        # TODO: handle coefficients[-1][0] == None
-        if not self.ifwt_matrix_list or re_build:
-            self._construct_synthesis_matrices(
-                device=coefficients[-1][0].device,
-                dtype=coefficients[-1][0].dtype,
-            )
-
-        batch_size = coefficients[-1][0].shape[0]
         ll: torch.Tensor = coefficients[0]  # type: ignore
         if not isinstance(ll, torch.Tensor):
             raise ValueError(
                 "First element of coeffs must be the approximation coefficient tensor."
+            )
+
+        batch_size = ll.shape[0]
+        torch_device = ll.device
+        torch_dtype = ll.dtype
+        for entries in coefficients[1:]:
+            for entry in entries:
+                if torch_device != entry.device:
+                    raise ValueError("coeffs must be on the same device")
+                elif torch_dtype != entry.dtype:
+                    raise ValueError("coeffs must have the same dtype")
+
+        if not self.ifwt_matrix_list or re_build:
+            self._construct_synthesis_matrices(
+                device=torch_device,
+                dtype=torch_dtype,
             )
 
         for c_pos, coeff_tuple in enumerate(coefficients[1:]):
