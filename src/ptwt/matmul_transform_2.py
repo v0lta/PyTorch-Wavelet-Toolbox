@@ -683,52 +683,6 @@ class MatrixWaverec2(object):
             current_height = current_height // 2
             current_width = current_width // 2
 
-    def _process_coeffs(
-        self,
-        ll: torch.Tensor,
-        lh_hl_hh: Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
-    ) -> Tuple[
-        Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor],
-        torch.Size,
-        torch.device,
-        torch.dtype,
-    ]:
-        if len(lh_hl_hh) != 3:
-            raise ValueError(
-                "Detail coefficients must be a 3-tuple of tensors as returned by "
-                "MatrixWavedec2."
-            )
-
-        lh, hl, hh = lh_hl_hh
-
-        torch_device = None
-        curr_shape = None
-        torch_dtype = None
-        for coeff in [ll, lh, hl, hh]:
-            if coeff is not None:
-                if curr_shape is None:
-                    curr_shape = coeff.shape
-                    torch_device = coeff.device
-                    torch_dtype = coeff.dtype
-                elif curr_shape != coeff.shape:
-                    # TODO: Add check that coeffs are on the same device
-                    raise ValueError(
-                        "All coeffs on each level must have the same shape"
-                    )
-
-        if torch_device is None or curr_shape is None or torch_dtype is None:
-            raise ValueError("At least one coefficient parameter must be specified.")
-
-        if ll is None:
-            ll = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
-        if lh is None:
-            lh = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
-        if hl is None:
-            hl = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
-        if hh is None:
-            hh = torch.zeros(curr_shape, device=torch_device, dtype=torch_dtype)
-        return (ll, lh, hl, hh), curr_shape, torch_device, torch_dtype
-
     def __call__(
         self,
         coefficients: List[
@@ -788,7 +742,13 @@ class MatrixWaverec2(object):
                         "must be a 3-tuple of tensors as returned by MatrixWavedec2."
                     ).format(type(coeff_tuple))
                 )
-            (ll, lh, hl, hh), curr_shape, _, _ = self._process_coeffs(ll, coeff_tuple)
+            for coeff in coeff_tuple:
+                if coeff.shape != ll.shape:
+                    raise ValueError(
+                        "All coeffs on each level must have the same shape"
+                    )
+
+            lh, hl, hh = coeff_tuple
 
             if self.separable:
                 synthesis_matrix_rows, synthesis_matrix_cols = self.ifwt_matrix_list[
@@ -797,7 +757,7 @@ class MatrixWaverec2(object):
                 a_coeffs = torch.cat((ll, lh), -1)
                 d_coeffs = torch.cat((hl, hh), -1)
                 coeff_tensor = torch.cat((a_coeffs, d_coeffs), -2)
-                if len(curr_shape) == 2:
+                if len(ll.shape) == 2:
                     coeff_tensor = coeff_tensor.unsqueeze(0)
                 ll = batch_mm(
                     synthesis_matrix_cols, coeff_tensor.transpose(-2, -1)
