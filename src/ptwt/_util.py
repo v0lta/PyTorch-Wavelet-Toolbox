@@ -53,6 +53,10 @@ def _is_boundary_mode_supported(boundary_mode: Optional[str]) -> bool:
     return boundary_mode in ["qr", "gramschmidt"]
 
 
+def _is_dtype_supported(dtype: torch.dtype) -> bool:
+    return dtype in [torch.float32, torch.float64]
+
+
 def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """Torch implementation of numpy's outer for 1d vectors."""
     a_flat = torch.reshape(a, [-1])
