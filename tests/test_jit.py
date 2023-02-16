@@ -65,7 +65,7 @@ def test_conv_fwt_jit(wavelet_string, level, length, batch_size, dtype):
 def _to_jit_wavedec_2(data, wavelet):
     """Ensure uniform datatypes in lists for the tracer.
 
-    Going from List[Union[torch.Tensor, List[torch.Tensor]]] to List[torch.Tensor]
+    Going from List[Union[torch.Tensor, Tuple[torch.Tensor]]] to List[torch.Tensor]
     means we have to stack the lists in the output.
     """
     assert data.shape == (10, 20, 20), "Changing the chape requires re-tracing."
@@ -83,7 +83,7 @@ def _to_jit_waverec_2(data, wavelet):
     """Undo the stacking from the jit wavedec2 wrapper."""
     d_unstack = [data[0]]
     for c in data[1:]:
-        d_unstack.append(list(sc.squeeze(0) for sc in torch.split(c, 1, dim=0)))
+        d_unstack.append(tuple(sc.squeeze(0) for sc in torch.split(c, 1, dim=0)))
     rec = ptwt.waverec2(d_unstack, wavelet)
     return rec
 
