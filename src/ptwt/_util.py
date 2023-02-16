@@ -49,8 +49,8 @@ def _as_device(device: Union[torch.device, str]) -> torch.device:
         return device
 
 
-def _is_boundary_mode_supported(boundary_mode: Union[str, Optional[str]]) -> bool:
-    return boundary_mode == "qr" or boundary_mode == "gramschmidt"
+def _is_boundary_mode_supported(boundary_mode: Optional[str]) -> bool:
+    return boundary_mode in ["qr", "gramschmidt"]
 
 
 def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
