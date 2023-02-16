@@ -728,7 +728,7 @@ class MatrixWaverec2(object):
             self.level = level
             re_build = True
 
-        ll: torch.Tensor = coefficients[0]  # type: ignore
+        ll = coefficients[0]
         if not isinstance(ll, torch.Tensor):
             raise ValueError(
                 "First element of coeffs must be the approximation coefficient tensor."
@@ -737,18 +737,6 @@ class MatrixWaverec2(object):
         batch_size = ll.shape[0]
         torch_device = ll.device
         torch_dtype = ll.dtype
-        for coeff_tuple in coefficients[1:]:
-            if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
-                raise ValueError(
-                    f"Unexpected detail coefficient type: {type(coeff_tuple)}. Detail "
-                    "coefficients must be a 3-tuple of tensors as returned by "
-                    "MatrixWavedec2."
-                )
-            for coeff in coeff_tuple:
-                if torch_device != coeff.device:
-                    raise ValueError("coefficients must be on the same device")
-                elif torch_dtype != coeff.dtype:
-                    raise ValueError("coefficients must have the same dtype")
 
         if not _is_dtype_supported(torch_dtype):
             raise ValueError(f"Input dtype {torch_dtype} not supported")
@@ -760,9 +748,20 @@ class MatrixWaverec2(object):
             )
 
         for c_pos, coeff_tuple in enumerate(coefficients[1:]):
+            if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
+                raise ValueError(
+                    f"Unexpected detail coefficient type: {type(coeff_tuple)}. Detail "
+                    "coefficients must be a 3-tuple of tensors as returned by "
+                    "MatrixWavedec2."
+                )
+
             curr_shape = ll.shape
             for coeff in coeff_tuple:
-                if coeff.shape != curr_shape:
+                if torch_device != coeff.device:
+                    raise ValueError("coefficients must be on the same device")
+                elif torch_dtype != coeff.dtype:
+                    raise ValueError("coefficients must have the same dtype")
+                elif coeff.shape != curr_shape:
                     raise ValueError(
                         "All coefficients on each level must have the same shape"
                     )
@@ -793,7 +792,7 @@ class MatrixWaverec2(object):
                     -1,
                 )
                 ifwt_mat = cast(torch.Tensor, self.ifwt_matrix_list[::-1][c_pos])
-                ll = torch.sparse.mm(ifwt_mat, ll.T)
+                ll = cast(torch.Tensor, torch.sparse.mm(ifwt_mat, ll.T))
 
             pred_len = [s * 2 for s in curr_shape[-2:][::-1]]
             if not self.separable:

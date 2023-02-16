@@ -380,19 +380,6 @@ class MatrixWaverec3(object):
                 "First element of coeffs must be the approximation coefficient tensor."
             )
 
-        for coeff_dict in coefficients[1:]:
-            if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
-                raise ValueError(
-                    f"Unexpected detail coefficient type: {type(coeff_dict)}. Detail "
-                    "coefficients must be a dict containing 7 tensors as returned by "
-                    "MatrixWavedec2."
-                )
-            for coeff in coeff_dict.values():
-                if torch_device != coeff.device:
-                    raise ValueError("coefficients must be on the same device")
-                elif torch_dtype != coeff.dtype:
-                    raise ValueError("coefficients must have the same dtype")
-
         torch_device = ll.device
         torch_dtype = ll.dtype
 
@@ -407,6 +394,18 @@ class MatrixWaverec3(object):
             )
 
         for c_pos, coeff_dict in enumerate(coefficients[1:]):
+            if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
+                raise ValueError(
+                    f"Unexpected detail coefficient type: {type(coeff_dict)}. Detail "
+                    "coefficients must be a dict containing 7 tensors as returned by "
+                    "MatrixWavedec2."
+                )
+            for coeff in coeff_dict.values():
+                if torch_device != coeff.device:
+                    raise ValueError("coefficients must be on the same device")
+                elif torch_dtype != coeff.dtype:
+                    raise ValueError("coefficients must have the same dtype")
+
             def _cat_coeff_recursive(dict: Dict[str, torch.Tensor]) -> torch.Tensor:
                 done_dict = {}
                 a_initial_keys = list(filter(lambda x: x[0] == "a", dict.keys()))
