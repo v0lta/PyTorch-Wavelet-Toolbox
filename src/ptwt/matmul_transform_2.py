@@ -737,11 +737,17 @@ class MatrixWaverec2(object):
         batch_size = ll.shape[0]
         torch_device = ll.device
         torch_dtype = ll.dtype
-        for entries in coefficients[1:]:
-            for entry in entries:
-                if torch_device != entry.device:
+        for coeff_tuple in coefficients[1:]:
+            if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
+                raise ValueError(
+                    f"Unexpected detail coefficient type: {type(coeff_tuple)}. Detail "
+                    "coefficients must be a 3-tuple of tensors as returned by "
+                    "MatrixWavedec2."
+                )
+            for coeff in coeff_tuple:
+                if torch_device != coeff.device:
                     raise ValueError("coefficients must be on the same device")
-                elif torch_dtype != entry.dtype:
+                elif torch_dtype != coeff.dtype:
                     raise ValueError("coefficients must have the same dtype")
 
         if not _is_dtype_supported(torch_dtype):
@@ -755,12 +761,6 @@ class MatrixWaverec2(object):
 
         for c_pos, coeff_tuple in enumerate(coefficients[1:]):
             curr_shape = ll.shape
-            if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
-                raise ValueError(
-                    f"Unexpected detail coefficient type: {type(coeff_tuple)}. Detail "
-                    "coefficients must be a 3-tuple of tensors as returned by "
-                    "MatrixWavedec2."
-                )
             for coeff in coeff_tuple:
                 if coeff.shape != curr_shape:
                     raise ValueError(
