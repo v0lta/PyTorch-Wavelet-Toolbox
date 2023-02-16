@@ -177,7 +177,8 @@ def waverec2(
         torch.Tensor: The reconstructed signal of shape [batch, height, width].
 
     Raises:
-        ValueError: If `coeffs` is not in a shape as returned from `wavedec2`.
+        ValueError: If `coeffs` is not in a shape as returned from `wavedec2` or
+            if the dtype is not supported.
 
     Example:
         >>> import ptwt, pywt, torch

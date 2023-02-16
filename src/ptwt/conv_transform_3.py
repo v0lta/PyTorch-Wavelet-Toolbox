@@ -100,7 +100,8 @@ def wavedec3(
         d for the high-pass or detail filter.
 
     Raises:
-        ValueError: If the input has fewer than three dimensions.
+        ValueError: If the input has fewer than three dimensions or
+            if the dtype is not supported.
 
     Example:
         >>> import ptwt, torch
@@ -165,6 +166,10 @@ def waverec3(
     Returns:
         torch.Tensor: The reconstructed four-dimensional signal of shape
         [batch, depth, height, width].
+
+    Raises:
+        ValueError: If `coeffs` is not in a shape as returned from `wavedec3` or
+            if the dtype is not supported.
 
     Example:
         >>> import ptwt, torch

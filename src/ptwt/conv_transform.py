@@ -277,7 +277,7 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
 
     Raises:
         ValueError: If the dtype of the coeffs tensor is unsupported or if the
-            coefficients have incompatible shapes.
+            coefficients have incompatible shapes, dtypes or devices.
 
     Example:
         >>> import torch
