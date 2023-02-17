@@ -277,8 +277,6 @@ class MatrixWavedec2(object):
         self.pad_list: List[Tuple[bool, bool]] = []
         self.padded = False
 
-        # TODO: Allow separate wavelets and lengths for each axis in the separable case
-
         if not _is_boundary_mode_supported(self.boundary):
             raise NotImplementedError
 
@@ -584,8 +582,6 @@ class MatrixWaverec2(object):
         self.input_signal_shape: Optional[Tuple[int, int]] = None
 
         self.padded = False
-
-        # TODO: Allow separate wavelets and lengths for each axis in the separable case
 
         if not _is_boundary_mode_supported(self.boundary):
             raise NotImplementedError
