@@ -340,7 +340,7 @@ class WaveletPacket2D(BaseDict):
         Returns:
             list: A list with the filter order strings.
         """
-        return ["".join(p) for p in list(product(["a", "h", "v", "d"], repeat=level))]
+        return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
 
     def _get_wavedec(
         self, shape: Tuple[int, ...]
@@ -452,7 +452,7 @@ def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
         v - HL, high-low coefficients
         d - HH, high-high coefficients
     """
-    wp_natural_path = list(product(["a", "h", "v", "d"], repeat=level))
+    wp_natural_path = product(["a", "h", "v", "d"], repeat=level)
 
     def _get_graycode_order(level: int, x: str = "a", y: str = "d") -> List[str]:
         graycode_order = [x, y]
