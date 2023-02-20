@@ -45,10 +45,9 @@ def sparse_kron(
         torch.Tensor: The resulting [mp, nq] tensor.
     """
     assert sparse_tensor_a.device == sparse_tensor_b.device
-    if not sparse_tensor_a.is_coalesced():
-        sparse_tensor_a = sparse_tensor_a.coalesce()
-    if not sparse_tensor_b.is_coalesced():
-        sparse_tensor_b = sparse_tensor_b.coalesce()
+
+    sparse_tensor_a = sparse_tensor_a.coalesce()
+    sparse_tensor_b = sparse_tensor_b.coalesce()
     output_shape = (
         sparse_tensor_a.shape[0] * sparse_tensor_b.shape[0],
         sparse_tensor_a.shape[1] * sparse_tensor_b.shape[1],
@@ -202,8 +201,7 @@ def sparse_replace_row(
         torch.Tensor: A sparse matrix, with the new row inserted at
         row_index.
     """
-    if not matrix.is_coalesced():
-        matrix = matrix.coalesce()
+    matrix = matrix.coalesce()
     assert (
         matrix.shape[-1] == row.shape[-1]
     ), "matrix and replacement-row must share the same column number."
@@ -219,8 +217,7 @@ def sparse_replace_row(
         device=matrix.device,
         dtype=matrix.dtype,
     )
-    if not row.is_coalesced():
-        row = row.coalesce()
+    row = row.coalesce()
 
     addition_matrix = torch.sparse_coo_tensor(
         torch.stack((row.indices()[0, :] + row_index, row.indices()[1, :]), 0),
