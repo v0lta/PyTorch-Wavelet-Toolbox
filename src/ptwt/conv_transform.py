@@ -16,12 +16,12 @@ def _create_tensor(
 ) -> torch.Tensor:
     if flip:
         if isinstance(filter, torch.Tensor):
-            return filter.flip(-1).unsqueeze(0).to(device)
+            return filter.flip(-1).unsqueeze(0).to(device=device, dtype=dtype)
         else:
             return torch.tensor(filter[::-1], device=device, dtype=dtype).unsqueeze(0)
     else:
         if isinstance(filter, torch.Tensor):
-            return filter.unsqueeze(0).to(device)
+            return filter.unsqueeze(0).to(device=device, dtype=dtype)
         else:
             return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
 
