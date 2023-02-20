@@ -41,14 +41,6 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
         return wavelet
 
 
-def _as_device(device: Union[torch.device, str]) -> torch.device:
-    """Convert a string to a device if necessary."""
-    if isinstance(device, str):
-        return torch.device(device)
-    else:
-        return device
-
-
 def _is_boundary_mode_supported(boundary_mode: Optional[str]) -> bool:
     return boundary_mode in ["qr", "gramschmidt"]
 

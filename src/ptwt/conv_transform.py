@@ -8,7 +8,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_device, _as_wavelet, _get_len, _is_dtype_supported
+from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported
 
 
 def _create_tensor(
@@ -48,7 +48,7 @@ def get_filter_tensors(
 
     """
     wavelet = _as_wavelet(wavelet)
-    device = _as_device(device)
+    device = torch.device(device)
 
     if isinstance(wavelet, tuple):
         dec_lo, dec_hi, rec_lo, rec_hi = wavelet
