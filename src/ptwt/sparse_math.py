@@ -1,8 +1,8 @@
 """Efficiently construct fwt operations using sparse matrices."""
 # Written by moritz ( @ wolter.tech ) 17.09.21
+from itertools import product
 from typing import List
 
-import numpy as np
 import torch
 
 
@@ -367,22 +367,21 @@ def construct_conv_matrix(
     else:
         raise ValueError("unkown padding type.")
 
-    row_indices = []
-    column_indices = []
-    values = []
-    for column in range(0, input_rows):
-        for row in range(0, filter_length):
-            check_row = column + row
-            if (check_row >= start_row) and (check_row <= stop_row):
-                row_indices.append(row + column - start_row)
-                column_indices.append(column)
-                values.append(filter[row])
-    indices = torch.tensor(
-        np.stack([row_indices, column_indices]), device=filter.device
+    product_lst = [
+        (row, col)
+        for col, row in product(range(input_rows), range(filter_length))
+        if row + col in range(start_row, stop_row + 1)
+    ]
+
+    row_indices = torch.tensor(
+        [row + col - start_row for row, col in product_lst], device=filter.device
     )
-    value_tensor = torch.stack(values)
+    col_indices = torch.tensor([col for row, col in product_lst], device=filter.device)
+    indices = torch.stack([row_indices, col_indices])
+    values = torch.stack([filter[row] for row, col in product_lst])
+
     return torch.sparse_coo_tensor(
-        indices, value_tensor, device=filter.device, dtype=filter.dtype
+        indices, values, device=filter.device, dtype=filter.dtype
     )
 
 
@@ -440,7 +439,7 @@ def construct_conv2d_matrix(
         block_matrix_list.append(construct_conv_matrix(filter[:, i], input_rows, mode))
 
     diag_values = torch.ones(
-        [int(np.min([kronecker_rows, input_columns]))],
+        min(kronecker_rows, input_columns),
         dtype=filter.dtype,
         device=filter.device,
     )
