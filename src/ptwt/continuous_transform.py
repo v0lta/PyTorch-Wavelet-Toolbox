@@ -50,7 +50,7 @@ def cwt(
 
     Returns:
         Tuple[torch.Tensor, np.ndarray]: The first tuple-element contains
-            the transformation matrix of shape [scales, batch, time.].
+            the transformation matrix of shape [scales, batch, time].
             The second element contains an array with frequency information.
 
     Example:
