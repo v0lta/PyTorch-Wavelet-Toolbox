@@ -100,10 +100,8 @@ def _separable_conv_wavedecn(
     """Compute a multilevel separable padded wavelet analysis transform.
 
     Args:
-        input (torch.Tensor): A tensor of shap [batch, axis_1, ... axis_n].
+        input (torch.Tensor): A tensor of shape [batch, axis_1, ... axis_n].
             Everything but the batch axis will be transformed.
-        wavelet (Union[str, pywt.Wavelet]): The desired wavelet.
-
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Please consider the output from ``pywt.wavelist(kind='discrete')``
@@ -147,9 +145,9 @@ def _separable_conv_waverecn(
 
     Args:
         coeff_list (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
-            The output as produces by _separable_conv_wavedecn.
+            The output as produced by `_separable_conv_wavedecn`.
         wavelet (Union[str, pywt.Wavelet]):
-            The wavelet used by _separable_conv_wavedecn.
+            The wavelet used by `_separable_conv_wavedecn`.
 
     Returns:
         torch.Tensor: The reconstruction of the original signal.

@@ -13,7 +13,6 @@ from ._util import (
     _is_dtype_supported,
 )
 
-# from .conv_transform import get_filter_tensors
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
 
