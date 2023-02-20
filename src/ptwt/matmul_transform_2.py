@@ -119,7 +119,7 @@ def _construct_s_2(
     shape = synthesis.shape
     transpose_indices = torch.stack([indices[1, :], indices[0, :]])
     transpose_synthesis = torch.sparse_coo_tensor(
-        transpose_indices, synthesis.values(), size=(shape[1], shape[0])
+        transpose_indices, synthesis.values(), size=(shape[1], shape[0]), device=device
     )
     return transpose_synthesis
 

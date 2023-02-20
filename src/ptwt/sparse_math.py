@@ -44,6 +44,7 @@ def sparse_kron(
     Returns:
         torch.Tensor: The resulting [mp, nq] tensor.
     """
+    assert sparse_tensor_a.device == sparse_tensor_b.device
     if not sparse_tensor_a.is_coalesced():
         sparse_tensor_a = sparse_tensor_a.coalesce()
     if not sparse_tensor_b.is_coalesced():
@@ -58,7 +59,10 @@ def sparse_kron(
     # take care of the zero case.
     if nzz_a == 0 or nzz_b == 0:
         return torch.sparse_coo_tensor(
-            torch.zeros([2, 1]), torch.zeros([1]), size=output_shape
+            torch.zeros([2, 1]),
+            torch.zeros([1]),
+            size=output_shape,
+            device=sparse_tensor_a.device,
         )
 
     # expand A's entries into blocks
@@ -78,7 +82,10 @@ def sparse_kron(
     data = data.reshape(-1, nzz_b) * sparse_tensor_b.values()
     data = data.reshape(-1)
     result = torch.sparse_coo_tensor(
-        torch.stack([row, col], 0), data, size=output_shape
+        torch.stack([row, col], 0),
+        data,
+        size=output_shape,
+        device=sparse_tensor_a.device,
     )
 
     return result
@@ -123,7 +130,9 @@ def cat_sparse_identity_matrix(
     )
     new_indices = torch.cat([sparse_matrix.coalesce().indices(), extra_indices], -1)
     new_values = torch.cat([sparse_matrix.coalesce().values(), extra_values], -1)
-    new_matrix = torch.sparse_coo_tensor(new_indices, new_values)
+    new_matrix = torch.sparse_coo_tensor(
+        new_indices, new_values, device=sparse_matrix.device
+    )
     return new_matrix
 
 
@@ -167,7 +176,11 @@ def sparse_diag(
         diagonal = diagonal[mask]
 
     diag = torch.sparse_coo_tensor(
-        diag_indices, diagonal, size=(rows, cols), dtype=diagonal.dtype
+        diag_indices,
+        diagonal,
+        size=(rows, cols),
+        dtype=diagonal.dtype,
+        device=diagonal.device,
     )
 
     return diag
