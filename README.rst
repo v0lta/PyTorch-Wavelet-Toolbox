@@ -169,7 +169,7 @@ See https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples/network_
 
 The ``tests`` folder contains multiple tests to allow independent verification of this toolbox.
 The GitHub workflow executes a subset of all tests for efficiency reasons. 
-After cloning the repository, moving into the main directory, and installing ``nox`` with ``pip install nox`` run:
+After cloning the repository, moving into the main directory, and installing ``nox`` with ``pip install nox`` run
 
 .. code-block:: sh
 
@@ -177,7 +177,7 @@ After cloning the repository, moving into the main directory, and installing ``n
 
 
 
-To run all existing tests.
+to run all existing tests.
 
 Citation
 """"""""
