@@ -793,7 +793,7 @@ class MatrixWaverec2(object):
             if not self.separable:
                 pred_len = [s * 2 for s in curr_shape[-2:]][::-1]
                 ll = ll.T.reshape([batch_size] + pred_len).transpose(2, 1)
-                pred_len = ll.shape[1:]
+                pred_len = list(ll.shape[1:])
             else:
                 pred_len = [s * 2 for s in curr_shape[-2:]]
             # remove the padding
