@@ -12,7 +12,6 @@ from ._util import (
     _is_boundary_mode_supported,
     _is_dtype_supported,
 )
-
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
 
@@ -425,7 +424,7 @@ class MatrixWaverec3(object):
                     raise ValueError("coefficients must have the same dtype")
                 elif test_shape != coeff.shape:
                     raise ValueError(
-                         "All coefficients on each level must have the same shape"
+                        "All coefficients on each level must have the same shape"
                     )
 
             coeff_dict["a" * len(list(coeff_dict.keys())[-1])] = lll

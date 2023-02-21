@@ -759,9 +759,9 @@ class MatrixWaverec2(object):
                     raise ValueError("coefficients must have the same dtype")
                 elif coeff.shape != curr_shape:
                     raise ValueError(
-                         "All coefficients on each level must have the same shape"
+                        "All coefficients on each level must have the same shape"
                     )
-                    
+
             lh, hl, hh = coeff_tuple
 
             if self.separable:
