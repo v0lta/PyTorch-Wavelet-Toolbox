@@ -759,9 +759,9 @@ class MatrixWaverec2(object):
                     raise ValueError("coefficients must have the same dtype")
                 elif coeff.shape != curr_shape:
                     raise ValueError(
-                        "All coefficients on each level must have the same shape"
+                         "All coefficients on each level must have the same shape"
                     )
-
+                    
             lh, hl, hh = coeff_tuple
 
             if self.separable:
@@ -790,12 +790,15 @@ class MatrixWaverec2(object):
                 ifwt_mat = cast(torch.Tensor, self.ifwt_matrix_list[::-1][c_pos])
                 ll = cast(torch.Tensor, torch.sparse.mm(ifwt_mat, ll.T))
 
-            pred_len = [s * 2 for s in curr_shape[-2:][::-1]]
             if not self.separable:
+                pred_len = [s * 2 for s in curr_shape[-2:]][::-1]
                 ll = ll.T.reshape([batch_size] + pred_len).transpose(2, 1)
+                pred_len = ll.shape[1:]
+            else:
+                pred_len = [s * 2 for s in curr_shape[-2:]]
             # remove the padding
             if c_pos < len(coefficients) - 2:
-                next_len = list(coefficients[c_pos + 2][0].shape[-2:])[::-1]
+                next_len = list(coefficients[c_pos + 2][0].shape[-2:])
                 if pred_len != next_len:
                     if pred_len[0] != next_len[0]:
                         ll = ll[:, :-1, :]

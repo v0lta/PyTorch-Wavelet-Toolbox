@@ -415,14 +415,17 @@ class MatrixWaverec3(object):
                     "coefficients must be a dict containing 7 tensors as returned by "
                     "MatrixWavedec3."
                 )
+            test_shape = None
             for coeff in coeff_dict.values():
+                if test_shape is None:
+                    test_shape = coeff.shape
                 if torch_device != coeff.device:
                     raise ValueError("coefficients must be on the same device")
                 elif torch_dtype != coeff.dtype:
                     raise ValueError("coefficients must have the same dtype")
-                elif lll.shape != coeff.shape:
+                elif test_shape != coeff.shape:
                     raise ValueError(
-                        "All coefficients on each level must have the same shape"
+                         "All coefficients on each level must have the same shape"
                     )
 
             coeff_dict["a" * len(list(coeff_dict.keys())[-1])] = lll

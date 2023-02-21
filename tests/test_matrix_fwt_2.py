@@ -75,6 +75,8 @@ def test_matrix_analysis_fwt_2d_haar(size: tuple, level: int) -> None:
         (15, 15),
         (16, 15),
         (15, 16),
+        (33, 31),
+        (31, 33)
     ],
 )
 @pytest.mark.parametrize("level", [1, 2, 3, None])
