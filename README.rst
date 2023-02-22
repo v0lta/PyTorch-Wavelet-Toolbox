@@ -37,7 +37,7 @@ Welcome to the PyTorch wavelet toolbox. This package implements:
 - the fast wavelet transform (fwt) via ``wavedec`` and its inverse by providing the ``waverec`` function,
 - the two-dimensional fwt is called ``wavedec2`` the synthesis counterpart ``waverec2``,
 - ``wavedec3`` and ``waverec3`` cover the three-dimensional analysis and synthesis case,
-- ``fswavedec2``, ``fswavedec3``, ``fswaverec2`` and ``fswaverec3`` support for separable transformations.
+- ``fswavedec2``, ``fswavedec3``, ``fswaverec2`` and ``fswaverec3`` support separable transformations.
 - ``MatrixWavedec`` and ``MatrixWaverec`` implement sparse-matrix-based fast wavelet transforms with boundary filters,
 - 2d sparse-matrix transforms with separable & non-separable boundary filters are available,
 - ``MatrixWavedec3`` and ``MatrixWaverec3`` allow separable 3D-fwt's with boundary filters.
