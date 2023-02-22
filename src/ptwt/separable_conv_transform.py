@@ -177,7 +177,8 @@ def _fswavedec(
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a fully separable 1D-padded analysis wavelet transform.
 
-       Results are the identical to wavedec. Use wavedec instead.
+       This function is private. Results are the identical to wavedec.
+       Use wavedec instead.
 
     Args:
         input (torch.Tensor): An input signal of shape [batch, length].
