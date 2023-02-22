@@ -9,10 +9,10 @@ from .matmul_transform_2 import MatrixWavedec2, MatrixWaverec2
 from .matmul_transform_3 import MatrixWavedec3, MatrixWaverec3
 from .packets import WaveletPacket, WaveletPacket2D
 from .separable_conv_transform import (
-    fswavedec,
+    _fswavedec,
     fswavedec2,
     fswavedec3,
-    fswaverec,
+    _fswaverec,
     fswaverec2,
     fswaverec3,
 )

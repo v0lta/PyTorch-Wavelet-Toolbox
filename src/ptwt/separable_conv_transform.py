@@ -10,6 +10,7 @@ import numpy as np
 import pywt
 import torch
 
+from ._util import _as_wavelet
 from .conv_transform import wavedec, waverec
 
 
@@ -122,7 +123,7 @@ def _separable_conv_wavedecn(
     approx = input
 
     if level is None:
-        wlen = len(wavelet)
+        wlen = len(_as_wavelet(wavelet))
         level = int(
             min([np.log2(axis_len / (wlen - 1)) for axis_len in input.shape[1:]])
         )
@@ -168,13 +169,15 @@ def _separable_conv_waverecn(
     return approx
 
 
-def fswavedec(
+def _fswavedec(
     input: torch.Tensor,
     wavelet: Union[str, pywt.Wavelet],
     mode: str = "reflect",
     level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a fully separable 1D-padded analysis wavelet transform.
+
+       Results are the identical to wavedec. Use wavedec instead.
 
     Args:
         input (torch.Tensor): An input signal of shape [batch, length].
@@ -262,7 +265,7 @@ def fswavedec3(
     """Compute a fully separable 3D-padded analysis wavelet transform.
 
     Args:
-        input (torch.Tensor): An input signal of shape [batch, height, width].
+        input (torch.Tensor): An input signal of shape [batch, depth, height, width].
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
@@ -275,7 +278,7 @@ def fswavedec3(
             Defaults to None.
 
     Raises:
-        ValueError: If the input is not a batched 2d-signal.
+        ValueError: If the input is not a batched 3d-signal.
 
     Returns:
         List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
@@ -295,7 +298,7 @@ def fswavedec3(
     return _separable_conv_wavedecn(input, wavelet, mode, level)
 
 
-def fswaverec(
+def _fswaverec(
     coeff_list: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[str, pywt.Wavelet],
 ) -> torch.Tensor:
