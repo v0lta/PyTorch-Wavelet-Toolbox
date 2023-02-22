@@ -240,7 +240,14 @@ def fswavedec2(
 
     Returns:
         List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
-            The transformed signal.
+        A list with the lll coefficients and dictionaries
+        with the filter order strings::
+
+        ("ad", "da", "dd")
+
+        as keys. With a for the low pass or approximation filter and
+        d for the high-pass or detail filter.
+
 
     Example:
         >>> import torch
@@ -282,7 +289,13 @@ def fswavedec3(
 
     Returns:
         List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
-            The transformed signal.
+        A list with the lll coefficients and dictionaries
+        with the filter order strings::
+
+        ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
+
+        as keys. With a for the low pass or approximation filter and
+        d for the high-pass or detail filter.
 
     Example:
         >>> import torch
