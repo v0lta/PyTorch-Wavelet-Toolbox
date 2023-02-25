@@ -45,7 +45,7 @@ Welcome to the PyTorch wavelet toolbox. This package implements:
 - single and two-dimensional wavelet packet forward and backward transforms are available via the ``WaveletPacket`` and ``WaveletPacket2D`` objects,
 - finally, this package provides adaptive wavelet support (experimental).
 
-This toolbox extends `pywt-wavelets <https://pywavelets.readthedocs.io/en/latest/>`_ . Complete documentation is available at:
+This toolbox extends `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_ . Complete documentation is available at:
 https://pytorch-wavelet-toolbox.readthedocs.io/
 
 
