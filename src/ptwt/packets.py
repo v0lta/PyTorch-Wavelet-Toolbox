@@ -288,6 +288,10 @@ class WaveletPacket2D(BaseDict):
             maxlevel = pywt.dwt_max_level(min(data.shape[-2:]), self.wavelet.dec_len)
         self.maxlevel = maxlevel
 
+        if data.dim() == 2:
+            # add batch dim to unbatched input
+            data = data.unsqueeze(0)
+
         self._recursive_dwt2d(data, level=0, path="")
         return self
 
