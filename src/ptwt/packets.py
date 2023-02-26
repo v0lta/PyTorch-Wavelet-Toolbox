@@ -310,24 +310,13 @@ class WaveletPacket2D(BaseDict):
 
         for level in reversed(range(self.maxlevel)):
             for node in self.get_natural_order(level):
-                if self.mode == "boundary":
-                    data_a = self[node + "a"]
-                    data_h = self[node + "h"]
-                    data_v = self[node + "v"]
-                    data_d = self[node + "d"]
-                    rec = self._get_waverec(data_a.shape[-2:])(
-                        (data_a, (data_h, data_v, data_d))
-                    )
-                    self[node] = rec
-                else:
-                    data_a = self[node + "a"]
-                    data_h = self[node + "h"]
-                    data_v = self[node + "v"]
-                    data_d = self[node + "d"]
-                    rec = self._get_waverec(data_a.shape[-2:])(
-                        (data_a, (data_h, data_v, data_d))
-                    )
-                    self[node] = rec.squeeze(1)
+                data_a = self[node + "a"]
+                data_h = self[node + "h"]
+                data_v = self[node + "v"]
+                data_d = self[node + "d"]
+                self[node] = self._get_waverec(data_a.shape[-2:])(
+                    (data_a, (data_h, data_v, data_d))
+                )
         return self
 
     def get_natural_order(self, level: int) -> List[str]:
