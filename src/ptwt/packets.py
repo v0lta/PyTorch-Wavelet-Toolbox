@@ -315,7 +315,7 @@ class WaveletPacket2D(BaseDict):
                 data_v = self[node + "v"]
                 data_d = self[node + "d"]
                 self[node] = self._get_waverec(data_a.shape[-2:])(
-                    (data_a, (data_h, data_v, data_d))
+                    [data_a, (data_h, data_v, data_d)]
                 )
         return self
 
@@ -353,7 +353,7 @@ class WaveletPacket2D(BaseDict):
     def _get_waverec(
         self, shape: Tuple[int, ...]
     ) -> Callable[
-        [Tuple[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+        [List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
         torch.Tensor,
     ]:
         if self.mode == "boundary":
@@ -364,8 +364,7 @@ class WaveletPacket2D(BaseDict):
                     boundary=self.boundary,
                     separable=self.separable,
                 )
-            fun = self.matrix_waverec2_dict[shape]
-            return fun  # type: ignore
+            return self.matrix_waverec2_dict[shape]
         else:
             return partial(waverec2, wavelet=self.wavelet)
 
