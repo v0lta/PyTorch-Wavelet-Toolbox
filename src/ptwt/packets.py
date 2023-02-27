@@ -4,7 +4,7 @@
 import collections
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union, cast
 
 import pywt
 import torch
@@ -14,6 +14,7 @@ from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
 from .matmul_transform import MatrixWavedec, MatrixWaverec
 from .matmul_transform_2 import MatrixWavedec2, MatrixWaverec2
+from .separable_conv_transform import fswavedec2, fswaverec2
 
 if TYPE_CHECKING:
     BaseDict = collections.UserDict[str, torch.Tensor]
@@ -249,9 +250,8 @@ class WaveletPacket2D(BaseDict):
                 to use in the sparse matrix backend. Only used if `mode`
                 equals 'boundary'. Choose from 'qr' or 'gramschmidt'.
                 Defaults to 'qr'.
-            separable (bool): If true and the sparse matrix backend is selected,
-                a separable transform is performed, i.e. each image axis is
-                transformed separately. Defaults to False.
+            separable (bool): If true, a separable transform is performed,
+                i.e. each image axis is transformed separately. Defaults to False.
             maxlevel (int, optional): Value is passed on to `transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
@@ -347,6 +347,10 @@ class WaveletPacket2D(BaseDict):
                 )
             fun = self.matrix_wavedec2_dict[shape]
             return fun
+        elif self.separable:
+            return self._transform_fsdict_to_tuple_func(
+                partial(fswavedec2, wavelet=self.wavelet, level=1, mode=self.mode)
+            )
         else:
             return partial(wavedec2, wavelet=self.wavelet, level=1, mode=self.mode)
 
@@ -365,8 +369,52 @@ class WaveletPacket2D(BaseDict):
                     separable=self.separable,
                 )
             return self.matrix_waverec2_dict[shape]
+        elif self.separable:
+            return self._transform_tuple_to_fsdict_func(
+                partial(fswaverec2, wavelet=self.wavelet)
+            )
         else:
             return partial(waverec2, wavelet=self.wavelet)
+
+    def _transform_fsdict_to_tuple_func(
+        self,
+        fs_dict_func: Callable[
+            [torch.Tensor], List[Union[torch.Tensor, Dict[str, torch.Tensor]]]
+        ],
+    ) -> Callable[
+        [torch.Tensor],
+        List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    ]:
+        def _tuple_func(
+            data: torch.Tensor,
+        ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+            a_coeff, fsdict = fs_dict_func(data)
+            fsdict = cast(Dict[str, torch.Tensor], fsdict)
+            return [
+                cast(torch.Tensor, a_coeff),
+                (fsdict["ad"], fsdict["da"], fsdict["dd"]),
+            ]
+
+        return _tuple_func
+
+    def _transform_tuple_to_fsdict_func(
+        self,
+        fsdict_func: Callable[
+            [List[Union[torch.Tensor, Dict[str, torch.Tensor]]]], torch.Tensor
+        ],
+    ) -> Callable[
+        [List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
+        torch.Tensor,
+    ]:
+        def _fsdict_func(
+            coeffs: List[
+                Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+            ]
+        ) -> torch.Tensor:
+            a, (h, v, d) = coeffs
+            return fsdict_func([cast(torch.Tensor, a), {"ad": h, "da": v, "dd": d}])
+
+        return _fsdict_func
 
     def _recursive_dwt2d(self, data: torch.Tensor, level: int, path: str) -> None:
         if not self.maxlevel:
