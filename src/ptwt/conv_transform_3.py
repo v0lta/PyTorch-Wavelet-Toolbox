@@ -3,7 +3,7 @@
 The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Sequence, Union, cast
 
 import pywt
 import torch
@@ -158,7 +158,7 @@ def wavedec3(
 
 
 def waverec3(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[Wavelet, str],
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
@@ -204,7 +204,8 @@ def waverec3(
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_3d_filt(lo=rec_lo, hi=rec_hi)
 
-    for c_pos, coeff_dict in enumerate(coeffs[1:]):
+    coeff_dicts = cast(Sequence[Dict[str, torch.Tensor]], coeffs[1:])
+    for c_pos, coeff_dict in enumerate(coeff_dicts):
         if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
             raise ValueError(
                 f"Unexpected detail coefficient type: {type(coeff_dict)}. Detail "
@@ -243,31 +244,16 @@ def waverec3(
         padr = (2 * filt_len - 3) // 2
         padt = (2 * filt_len - 3) // 2
         padb = (2 * filt_len - 3) // 2
-        if c_pos < len(coeffs) - 2:
-            pred_len = res_lll.shape[-1] - (padl + padr)
-            next_len = coeffs[c_pos + 2]["aad"].shape[-1]  # type: ignore
-            pred_len2 = res_lll.shape[-2] - (padt + padb)
-            next_len2 = coeffs[c_pos + 2]["aad"].shape[-2]  # type: ignore
-            pred_len3 = res_lll.shape[-3] - (padfr + padba)
-            next_len3 = coeffs[c_pos + 2]["aad"].shape[-3]  # type: ignore
-            if next_len != pred_len:
-                padr += 1
-                pred_len = res_lll.shape[-1] - (padl + padr)
-                assert (
-                    next_len == pred_len
-                ), "padding error, please open an issue on github "
-            if next_len2 != pred_len2:
-                padb += 1
-                pred_len2 = res_lll.shape[-2] - (padt + padb)
-                assert (
-                    next_len2 == pred_len2
-                ), "padding error, please open an issue on github "
-            if next_len3 != pred_len3:
-                padba += 1
-                pred_len3 = res_lll.shape[-3] - (padba + padfr)
-                assert (
-                    next_len3 == pred_len3
-                ), "padding error, please open an issue on github "
+        if c_pos + 1 < len(coeff_dicts):
+            padl, padr = _adjust_padding_at_reconstruction(
+                res_lll.shape[-1], coeff_dicts[c_pos + 1]["aad"].shape[-1], padl, padr
+            )
+            padt, padb = _adjust_padding_at_reconstruction(
+                res_lll.shape[-2], coeff_dicts[c_pos + 1]["aad"].shape[-2], padt, padb
+            )
+            padfr, padba = _adjust_padding_at_reconstruction(
+                res_lll.shape[-3], coeff_dicts[c_pos + 1]["aad"].shape[-3], padfr, padba
+            )
         if padt > 0:
             res_lll = res_lll[..., padt:, :]
         if padb > 0:
