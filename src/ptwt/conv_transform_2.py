@@ -249,11 +249,11 @@ def waverec2(
         padt = (2 * filt_len - 3) // 2
         padb = (2 * filt_len - 3) // 2
         if c_pos < len(coeffs) - 2:
-            padl, padr = _adjust_padding_at_reconstruction(
-                res_ll.shape[-1], coeffs[c_pos + 2][0].shape[-1], padl, padr
+            padr, padl = _adjust_padding_at_reconstruction(
+                res_ll.shape[-1], coeffs[c_pos + 2][0].shape[-1], padr, padl
             )
-            padt, padb = _adjust_padding_at_reconstruction(
-                res_ll.shape[-2], coeffs[c_pos + 2][0].shape[-2], padt, padb
+            padb, padt = _adjust_padding_at_reconstruction(
+                res_ll.shape[-2], coeffs[c_pos + 2][0].shape[-2], padb, padt
             )
 
         if padt > 0:

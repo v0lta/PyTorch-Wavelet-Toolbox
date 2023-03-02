@@ -245,14 +245,14 @@ def waverec3(
         padt = (2 * filt_len - 3) // 2
         padb = (2 * filt_len - 3) // 2
         if c_pos + 1 < len(coeff_dicts):
-            padl, padr = _adjust_padding_at_reconstruction(
-                res_lll.shape[-1], coeff_dicts[c_pos + 1]["aad"].shape[-1], padl, padr
+            padr, padl = _adjust_padding_at_reconstruction(
+                res_lll.shape[-1], coeff_dicts[c_pos + 1]["aad"].shape[-1], padr, padl
             )
-            padt, padb = _adjust_padding_at_reconstruction(
-                res_lll.shape[-2], coeff_dicts[c_pos + 1]["aad"].shape[-2], padt, padb
+            padb, padt = _adjust_padding_at_reconstruction(
+                res_lll.shape[-2], coeff_dicts[c_pos + 1]["aad"].shape[-2], padb, padt
             )
-            padfr, padba = _adjust_padding_at_reconstruction(
-                res_lll.shape[-3], coeff_dicts[c_pos + 1]["aad"].shape[-3], padfr, padba
+            padba, padfr = _adjust_padding_at_reconstruction(
+                res_lll.shape[-3], coeff_dicts[c_pos + 1]["aad"].shape[-3], padba, padfr
             )
         if padt > 0:
             res_lll = res_lll[..., padt:, :]
