@@ -186,6 +186,20 @@ def _flatten_2d_coeff_lst(
     return flat_coeff_lst
 
 
+def _adjust_padding_at_reconstruction(
+    res_ll_size: int, coeff_size: int, pad_start: int, pad_end: int
+) -> Tuple[int, int]:
+    pred_size = res_ll_size - (pad_start + pad_end)
+    next_size = coeff_size
+    if next_size == pred_size:
+        pass
+    elif next_size == pred_size - 1:
+        pad_end += 1
+    else:
+        raise AssertionError("padding error, please open an issue on github")
+    return pad_start, pad_end
+
+
 def wavedec(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
@@ -318,14 +332,9 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
         padl = (2 * filt_len - 3) // 2
         padr = (2 * filt_len - 3) // 2
         if c_pos < len(coeffs) - 2:
-            pred_len = res_lo.shape[-1] - (padl + padr)
-            next_len = coeffs[c_pos + 2].shape[-1]
-            if next_len != pred_len:
-                padr += 1
-                pred_len = res_lo.shape[-1] - (padl + padr)
-                assert (
-                    next_len == pred_len
-                ), "padding error, please open an issue on github "
+            padl, padr = _adjust_padding_at_reconstruction(
+                res_lo.shape[-1], coeffs[c_pos + 2].shape[-1], padl, padr
+            )
         if padl > 0:
             res_lo = res_lo[..., padl:]
         if padr > 0:

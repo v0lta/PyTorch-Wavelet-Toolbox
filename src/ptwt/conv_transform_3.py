@@ -9,7 +9,12 @@ import pywt
 import torch
 
 from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _outer
-from .conv_transform import _get_pad, _translate_boundary_strings, get_filter_tensors
+from .conv_transform import (
+    _adjust_padding_at_reconstruction,
+    _get_pad,
+    _translate_boundary_strings,
+    get_filter_tensors,
+)
 
 
 def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
