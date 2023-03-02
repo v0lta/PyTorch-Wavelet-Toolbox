@@ -130,6 +130,12 @@ class WaveletPacket(BaseDict):
                 data_a = self[node + "a"]
                 data_b = self[node + "d"]
                 rec = self._get_waverec(data_a.shape[-1])([data_a, data_b])
+                if level > 0:
+                    if rec.shape[-1] != self[node].shape[-1]:
+                        assert (
+                            rec.shape[-1] == self[node].shape[-1] + 1
+                        ), "padding error, please open an issue on github"
+                        rec = rec[..., :-1]
                 self[node] = rec
         return self
 
@@ -314,9 +320,21 @@ class WaveletPacket2D(BaseDict):
                 data_h = self[node + "h"]
                 data_v = self[node + "v"]
                 data_d = self[node + "d"]
-                self[node] = self._get_waverec(data_a.shape[-2:])(
+                rec = self._get_waverec(data_a.shape[-2:])(
                     [data_a, (data_h, data_v, data_d)]
                 )
+                if level > 0:
+                    if rec.shape[-1] != self[node].shape[-1]:
+                        assert (
+                            rec.shape[-1] == self[node].shape[-1] + 1
+                        ), "padding error, please open an issue on github"
+                        rec = rec[..., :-1]
+                    if rec.shape[-2] != self[node].shape[-2]:
+                        assert (
+                            rec.shape[-2] == self[node].shape[-2] + 1
+                        ), "padding error, please open an issue on github"
+                        rec = rec[..., :-1, :]
+                self[node] = rec
         return self
 
     def get_natural_order(self, level: int) -> List[str]:
