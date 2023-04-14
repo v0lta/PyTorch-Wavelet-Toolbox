@@ -9,12 +9,12 @@ from src.ptwt.conv_transform import wavedec
 from src.ptwt.matmul_transform_2 import MatrixWavedec2
 from src.ptwt.matmul_transform_3 import MatrixWavedec3
 from src.ptwt.separable_conv_transform import (
+    _fswavedec,
+    _fswaverec,
     _separable_conv_wavedecn,
     _separable_conv_waverecn,
-    _fswavedec,
     fswavedec2,
     fswavedec3,
-    _fswaverec,
     fswaverec2,
     fswaverec3,
 )

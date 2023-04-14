@@ -25,7 +25,7 @@ Recreating these experiments requires roughly 8GB of free disc space and 10GB of
 To reproduce these plots:
 1. Download [ffhq_style_gan.zip](https://drive.google.com/uc?id=1MOHKuEVqURfCKAN9dwp1o2tuR19OTQCF&export=download) and
 2. Extract the image pairs here.
-3. Check the file structure. In the `ffhq_style_gan` the folder structure should be:
+3. Check the file structure. In `ffhq_style_gan` the folder structure should be:
 ```
 source_data
  ├── A_ffhq

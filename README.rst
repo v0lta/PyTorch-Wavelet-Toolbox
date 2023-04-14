@@ -45,8 +45,8 @@ Welcome to the PyTorch wavelet toolbox. This package implements:
 - single and two-dimensional wavelet packet forward and backward transforms are available via the ``WaveletPacket`` and ``WaveletPacket2D`` objects,
 - finally, this package provides adaptive wavelet support (experimental).
 
-This toolbox supports pywt-wavelets. Complete documentation is available:
-https://pytorch-wavelet-toolbox.readthedocs.io/
+This toolbox extends `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_ . We additionally provide GPU and gradient support via a PyTorch backend.
+Complete documentation is available at: https://pytorch-wavelet-toolbox.readthedocs.io/
 
 
 **Installation**
@@ -149,8 +149,8 @@ Reconsidering the 1d case, try:
 
 
 The process for the 2d transforms ``MatrixWavedec2``, ``MatrixWaverec2`` works similarly.
-By default, a non-separable transformation is used.
-To use a separable transformation, pass ``separable=True`` to ``MatrixWavedec2`` and ``MatrixWaverec2``.
+By default, a separable transformation is used.
+To use a non-separable transformation, pass ``separable=False`` to ``MatrixWavedec2`` and ``MatrixWaverec2``.
 Separable transformations use a 1d transformation along both axes, which might be faster since fewer matrix entries
 have to be orthogonalized.
 

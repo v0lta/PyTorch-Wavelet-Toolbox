@@ -11,7 +11,12 @@ import pywt
 import torch
 
 from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _outer
-from .conv_transform import _get_pad, _translate_boundary_strings, get_filter_tensors
+from .conv_transform import (
+    _adjust_padding_at_reconstruction,
+    _get_pad,
+    _translate_boundary_strings,
+    get_filter_tensors,
+)
 
 
 def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
@@ -244,22 +249,13 @@ def waverec2(
         padt = (2 * filt_len - 3) // 2
         padb = (2 * filt_len - 3) // 2
         if c_pos < len(coeffs) - 2:
-            pred_len = res_ll.shape[-1] - (padl + padr)
-            next_len = coeffs[c_pos + 2][0].shape[-1]
-            pred_len2 = res_ll.shape[-2] - (padt + padb)
-            next_len2 = coeffs[c_pos + 2][0].shape[-2]
-            if next_len != pred_len:
-                padr += 1
-                pred_len = res_ll.shape[-1] - (padl + padr)
-                assert (
-                    next_len == pred_len
-                ), "padding error, please open an issue on github "
-            if next_len2 != pred_len2:
-                padb += 1
-                pred_len2 = res_ll.shape[-2] - (padt + padb)
-                assert (
-                    next_len2 == pred_len2
-                ), "padding error, please open an issue on github "
+            padr, padl = _adjust_padding_at_reconstruction(
+                res_ll.shape[-1], coeffs[c_pos + 2][0].shape[-1], padr, padl
+            )
+            padb, padt = _adjust_padding_at_reconstruction(
+                res_ll.shape[-2], coeffs[c_pos + 2][0].shape[-2], padb, padt
+            )
+
         if padt > 0:
             res_ll = res_ll[..., padt:, :]
         if padb > 0:
