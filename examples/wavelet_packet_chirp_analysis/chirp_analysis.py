@@ -7,12 +7,13 @@ import matplotlib.pyplot as plt
 # use from src.ptwt.packets if you cloned the repo instead of using pip.
 from ptwt import WaveletPacket
 
-t = np.linspace(0, 10, 1500)
-w = scipy.signal.chirp(t, f0=1, f1=50, t1=10, method="linear")
+fs = 1000
+t = np.linspace(0, 2, int(2//(1/fs)))
+w = np.sin(256*np.pi*t**2)
 
-wavelet = pywt.Wavelet("db3")
+wavelet = pywt.Wavelet("sym6")
 wp = WaveletPacket(
-    data=torch.from_numpy(w.astype(np.float32)), wavelet=wavelet, mode="reflect"
+    data=torch.from_numpy(w.astype(np.float32)), wavelet=wavelet, mode="boundary"
 )
 nodes = wp.get_level(5)
 np_lst = []
@@ -22,7 +23,7 @@ viz = np.stack(np_lst).squeeze()
 
 fig, axs = plt.subplots(2)
 axs[0].plot(t, w)
-axs[0].set_title("Linear Chirp, f(0)=1, f(10)=50")
+axs[0].set_title("Analyzed signal")
 axs[0].set_xlabel("t [s]")
 
 axs[1].set_title("Wavelet analysis")
