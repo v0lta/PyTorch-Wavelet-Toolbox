@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union, 
 
 import pywt
 import torch
+import numpy as np
 
 from ._util import Wavelet, _as_wavelet
 from .conv_transform import wavedec, waverec
@@ -20,6 +21,23 @@ if TYPE_CHECKING:
     BaseDict = collections.UserDict[str, torch.Tensor]
 else:
     BaseDict = collections.UserDict
+
+
+def _wpfreq(fs: float, level: int) -> np.ndarray:
+    """Compute the frequencies for a fully decomposed single dimensional
+       packet tree. The packet transform linearly subdivides all frequencies
+       from zero up to the Nyquist frequency.
+
+    Args:
+        fs (float): The sampling frequency
+        level (int): The decomposition level
+
+    Returns:
+        np.ndarray: The frequency bins of the packets in frequency order.
+    """
+    n = list(range(int(np.power(2., level))))
+    freqs = (fs/2.)*(n/(np.power(2., level)))
+    return freqs
 
 
 class WaveletPacket(BaseDict):
