@@ -17,7 +17,7 @@ __all__ = [
 VERSION = "0.1.6-dev"
 
 
-def get_git_hash() -> str:
+def _get_git_hash() -> str:
     """Get the :mod:`ptwt` git hash."""
     with open(os.devnull, "w") as devnull:
         try:
@@ -34,7 +34,7 @@ def get_git_hash() -> str:
 
 def get_version(with_git_hash: bool = False) -> str:
     """Get the :mod:`ptwt` version string, including a git hash."""
-    return f"{VERSION}-{get_git_hash()}" if with_git_hash else VERSION
+    return f"{VERSION}-{_get_git_hash()}" if with_git_hash else VERSION
 
 
 if __name__ == "__main__":
