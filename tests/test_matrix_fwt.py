@@ -5,188 +5,177 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt._mackey_glass import MackeyGenerator
 from src.ptwt.matmul_transform import (
     MatrixWavedec,
     MatrixWaverec,
     _construct_a,
     _construct_s,
+    construct_boundary_a,
+    construct_boundary_s,
 )
+from tests._mackey_glass import MackeyGenerator
 
 
-def test_analysis_and_synthethis_matrices_db1():
-    """Tests the db1 case."""
-    a_db1 = _construct_a(pywt.Wavelet("db1"), 8)
-    s_db1 = _construct_s(pywt.Wavelet("db1"), 8)
-    err = np.mean(np.abs(torch.sparse.mm(a_db1, s_db1.to_dense()).numpy() - np.eye(8)))
-    print("db1 8 inverse error", err)
-    assert err < 1e-6
+@pytest.mark.parametrize("size", [8, 16, 24, 32])
+def test_analysis_and_synthethis_matrices_db1(size: int) -> None:
+    """Ensure the analysis matrix a and the synthesis matrix s invert each other."""
+    a_db1 = _construct_a(pywt.Wavelet("db1"), size)
+    s_db1 = _construct_s(pywt.Wavelet("db1"), size)
+    assert np.allclose(torch.sparse.mm(a_db1, s_db1.to_dense()).numpy(), np.eye(size))
 
 
-def test_fwt_ifwt_level_1():
+@pytest.mark.parametrize("level", [1, 2, 3, 4])
+@pytest.mark.parametrize("length", [16, 32, 64, 128])
+def test_fwt_ifwt_haar(level: int, length: int) -> None:
     """Test the Haar case."""
     wavelet = pywt.Wavelet("haar")
-    data2 = np.array(
-        [
-            1.0,
-            2.0,
-            3.0,
-            4.0,
-            5.0,
-            6.0,
-            7.0,
-            8.0,
-            9.0,
-            10.0,
-            11.0,
-            12.0,
-            13.0,
-            14.0,
-            15.0,
-            16.0,
-        ]
-    )
-
-    # level 1
-    coeffs = pywt.dwt(data2, wavelet)
-    print(coeffs[0], coeffs[1])
-    matrix_wavedec = MatrixWavedec(wavelet, 1)
-    coeffsmat1 = matrix_wavedec(torch.from_numpy(data2))
-    err1 = np.mean(np.abs(coeffs[0] - coeffsmat1[0].squeeze().numpy()))
-    err2 = np.mean(np.abs(coeffs[1] - coeffsmat1[1].squeeze().numpy()))
-    print(err1 < 0.00001, err2 < 0.00001)
-    assert err1 < 1e-6
-    assert err2 < 1e-6
-
-
-def test_fwt_ifwt_level_2():
-    """Test the Haar level two case."""
-    wavelet = pywt.Wavelet("haar")
-    data2 = np.array(
-        [
-            1.0,
-            2.0,
-            3.0,
-            4.0,
-            5.0,
-            6.0,
-            7.0,
-            8.0,
-            9.0,
-            10.0,
-            11.0,
-            12.0,
-            13.0,
-            14.0,
-            15.0,
-            16.0,
-            17.0,
-            18.0,
-        ]
-    )
-    coeffs2 = pywt.wavedec(data2, wavelet, level=2, mode="zero")
-    matrix_wavedec = MatrixWavedec(wavelet, 2)
-    coeffsmat2 = matrix_wavedec(torch.from_numpy(data2))
-
-    err1 = np.mean(np.abs(coeffs2[0] - coeffsmat2[0].squeeze().numpy()))
-    err2 = np.mean(np.abs(coeffs2[1] - coeffsmat2[1].squeeze().numpy()))
-    err3 = np.mean(np.abs(coeffs2[2] - coeffsmat2[2].squeeze().numpy()))
-    print(
-        np.mean(np.abs(coeffs2[0] - coeffsmat2[0].squeeze().numpy())) < 1e-6,
-        np.mean(np.abs(coeffs2[1] - coeffsmat2[1].squeeze().numpy())) < 1e-6,
-        np.mean(np.abs(coeffs2[2] - coeffsmat2[2].squeeze().numpy())) < 1e-6,
-    )
-    assert err1 < 1e-6
-    assert err2 < 1e-6
-    assert err3 < 1e-6
-
-
-def test_fwt_ifwt_level_3():
-    """Test the Haar level 3 case."""
-    wavelet = pywt.Wavelet("haar")
-    data2 = np.array(
-        [
-            1.0,
-            2.0,
-            3.0,
-            4.0,
-            5.0,
-            6.0,
-            7.0,
-            8.0,
-            9.0,
-            10.0,
-            11.0,
-            12.0,
-            13.0,
-            14.0,
-            15.0,
-            16.0,
-        ]
-    )
-    coeffs3 = pywt.wavedec(data2, wavelet, level=3)
-    matrix_wavedec = MatrixWavedec(wavelet, level=3)
-    coeffsmat3 = matrix_wavedec(torch.from_numpy(data2))
-
-    err1 = np.mean(np.abs(coeffs3[0] - coeffsmat3[0].squeeze().numpy()))
-    err2 = np.mean(np.abs(coeffs3[1] - coeffsmat3[1].squeeze().numpy()))
-    err3 = np.mean(np.abs(coeffs3[2] - coeffsmat3[2].squeeze().numpy()))
-    err4 = np.mean(np.abs(coeffs3[3] - coeffsmat3[3].squeeze().numpy()))
-    print(err1 < 1e-6, err2 < 1e-6, err3 < 1e-6, err4 < 1e-6)
-
-    assert err1 < 1e-6
-    assert err2 < 1e-6
-    assert err3 < 1e-6
-    assert err4 < 1e-6
-
-    matrix_waverec = MatrixWaverec(wavelet)
-    reconstructed_data = matrix_waverec(coeffsmat3)
-    err5 = torch.mean(torch.abs(torch.from_numpy(data2) - reconstructed_data))
-    print("abs ifwt 3 reconstruction error", err5)
-    assert np.allclose(data2, reconstructed_data.numpy())
+    data = np.random.uniform(-1, 1, (length))
+    coeffs = pywt.wavedec(data, wavelet, level=level)
+    matrix_wavedec = MatrixWavedec(wavelet, level)
+    coeffs_matfwt = matrix_wavedec(torch.from_numpy(data))
+    test_list = [
+        np.allclose(cmfwt.numpy(), cpywt) for cmfwt, cpywt in zip(coeffs_matfwt, coeffs)
+    ]
+    assert all(test_list)
 
 
 @pytest.mark.slow
-def test_fwt_ifwt_mackey_haar():
-    """Test the Haar case for a long signal."""
+def test_fwt_ifwt_mackey_haar_cuda() -> None:
+    """Test the Haar case for a long signal on GPU."""
     wavelet = pywt.Wavelet("haar")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1, device=device)
-    wavelet = pywt.Wavelet("haar")
-    pt_data = torch.squeeze(generator())
-
-    coeffs_max = pywt.wavedec(pt_data.cpu().numpy(), wavelet, level=9)
-
+    pt_data = torch.squeeze(generator()).type(torch.float64)
+    # ensure coefficients are equal.
+    coeffs = pywt.wavedec(pt_data.cpu().numpy(), wavelet, level=9)
     matrix_wavedec = MatrixWavedec(wavelet, 9)
-    coeffs_mat_max = matrix_wavedec(pt_data)
-
-    test_lst = []
-    for test_no in range(9):
-        test_lst.append(
-            np.sum(np.abs(coeffs_max[test_no] - coeffs_mat_max[test_no].cpu().numpy()))
-            < 0.001
-        )
-    print(test_lst)
-
+    coeffs_matfwt = matrix_wavedec(pt_data)
+    test_list = [
+        np.allclose(cmfwt.cpu().numpy(), cpywt)
+        for cmfwt, cpywt in zip(coeffs_matfwt, coeffs)
+    ]
+    assert all(test_list)
     # test the inverse fwt.
     matrix_waverec = MatrixWaverec(wavelet)
-    reconstructed_data = matrix_waverec(coeffs_mat_max)
-    err1 = torch.mean(torch.abs(pt_data - reconstructed_data))
-    print("abs ifwt reconstruction error", err1)
+    reconstructed_data = matrix_waverec(coeffs_matfwt)
     assert np.allclose(pt_data.cpu().numpy(), reconstructed_data.cpu().numpy())
 
 
 @pytest.mark.slow
-def test_fwt_ifwt_mackey_db2():
-    """Test the db2 case for a long signal."""
+@pytest.mark.parametrize("level", [1, 2, 3, 4, None])
+@pytest.mark.parametrize("wavelet", ["db2", "db3", "db4", "sym5"])
+def test_fwt_ifwt_mackey(level: int, wavelet: str) -> None:
+    """Test multiple wavelets and levels for a long signal."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    wavelet = pywt.Wavelet("db2")
+    wavelet = pywt.Wavelet(wavelet)
     generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1, device=device)
-    pt_data = torch.squeeze(generator()).cpu()
-    matrix_wavedec = MatrixWavedec(wavelet, 4)
+    pt_data = torch.squeeze(generator()).type(torch.float64)
+    matrix_wavedec = MatrixWavedec(wavelet, level)
     coeffs_mat_max = matrix_wavedec(pt_data)
     matrix_waverec = MatrixWaverec(wavelet)
     reconstructed_data = matrix_waverec(coeffs_mat_max)
-    err = torch.mean(torch.abs(pt_data - reconstructed_data))
-    print("reconstruction error:", err)
-    assert err < 1e-6
+    assert np.allclose(reconstructed_data.cpu().numpy(), pt_data.cpu().numpy())
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("size", [24, 64, 128, 256])
+@pytest.mark.parametrize(
+    "wavelet",
+    [
+        pywt.Wavelet("db2"),
+        pywt.Wavelet("db4"),
+        pywt.Wavelet("db6"),
+        pywt.Wavelet("db8"),
+    ],
+)
+def test_boundary_filter_analysis_and_synthethis_matrices(
+    size: int, wavelet: pywt.Wavelet
+) -> None:
+    """Check 1d the 1d-fwt matrices for orthogonality and invertability."""
+    analysis_matrix = construct_boundary_a(
+        wavelet, size, boundary="gramschmidt"
+    ).to_dense()
+    synthesis_matrix = construct_boundary_s(
+        wavelet, size, boundary="gramschmidt"
+    ).to_dense()
+    # s_db2 = construct_s(pywt.Wavelet("db8"), size)
+    # test_eye_inv = torch.sparse.mm(a_db8, s_db2.to_dense()).numpy()
+    test_eye_orth = torch.mm(analysis_matrix.transpose(1, 0), analysis_matrix).numpy()
+    test_eye_inv = torch.mm(analysis_matrix, synthesis_matrix).numpy()
+    err_inv = np.mean(np.abs(test_eye_inv - np.eye(size)))
+    err_orth = np.mean(np.abs(test_eye_orth - np.eye(size)))
+    print(wavelet.name, "orthogonal error", err_orth, "size", size)
+    print(wavelet.name, "inverse error", err_inv, "size", size)
+    assert err_orth < 1e-8
+    assert err_inv < 1e-8
+
+
+@pytest.mark.parametrize("wavelet_str", ["db2", "db3", "haar"])
+@pytest.mark.parametrize(
+    "data",
+    [
+        np.random.randn(32),
+        np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0]),
+        np.array([0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0]),
+        np.random.randn(18),
+        np.random.randn(19),
+    ],
+)
+@pytest.mark.parametrize("level", [2, 1])
+@pytest.mark.parametrize("boundary", ["gramschmidt", "qr"])
+def test_boundary_transform_1d(
+    wavelet_str: str, data: np.ndarray, level: int, boundary: str
+) -> None:
+    """Ensure matrix fwt reconstructions are pywt compatible."""
+    data_torch = torch.from_numpy(data.astype(np.float64))
+    wavelet = pywt.Wavelet(wavelet_str)
+    matrix_wavedec = MatrixWavedec(wavelet, level=level, boundary=boundary)
+    coeffs = matrix_wavedec(data_torch)
+    matrix_waverec = MatrixWaverec(wavelet, boundary=boundary)
+    rec = matrix_waverec(coeffs)
+    rec_pywt = pywt.waverec(
+        pywt.wavedec(data_torch.numpy(), wavelet, mode="zero"), wavelet
+    )
+    error = np.sum(np.abs(rec_pywt - rec.numpy()))
+    print(
+        "wavelet: {},".format(wavelet_str),
+        "level: {},".format(level),
+        "shape: {},".format(data.shape[-1]),
+        "error {:2.2e}".format(error),
+    )
+    assert np.allclose(rec.numpy(), rec_pywt)
+    # test the operator matrices
+    if not matrix_wavedec.padded and not matrix_waverec.padded:
+        test_mat = torch.sparse.mm(
+            matrix_waverec.sparse_ifwt_operator,
+            matrix_wavedec.sparse_fwt_operator,
+        )
+        assert np.allclose(test_mat.to_dense().numpy(), np.eye(test_mat.shape[0]))
+
+
+@pytest.mark.parametrize("wavelet_str", ["db2", "db3", "haar"])
+@pytest.mark.parametrize("boundary", ["qr", "gramschmidt"])
+def test_matrix_transform_1d_rebuild(wavelet_str: str, boundary: str):
+    """Ensure matrix fwt reconstructions are pywt compatible."""
+    data_list = [np.random.randn(18), np.random.randn(21)]
+    wavelet = pywt.Wavelet(wavelet_str)
+    matrix_waverec = MatrixWaverec(wavelet, boundary=boundary)
+    for level in [2, 1]:
+        matrix_wavedec = MatrixWavedec(wavelet, level=level, boundary=boundary)
+        for data in data_list:
+            data_torch = torch.from_numpy(data.astype(np.float64))
+            coeffs = matrix_wavedec(data_torch)
+            rec = matrix_waverec(coeffs)
+            rec_pywt = pywt.waverec(
+                pywt.wavedec(data_torch.numpy(), wavelet, mode="zero"), wavelet
+            )
+            assert np.allclose(rec.numpy(), rec_pywt)
+            # test the operator matrices
+            if not matrix_wavedec.padded and not matrix_waverec.padded:
+                test_mat = torch.sparse.mm(
+                    matrix_waverec.sparse_ifwt_operator,
+                    matrix_wavedec.sparse_fwt_operator,
+                )
+                assert np.allclose(
+                    test_mat.to_dense().numpy(), np.eye(test_mat.shape[0])
+                )

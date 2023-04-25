@@ -27,6 +27,13 @@ ptwt.conv\_transform\_3 module
    :undoc-members:
    :show-inheritance:
 
+ptwt.separable\_conv\_transform module
+--------------------------------------
+
+.. automodule:: ptwt.separable_conv_transform
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 ptwt.continuous\_transform module
 ---------------------------------
@@ -59,6 +66,15 @@ ptwt.matmul\_transform\_2 module
    :members:
    :undoc-members:
    :show-inheritance:
+
+ptwt.matmul\_transform\_3 module
+--------------------------------
+
+.. automodule:: ptwt.matmul_transform_3
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 ptwt.sparse\_math module
 ------------------------

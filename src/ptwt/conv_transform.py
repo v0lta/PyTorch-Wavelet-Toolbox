@@ -1,11 +1,29 @@
-"""Fast wavelet transformation code with edge-padding."""
+"""Fast wavelet transformations based on torch.nn.functional.conv1d and its transpose.
+
+This module treats boundaries with edge-padding.
+"""
 # Created by moritz wolter, 14.04.20
 from typing import List, Optional, Sequence, Tuple, Union
 
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet
+from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported
+
+
+def _create_tensor(
+    filter: Sequence[float], flip: bool, device: torch.device, dtype: torch.dtype
+) -> torch.Tensor:
+    if flip:
+        if isinstance(filter, torch.Tensor):
+            return filter.flip(-1).unsqueeze(0).to(device=device, dtype=dtype)
+        else:
+            return torch.tensor(filter[::-1], device=device, dtype=dtype).unsqueeze(0)
+    else:
+        if isinstance(filter, torch.Tensor):
+            return filter.unsqueeze(0).to(device=device, dtype=dtype)
+        else:
+            return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
 
 
 def get_filter_tensors(
@@ -18,9 +36,9 @@ def get_filter_tensors(
 
     Args:
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-                the name of a pywt wavelet.
-        flip (bool): If true filters are flipped.
-        device (torch.device) : PyTorch target device.
+            the name of a pywt wavelet.
+        flip (bool): Flip filters left-right, if true.
+        device (torch.device or str): PyTorch target device.
         dtype (torch.dtype): The data type sets the precision of the
                computation. Default: torch.float32.
 
@@ -30,26 +48,16 @@ def get_filter_tensors(
 
     """
     wavelet = _as_wavelet(wavelet)
+    device = torch.device(device)
 
-    def _create_tensor(filter: Sequence[float]) -> torch.Tensor:
-        if flip:
-            if isinstance(filter, torch.Tensor):
-                return filter.flip(-1).unsqueeze(0).to(device)
-            else:
-                return torch.tensor(filter[::-1], device=device, dtype=dtype).unsqueeze(
-                    0
-                )
-        else:
-            if isinstance(filter, torch.Tensor):
-                return filter.unsqueeze(0).to(device)
-            else:
-                return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
-
-    dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
-    dec_lo_tensor = _create_tensor(dec_lo)
-    dec_hi_tensor = _create_tensor(dec_hi)
-    rec_lo_tensor = _create_tensor(rec_lo)
-    rec_hi_tensor = _create_tensor(rec_hi)
+    if isinstance(wavelet, tuple):
+        dec_lo, dec_hi, rec_lo, rec_hi = wavelet
+    else:
+        dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
+    dec_lo_tensor = _create_tensor(dec_lo, flip, device, dtype)
+    dec_hi_tensor = _create_tensor(dec_hi, flip, device, dtype)
+    rec_lo_tensor = _create_tensor(rec_lo, flip, device, dtype)
+    rec_hi_tensor = _create_tensor(rec_hi, flip, device, dtype)
     return dec_lo_tensor, dec_hi_tensor, rec_lo_tensor, rec_hi_tensor
 
 
@@ -58,10 +66,12 @@ def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
 
     Args:
         data_len (int): The length of the input vector.
-        filt_len (int): The length of the used filter.
+        filt_len (int): The size of the used filter.
 
     Returns:
-        tuple: The numbers to attach on the edges of the input.
+        Tuple: The first entry specifies how many numbers
+            to attach on the right. The second
+            entry covers the left side.
 
     """
     # pad to ensure we see all filter positions and
@@ -88,11 +98,11 @@ def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
 
 
 def _translate_boundary_strings(pywt_mode: str) -> str:
-    """Translate pywt mode strings to pytorch mode strings.
+    """Translate pywt mode strings to PyTorch mode strings.
 
-    We support constant, zero, reflect and periodic.
-    Unfortunately "constant" has different meanings in the
-    pytorch and pywavelet communities.
+    We support constant, zero, reflect, and periodic.
+    Unfortunately, "constant" has different meanings in the
+    Pytorch and PyWavelet communities.
 
     Raises:
         ValueError: If the padding mode is not supported.
@@ -111,32 +121,36 @@ def _translate_boundary_strings(pywt_mode: str) -> str:
     return pt_mode
 
 
-def fwt_pad(
+def _fwt_pad(
     data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str = "reflect"
 ) -> torch.Tensor:
     """Pad the input signal to make the fwt matrix work.
+
+    The padding assumes a future step will transform the last axis.
 
     Args:
         data (torch.Tensor): Input data [batch_size, 1, time]
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode (str): The desired way to pad.
-            Supported modes are "reflect", "zero", "constant" and "periodic".
+        mode (str): The desired way to pad. The following methods are supported::
+
+                "reflect", "zero", "constant", "periodic".
+
             Refection padding mirrors samples along the border.
             Zero padding pads zeros.
             Constant padding replicates border values.
-            periodic padding repeats samples in a cyclic fashing.
-            Defaults to reflect.
+            Periodic padding cyclically repeats samples.
+            This function defaults to reflect.
 
     Returns:
-        torch.Tensor: A pytorch tensor with the padded input data
+        torch.Tensor: A PyTorch tensor with the padded input data
 
     """
     wavelet = _as_wavelet(wavelet)
     # convert pywt to pytorch convention.
     mode = _translate_boundary_strings(mode)
 
-    padr, padl = _get_pad(data.shape[-1], len(wavelet.dec_lo))
+    padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
     data_pad = torch.nn.functional.pad(data, [padl, padr], mode=mode)
     return data_pad
 
@@ -172,11 +186,25 @@ def _flatten_2d_coeff_lst(
     return flat_coeff_lst
 
 
+def _adjust_padding_at_reconstruction(
+    res_ll_size: int, coeff_size: int, pad_end: int, pad_start: int
+) -> Tuple[int, int]:
+    pred_size = res_ll_size - (pad_start + pad_end)
+    next_size = coeff_size
+    if next_size == pred_size:
+        pass
+    elif next_size == pred_size - 1:
+        pad_end += 1
+    else:
+        raise AssertionError("padding error, please open an issue on github")
+    return pad_end, pad_start
+
+
 def wavedec(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
-    level: Optional[int] = None,
     mode: str = "reflect",
+    level: Optional[int] = None,
 ) -> List[torch.Tensor]:
     """Compute the analysis (forward) 1d fast wavelet transform.
 
@@ -186,16 +214,27 @@ def wavedec(
                              2d inputs are interpreted as [batch_size, time].
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+            Please consider the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
+        mode (str): The desired padding mode. Padding extends the signal along
+            the edges. Supported methods are::
+
+                "reflect", "zero", "constant", "periodic".
+
+            Defaults to "reflect".
         level (int): The scale level to be computed.
                                Defaults to None.
-        mode (str): The desired padding mode. Padding extends the singal along
-            the edges. Supported modes are "reflect", "zero", "constant"
-            and "periodic". Defaults to "reflect".
 
     Returns:
-        list: A list [cA_n, cD_n, cD_n-1, …, cD2, cD1]
+        list: A list::
+
+            [cA_n, cD_n, cD_n-1, …, cD2, cD1]
+
         containing the wavelet coefficients. A denotes
         approximation and D detail coefficients.
+
+    Raises:
+        ValueError: If the dtype of the input data tensor is unsupported.
 
     Example:
         >>> import torch
@@ -216,6 +255,9 @@ def wavedec(
         # assume batched time series
         data = data.unsqueeze(1)
 
+    if not _is_dtype_supported(data.dtype):
+        raise ValueError(f"Input dtype {data.dtype} not supported")
+
     dec_lo, dec_hi, _, _ = get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
@@ -228,7 +270,7 @@ def wavedec(
     result_lst = []
     res_lo = data
     for _ in range(level):
-        res_lo = fwt_pad(res_lo, wavelet, mode=mode)
+        res_lo = _fwt_pad(res_lo, wavelet, mode=mode)
         res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)
         result_lst.append(res_hi.squeeze(1))
@@ -247,6 +289,10 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
     Returns:
         torch.Tensor: The reconstructed signal.
 
+    Raises:
+        ValueError: If the dtype of the coeffs tensor is unsupported or if the
+            coefficients have incompatible shapes, dtypes or devices.
+
     Example:
         >>> import torch
         >>> import ptwt, pywt
@@ -260,8 +306,19 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
         >>>              pywt.Wavelet('haar'))
 
     """
+    torch_device = coeffs[0].device
+    torch_dtype = coeffs[0].dtype
+    if not _is_dtype_supported(torch_dtype):
+        raise ValueError(f"Input dtype {torch_dtype} not supported")
+
+    for coeff in coeffs[1:]:
+        if torch_device != coeff.device:
+            raise ValueError("coefficients must be on the same device")
+        elif torch_dtype != coeff.dtype:
+            raise ValueError("coefficients must have the same dtype")
+
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=coeffs[-1].device, dtype=coeffs[-1].dtype
+        wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
     filt = torch.stack([rec_lo, rec_hi], 0)
@@ -275,14 +332,9 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
         padl = (2 * filt_len - 3) // 2
         padr = (2 * filt_len - 3) // 2
         if c_pos < len(coeffs) - 2:
-            pred_len = res_lo.shape[-1] - (padl + padr)
-            next_len = coeffs[c_pos + 2].shape[-1]
-            if next_len != pred_len:
-                padr += 1
-                pred_len = res_lo.shape[-1] - (padl + padr)
-                assert (
-                    next_len == pred_len
-                ), "padding error, please open an issue on github "
+            padr, padl = _adjust_padding_at_reconstruction(
+                res_lo.shape[-1], coeffs[c_pos + 2].shape[-1], padr, padl
+            )
         if padl > 0:
             res_lo = res_lo[..., padl:]
         if padr > 0:

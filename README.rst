@@ -26,6 +26,10 @@ Pytorch Wavelet Toolbox (`ptwt`)
     :target: https://github.com/psf/black
     :alt: Black code style
 
+.. image:: https://static.pepy.tech/personalized-badge/ptwt?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=Downloads
+ :target: https://pepy.tech/project/ptwt
+
+
 
 
 Welcome to the PyTorch wavelet toolbox. This package implements:
@@ -33,14 +37,16 @@ Welcome to the PyTorch wavelet toolbox. This package implements:
 - the fast wavelet transform (fwt) via ``wavedec`` and its inverse by providing the ``waverec`` function,
 - the two-dimensional fwt is called ``wavedec2`` the synthesis counterpart ``waverec2``,
 - ``wavedec3`` and ``waverec3`` cover the three-dimensional analysis and synthesis case,
-- ``MatrixWavedec`` and ``MatrixWaverec`` provide sparse-matrix-based fast wavelet transforms with boundary filters,
-- 2d sparse-matrix transforms with separable & non-separable boundary filters are available (experimental),
+- ``fswavedec2``, ``fswavedec3``, ``fswaverec2`` and ``fswaverec3`` support separable transformations.
+- ``MatrixWavedec`` and ``MatrixWaverec`` implement sparse-matrix-based fast wavelet transforms with boundary filters,
+- 2d sparse-matrix transforms with separable & non-separable boundary filters are available,
+- ``MatrixWavedec3`` and ``MatrixWaverec3`` allow separable 3D-fwt's with boundary filters.
 - ``cwt`` computes a one-dimensional continuous forward transform,
 - single and two-dimensional wavelet packet forward and backward transforms are available via the ``WaveletPacket`` and ``WaveletPacket2D`` objects,
 - finally, this package provides adaptive wavelet support (experimental).
 
-This toolbox supports pywt-wavelets. Complete documentation is available:
-https://pytorch-wavelet-toolbox.readthedocs.io/
+This toolbox extends `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_ . We additionally provide GPU and gradient support via a PyTorch backend.
+Complete documentation is available at: https://pytorch-wavelet-toolbox.readthedocs.io/
 
 
 **Installation**
@@ -101,7 +107,7 @@ To test an example run:
   import numpy as np
   import scipy.misc
 
-  face = np.transpose(scipy.misc.face(),
+  face = np.transpose(scipy.datasets.face(),
                           [2, 0, 1]).astype(np.float64)
   pytorch_face = torch.tensor(face)
   coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
@@ -143,8 +149,8 @@ Reconsidering the 1d case, try:
 
 
 The process for the 2d transforms ``MatrixWavedec2``, ``MatrixWaverec2`` works similarly.
-By default, a non-separable transformation is used.
-To use a separable transformation, pass ``separable=True`` to ``MatrixWavedec2`` and ``MatrixWaverec2``.
+By default, a separable transformation is used.
+To use a non-separable transformation, pass ``separable=False`` to ``MatrixWavedec2`` and ``MatrixWaverec2``.
 Separable transformations use a 1d transformation along both axes, which might be faster since fewer matrix entries
 have to be orthogonalized.
 
@@ -162,14 +168,17 @@ See https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples/network_
 
 **Testing**
 
-The ``tests`` folder contains multiple tests to allow independent verification of this toolbox. After cloning the
-repository, and moving into the main directory, and installing ``nox`` with ``pip install nox`` run:
+The ``tests`` folder contains multiple tests to allow independent verification of this toolbox.
+The GitHub workflow executes a subset of all tests for efficiency reasons. 
+After cloning the repository, moving into the main directory, and installing ``nox`` with ``pip install nox`` run
 
 .. code-block:: sh
 
   $ nox --session test
 
 
+
+to run all existing tests.
 
 Citation
 """"""""

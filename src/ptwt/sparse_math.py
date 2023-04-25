@@ -1,8 +1,8 @@
 """Efficiently construct fwt operations using sparse matrices."""
 # Written by moritz ( @ wolter.tech ) 17.09.21
+from itertools import product
 from typing import List
 
-import numpy as np
 import torch
 
 
@@ -44,10 +44,10 @@ def sparse_kron(
     Returns:
         torch.Tensor: The resulting [mp, nq] tensor.
     """
-    if not sparse_tensor_a.is_coalesced():
-        sparse_tensor_a = sparse_tensor_a.coalesce()
-    if not sparse_tensor_b.is_coalesced():
-        sparse_tensor_b = sparse_tensor_b.coalesce()
+    assert sparse_tensor_a.device == sparse_tensor_b.device
+
+    sparse_tensor_a = sparse_tensor_a.coalesce()
+    sparse_tensor_b = sparse_tensor_b.coalesce()
     output_shape = (
         sparse_tensor_a.shape[0] * sparse_tensor_b.shape[0],
         sparse_tensor_a.shape[1] * sparse_tensor_b.shape[1],
@@ -58,7 +58,10 @@ def sparse_kron(
     # take care of the zero case.
     if nzz_a == 0 or nzz_b == 0:
         return torch.sparse_coo_tensor(
-            torch.zeros([2, 1]), torch.zeros([1]), size=output_shape
+            torch.zeros([2, 1]),
+            torch.zeros([1]),
+            size=output_shape,
+            device=sparse_tensor_a.device,
         )
 
     # expand A's entries into blocks
@@ -78,7 +81,10 @@ def sparse_kron(
     data = data.reshape(-1, nzz_b) * sparse_tensor_b.values()
     data = data.reshape(-1)
     result = torch.sparse_coo_tensor(
-        torch.stack([row, col], 0), data, size=output_shape
+        torch.stack([row, col], 0),
+        data,
+        size=output_shape,
+        device=sparse_tensor_a.device,
     )
 
     return result
@@ -123,7 +129,9 @@ def cat_sparse_identity_matrix(
     )
     new_indices = torch.cat([sparse_matrix.coalesce().indices(), extra_indices], -1)
     new_values = torch.cat([sparse_matrix.coalesce().values(), extra_values], -1)
-    new_matrix = torch.sparse_coo_tensor(new_indices, new_values)
+    new_matrix = torch.sparse_coo_tensor(
+        new_indices, new_values, device=sparse_matrix.device
+    )
     return new_matrix
 
 
@@ -167,7 +175,11 @@ def sparse_diag(
         diagonal = diagonal[mask]
 
     diag = torch.sparse_coo_tensor(
-        diag_indices, diagonal, size=(rows, cols), dtype=diagonal.dtype
+        diag_indices,
+        diagonal,
+        size=(rows, cols),
+        dtype=diagonal.dtype,
+        device=diagonal.device,
     )
 
     return diag
@@ -189,8 +201,7 @@ def sparse_replace_row(
         torch.Tensor: A sparse matrix, with the new row inserted at
         row_index.
     """
-    if not matrix.is_coalesced():
-        matrix = matrix.coalesce()
+    matrix = matrix.coalesce()
     assert (
         matrix.shape[-1] == row.shape[-1]
     ), "matrix and replacement-row must share the same column number."
@@ -206,8 +217,7 @@ def sparse_replace_row(
         device=matrix.device,
         dtype=matrix.dtype,
     )
-    if not row.is_coalesced():
-        row = row.coalesce()
+    row = row.coalesce()
 
     addition_matrix = torch.sparse_coo_tensor(
         torch.stack((row.indices()[0, :] + row_index, row.indices()[1, :]), 0),
@@ -323,6 +333,9 @@ def construct_conv_matrix(
     """Construct a convolution matrix.
 
     Full, valid and same, padding are supported.
+    For reference see:
+    https://github.com/RoyiAvital/StackExchangeCodes/blob/\
+    master/StackOverflow/Q2080835/CreateConvMtxSparse.m
 
     Args:
         filter (torch.tensor): The 1d-filter to convolve with.
@@ -337,10 +350,6 @@ def construct_conv_matrix(
     Raises:
         ValueError: If the padding is not 'full', 'same' or 'valid'.
 
-    Note:
-        For reference see:
-        https://github.com/RoyiAvital/StackExchangeCodes/blob/\
-            master/StackOverflow/Q2080835/CreateConvMtxSparse.m
     """
     filter_length = len(filter)
 
@@ -358,22 +367,21 @@ def construct_conv_matrix(
     else:
         raise ValueError("unkown padding type.")
 
-    row_indices = []
-    column_indices = []
-    values = []
-    for column in range(0, input_rows):
-        for row in range(0, filter_length):
-            check_row = column + row
-            if (check_row >= start_row) and (check_row <= stop_row):
-                row_indices.append(row + column - start_row)
-                column_indices.append(column)
-                values.append(filter[row])
-    indices = torch.tensor(
-        np.stack([row_indices, column_indices]), device=filter.device
+    product_lst = [
+        (row, col)
+        for col, row in product(range(input_rows), range(filter_length))
+        if row + col in range(start_row, stop_row + 1)
+    ]
+
+    row_indices = torch.tensor(
+        [row + col - start_row for row, col in product_lst], device=filter.device
     )
-    value_tensor = torch.stack(values)
+    col_indices = torch.tensor([col for row, col in product_lst], device=filter.device)
+    indices = torch.stack([row_indices, col_indices])
+    values = torch.stack([filter[row] for row, col in product_lst])
+
     return torch.sparse_coo_tensor(
-        indices, value_tensor, device=filter.device, dtype=filter.dtype
+        indices, values, device=filter.device, dtype=filter.dtype
     )
 
 
@@ -431,7 +439,7 @@ def construct_conv2d_matrix(
         block_matrix_list.append(construct_conv_matrix(filter[:, i], input_rows, mode))
 
     diag_values = torch.ones(
-        [int(np.min([kronecker_rows, input_columns]))],
+        min(kronecker_rows, input_columns),
         dtype=filter.dtype,
         device=filter.device,
     )
@@ -575,3 +583,23 @@ def batch_mm(matrix: torch.Tensor, matrix_batch: torch.Tensor) -> torch.Tensor:
     # Stack the vector batch into columns. (b, n, k) -> (n, b, k) -> (n, b*k)
     vectors = matrix_batch.transpose(0, 1).reshape(matrix.shape[1], -1)
     return matrix.mm(vectors).reshape(matrix.shape[0], batch_size, -1).transpose(1, 0)
+
+
+def _batch_dim_mm(
+    matrix: torch.Tensor, batch_tensor: torch.Tensor, dim: int
+) -> torch.Tensor:
+    """Multiply batch_tensor with matrix along the dimensions specified in dim.
+
+    Args:
+        matrix (torch.Tensor): A matrix of shape [m, n]
+        batch_tensor (torch.Tensor): A tensor with a selected dim of length n.
+        dim (int): The position of the desired dimension.
+
+    Returns:
+        torch.Tensor: The multiplication result.
+    """
+    dim_length = batch_tensor.shape[dim]
+    permuted_tensor = batch_tensor.transpose(dim, -1)
+    permuted_shape = permuted_tensor.shape
+    res = torch.sparse.mm(matrix, permuted_tensor.reshape(-1, dim_length).T).T
+    return res.reshape(list(permuted_shape[:-1]) + [matrix.shape[0]]).transpose(-1, dim)

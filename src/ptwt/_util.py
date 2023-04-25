@@ -1,5 +1,5 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
-from typing import Protocol, Sequence, Tuple, Union
+from typing import Optional, Protocol, Sequence, Tuple, Union
 
 import pywt
 import torch
@@ -19,6 +19,10 @@ class Wavelet(Protocol):
         Sequence[float], Sequence[float], Sequence[float], Sequence[float]
     ]
 
+    def __len__(self) -> int:
+        """Return the number of filter coefficients."""
+        return len(self.dec_lo)
+
 
 def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
     """Ensure the input argument to be a pywt wavelet compatible object.
@@ -37,8 +41,12 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
         return wavelet
 
 
-def _is_boundary_mode_supported(boundary_mode: str) -> bool:
-    return boundary_mode == "qr" or boundary_mode == "gramschmidt"
+def _is_boundary_mode_supported(boundary_mode: Optional[str]) -> bool:
+    return boundary_mode in ["qr", "gramschmidt"]
+
+
+def _is_dtype_supported(dtype: torch.dtype) -> bool:
+    return dtype in [torch.float32, torch.float64]
 
 
 def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
@@ -48,3 +56,11 @@ def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     a_mul = torch.unsqueeze(a_flat, dim=-1)
     b_mul = torch.unsqueeze(b_flat, dim=0)
     return a_mul * b_mul
+
+
+def _get_len(wavelet: Union[Tuple[torch.Tensor, ...], str, Wavelet]) -> int:
+    """Get number of filter coefficients for various wavelet data types."""
+    if isinstance(wavelet, tuple):
+        return wavelet[0].shape[0]
+    else:
+        return len(_as_wavelet(wavelet))

@@ -13,7 +13,12 @@ from typing import List, Optional, Union
 import numpy as np
 import torch
 
-from ._util import Wavelet, _as_wavelet, _is_boundary_mode_supported
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _is_boundary_mode_supported,
+    _is_dtype_supported,
+)
 from .conv_transform import get_filter_tensors
 from .sparse_math import (
     _orth_by_gram_schmidt,
@@ -313,6 +318,9 @@ class MatrixWavedec(object):
                 "[batch_size, length]."
             )
 
+        if not _is_dtype_supported(input_signal.dtype):
+            raise ValueError(f"Input dtype {input_signal.dtype} not supported")
+
         if input_signal.shape[-1] % 2 != 0:
             # odd length input
             # print('input length odd, padding a zero on the right')
@@ -326,7 +334,8 @@ class MatrixWavedec(object):
             re_build = True
 
         if self.level is None:
-            self.level = int(np.log2(length))
+            wlen = len(self.wavelet)
+            self.level = int(np.log2(length / (wlen - 1)))
             re_build = True
         elif self.level <= 0:
             raise ValueError("level must be a positive integer.")
@@ -567,10 +576,21 @@ class MatrixWaverec(object):
             self.input_length = input_length
             re_build = True
 
+        torch_device = coefficients[0].device
+        torch_dtype = coefficients[0].dtype
+        for coeff in coefficients[1:]:
+            if torch_device != coeff.device:
+                raise ValueError("coefficients must be on the same device")
+            elif torch_dtype != coeff.dtype:
+                raise ValueError("coefficients must have the same dtype")
+
+        if not _is_dtype_supported(torch_dtype):
+            raise ValueError(f"Input dtype {torch_dtype} not supported")
+
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
-                device=coefficients[-1].device,
-                dtype=coefficients[-1].dtype,
+                device=torch_device,
+                dtype=torch_dtype,
             )
 
         # transpose the coefficients to handle the batch dimension efficiently.
@@ -578,27 +598,8 @@ class MatrixWaverec(object):
 
         lo = coefficients[0]
         for c_pos, hi in enumerate(coefficients[1:]):
-            torch_device = None
-            curr_shape: Optional[torch.Size] = None
-            dtype = None
-            for coeff in [lo, hi]:
-                if coeff is not None:
-                    if curr_shape is None:
-                        curr_shape = coeff.shape
-                        torch_device = coeff.device
-                        dtype = coeff.dtype
-                    elif curr_shape != coeff.shape:
-                        # TODO: Add check that coeffs are on the same device
-                        raise ValueError("coeffs must have the same shape")
-
-            if curr_shape is None:
-                raise ValueError(
-                    "At least one coefficient parameter must be specified."
-                )
-            if lo is None:
-                lo = torch.zeros(curr_shape, device=torch_device, dtype=dtype)
-            if hi is None:
-                hi = torch.zeros(curr_shape, device=torch_device, dtype=dtype)
+            if lo.shape != hi.shape:
+                raise ValueError("coefficients must have the same shape")
 
             lo = torch.cat([lo, hi], 0)
             lo = torch.sparse.mm(self.ifwt_matrix_list[::-1][c_pos], lo)

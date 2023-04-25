@@ -1,6 +1,6 @@
 """PyTorch compatible cwt code.
 
-Based on https://github.com/PyWavelets/pywt/blob/master/pywt/_cwt.py
+This module is based on pywt's cwt implementation.
 """
 from typing import Any, Tuple, Union
 
@@ -49,8 +49,9 @@ def cwt(
         ValueError: If a scale is too small for the input signal.
 
     Returns:
-        Tuple[torch.Tensor, np.ndarray]: A tuple with the transformation matrix
-            and frequencies in this order.
+        Tuple[torch.Tensor, np.ndarray]: The first tuple-element contains
+            the transformation matrix of shape [scales, batch, time].
+            The second element contains an array with frequency information.
 
     Example:
         >>> import torch, ptwt
@@ -73,7 +74,7 @@ def cwt(
     elif np.isscalar(scales):
         scales = np.array([scales])
 
-    if isinstance(wavelet, _DifferentiableContinuousWavelet):
+    if isinstance(wavelet, torch.nn.Module):
         if data.is_cuda:
             wavelet.cuda()
 
@@ -82,7 +83,7 @@ def cwt(
     if type(wavelet) is ContinuousWavelet:
         int_psi = np.conj(int_psi) if wavelet.complex_cwt else int_psi
         int_psi = torch.tensor(int_psi, device=data.device)
-    elif isinstance(wavelet, _DifferentiableContinuousWavelet):
+    elif isinstance(wavelet, torch.nn.Module):
         int_psi = torch.conj(int_psi) if wavelet.complex_cwt else int_psi
     else:
         int_psi = torch.tensor(int_psi, device=data.device)
@@ -224,6 +225,10 @@ def _integrate_wavelet(
         return _integrate(psi_d, step), _integrate(psi_r, step), x
 
 
+class _WaveletParameter(torch.nn.Parameter):
+    pass
+
+
 class _DifferentiableContinuousWavelet(
     torch.nn.Module, ContinuousWavelet  # type: ignore
 ):
@@ -236,11 +241,13 @@ class _DifferentiableContinuousWavelet(
 
         self.dtype = torch.float64
         # Use torch nn parameter
-        self.bandwidth_par = torch.nn.Parameter(
-            torch.sqrt(torch.tensor(self.bandwidth_frequency, dtype=self.dtype))
+        self.bandwidth_par = _WaveletParameter(
+            torch.sqrt(torch.tensor(self.bandwidth_frequency, dtype=self.dtype)),
+            requires_grad=True,
         )
-        self.center_par = torch.nn.Parameter(
-            torch.sqrt(torch.tensor(self.center_frequency, dtype=self.dtype))
+        self.center_par = _WaveletParameter(
+            torch.sqrt(torch.tensor(self.center_frequency, dtype=self.dtype)),
+            requires_grad=True,
         )
 
     def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:

@@ -1,4 +1,8 @@
-"""This module implements two dimensional padded wavelet transforms."""
+"""This module implements two-dimensional padded wavelet transforms.
+
+The implementation relies on torch.nn.functional.conv2d and
+torch.nn.functional.conv_transpose2d under the hood.
+"""
 
 
 from typing import List, Optional, Tuple, Union
@@ -6,21 +10,28 @@ from typing import List, Optional, Tuple, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _outer
-from .conv_transform import _get_pad, _translate_boundary_strings, get_filter_tensors
+from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _outer
+from .conv_transform import (
+    _adjust_padding_at_reconstruction,
+    _get_pad,
+    _translate_boundary_strings,
+    get_filter_tensors,
+)
 
 
 def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct two dimensional filters using outer products.
+    """Construct two-dimensional filters using outer products.
 
     Args:
         lo (torch.Tensor): Low-pass input filter.
         hi (torch.Tensor): High-pass input filter
 
     Returns:
-        torch.Tensor: Stacked 2d filters of dimension
-            [filt_no, 1, height, width].
-            The four filters are ordered ll, lh, hl, hh.
+        torch.Tensor: Stacked 2d-filters of dimension
+
+        [filt_no, 1, height, width].
+
+        The four filters are ordered ll, lh, hl, hh.
 
     """
     ll = _outer(lo, lo)
@@ -32,18 +43,23 @@ def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     return filt
 
 
-def fwt_pad2(
+def _fwt_pad2(
     data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str = "reflect"
 ) -> torch.Tensor:
     """Pad data for the 2d FWT.
+
+    This function pads along the last two axes.
 
     Args:
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         mode (str): The padding mode.
-            Supported modes are "reflect", "zero", "constant" and "periodic".
-            Defaults to reflect.
+            Supported modes are::
+
+                "reflect", "zero", "constant", "periodic".
+
+            "reflect" is the default mode.
 
     Returns:
         The padded output tensor.
@@ -52,8 +68,8 @@ def fwt_pad2(
     mode = _translate_boundary_strings(mode)
 
     wavelet = _as_wavelet(wavelet)
-    padb, padt = _get_pad(data.shape[-2], len(wavelet.dec_lo))
-    padr, padl = _get_pad(data.shape[-1], len(wavelet.dec_lo))
+    padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
+    padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
     data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
     return data_pad
 
@@ -61,39 +77,45 @@ def fwt_pad2(
 def wavedec2(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
-    level: Optional[int] = None,
     mode: str = "reflect",
+    level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-    """Non seperated two dimensional wavelet transform.
+    """Non separated two-dimensional wavelet transform.
 
     Args:
         data (torch.Tensor): The input data tensor with up to three dimensions.
             2d inputs are interpreted as [height, width],
             3d inputs are interpreted as [batch_size, height, width].
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet.
+            the name of a pywt wavelet. Refer to the output of
+            ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
+        mode (str): The padding mode. Options are::
+
+                "reflect", "zero", "constant", "periodic".
+
+            This function defaults to "reflect".
         level (int): The number of desired scales.
             Defaults to None.
-        mode (str): The padding mode. Options are
-            "reflect", "zero", "constant" and "periodic".
-            Defaults to "reflect".
 
     Returns:
         list: A list containing the wavelet coefficients.
-              The coefficients are in pywt order. That is:
-              [cAn, (cHn, cVn, cDn), … (cH1, cV1, cD1)] .
-              A denotes approximation, H horizontal, V vertical
-              and D diagonal coefficients.
+        The coefficients are in pywt order. That is::
+
+            [cAn, (cHn, cVn, cDn), … (cH1, cV1, cD1)] .
+
+        A denotes approximation, H horizontal, V vertical
+        and D diagonal coefficients.
 
     Raises:
-        ValueError: If the dimensionality of the input data tensor is unsupported.
+        ValueError: If the dimensionality or the dtype of the input data tensor
+            is unsupported.
 
     Example:
         >>> import torch
         >>> import ptwt, pywt
         >>> import numpy as np
-        >>> import scipy.misc
-        >>> face = np.transpose(scipy.misc.face(),
+        >>> from scipy import datasets
+        >>> face = np.transpose(datasets.face(),
         >>>                     [2, 0, 1]).astype(np.float64)
         >>> pytorch_face = torch.tensor(face)
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
@@ -103,14 +125,18 @@ def wavedec2(
     if data.dim() == 2:
         data = data.unsqueeze(0).unsqueeze(0)
     elif data.dim() == 3:
+        # add a channel dimension for torch.
         data = data.unsqueeze(1)
     elif data.dim() == 4:
         raise ValueError(
             "Wavedec2 does not support four input dimensions. \
-             Optionally-batched two dimensional inputs work."
+             Optionally-batched two-dimensional inputs work."
         )
     elif data.dim() == 1:
         raise ValueError("Wavedec2 needs more than one input dimension to work.")
+
+    if not _is_dtype_supported(data.dtype):
+        raise ValueError(f"Input dtype {data.dtype} not supported")
 
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = get_filter_tensors(
@@ -126,11 +152,12 @@ def wavedec2(
     ] = []
     res_ll = data
     for _ in range(level):
-        res_ll = fwt_pad2(res_ll, wavelet, mode=mode)
+        res_ll = _fwt_pad2(res_ll, wavelet, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
-        result_lst.append((res_lh, res_hl, res_hh))
-    result_lst.append(res_ll)
+        to_append = (res_lh.squeeze(1), res_hl.squeeze(1), res_hh.squeeze(1))
+        result_lst.append(to_append)
+    result_lst.append(res_ll.squeeze(1))
     return result_lst[::-1]
 
 
@@ -142,20 +169,27 @@ def waverec2(
 
     Args:
         coeffs (list): The wavelet coefficient list produced by wavedec2.
+            The coefficients must be in pywt order. That is::
+
+            [cAn, (cHn, cVn, cDn), … (cH1, cV1, cD1)] .
+
+            A denotes approximation, H horizontal, V vertical,
+            and D diagonal coefficients.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
 
     Returns:
-        torch.Tensor: The reconstructed signal.
+        torch.Tensor: The reconstructed signal of shape [batch, height, width].
 
     Raises:
-        ValueError: If `coeffs` is not in the shape as it is returned from `wavedec2`.
+        ValueError: If `coeffs` is not in a shape as returned from `wavedec2` or
+            if the dtype is not supported.
 
     Example:
         >>> import ptwt, pywt, torch
         >>> import numpy as np
-        >>> import scipy.misc
-        >>> face = np.transpose(scipy.misc.face(),
+        >>> from scipy import datasets
+        >>> face = np.transpose(datasets.face(),
         >>>                     [2, 0, 1]).astype(np.float64)
         >>> pytorch_face = torch.tensor(face)
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
@@ -165,23 +199,49 @@ def waverec2(
     """
     wavelet = _as_wavelet(wavelet)
 
-    if not isinstance(coeffs[0], torch.Tensor):
+    res_ll = coeffs[0]
+    if not isinstance(res_ll, torch.Tensor):
         raise ValueError(
             "First element of coeffs must be the approximation coefficient tensor."
         )
 
+    torch_device = res_ll.device
+    torch_dtype = res_ll.dtype
+
+    if not _is_dtype_supported(torch_dtype):
+        raise ValueError(f"Input dtype {torch_dtype} not supported")
+
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=coeffs[0].device, dtype=coeffs[0].dtype
+        wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
     rec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
 
-    res_ll = coeffs[0]
-    for c_pos, res_lh_hl_hh in enumerate(coeffs[1:]):
-        res_ll = torch.cat(
-            [res_ll, res_lh_hl_hh[0], res_lh_hl_hh[1], res_lh_hl_hh[2]], 1
-        )
-        res_ll = torch.nn.functional.conv_transpose2d(res_ll, rec_filt, stride=2)
+    for c_pos, coeff_tuple in enumerate(coeffs[1:]):
+        if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
+            raise ValueError(
+                f"Unexpected detail coefficient type: {type(coeff_tuple)}. Detail "
+                "coefficients must be a 3-tuple of tensors as returned by "
+                "wavedec2."
+            )
+
+        curr_shape = res_ll.shape
+        for coeff in coeff_tuple:
+            if torch_device != coeff.device:
+                raise ValueError("coefficients must be on the same device")
+            elif torch_dtype != coeff.dtype:
+                raise ValueError("coefficients must have the same dtype")
+            elif coeff.shape != curr_shape:
+                raise ValueError(
+                    "All coefficients on each level must have the same shape"
+                )
+
+        res_lh, res_hl, res_hh = coeff_tuple
+
+        res_ll = torch.stack([res_ll, res_lh, res_hl, res_hh], 1)
+        res_ll = torch.nn.functional.conv_transpose2d(
+            res_ll, rec_filt, stride=2
+        ).squeeze(1)
 
         # remove the padding
         padl = (2 * filt_len - 3) // 2
@@ -189,22 +249,13 @@ def waverec2(
         padt = (2 * filt_len - 3) // 2
         padb = (2 * filt_len - 3) // 2
         if c_pos < len(coeffs) - 2:
-            pred_len = res_ll.shape[-1] - (padl + padr)
-            next_len = coeffs[c_pos + 2][0].shape[-1]
-            pred_len2 = res_ll.shape[-2] - (padt + padb)
-            next_len2 = coeffs[c_pos + 2][0].shape[-2]
-            if next_len != pred_len:
-                padr += 1
-                pred_len = res_ll.shape[-1] - (padl + padr)
-                assert (
-                    next_len == pred_len
-                ), "padding error, please open an issue on github "
-            if next_len2 != pred_len2:
-                padb += 1
-                pred_len2 = res_ll.shape[-2] - (padt + padb)
-                assert (
-                    next_len2 == pred_len2
-                ), "padding error, please open an issue on github "
+            padr, padl = _adjust_padding_at_reconstruction(
+                res_ll.shape[-1], coeffs[c_pos + 2][0].shape[-1], padr, padl
+            )
+            padb, padt = _adjust_padding_at_reconstruction(
+                res_ll.shape[-2], coeffs[c_pos + 2][0].shape[-2], padb, padt
+            )
+
         if padt > 0:
             res_ll = res_ll[..., padt:, :]
         if padb > 0:

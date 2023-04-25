@@ -3,10 +3,9 @@
 import numpy as np
 import pytest
 import pywt
-import scipy.misc
 import torch
+from scipy import datasets
 
-from src.ptwt._mackey_glass import MackeyGenerator
 from src.ptwt._util import _outer
 from src.ptwt.conv_transform import (
     _flatten_2d_coeff_lst,
@@ -16,6 +15,7 @@ from src.ptwt.conv_transform import (
 )
 from src.ptwt.conv_transform_2 import wavedec2, waverec2
 from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
+from tests._mackey_glass import MackeyGenerator
 
 
 @pytest.mark.parametrize("wavelet_string", ["db1", "db2", "db3", "db4", "db5", "sym5"])
@@ -96,7 +96,7 @@ def test_2d_haar_lvl1():
     """Test a 2d-Haar wavelet conv-fwt."""
     # ------------------------- 2d haar wavelet tests -----------------------
     face = np.transpose(
-        scipy.misc.face()[128 : (512 + 128), 256 : (512 + 256)], [2, 0, 1]
+        datasets.face()[128 : (512 + 128), 256 : (512 + 256)], [2, 0, 1]
     ).astype(np.float64)
     wavelet = pywt.Wavelet("haar")
     # single level haar - 2d
@@ -113,7 +113,7 @@ def test_2d_db2_lvl1():
     """Test a 2d-db2 wavelet conv-fwt."""
     # single level db2 - 2d
     face = np.transpose(
-        scipy.misc.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
+        datasets.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
     ).astype(np.float64)
     wavelet = pywt.Wavelet("db2")
     coeff2d_pywt = pywt.dwt2(face, wavelet, mode="reflect")
@@ -130,7 +130,7 @@ def test_2d_haar_multi():
     """Test a 2d-db2 wavelet level 5 conv-fwt."""
     # multi level haar - 2d
     face = np.transpose(
-        scipy.misc.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
+        datasets.face()[256 : (512 + 128), 256 : (512 + 128)], [2, 0, 1]
     ).astype(np.float64)
     wavelet = pywt.Wavelet("haar")
     coeff2d_pywt = pywt.wavedec2(face, wavelet, mode="reflect", level=5)
@@ -153,17 +153,19 @@ def test_outer():
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("wavelet_str", ["haar", "db2", "db3", "db4", "sym4"])
+@pytest.mark.parametrize(
+    "wavelet_str", ["haar", "db2", "db3", "db4", "sym4", "rbio2.4", "coif3", "bior2.2"]
+)
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("size", [(32, 32), (32, 64), (64, 32), (31, 31)])
 @pytest.mark.parametrize("mode", ["reflect", "zero", "constant", "periodic"])
 def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
 
-    Wavedec2 and waverec2 invert each other.
+    wavedec2 and waverec2 must invert each other.
     """
     face = np.transpose(
-        scipy.misc.face()[256 : (512 + size[0]), 256 : (512 + size[1])], [2, 0, 1]
+        datasets.face()[256 : (512 + size[0]), 256 : (512 + size[1])], [2, 0, 1]
     ).astype(np.float64)
     wavelet = pywt.Wavelet(wavelet_str)
     coeff2d = wavedec2(torch.from_numpy(face), wavelet, mode=mode, level=level)
@@ -172,11 +174,11 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
         if type(coeffs) is tuple:
             for tuple_pos, tuple_el in enumerate(coeffs):
                 assert (
-                    tuple_el.shape == torch.squeeze(coeff2d[pos][tuple_pos], 1).shape
+                    tuple_el.shape == coeff2d[pos][tuple_pos].shape
                 ), "pywt and ptwt should produce the same shapes."
         else:
             assert (
-                coeffs.shape == torch.squeeze(coeff2d[pos], 1).shape
+                coeffs.shape == coeff2d[pos].shape
             ), "pywt and ptwt should produce the same shapes."
     flat_coeff_list_pywt = np.concatenate(_flatten_2d_coeff_lst(pywt_coeff2d), -1)
     flat_coeff_list_ptwt = torch.cat(_flatten_2d_coeff_lst(coeff2d), -1)

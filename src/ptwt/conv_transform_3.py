@@ -1,12 +1,20 @@
-"""Code for three dimensional padded transforms."""
+"""Code for three dimensional padded transforms.
 
-from typing import Dict, List, Optional, Union
+The functions here are based on torch.nn.functional.conv3d and it's transpose.
+"""
+
+from typing import Dict, List, Optional, Sequence, Union, cast
 
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _outer
-from .conv_transform import _get_pad, _translate_boundary_strings, get_filter_tensors
+from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _outer
+from .conv_transform import (
+    _adjust_padding_at_reconstruction,
+    _get_pad,
+    _translate_boundary_strings,
+    get_filter_tensors,
+)
 
 
 def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
@@ -17,9 +25,11 @@ def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
         hi (torch.Tensor): High-pass input filter
 
     Returns:
-        torch.Tensor: Stacked 3d filters of dimension
-            [8, 1, length, height, width].
-            The four filters are ordered ll, lh, hl, hh.
+        torch.Tensor: Stacked 3d filters of dimension::
+
+        [8, 1, length, height, width].
+
+        The four filters are ordered ll, lh, hl, hh.
 
     """
     dim_size = lo.shape[-1]
@@ -40,7 +50,9 @@ def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
 def _fwt_pad3(
     data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str
 ) -> torch.Tensor:
-    """Pad data for the 2d FWT.
+    """Pad data for the 3d-FWT.
+
+    This function pads the last three axes.
 
     Args:
         data (torch.Tensor): Input data with 4 dimensions.
@@ -55,9 +67,9 @@ def _fwt_pad3(
     mode = _translate_boundary_strings(mode)
 
     wavelet = _as_wavelet(wavelet)
-    pad_back, pad_front = _get_pad(data.shape[-3], len(wavelet.dec_lo))
-    pad_bottom, pad_top = _get_pad(data.shape[-2], len(wavelet.dec_lo))
-    pad_right, pad_left = _get_pad(data.shape[-1], len(wavelet.dec_lo))
+    pad_back, pad_front = _get_pad(data.shape[-3], _get_len(wavelet))
+    pad_bottom, pad_top = _get_pad(data.shape[-2], _get_len(wavelet))
+    pad_right, pad_left = _get_pad(data.shape[-1], _get_len(wavelet))
     data_pad = torch.nn.functional.pad(
         data, [pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back], mode=mode
     )
@@ -67,28 +79,39 @@ def _fwt_pad3(
 def wavedec3(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
-    level: Optional[int] = None,
     mode: str = "zero",
+    level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
-    """Compute a three dimensional wavelet transform.
+    """Compute a three-dimensional wavelet transform.
 
     Args:
         data (torch.Tensor): The input data of shape
             [batch_size, length, height, width]
-        wavelet (Union[Wavelet, str]): The wavelet to be used.
-        level (Optional[int]): The maximum decomposition level.
-            Defaults to None.
-        mode (str): The padding mode. Options are
+        wavelet (Union[Wavelet, str]): The wavelet to transform with.
+            ``pywt.wavelist(kind='discrete')`` lists possible choices.
+        mode (str): The padding mode. Possible options are
             "zero", "constant" or "periodic".
             Defaults to "zero".
+        level (Optional[int]): The maximum decomposition level.
+            This argument defaults to None.
 
     Returns:
         list: A list with the lll coefficients and dictionaries
-            with the filter order strings ("aad", "ada", "add",
-            "daa", "dad", "dda", "ddd") as keys.
+        with the filter order strings::
+
+        ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
+
+        as keys. With a for the low pass or approximation filter and
+        d for the high-pass or detail filter.
 
     Raises:
-        ValueError: If the input has fewer than 3 dimensions.
+        ValueError: If the input has fewer than three dimensions or
+            if the dtype is not supported.
+
+    Example:
+        >>> import ptwt, torch
+        >>> data = torch.randn(5, 16, 16, 16)
+        >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
 
     """
     if data.dim() < 3:
@@ -96,6 +119,9 @@ def wavedec3(
     elif data.dim() == 3:
         # add batch dim.
         data = data.unsqueeze(0)
+
+    if not _is_dtype_supported(data.dtype):
+        raise ValueError(f"Input dtype {data.dtype} not supported")
 
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = get_filter_tensors(
@@ -132,7 +158,7 @@ def wavedec3(
 
 
 def waverec3(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[Wavelet, str],
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
@@ -143,28 +169,68 @@ def waverec3(
             the name of a pywt wavelet.
 
     Returns:
-        torch.Tensor: The reconstructed signal.
+        torch.Tensor: The reconstructed four-dimensional signal of shape
+        [batch, depth, height, width].
+
+    Raises:
+        ValueError: If `coeffs` is not in a shape as returned from `wavedec3` or
+            if the dtype is not supported.
+
+    Example:
+        >>> import ptwt, torch
+        >>> data = torch.randn(5, 16, 16, 16)
+        >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
+        >>> reconstruction = ptwt.waverec3(transformed, "haar")
+
     """
     wavelet = _as_wavelet(wavelet)
     # the Union[tensor, dict] idea is coming from pywt. We don't change it here.
-    res_lll: torch.Tensor = coeffs[0]  # type: ignore
+    res_lll = coeffs[0]
+    if not isinstance(res_lll, torch.Tensor):
+        raise ValueError(
+            "First element of coeffs must be the approximation coefficient tensor."
+        )
+
+    torch_device = res_lll.device
+    torch_dtype = res_lll.dtype
+
+    if not _is_dtype_supported(torch_dtype):
+        if not _is_dtype_supported(torch_dtype):
+            raise ValueError(f"Input dtype {torch_dtype} not supported")
+
     _, _, rec_lo, rec_hi = get_filter_tensors(
-        wavelet, flip=False, device=res_lll.device, dtype=res_lll.dtype
+        wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_3d_filt(lo=rec_lo, hi=rec_hi)
 
-    for c_pos, coeff_dict in enumerate(coeffs[1:]):
+    coeff_dicts = cast(Sequence[Dict[str, torch.Tensor]], coeffs[1:])
+    for c_pos, coeff_dict in enumerate(coeff_dicts):
+        if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
+            raise ValueError(
+                f"Unexpected detail coefficient type: {type(coeff_dict)}. Detail "
+                "coefficients must be a dict containing 7 tensors as returned by "
+                "wavedec3."
+            )
+        for coeff in coeff_dict.values():
+            if torch_device != coeff.device:
+                raise ValueError("coefficients must be on the same device")
+            elif torch_dtype != coeff.dtype:
+                raise ValueError("coefficients must have the same dtype")
+            elif res_lll.shape != coeff.shape:
+                raise ValueError(
+                    "All coefficients on each level must have the same shape"
+                )
         res_lll = torch.stack(
             [
                 res_lll,
-                coeff_dict["aad"],  # type: ignore
-                coeff_dict["ada"],  # type: ignore
-                coeff_dict["add"],  # type: ignore
-                coeff_dict["daa"],  # type: ignore
-                coeff_dict["dad"],  # type: ignore
-                coeff_dict["dda"],  # type: ignore
-                coeff_dict["ddd"],  # type: ignore
+                coeff_dict["aad"],
+                coeff_dict["ada"],
+                coeff_dict["add"],
+                coeff_dict["daa"],
+                coeff_dict["dad"],
+                coeff_dict["dda"],
+                coeff_dict["ddd"],
             ],
             1,
         )
@@ -178,31 +244,16 @@ def waverec3(
         padr = (2 * filt_len - 3) // 2
         padt = (2 * filt_len - 3) // 2
         padb = (2 * filt_len - 3) // 2
-        if c_pos < len(coeffs) - 2:
-            pred_len = res_lll.shape[-1] - (padl + padr)
-            next_len = coeffs[c_pos + 2]["aad"].shape[-1]  # type: ignore
-            pred_len2 = res_lll.shape[-2] - (padt + padb)
-            next_len2 = coeffs[c_pos + 2]["aad"].shape[-2]  # type: ignore
-            pred_len3 = res_lll.shape[-3] - (padfr + padba)
-            next_len3 = coeffs[c_pos + 2]["aad"].shape[-3]  # type: ignore
-            if next_len != pred_len:
-                padr += 1
-                pred_len = res_lll.shape[-1] - (padl + padr)
-                assert (
-                    next_len == pred_len
-                ), "padding error, please open an issue on github "
-            if next_len2 != pred_len2:
-                padb += 1
-                pred_len2 = res_lll.shape[-2] - (padt + padb)
-                assert (
-                    next_len2 == pred_len2
-                ), "padding error, please open an issue on github "
-            if next_len3 != pred_len3:
-                padba += 1
-                pred_len3 = res_lll.shape[-3] - (padba + padfr)
-                assert (
-                    next_len3 == pred_len3
-                ), "padding error, please open an issue on github "
+        if c_pos + 1 < len(coeff_dicts):
+            padr, padl = _adjust_padding_at_reconstruction(
+                res_lll.shape[-1], coeff_dicts[c_pos + 1]["aad"].shape[-1], padr, padl
+            )
+            padb, padt = _adjust_padding_at_reconstruction(
+                res_lll.shape[-2], coeff_dicts[c_pos + 1]["aad"].shape[-2], padb, padt
+            )
+            padba, padfr = _adjust_padding_at_reconstruction(
+                res_lll.shape[-3], coeff_dicts[c_pos + 1]["aad"].shape[-3], padba, padfr
+            )
         if padt > 0:
             res_lll = res_lll[..., padt:, :]
         if padb > 0:

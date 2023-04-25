@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 import pywt
 import torch
-from scipy import misc
+from scipy import datasets
 
 from src.ptwt.packets import WaveletPacket, WaveletPacket2D, get_freq_order
 
@@ -73,8 +73,7 @@ def _compare_trees2(
     transform_mode: bool = False,
     multiple_transforms: bool = False,
 ):
-
-    face = misc.face()[:height, :width]
+    face = datasets.face()[:height, :width]
     face = np.mean(face, axis=-1).astype(np.float64)
     wavelet = pywt.Wavelet(wavelet_str)
     batch_list = []
@@ -209,7 +208,7 @@ def test_boundary_matrix_packets1(max_lev, transform_mode, multiple_transforms):
 @pytest.mark.parametrize("pywt_boundary", ["zero"])
 def test_freq_order(level, wavelet_str, pywt_boundary):
     """Test the packets in frequency order."""
-    face = misc.face()
+    face = datasets.face()
     wavelet = pywt.Wavelet(wavelet_str)
     wp_tree = pywt.WaveletPacket2D(
         data=np.mean(face, axis=-1).astype(np.float64),
@@ -277,7 +276,7 @@ def test_access_errors_1d():
 
 def test_access_errors_2d():
     """Test expected access errors for 2d packets."""
-    face = misc.face()
+    face = datasets.face()
     face = np.mean(face, axis=-1).astype(np.float64)
 
     twp = WaveletPacket2D(None, "haar")
