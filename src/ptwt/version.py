@@ -11,7 +11,7 @@ from subprocess import CalledProcessError, check_output  # noqa: S404
 __all__ = [
     "VERSION",
     "get_version",
-    "get_git_hash",
+    "_get_git_hash",
 ]
 
 VERSION = "0.1.6-dev"
