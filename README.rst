@@ -116,6 +116,9 @@ To test an example run:
   np.max(np.abs(face - reconstruction.squeeze(1).numpy()))
 
 
+**Speed tests**
+Speed tests comparing our tools to related libraries are available at (examples/speed_tests/)[https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples/network_compression/].
+
 
 **Boundary Wavelets with Sparse-Matrices**
 
