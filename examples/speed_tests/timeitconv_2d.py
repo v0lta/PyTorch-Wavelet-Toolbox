@@ -5,7 +5,7 @@ import ptwt
 import torch
 import numpy as np
 import time
-from cotter_code.transform2d import DWTForward
+from pytorch_wavelets import DWTForward
 
 import matplotlib.pyplot as plt
 import tikzplotlib
@@ -116,8 +116,8 @@ if __name__ == '__main__':
 
     print(f"2d-pywt-cpu:{np.mean(pywt_time_cpu):5.5f} +- {np.std(pywt_time_cpu):5.5f}")
 
-    print(f"2d-cotter-cpu:{np.mean(cotter_time_cpu):5.5f} +- {np.std(cotter_time_cpu):5.5f}")
-    print(f"2d-cotter-gpu:{np.mean(cotter_time_gpu):5.5f} +- {np.std(cotter_time_gpu):5.5f}")
+    print(f"2d-pytorch_wavelets-cpu:{np.mean(cotter_time_cpu):5.5f} +- {np.std(cotter_time_cpu):5.5f}")
+    print(f"2d-pytorch_wavelets-gpu:{np.mean(cotter_time_gpu):5.5f} +- {np.std(cotter_time_gpu):5.5f}")
 
     print(f"2d-ptwt-cpu:{np.mean(ptwt_time_cpu):5.5f} +- {np.std(ptwt_time_cpu):5.5f}")
     print(f"2d-ptwt-gpu:{np.mean(ptwt_time_gpu):5.5f} +- {np.std(ptwt_time_gpu):5.5f}")
@@ -126,8 +126,8 @@ if __name__ == '__main__':
     plt.semilogy(ptwt_time_cpu, label='ptwt-cpu')
     plt.semilogy(ptwt_time_gpu, label='ptwt-gpu')
     plt.semilogy(ptwt_time_jit, label='ptwt-jit')
-    plt.semilogy(cotter_time_cpu, label='cotter-cpu')
-    plt.semilogy(cotter_time_gpu, label='cotter-gpu')
+    plt.semilogy(cotter_time_cpu, label='pytorch_wavelets-cpu')
+    plt.semilogy(cotter_time_gpu, label='pytorch_wavelets-gpu')
     plt.legend()
     plt.xlabel('repetition')
     plt.ylabel('runtime [s]')
