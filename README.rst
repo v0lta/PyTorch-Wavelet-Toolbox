@@ -117,7 +117,8 @@ To test an example run:
 
 
 **Speed tests**
-Speed tests comparing our tools to related libraries are available in the `examples <https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples/speed_tests/>` folder.
+
+Speed tests comparing our tools to related libraries are `available <https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples/speed_tests/>` .
 
 
 **Boundary Wavelets with Sparse-Matrices**
