@@ -2,7 +2,7 @@
 
 To run the speed tests install [pywt](https://pywavelets.readthedocs.io/en/latest/install.html)
 and [pytorch-wavelets](https://github.com/fbcotter/pytorch_wavelets).
-The numbers below were measured using an NVIDIA TITAN Xp graphics card and an Intel(R) Core(TM) i9-10850K CPU @ 3.60GHz.
+The numbers below were measured using an NVIDIA RTX A4000 graphics card and an Intel(R) Xeon(R) W-2235 CPU @ 3.80GHz.
 
 To execute the speed tests for the single-dimensional case run:
 ```bash
@@ -11,11 +11,11 @@ python timeitconv_1d.py
 it produces the output and plot below:
 
 ```bash
-1d-pywt-cpu:0.24683 +- 0.00607
-1d-ptwt-cpu:0.20142 +- 0.01648
-1d-ptwt-cpu-jit:0.20184 +- 0.01042
-1d-ptwt-gpu:0.00093 +- 0.00125
-1d-ptwt-jit:0.00078 +- 0.00198
+1d-pywt-cpu:0.25634 +- 0.00826
+1d-ptwt-cpu:0.41659 +- 0.02594
+1d-ptwt-cpu-jit:0.42266 +- 0.02404
+1d-ptwt-gpu:0.01812 +- 0.17063
+1d-ptwt-jit:0.00090 +- 0.00242
 ```
 
 ![1d-speed](figs/dim1.png)
@@ -26,12 +26,12 @@ python timeitconv_2d.py
 ```
 Result:
 ```bash
-2d-pywt-cpu:0.44354 +- 0.00654
-2d-pytorch_wavelets-cpu:0.10569 +- 0.00506
-2d-pytorch_wavelets-gpu:0.00080 +- 0.00045
-2d-ptwt-cpu:0.12146 +- 0.00741
-2d-ptwt-gpu:0.00074 +- 0.00092
-2d-ptwt-jit:0.00073 +- 0.00229
+2d-pywt-cpu:0.52735 +- 0.02435
+2d-pytorch_wavelets-cpu:0.31621 +- 0.02328
+2d-pytorch_wavelets-gpu:0.00558 +- 0.04472
+2d-ptwt-cpu:0.21758 +- 0.01946
+2d-ptwt-gpu:0.00130 +- 0.00409
+2d-ptwt-jit:0.00870 +- 0.08016
 ```
 
 
@@ -44,10 +44,10 @@ python timeitconv_3d.py
 for the three dimensional case. It should produce something like the output below:
 
 ```bash
-3d-pywt-cpu:0.72061 +- 0.01056
-3d-ptwt-cpu:0.24678 +- 0.01168
-3d-ptwt-gpu:0.00081 +- 0.00066
-3d-ptwt-jit:0.00075 +- 0.00234
+3d-pywt-cpu:0.83785 +- 0.03117
+3d-ptwt-cpu:0.35998 +- 0.03619
+3d-ptwt-gpu:0.00499 +- 0.04062
+3d-ptwt-jit:0.01852 +- 0.17757
 ```
 
 ![3d-speed](figs/dim3.png)

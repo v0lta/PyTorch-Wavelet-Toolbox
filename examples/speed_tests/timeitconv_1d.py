@@ -6,7 +6,7 @@ import time
 from typing import NamedTuple
 
 import matplotlib.pyplot as plt
-import tikzplotlib
+# import tikzplotlib
 
 class WaveletTuple(NamedTuple):
     """Replaces namedtuple("Wavelet", ("dec_lo", "dec_hi", "rec_lo", "rec_hi"))."""

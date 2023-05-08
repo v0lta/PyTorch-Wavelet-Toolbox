@@ -7,7 +7,7 @@ import numpy as np
 import time
 
 import matplotlib.pyplot as plt
-import tikzplotlib
+# import tikzplotlib
 
 
 class WaveletTuple(NamedTuple):

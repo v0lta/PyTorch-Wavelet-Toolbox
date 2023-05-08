@@ -8,7 +8,7 @@ import time
 from pytorch_wavelets import DWTForward
 
 import matplotlib.pyplot as plt
-import tikzplotlib
+# import tikzplotlib
 
 
 class WaveletTuple(NamedTuple):
