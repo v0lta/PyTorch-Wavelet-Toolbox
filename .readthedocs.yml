@@ -4,14 +4,8 @@ version: 2
 
 build:
   os: ubuntu-22.04
-
-python:
-  version: 3.11
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - docs
+  tools:
+    python: "3.11"
 
 formats:
   - pdf
