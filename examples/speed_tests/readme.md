@@ -21,7 +21,7 @@ it produces the output and plot below:
 1d-ptwt-jit:0.00090 +- 0.00242
 ```
 
-The 1d cython code from the pywt library does pretty well on our CPU. However, ptwt supports GPUs, which proved a speedup by several orders of magnitude.
+The 1d cython code from the pywt library does pretty well on our CPU. However, ptwt supports GPUs, which provide a speedup by several orders of magnitude.
 
 ![1d-speed](figs/dim1.png)
 
