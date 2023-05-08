@@ -3,10 +3,11 @@
 version: 2
 
 build:
+  os: ubuntu-22.04
   image: latest
 
 python:
-  version: 3.8
+  version: 3.11
   install:
     - method: pip
       path: .
