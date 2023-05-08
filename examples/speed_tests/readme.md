@@ -51,3 +51,23 @@ for the three dimensional case. It should produce something like the output belo
 ```
 
 ![3d-speed](figs/dim3.png)
+
+
+The last experiment in this example studies the cwt implementation.
+
+Run:
+
+```bash
+python timeitcwt_1d.py
+```
+to reproduce the result. We observe:
+
+```bash
+cwt-pywt-cpu:0.70588 +- 0.01531
+cwt-ptwt-cpu:0.16132 +- 0.00837
+cwt-ptwt-gpu:0.01798 +- 0.00392
+cwt-ptwt-jit:0.00360 +- 0.00870
+```
+on our hardware.
+
+![3d-speed](figs/cwt.png)
