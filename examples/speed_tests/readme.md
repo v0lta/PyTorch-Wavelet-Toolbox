@@ -1,9 +1,11 @@
-### Ptwt - Speed - Tests
+## Ptwt - Speed - Tests
 
 To run the speed tests install [pywt](https://pywavelets.readthedocs.io/en/latest/install.html)
 and [pytorch-wavelets](https://github.com/fbcotter/pytorch_wavelets).
 The numbers below were measured using an NVIDIA RTX A4000 graphics card and an Intel(R) Xeon(R) W-2235 CPU @ 3.80GHz.
 We ship performant software. GPU runtime was on par or ahead of competing libraries during our measurements in Mai 2023.  
+
+### 1D-FWT
 
 To execute the speed tests for the single-dimensional case run:
 ```bash
@@ -19,7 +21,11 @@ it produces the output and plot below:
 1d-ptwt-jit:0.00090 +- 0.00242
 ```
 
+The 1d cython code from the pywt library does pretty well on our CPU. However, ptwt supports GPUs, which proved a speedup by several orders of magnitude.
+
 ![1d-speed](figs/dim1.png)
+
+### 2D-FWT
 
 For the two-2d fast wavelet decomposition case run:
 ```bash
@@ -38,7 +44,10 @@ Result:
 
 ![2d-speed](figs/dim2.png)
 
-Finally use
+### 3D-FWT
+
+Finally, use
+
 ```bash
 python timeitconv_3d.py
 ```
@@ -53,6 +62,8 @@ for the three dimensional case. It should produce something like the output belo
 
 ![3d-speed](figs/dim3.png)
 
+
+### CWT
 
 The last experiment in this example studies the cwt implementation.
 
