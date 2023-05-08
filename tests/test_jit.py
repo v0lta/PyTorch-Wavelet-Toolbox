@@ -150,12 +150,12 @@ def test_conv_fwt_jit_3d():
 
     wavelet = _set_up_wavelet_tuple(wavelet, dtype=torch.float64)
     with pytest.warns(Warning):
-        jit_wavedec2 = torch.jit.trace(
+        jit_wavedec3 = torch.jit.trace(
             _to_jit_wavedec_3,
             (data, wavelet),
             strict=False,
         )
-        jit_ptcoeff = jit_wavedec2(data, wavelet)
+        jit_ptcoeff = jit_wavedec3(data, wavelet)
         # unstack the lists.
         jit_waverec = torch.jit.trace(_to_jit_waverec_3, (jit_ptcoeff, wavelet))
         rec = jit_waverec(jit_ptcoeff, wavelet)
