@@ -1,10 +1,9 @@
 .. |favicon| image:: https://raw.githubusercontent.com/v0lta/PyTorch-Wavelet-Toolbox/main/docs/favicon/favicon.ico
     :target: https://github.com/v0lta/PyTorch-Wavelet-Toolbox
-    :align: center
     :alt: Shannon-wavelet favicon
 
 ********************************
-Pytorch Wavelet Toolbox (`ptwt`) |favicon|
+|favicon| Pytorch Wavelet Toolbox (`ptwt`) 
 ********************************
 
 .. image:: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml/badge.svg 
