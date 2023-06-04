@@ -1,5 +1,11 @@
+.. |favicon| image:: https://raw.githubusercontent.com/v0lta/PyTorch-Wavelet-Toolbox/main/docs/favicon/favicon.ico
+    :target: https://github.com/v0lta/PyTorch-Wavelet-Toolbox
+    :align: center
+    :alt: Shannon-wavelet favicon
+
+
 ********************************
-Pytorch Wavelet Toolbox (`ptwt`)
+Pytorch Wavelet Toolbox (`ptwt`) |favicon|
 ********************************
 
 .. image:: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml/badge.svg 
@@ -29,10 +35,6 @@ Pytorch Wavelet Toolbox (`ptwt`)
 .. image:: https://static.pepy.tech/personalized-badge/ptwt?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=Downloads
  :target: https://pepy.tech/project/ptwt
 
-
-
-
-.. image:: https://raw.githubusercontent.com/v0lta/PyTorch-Wavelet-Toolbox/main/docs/favicon/favicon.ico
 
 Welcome to the PyTorch wavelet toolbox. This package implements:
 
