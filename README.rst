@@ -32,6 +32,8 @@ Pytorch Wavelet Toolbox (`ptwt`)
 
 
 
+.. image:: https://raw.githubusercontent.com/v0lta/PyTorch-Wavelet-Toolbox/main/docs/favicon/favicon.ico
+
 Welcome to the PyTorch wavelet toolbox. This package implements:
 
 - the fast wavelet transform (fwt) via ``wavedec`` and its inverse by providing the ``waverec`` function,
