@@ -47,7 +47,7 @@ Welcome to the PyTorch wavelet toolbox. This package implements:
 - single and two-dimensional wavelet packet forward and backward transforms are available via the ``WaveletPacket`` and ``WaveletPacket2D`` objects,
 - finally, this package provides adaptive wavelet support (experimental).
 
-This toolbox extends `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_. We additionally provide GPU and gradient support via a PyTorch backend.
+This toolbox extends `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_. In addition to boundary wavelets, we provide GPU and gradient support via a PyTorch backend.
 Complete documentation is available at: https://pytorch-wavelet-toolbox.readthedocs.io/
 
 
