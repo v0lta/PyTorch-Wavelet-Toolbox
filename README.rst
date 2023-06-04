@@ -3,7 +3,6 @@
     :align: center
     :alt: Shannon-wavelet favicon
 
-
 ********************************
 Pytorch Wavelet Toolbox (`ptwt`) |favicon|
 ********************************
