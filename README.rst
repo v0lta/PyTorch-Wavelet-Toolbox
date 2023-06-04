@@ -1,6 +1,7 @@
 .. |favicon| image:: https://raw.githubusercontent.com/v0lta/PyTorch-Wavelet-Toolbox/main/docs/favicon/favicon.ico
     :alt: Shannon-wavelet favicon
     :width: 32
+    :target: https://github.com/v0lta/PyTorch-Wavelet-Toolbox
 
 ********************************
 |favicon| Pytorch Wavelet Toolbox (`ptwt`) 
