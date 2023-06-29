@@ -48,19 +48,19 @@ def swt(
 
 
 @pytest.mark.parametrize("level", [1, 3, None])
-@pytest.mark.parametrize("size", [(1, 32), (1, 31)])
+@pytest.mark.parametrize("size", [10])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
 def test_swt(level, size, wavelet):
     """Test the 1d swt."""
-    signal = np.random.randn(size[0], size[1])
+    signal = np.expand_dims(np.arange(size).astype(np.float32), 0)
     my_res = swt(torch.from_numpy(signal), wavelet, level=level)
     res = pywt.swt(signal, wavelet, level)
-    plt.plot(my_res[0][0][:])
-    plt.plot(res[0][0][0])
+    plt.plot(my_res[0][0][1:], 'o')
+    plt.plot(res[0][0][0], '.')
     plt.show()
-
-    plt.plot(my_res[1][0][:])
-    plt.plot(res[0][1][0])
+    
+    plt.plot(my_res[1][0][1:], 'o')
+    plt.plot(res[0][1][0], '.')
     plt.show()
 
     pass
