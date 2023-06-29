@@ -8,7 +8,7 @@ import torch
 from scipy import signal
 
 import src.ptwt as ptwt
-from ptwt.continuous_transform import _ShannonWavelet
+from src.ptwt.continuous_transform import _ShannonWavelet
 from tests._mackey_glass import MackeyGenerator
 
 
