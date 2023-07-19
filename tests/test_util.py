@@ -3,8 +3,11 @@ from typing import Tuple
 
 import pytest
 import pywt
+import torch
 
-from src.ptwt._util import _as_wavelet
+import numpy as np
+
+from src.ptwt._util import _as_wavelet, _pad_symmetric_1d
 
 
 class _MyHaarFilterBank(object):
@@ -38,3 +41,14 @@ def test_failed_as_wavelet(wavelet: str) -> None:
     """Test expected errors for invalid input to _as_wavelet."""
     with pytest.raises(ValueError):
         wavelet = _as_wavelet(wavelet)
+
+
+
+@pytest.mark.parametrize("size", [[5], [12], [19]])
+def test_pad_symmetric(size, wavelet="db3"):
+    pad_list = [2, 2]
+    test_signal = np.random.randint(0, 9, size=size).astype(np.float32)
+
+    my_pad = _pad_symmetric_1d(torch.from_numpy(test_signal), pad_list)
+    np_pad = np.pad(test_signal, pad_list, mode='symmetric')
+    assert np.allclose(np_pad, my_pad.numpy())
