@@ -1,5 +1,5 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
-from typing import Optional, Protocol, Sequence, Tuple, Union, List
+from typing import List, Optional, Protocol, Sequence, Tuple, Union
 
 import pywt
 import torch
@@ -64,7 +64,6 @@ def _get_len(wavelet: Union[Tuple[torch.Tensor, ...], str, Wavelet]) -> int:
         return wavelet[0].shape[0]
     else:
         return len(_as_wavelet(wavelet))
-
 
 
 def _pad_symmetric_1d(signal: torch.Tensor, pad_list: List[int]):

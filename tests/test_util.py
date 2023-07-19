@@ -1,11 +1,10 @@
 """Test the util methods."""
 from typing import Tuple
 
+import numpy as np
 import pytest
 import pywt
 import torch
-
-import numpy as np
 
 from src.ptwt._util import _as_wavelet, _pad_symmetric_1d
 
@@ -43,12 +42,11 @@ def test_failed_as_wavelet(wavelet: str) -> None:
         wavelet = _as_wavelet(wavelet)
 
 
-
 @pytest.mark.parametrize("size", [[5], [12], [19]])
 def test_pad_symmetric(size, wavelet="db3"):
     pad_list = [2, 2]
     test_signal = np.random.randint(0, 9, size=size).astype(np.float32)
 
     my_pad = _pad_symmetric_1d(torch.from_numpy(test_signal), pad_list)
-    np_pad = np.pad(test_signal, pad_list, mode='symmetric')
+    np_pad = np.pad(test_signal, pad_list, mode="symmetric")
     assert np.allclose(np_pad, my_pad.numpy())
