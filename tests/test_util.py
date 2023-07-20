@@ -6,7 +6,7 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt._util import _as_wavelet, _pad_symmetric_1d
+from src.ptwt._util import _as_wavelet, _pad_symmetric, _pad_symmetric_1d
 
 
 class _MyHaarFilterBank(object):
@@ -43,10 +43,18 @@ def test_failed_as_wavelet(wavelet: str) -> None:
 
 
 @pytest.mark.parametrize("size", [[5], [12], [19]])
-def test_pad_symmetric(size, wavelet="db3"):
+def test_pad_symmetric_1d(size):
     pad_list = [2, 2]
     test_signal = np.random.randint(0, 9, size=size).astype(np.float32)
-
     my_pad = _pad_symmetric_1d(torch.from_numpy(test_signal), pad_list)
     np_pad = np.pad(test_signal, pad_list, mode="symmetric")
     assert np.allclose(np_pad, my_pad.numpy())
+
+
+@pytest.mark.parametrize("size", [[6, 5], [5, 6], [5, 5], [9, 9]])
+@pytest.mark.parametrize("pad_list", [[[1, 4], [4, 1]], [[2, 2], [3, 3]]])
+def test_pad_symmetric(size, pad_list):
+    array = np.random.randint(0, 9, size=size)
+    my_pad = _pad_symmetric(torch.from_numpy(array), pad_list)
+    np_pad = np.pad(array, pad_list, mode="symmetric")
+    assert np.allclose(my_pad.numpy(), np_pad)
