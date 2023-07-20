@@ -51,7 +51,7 @@ def test_pad_symmetric_1d(size):
     assert np.allclose(np_pad, my_pad.numpy())
 
 
-@pytest.mark.parametrize("size", [[6, 5], [5, 6], [5, 5], [9, 9]])
+@pytest.mark.parametrize("size", [[6, 5], [5, 6], [5, 5], [9, 9], [3, 3]])
 @pytest.mark.parametrize("pad_list", [[[1, 4], [4, 1]], [[2, 2], [3, 3]]])
 def test_pad_symmetric(size, pad_list):
     array = np.random.randint(0, 9, size=size)
