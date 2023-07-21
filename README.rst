@@ -93,15 +93,15 @@ convolution. Consider the following example:
 
 The functions ``wavedec`` and ``waverec`` compute the 1d-fwt and its inverse.
 Internally both rely on ``conv1d``, and its transposed counterpart ``conv_transpose1d``
-from the ``torch.nn.functional`` module. This toolbox supports discrete wavelets
-see also ``pywt.wavelist(kind='discrete')``. I have tested
-Daubechies-Wavelets ``db-x`` and symlets ``sym-x``, which are usually a good starting point. 
+from the ``torch.nn.functional`` module. This toolbox also supports discrete wavelets
+see ``pywt.wavelist(kind='discrete')``. I have tested
+Daubechies-Wavelets ``db-x`` and symlets ``sym-x``, are usually a good starting point. 
 
 **Two-dimensional transform**
 
 Analog to the 1d-case ``wavedec2`` and ``waverec2`` rely on 
 ``conv2d``, and its transposed counterpart ``conv_transpose2d``.
-To test an example run:
+To test an example, run:
 
 
 .. code-block:: python
@@ -190,7 +190,7 @@ to run all existing tests.
 Citation
 """"""""
 
-If you use this work in a scientific context please cite:
+If you use this work in a scientific context, please cite the following:
 
 .. code-block::
 
@@ -204,7 +204,7 @@ If you use this work in a scientific context please cite:
     url = {https://hdl.handle.net/20.500.11811/9245}
   }
 
-If you use the boundary wavelet support please additionally cite:
+If you use the boundary wavelet support, please additionally cite:
 
 .. code-block::
 
