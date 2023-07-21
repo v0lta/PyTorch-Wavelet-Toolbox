@@ -22,7 +22,8 @@ def swt(
         level (Optional[int], optional): The number of levels to compute
 
     Returns:
-        List[torch.Tensor]: Same as wavedec. Equivalent to pywt.swt with trim_approx=True.
+        List[torch.Tensor]: Same as wavedec.
+        Equivalent to pywt.swt with trim_approx=True.
     """
     if data.dim() == 1:
         # assume time series
@@ -53,5 +54,3 @@ def swt(
         result_lst.append(res_hi.squeeze(1))
     result_lst.append(res_lo.squeeze(1))
     return result_lst[::-1]
-
-
