@@ -10,7 +10,14 @@ from typing import List, Optional, Tuple, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _outer
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _get_len,
+    _is_dtype_supported,
+    _outer,
+    _pad_symmetric,
+)
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_pad,
@@ -57,7 +64,7 @@ def _fwt_pad2(
         mode (str): The padding mode.
             Supported modes are::
 
-                "reflect", "zero", "constant", "periodic".
+                "reflect", "zero", "constant", "periodic", "symmetric".
 
             "reflect" is the default mode.
 
@@ -70,7 +77,10 @@ def _fwt_pad2(
     wavelet = _as_wavelet(wavelet)
     padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
     padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
-    data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
+    if mode == "symmetric":
+        data_pad = _pad_symmetric(data, [(padt, padb), (padl, padr)])
+    else:
+        data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
     return data_pad
 
 
@@ -91,7 +101,7 @@ def wavedec2(
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
         mode (str): The padding mode. Options are::
 
-                "reflect", "zero", "constant", "periodic".
+                "reflect", "zero", "constant", "periodic", "symmetric".
 
             This function defaults to "reflect".
         level (int): The number of desired scales.

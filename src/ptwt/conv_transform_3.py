@@ -8,7 +8,14 @@ from typing import Dict, List, Optional, Sequence, Union, cast
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _outer
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _get_len,
+    _is_dtype_supported,
+    _outer,
+    _pad_symmetric,
+)
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_pad,
@@ -58,7 +65,9 @@ def _fwt_pad3(
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode (str): The padding mode. Supported modes are "zero".
+        mode (str): The padding mode. Supported modes are::
+
+            "reflect", "zero", "constant", "periodic", "symmetric".
 
     Returns:
         The padded output tensor.
@@ -70,9 +79,16 @@ def _fwt_pad3(
     pad_back, pad_front = _get_pad(data.shape[-3], _get_len(wavelet))
     pad_bottom, pad_top = _get_pad(data.shape[-2], _get_len(wavelet))
     pad_right, pad_left = _get_pad(data.shape[-1], _get_len(wavelet))
-    data_pad = torch.nn.functional.pad(
-        data, [pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back], mode=mode
-    )
+    if mode == "symmetric":
+        data_pad = _pad_symmetric(
+            data, [(pad_front, pad_back), (pad_top, pad_bottom), (pad_left, pad_right)]
+        )
+    else:
+        data_pad = torch.nn.functional.pad(
+            data,
+            [pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back],
+            mode=mode,
+        )
     return data_pad
 
 
@@ -89,8 +105,10 @@ def wavedec3(
             [batch_size, length, height, width]
         wavelet (Union[Wavelet, str]): The wavelet to transform with.
             ``pywt.wavelist(kind='discrete')`` lists possible choices.
-        mode (str): The padding mode. Possible options are
+        mode (str): The padding mode. Possible options are::
+
             "zero", "constant" or "periodic".
+
             Defaults to "zero".
         level (Optional[int]): The maximum decomposition level.
             This argument defaults to None.
