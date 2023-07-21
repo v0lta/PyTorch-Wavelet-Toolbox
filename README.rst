@@ -1,5 +1,10 @@
+.. |favicon| image:: https://raw.githubusercontent.com/v0lta/PyTorch-Wavelet-Toolbox/main/docs/favicon/favicon.ico
+    :alt: Shannon-wavelet favicon
+    :width: 32
+    :target: https://pypi.org/project/ptwt/
+
 ********************************
-Pytorch Wavelet Toolbox (`ptwt`)
+|favicon| Pytorch Wavelet Toolbox (`ptwt`) 
 ********************************
 
 .. image:: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/actions/workflows/tests.yml/badge.svg 
@@ -30,8 +35,6 @@ Pytorch Wavelet Toolbox (`ptwt`)
  :target: https://pepy.tech/project/ptwt
 
 
-
-
 Welcome to the PyTorch wavelet toolbox. This package implements:
 
 - the fast wavelet transform (fwt) via ``wavedec`` and its inverse by providing the ``waverec`` function,
@@ -45,7 +48,7 @@ Welcome to the PyTorch wavelet toolbox. This package implements:
 - single and two-dimensional wavelet packet forward and backward transforms are available via the ``WaveletPacket`` and ``WaveletPacket2D`` objects,
 - finally, this package provides adaptive wavelet support (experimental).
 
-This toolbox extends `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_. We additionally provide GPU and gradient support via a PyTorch backend.
+This toolbox extends `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_. In addition to boundary wavelets, we provide GPU and gradient support via a PyTorch backend.
 Complete documentation is available at: https://pytorch-wavelet-toolbox.readthedocs.io/
 
 

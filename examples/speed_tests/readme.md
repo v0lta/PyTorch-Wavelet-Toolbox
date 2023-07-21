@@ -1,7 +1,7 @@
 ## Ptwt - Speed - Tests
 
 To run the speed tests install [pywt](https://pywavelets.readthedocs.io/en/latest/install.html)
-and [pytorch-wavelets](https://github.com/fbcotter/pytorch_wavelets).
+and [pytorch-wavelets](https://github.com/fbcotter/pytorch_wavelets) in addition to our ptwt.
 The numbers below were measured using an NVIDIA RTX A4000 graphics card and an Intel(R) Xeon(R) W-2235 CPU @ 3.80GHz.
 We ship performant software. GPU runtime was on par or ahead of competing libraries during our measurements in Mai 2023.  
 
