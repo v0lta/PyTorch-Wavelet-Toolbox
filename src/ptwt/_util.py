@@ -67,19 +67,20 @@ def _get_len(wavelet: Union[Tuple[torch.Tensor, ...], str, Wavelet]) -> int:
 
 
 def _pad_symmetric_1d(signal: torch.Tensor, pad_list: List[int]):
-    # todo fix signal.shape < padlr or padr!! recursion?
+    # TODO: fix signal.shape < padlr or padr!! recursion?
     padl, padr = pad_list
     topadl = signal[:padl].flip(0)
     topadr = signal[-padr::].flip(0)
     return torch.cat([topadl, signal, topadr], axis=0)
 
 
-def _pad_symmetric(signal, pad_list: List[int]):
-    if len(signal.shape) < len(pad_list):
+def _pad_symmetric(signal, pad_lists: List[int]):
+    # TODO: finish symetric padding support.
+    if len(signal.shape) < len(pad_lists):
         raise ValueError("not enough dimensions to pad.")
 
     dims = len(signal.shape) - 1
-    for pos, pad_list in enumerate(pad_list[::-1]):
+    for pos, pad_list in enumerate(pad_lists[::-1]):
         current_axis = dims - pos
         signal = signal.transpose(0, current_axis)
         signal = _pad_symmetric_1d(signal, pad_list)

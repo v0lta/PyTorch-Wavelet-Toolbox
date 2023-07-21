@@ -44,6 +44,7 @@ def test_failed_as_wavelet(wavelet: str) -> None:
 
 @pytest.mark.parametrize("size", [[5], [12], [19]])
 def test_pad_symmetric_1d(size):
+    """Test symetric padding in a single dimension."""
     pad_list = [2, 2]
     test_signal = np.random.randint(0, 9, size=size).astype(np.float32)
     my_pad = _pad_symmetric_1d(torch.from_numpy(test_signal), pad_list)
@@ -54,6 +55,7 @@ def test_pad_symmetric_1d(size):
 @pytest.mark.parametrize("size", [[6, 5], [5, 6], [5, 5], [9, 9], [3, 3]])
 @pytest.mark.parametrize("pad_list", [[[1, 4], [4, 1]], [[2, 2], [3, 3]]])
 def test_pad_symmetric(size, pad_list):
+    """Test high-dimensional symetric padding."""
     array = np.random.randint(0, 9, size=size)
     my_pad = _pad_symmetric(torch.from_numpy(array), pad_list)
     np_pad = np.pad(array, pad_list, mode="symmetric")
