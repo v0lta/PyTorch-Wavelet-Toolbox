@@ -260,7 +260,6 @@ def wavedec(
         >>> # compute the forward fwt coefficients
         >>> ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
         >>>              mode='zero', level=2)
-
     """
     if data.dim() == 1:
         # assume time series

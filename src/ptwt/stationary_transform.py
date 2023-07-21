@@ -22,7 +22,7 @@ def swt(
         level (Optional[int], optional): The number of levels to compute
 
     Returns:
-        List[torch.Tensor]: Same as wavedec. TODO: implement trim_approx.
+        List[torch.Tensor]: Same as wavedec. Equivalent to pywt.swt with trim_approx=True.
     """
     if data.dim() == 1:
         # assume time series
@@ -46,10 +46,12 @@ def swt(
         dilation = 2**current_level
         padl, padr = dilation * (filt_len // 2 - 1), dilation * (filt_len // 2)
         res_lo = torch.nn.functional.pad(res_lo, [padl, padr], mode="circular")
-        # res_lo = torch.nn.functional.pad(res_lo, [padl, padr], mode="constant")
         res = torch.nn.functional.conv1d(res_lo, filt, stride=1, dilation=dilation)
         res_lo, res_hi = torch.split(res, 1, 1)
+        # Trim_approx == False
         # result_lst.append((res_lo.squeeze(1), res_hi.squeeze(1)))
         result_lst.append(res_hi.squeeze(1))
     result_lst.append(res_lo.squeeze(1))
     return result_lst[::-1]
+
+
