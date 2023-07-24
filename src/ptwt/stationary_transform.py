@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 import pywt
 import torch
 
-from src.ptwt._util import Wavelet
+from src.ptwt._util import Wavelet, _is_dtype_supported
 from src.ptwt.conv_transform import get_filter_tensors
 
 
@@ -54,3 +54,48 @@ def swt(
         result_lst.append(res_hi.squeeze(1))
     result_lst.append(res_lo.squeeze(1))
     return result_lst[::-1]
+
+
+
+def iswt(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.Tensor:
+
+    torch_device = coeffs[0].device
+    torch_dtype = coeffs[0].dtype
+    if not _is_dtype_supported(torch_dtype):
+        raise ValueError(f"Input dtype {torch_dtype} not supported")
+
+    for coeff in coeffs[1:]:
+        if torch_device != coeff.device:
+            raise ValueError("coefficients must be on the same device")
+        elif torch_dtype != coeff.dtype:
+            raise ValueError("coefficients must have the same dtype")
+
+    _, _, rec_lo, rec_hi = get_filter_tensors(
+        wavelet, flip=False, device=torch_device, dtype=torch_dtype
+    )
+    filt_len = rec_lo.shape[-1]
+    filt = torch.stack([rec_lo, rec_hi], 0)
+
+    res_lo = coeffs[0]
+    for c_pos, res_hi in enumerate(coeffs[1:]):
+        current_level = len(coeffs[1:]) - c_pos - 1
+        dilation = 2**current_level
+        padl, padr = dilation * (filt_len // 2 - 1), dilation * (filt_len // 2)
+
+        res_lo = torch.stack([res_lo, res_hi], 1)
+        res_t = torch.nn.functional.conv_transpose1d(
+            res_lo, filt, stride=2, dilation=1).squeeze(1)
+        even = torch.nn.functional.conv_transpose1d(
+            res_lo[:, :, ::2], filt, stride=2, dilation=1).squeeze(1)
+        odd = torch.nn.functional.conv_transpose1d(
+            res_lo[:, :, 1::2], filt, stride=2, dilation=1).squeeze(1)
+        res_lo = res_t
+
+        # remove the padding
+        if padl > 0:
+            res_lo = res_lo[..., padl:]
+        if padr > 0:
+            res_lo = res_lo[..., :-padr]
+        #res_lo = res_lo[:, ::2]
+
+    return res_lo
