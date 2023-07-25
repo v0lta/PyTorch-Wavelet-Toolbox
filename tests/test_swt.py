@@ -5,7 +5,7 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt.stationary_transform import swt, iswt
+from src.ptwt.stationary_transform import swt, _iswt
 
 
 @pytest.mark.parametrize("level", [1, 2, 3])  # TODO 3, None
@@ -21,6 +21,6 @@ def test_swt_1d(level, size, wavelet):
         test_list.extend([np.allclose(ael.numpy(), bel) for ael, bel in zip(a, b)])
     assert all(test_list)
 
-    rec = iswt(ptwt_coeff, wavelet)
+    rec = _iswt(ptwt_coeff, wavelet)
     assert np.allclose(rec.numpy(), signal)
     pass
