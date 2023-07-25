@@ -57,7 +57,7 @@ def swt(
 
 
 
-def iswt(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.Tensor:
+def _iswt(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.Tensor:
 
     torch_device = coeffs[0].device
     torch_dtype = coeffs[0].dtype
