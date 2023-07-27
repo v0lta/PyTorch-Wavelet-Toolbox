@@ -188,18 +188,38 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     assert np.allclose(face, rec[:, : face.shape[1], : face.shape[2]])
 
 
+@pytest.mark.parametrize(
+    "size", [(50, 20, 128, 128), (49, 21, 128, 128), (4, 5, 64, 64)]
+)
+def test_input_4d(size):
+    """Test the error for 4d inputs to wavedec2."""
+    data = torch.randn(*size).type(torch.float64)
+
+    pt_res = wavedec2(data, wavelet="haar", level=4)
+    pywt_res = pywt.wavedec2(data.numpy(), wavelet="haar", level=4)
+    rec = waverec2(pt_res, "haar")
+
+    # test coefficients
+    for ptwtcs, pywtcs in zip(pt_res, pywt_res):
+        if isinstance(ptwtcs, tuple):
+            assert all(
+                (
+                    np.allclose(ptwtc.numpy(), pywtc)
+                    for ptwtc, pywtc in zip(ptwtcs, pywtcs)
+                )
+            )
+        else:
+            assert np.allclose(ptwtcs, pywtcs)
+
+    # test reconstruction.
+    assert np.allclose(data.numpy(), rec.numpy())
+
+
 @pytest.mark.parametrize("padding_str", ["invalid_padding_name"])
 def test_incorrect_padding(padding_str):
     """Test expected errors for an invalid padding name."""
     with pytest.raises(ValueError):
         _ = _translate_boundary_strings(padding_str)
-
-
-def test_input_4d_dimension_error():
-    """Test the error for 4d inputs to wavedec2."""
-    with pytest.raises(ValueError):
-        data = torch.randn(50, 20, 128, 128)
-        wavedec2(data, "haar", 4)
 
 
 def test_input_1d_dimension_error():

@@ -19,6 +19,25 @@ from .conv_transform import (
 )
 
 
+def _fold_channels(data: torch.Tensor) -> torch.Tensor:
+    # Fold a [batch, channel, height width] array into
+    # [batch*channel, height, widht]
+    ds = data.shape
+    fold_data = torch.permute(data, [2, 3, 0, 1])
+    fold_data = torch.reshape(fold_data, [ds[2], ds[3], ds[0] * ds[1]])
+    return torch.permute(fold_data, [2, 0, 1])
+
+
+def _unfold_channels(data: torch.Tensor, ds: List[int]) -> torch.Tensor:
+    # unfold a [batch*channel, height, widht] array into
+    # [batch, channel, height, width]
+    unfold_data = torch.permute(data, [1, 2, 0])
+    unfold_data = torch.reshape(
+        unfold_data, [data.shape[1], data.shape[2], ds[0], ds[1]]
+    )
+    return torch.permute(unfold_data, [2, 3, 0, 1])
+
+
 def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     """Construct two-dimensional filters using outer products.
 
@@ -86,6 +105,7 @@ def wavedec2(
         data (torch.Tensor): The input data tensor with up to three dimensions.
             2d inputs are interpreted as [height, width],
             3d inputs are interpreted as [batch_size, height, width].
+            4d inputs are interpreted as [batch_size, channels, height, width].
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
@@ -122,18 +142,24 @@ def wavedec2(
         >>>                              level=2, mode="zero")
 
     """
+    fold = False
     if data.dim() == 2:
         data = data.unsqueeze(0).unsqueeze(0)
     elif data.dim() == 3:
         # add a channel dimension for torch.
         data = data.unsqueeze(1)
     elif data.dim() == 4:
+        # avoid the channel sum, fold the channels into batches.
+        fold = True
+        ds = data.shape
+        data = _fold_channels(data).unsqueeze(1)
+    elif data.dim() == 1:
+        raise ValueError("Wavedec2 needs more than one input dimension to work.")
+    else:
         raise ValueError(
             "Wavedec2 does not support four input dimensions. \
              Optionally-batched two-dimensional inputs work."
         )
-    elif data.dim() == 1:
-        raise ValueError("Wavedec2 needs more than one input dimension to work.")
 
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
@@ -158,6 +184,24 @@ def wavedec2(
         to_append = (res_lh.squeeze(1), res_hl.squeeze(1), res_hh.squeeze(1))
         result_lst.append(to_append)
     result_lst.append(res_ll.squeeze(1))
+
+    if fold:
+        unfold_res: List[
+            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+        ] = []
+        for cres in result_lst:
+            if isinstance(cres, torch.Tensor):
+                unfold_res.append(_unfold_channels(cres, list(ds)))
+            else:
+                unfold_res.append(
+                    (
+                        _unfold_channels(cres[0], list(ds)),
+                        _unfold_channels(cres[1], list(ds)),
+                        _unfold_channels(cres[2], list(ds)),
+                    )
+                )
+        result_lst = unfold_res
+
     return result_lst[::-1]
 
 
@@ -179,7 +223,8 @@ def waverec2(
             the name of a pywt wavelet.
 
     Returns:
-        torch.Tensor: The reconstructed signal of shape [batch, height, width].
+        torch.Tensor: The reconstructed signal of shape [batch, height, width] or
+            [batch, channel, height, width] depending on the input to `wavedec2`.
 
     Raises:
         ValueError: If `coeffs` is not in a shape as returned from `wavedec2` or
@@ -204,9 +249,29 @@ def waverec2(
         raise ValueError(
             "First element of coeffs must be the approximation coefficient tensor."
         )
-
     torch_device = res_ll.device
     torch_dtype = res_ll.dtype
+
+    if res_ll.dim() == 4:
+        # avoid the channel sum, fold the channels into batches.
+        fold = True
+        fold_coeffs: List[
+            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+        ] = []
+        ds = res_ll.shape
+        for coeff in coeffs:
+            if isinstance(coeff, torch.Tensor):
+                fold_coeffs.append(_fold_channels(coeff))
+            else:
+                fold_coeffs.append(
+                    (
+                        _fold_channels(coeff[0]),
+                        _fold_channels(coeff[1]),
+                        _fold_channels(coeff[2]),
+                    )
+                )
+        coeffs = fold_coeffs
+        res_ll = coeffs[0]
 
     if not _is_dtype_supported(torch_dtype):
         raise ValueError(f"Input dtype {torch_dtype} not supported")
@@ -225,7 +290,7 @@ def waverec2(
                 "wavedec2."
             )
 
-        curr_shape = res_ll.shape
+        curr_shape = res_ll.shape  # type: ignore
         for coeff in coeff_tuple:
             if torch_device != coeff.device:
                 raise ValueError("coefficients must be on the same device")
@@ -238,7 +303,7 @@ def waverec2(
 
         res_lh, res_hl, res_hh = coeff_tuple
 
-        res_ll = torch.stack([res_ll, res_lh, res_hl, res_hh], 1)
+        res_ll = torch.stack([res_ll, res_lh, res_hl, res_hh], 1)  # type: ignore
         res_ll = torch.nn.functional.conv_transpose2d(
             res_ll, rec_filt, stride=2
         ).squeeze(1)
@@ -264,4 +329,8 @@ def waverec2(
             res_ll = res_ll[..., padl:]
         if padr > 0:
             res_ll = res_ll[..., :-padr]
-    return res_ll
+
+    if fold:
+        res_ll = _unfold_channels(res_ll, list(ds))  # type: ignore
+
+    return res_ll  # type: ignore

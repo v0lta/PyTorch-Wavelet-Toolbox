@@ -5,17 +5,17 @@
 #########################
 [flake8]
 ignore =
-    S301 # pickle
-    S403 # pickle
+    S301
+    S403
     S404
     S603
-    W503 # Line break before binary operator (flake8 is wrong)
-    E203 # Ignore the spaces black puts before columns.
-    E402 # allow path extensions for testing.
+    W503
+    E203
+    E402
     DAR101
     DAR201
-    N400 # flake and pylance disagree on linebreaks in strings.
-    S101 # asserts are ok in test.
+    N400
+    S101
 exclude =
     .tox,
     .git,
