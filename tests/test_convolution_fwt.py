@@ -22,7 +22,9 @@ from tests._mackey_glass import MackeyGenerator
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("length", [64, 65])
 @pytest.mark.parametrize("batch_size", [1, 3])
-@pytest.mark.parametrize("mode", ["reflect", "zero", "constant", "periodic"])
+@pytest.mark.parametrize(
+    "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
+)
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
 def test_conv_fwt1d(wavelet_string, level, mode, length, batch_size, dtype):
     """Test multiple convolution fwt, for various levels and padding options."""
@@ -174,7 +176,9 @@ def test_outer():
 )
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("size", [(32, 32), (32, 64), (64, 32), (31, 31)])
-@pytest.mark.parametrize("mode", ["reflect", "zero", "constant", "periodic"])
+@pytest.mark.parametrize(
+    "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
+)
 def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
 

@@ -1,5 +1,5 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
-from typing import Optional, Protocol, Sequence, Tuple, Union
+from typing import List, Optional, Protocol, Sequence, Tuple, Union
 
 import pywt
 import torch
@@ -64,3 +64,40 @@ def _get_len(wavelet: Union[Tuple[torch.Tensor, ...], str, Wavelet]) -> int:
         return wavelet[0].shape[0]
     else:
         return len(_as_wavelet(wavelet))
+
+
+def _pad_symmetric_1d(signal: torch.Tensor, pad_list: Tuple[int, int]) -> torch.Tensor:
+    padl, padr = pad_list
+    dimlen = signal.shape[0]
+    if padl > dimlen or padr > dimlen:
+        if padl > dimlen:
+            signal = _pad_symmetric_1d(signal, (dimlen, 0))
+            padl = padl - dimlen
+        if padr > dimlen:
+            signal = _pad_symmetric_1d(signal, (0, dimlen))
+            padr = padr - dimlen
+        return _pad_symmetric_1d(signal, (padl, padr))
+    else:
+        cat_list = [signal]
+        if padl > 0:
+            topadl = signal[:padl].flip(0)
+            cat_list.insert(0, topadl)
+        if padr > 0:
+            topadr = signal[-padr::].flip(0)
+            cat_list.append(topadr)
+        return torch.cat(cat_list, axis=0)  # type: ignore
+
+
+def _pad_symmetric(
+    signal: torch.Tensor, pad_lists: List[Tuple[int, int]]
+) -> torch.Tensor:
+    if len(signal.shape) < len(pad_lists):
+        raise ValueError("not enough dimensions to pad.")
+
+    dims = len(signal.shape) - 1
+    for pos, pad_list in enumerate(pad_lists[::-1]):
+        current_axis = dims - pos
+        signal = signal.transpose(0, current_axis)
+        signal = _pad_symmetric_1d(signal, pad_list)
+        signal = signal.transpose(current_axis, 0)
+    return signal

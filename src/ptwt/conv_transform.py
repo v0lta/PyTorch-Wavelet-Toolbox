@@ -8,7 +8,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported
+from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _pad_symmetric
 
 
 def _fold_channels(data: torch.Tensor) -> torch.Tensor:
@@ -135,6 +135,10 @@ def _translate_boundary_strings(pywt_mode: str) -> str:
         pt_mode = pywt_mode
     elif pywt_mode == "periodic":
         pt_mode = "circular"
+    elif pywt_mode == "symmetric":
+        # pytorch does not support symmetric mode,
+        # we have our own implementation.
+        pt_mode = pywt_mode
     else:
         raise ValueError("Padding mode not supported.")
     return pt_mode
@@ -153,7 +157,7 @@ def _fwt_pad(
             the name of a pywt wavelet.
         mode (str): The desired way to pad. The following methods are supported::
 
-                "reflect", "zero", "constant", "periodic".
+                "reflect", "zero", "constant", "periodic", "symmetric".
 
             Refection padding mirrors samples along the border.
             Zero padding pads zeros.
@@ -170,7 +174,10 @@ def _fwt_pad(
     mode = _translate_boundary_strings(mode)
 
     padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
-    data_pad = torch.nn.functional.pad(data, [padl, padr], mode=mode)
+    if mode == "symmetric":
+        data_pad = _pad_symmetric(data, [(padl, padr)])
+    else:
+        data_pad = torch.nn.functional.pad(data, [padl, padr], mode=mode)
     return data_pad
 
 
@@ -241,9 +248,16 @@ def wavedec(
         mode (str): The desired padding mode. Padding extends the signal along
             the edges. Supported methods are::
 
-                "reflect", "zero", "constant", "periodic".
+                "reflect", "zero", "constant", "periodic", "symmetric".
 
             Defaults to "reflect".
+
+            Symmetric padding mirrors samples along the border.
+            Refection padding reflects samples along the border.
+            Zero padding pads zeros.
+            Constant padding replicates border values.
+            Periodic padding cyclically repeats samples.
+
         level (int): The scale level to be computed.
                                Defaults to None.
 
@@ -268,7 +282,6 @@ def wavedec(
         >>> # compute the forward fwt coefficients
         >>> ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
         >>>              mode='zero', level=2)
-
     """
     fold = False
     if data.dim() == 1:
