@@ -9,7 +9,7 @@ from src.ptwt._util import Wavelet
 from src.ptwt.conv_transform import _get_filter_tensors
 
 
-def swt(
+def _swt(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
     level: Optional[int] = None,

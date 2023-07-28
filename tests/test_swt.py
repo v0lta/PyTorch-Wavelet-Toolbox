@@ -5,7 +5,7 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt._stationary_transform import swt
+from src.ptwt._stationary_transform import _swt
 
 
 @pytest.mark.slow
@@ -15,7 +15,7 @@ from src.ptwt._stationary_transform import swt
 def test_swt_1d(level, size, wavelet):
     """Test the 1d swt."""
     signal = np.expand_dims(np.arange(size).astype(np.float64), 0)
-    ptwt_coeff = swt(torch.from_numpy(signal), wavelet, level=level)
+    ptwt_coeff = _swt(torch.from_numpy(signal), wavelet, level=level)
     pywt_coeff = pywt.swt(signal, wavelet, level, trim_approx=True, norm=False)
     test_list = []
     for a, b in zip(ptwt_coeff, pywt_coeff):
