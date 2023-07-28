@@ -1,5 +1,7 @@
 """Test the fwt and ifwt matrices."""
 # Written by moritz ( @ wolter.tech ) in 2021
+from typing import List
+
 import numpy as np
 import pytest
 import pywt
@@ -64,12 +66,12 @@ def test_fwt_ifwt_mackey_haar_cuda() -> None:
 @pytest.mark.slow
 @pytest.mark.parametrize("level", [1, 2, 3, 4, None])
 @pytest.mark.parametrize("wavelet", ["db2", "db3", "db4", "sym5"])
-def test_fwt_ifwt_mackey(level: int, wavelet: str) -> None:
+@pytest.mark.parametrize("size", [[2, 256], [2, 3, 256], [1, 1, 128]])
+def test_1d_matrix_fwt_ifwt(level: int, wavelet: str, size: List[int]) -> None:
     """Test multiple wavelets and levels for a long signal."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     wavelet = pywt.Wavelet(wavelet)
-    generator = MackeyGenerator(batch_size=2, tmax=512, delta_t=1, device=device)
-    pt_data = torch.squeeze(generator()).type(torch.float64)
+    pt_data = torch.randn(*size, device=device).type(torch.float64)
     matrix_wavedec = MatrixWavedec(wavelet, level)
     coeffs_mat_max = matrix_wavedec(pt_data)
     matrix_waverec = MatrixWaverec(wavelet)
@@ -179,3 +181,31 @@ def test_matrix_transform_1d_rebuild(wavelet_str: str, boundary: str):
                 assert np.allclose(
                     test_mat.to_dense().numpy(), np.eye(test_mat.shape[0])
                 )
+
+
+def test_4d_input_to_1d_transform_dimension_error():
+    """Test the error for 1d inputs to the MatrixWavedec __call__."""
+    with pytest.raises(ValueError):
+        data = torch.randn(50, 50, 50, 50)
+        matrix_wavedec_1d = MatrixWavedec("haar", 4)
+        matrix_wavedec_1d(data)
+
+
+@pytest.mark.parametrize("size", [[2, 3, 32], [5, 32], [32], [1, 1, 64]])
+def test_matrix1d_batch_channel(size):
+    """Test if batch and channel support works as expected."""
+    data = torch.randn(*size).type(torch.float64)
+    matrix_wavedec_1d = MatrixWavedec("haar", 3)
+    ptwt_coeff = matrix_wavedec_1d(data)
+    pywt_coeff = pywt.wavedec(data.numpy(), "haar", level=3)
+
+    test = [
+        np.allclose(ptwtcs.numpy(), pywtcs)
+        for ptwtcs, pywtcs in zip(ptwt_coeff, pywt_coeff)
+    ]
+    assert all(test)
+
+    matrix_waverec_2d = MatrixWaverec("haar")
+    rec = matrix_waverec_2d(ptwt_coeff)
+
+    assert np.allclose(data.numpy(), rec.numpy())

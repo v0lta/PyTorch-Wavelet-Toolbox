@@ -1,4 +1,4 @@
-"""Implement matrix based fwt and ifwt.
+"""Implement matrix-based fwt and ifwt.
 
 This module uses boundary filters instead of padding.
 
@@ -18,8 +18,14 @@ from ._util import (
     _as_wavelet,
     _is_boundary_mode_supported,
     _is_dtype_supported,
+    _unfold_channels,
 )
-from .conv_transform import get_filter_tensors
+from .conv_transform import (
+    _get_filter_tensors,
+    _wavedec_fold_channels_1d,
+    _wavedec_unfold_channels_1d_list,
+    _waverec_fold_channels_1d_list,
+)
 from .sparse_math import (
     _orth_by_gram_schmidt,
     _orth_by_qr,
@@ -37,12 +43,12 @@ def _construct_a(
     """Construct a raw analysis matrix.
 
     The resulting matrix will only be orthogonal in the Haar case,
-    in most cases you will want to use construct_boundary_a instead.
+    in most cases, you will want to use construct_boundary_a instead.
 
     Args:
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        length (int): The length of the input signal to transfrom.
+        length (int): The length of the input signal to transform.
         device (torch.device or str, optional): Where to create the matrix.
             Choose a torch device or device name. Defaults to "cpu".
         dtype (optional): The desired torch datatype. Choose torch.float32
@@ -52,7 +58,7 @@ def _construct_a(
         torch.Tensor: The sparse raw analysis matrix.
     """
     wavelet = _as_wavelet(wavelet)
-    dec_lo, dec_hi, _, _ = get_filter_tensors(
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype
     )
     analysis_lo = construct_strided_conv_matrix(
@@ -79,7 +85,7 @@ def _construct_s(
     Args:
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        length (int): The lenght of the originally transformed signal.
+        length (int): The length of the originally transformed signal.
         device (torch.device, optional): Choose cuda or cpu.
             Defaults to torch.device("cpu").
         dtype ([type], optional): The desired data type. Choose torch.float32
@@ -89,7 +95,7 @@ def _construct_s(
         torch.Tensor: The raw sparse synthesis matrix.
     """
     wavelet = _as_wavelet(wavelet)
-    _, _, rec_lo, rec_hi = get_filter_tensors(
+    _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype
     )
     synthesis_lo = construct_strided_conv_matrix(
@@ -150,8 +156,8 @@ class MatrixWavedec(object):
     """Compute the sparse matrix fast wavelet transform.
 
     Intermediate scale results must be divisible
-    by two. A working third level transform
-    could use and input length of 128.
+    by two. A working third-level transform
+    could use an input length of 128.
     This would lead to intermediate resolutions
     of 64 and 32. All are divisible by two.
 
@@ -188,7 +194,7 @@ class MatrixWavedec(object):
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
-            ValueError: If the wavelet filters have different lenghts.
+            ValueError: If the wavelet filters have different lengths.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.level = level
@@ -214,8 +220,8 @@ class MatrixWavedec(object):
         the whole operation is padding-free and can be expressed
         as a single matrix multiply.
 
-        With the operator torch.sparse.mm(sparse_fwt_operator, data.T)
-        to computes a batched fwt.
+        The operation torch.sparse.mm(sparse_fwt_operator, data.T)
+        computes a batched fwt.
 
         This property exists to make the operator matrix transparent.
         Calling the object will handle odd-length inputs properly.
@@ -295,11 +301,13 @@ class MatrixWavedec(object):
     def __call__(self, input_signal: torch.Tensor) -> List[torch.Tensor]:
         """Compute the matrix fwt for the given input signal.
 
-        Matrix fwt are used to avoid padding.
+        Matrix FWTs are used to avoid padding.
 
         Args:
-            input_signal (torch.Tensor): Batched input data [batch_size, time],
-                should be of even length. 1d inputs are interpreted as [time].
+            input_signal (torch.Tensor): Batched input data ``[batch_size, time]``,
+                should be of even length. 1d inputs are interpreted as ``[time]``.
+                3d inputs are treated as ``[batch, channels, time]``.
+                This transform only affects the last axis.
 
         Returns:
             List[torch.Tensor]: A list with the coefficients for each scale.
@@ -308,14 +316,20 @@ class MatrixWavedec(object):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
+        fold = False
         if input_signal.dim() == 1:
             # assume time series
             input_signal = input_signal.unsqueeze(0)
-        elif input_signal.dim() != 2:
+        elif input_signal.dim() == 3:
+            # assume batch, channels, time -> fold channels
+            fold = True
+            input_signal, ds = _wavedec_fold_channels_1d(input_signal)
+            input_signal = input_signal.squeeze(1)
+        elif input_signal.dim() > 3:
             raise ValueError(
                 f"Invalid input tensor shape {input_signal.size()}. "
                 "The input signal is expected to be of the form "
-                "[batch_size, length]."
+                "[batch_size, (channels), length]."
             )
 
         if not _is_dtype_supported(input_signal.dtype):
@@ -356,7 +370,13 @@ class MatrixWavedec(object):
             split_list.append(hi)
         split_list.append(lo)
         # undo the transpose we used to handle the batch dimension.
-        return [s.T for s in split_list[::-1]]
+        result_list = [s.T for s in split_list[::-1]]
+
+        # unfold if necessary
+        if fold:
+            result_list = _wavedec_unfold_channels_1d_list(result_list, ds)
+
+        return result_list
 
 
 def construct_boundary_a(
@@ -418,7 +438,7 @@ def construct_boundary_s(
 
 
 class MatrixWaverec(object):
-    """Matrix based inverse fast wavelet transform.
+    """Matrix-based inverse fast wavelet transform.
 
     Example:
         >>> import ptwt, torch, pywt
@@ -439,7 +459,7 @@ class MatrixWaverec(object):
         wavelet: Union[Wavelet, str],
         boundary: str = "qr",
     ) -> None:
-        """Create the inverse matrix based fast wavelet transformation.
+        """Create the inverse matrix-based fast wavelet transformation.
 
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
@@ -452,7 +472,7 @@ class MatrixWaverec(object):
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
-            ValueError: If the wavelet filters have different lenghts.
+            ValueError: If the wavelet filters have different lengths.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.boundary = boundary
@@ -478,9 +498,9 @@ class MatrixWaverec(object):
 
         Having concatenated the analysis coefficients,
         torch.sparse.mm(sparse_ifwt_operator, coefficients.T)
-        to computes a batched ifwt.
+        to computes a batched iFWT.
 
-        This functionality is manly here to make the operator-matrix
+        This functionality is mainly here to make the operator-matrix
         transparent. Calling the object handles padding for odd inputs.
 
         Returns:
@@ -567,6 +587,11 @@ class MatrixWaverec(object):
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec` object.
         """
+        fold = False
+        if coefficients[0].dim() == 3:
+            fold = True
+            coefficients, ds = _waverec_fold_channels_1d_list(coefficients)
+
         level = len(coefficients) - 1
         input_length = coefficients[-1].shape[-1] * 2
 
@@ -615,4 +640,9 @@ class MatrixWaverec(object):
                         pred_len == next_len
                     ), "padding error, please open an issue on github"
 
-        return lo.T
+        res_lo = lo.T
+
+        if fold:
+            res_lo = _unfold_channels(res_lo.unsqueeze(-2), list(ds)).squeeze(-2)
+
+        return res_lo

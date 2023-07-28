@@ -5,12 +5,9 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt.conv_transform import wavedec
 from src.ptwt.matmul_transform_2 import MatrixWavedec2
 from src.ptwt.matmul_transform_3 import MatrixWavedec3
 from src.ptwt.separable_conv_transform import (
-    _fswavedec,
-    _fswaverec,
     _separable_conv_wavedecn,
     _separable_conv_waverecn,
     fswavedec2,
@@ -63,16 +60,6 @@ def test_separable_conv(shape, level) -> None:
     assert np.allclose(rec.numpy(), data)
 
 
-@pytest.mark.parametrize("shape", [(5, 64), (5, 65), (5, 29)])
-@pytest.mark.parametrize("wavelet", ["haar", "db3", "sym5"])
-def test_example_fs1d(shape, wavelet):
-    """Test 1d fully separable padding."""
-    data = torch.randn(*shape).type(torch.float64)
-    coeff = _fswavedec(data, wavelet, level=2)
-    rec = _fswaverec(coeff, wavelet)
-    assert np.allclose(data.numpy(), rec[: shape[0], : shape[1]].numpy())
-
-
 @pytest.mark.parametrize("shape", [(5, 64, 64), (5, 65, 65), (5, 29, 29)])
 @pytest.mark.parametrize("wavelet", ["haar", "db3", "sym5"])
 def test_example_fs2d(shape, wavelet):
@@ -93,27 +80,12 @@ def test_example_fs3d(shape, wavelet):
     assert np.allclose(data.numpy(), rec[[slice(0, s) for s in shape]].numpy())
 
 
-@pytest.mark.parametrize("shape", [(5, 64), (5, 65), (5, 29)])
-@pytest.mark.parametrize("wavelet", ["haar", "db3", "sym5"])
-def test_conv_convsep1d(shape, wavelet):
-    """Test 1d fully separable padding."""
-    data = torch.randn(*shape).type(torch.float64)
-    coeff = _fswavedec(data, wavelet, level=2)
-    coeff2 = wavedec(data, wavelet, level=2)
-    assert np.allclose(coeff[0].numpy(), coeff2[0].numpy())
-    assert all(
-        np.allclose(c["d"].numpy(), c2.numpy()) for c, c2 in zip(coeff[1:], coeff2[1:])
-    )
-    rec = _fswaverec(coeff, wavelet)
-    assert np.allclose(data.numpy(), rec[: shape[0], : shape[1]].numpy())
-
-
 # test separable conv and mamul consistency for the Haar case.
 @pytest.mark.slow
 @pytest.mark.parametrize("level", [1, 2, 3, None])
-def test_conv_mm_2d(level):
+@pytest.mark.parametrize("shape", [[5, 128, 128], [3, 2, 64, 64], [1, 1, 64, 64]])
+def test_conv_mm_2d(level, shape):
     """Compare mm and conv fully separable results."""
-    shape = (5, 128, 128)
     data = torch.randn(*shape).type(torch.float64)
     fs_conv_coeff = fswavedec2(data, "haar", level=level)
     fs_mm_coeff = MatrixWavedec2("haar", level, separable=True)(data)

@@ -291,12 +291,11 @@ def test_access_errors_2d():
 
 @pytest.mark.parametrize("level", [1, 2, 3])
 @pytest.mark.parametrize("base_key", ["a", "d"])
-@pytest.mark.parametrize("length", [63, 64, 128])
-@pytest.mark.parametrize("batch_size", [1, 2])
+@pytest.mark.parametrize("shape", [[1, 63], [3, 2, 64], [128]])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
-def test_inverse_packet_1d(level, base_key, length, batch_size, wavelet):
+def test_inverse_packet_1d(level, base_key, shape, wavelet):
     """Test the 1d reconstruction code."""
-    signal = np.random.randn(batch_size, length)
+    signal = np.random.randn(*shape)
     mode = "reflect"
     wp = pywt.WaveletPacket(signal, wavelet, mode=mode, maxlevel=level)
     ptwp = WaveletPacket(torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level)
@@ -304,16 +303,16 @@ def test_inverse_packet_1d(level, base_key, length, batch_size, wavelet):
     ptwp[base_key * level].data *= 0
     wp.reconstruct(update=True)
     ptwp.reconstruct()
-    assert np.allclose(wp[""].data, ptwp[""].numpy()[:, :length])
+    assert np.allclose(wp[""].data, ptwp[""].numpy()[..., : shape[-1]])
 
 
 @pytest.mark.parametrize("level", [1, 3])
 @pytest.mark.parametrize("base_key", ["a", "h", "d"])
-@pytest.mark.parametrize("size", [(1, 32, 32), (2, 31, 64)])
+@pytest.mark.parametrize("size", [(1, 32, 32), (2, 1, 31, 64)])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
 def test_inverse_packet_2d(level, base_key, size, wavelet):
     """Test the 2d reconstruction code."""
-    signal = np.random.randn(size[0], size[1], size[2])
+    signal = np.random.randn(*size)
     mode = "reflect"
     wp = pywt.WaveletPacket2D(signal, wavelet, mode=mode, maxlevel=level)
     ptwp = WaveletPacket2D(torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level)

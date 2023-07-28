@@ -1,4 +1,4 @@
-"""Two dimensional matrix based fast wavelet transform implementations.
+"""Two-dimensional matrix based fast wavelet transform implementations.
 
 This module uses boundary filters to minimize padding.
 """
@@ -12,11 +12,18 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
+    _fold_channels,
     _is_boundary_mode_supported,
     _is_dtype_supported,
+    _unfold_channels,
 )
-from .conv_transform import get_filter_tensors
-from .conv_transform_2 import construct_2d_filt
+from .conv_transform import _get_filter_tensors
+from .conv_transform_2 import (
+    _check_if_tensor,
+    _wavedec2d_unfold_channels_2d_list,
+    _waverec2d_fold_channels_2d_list,
+    construct_2d_filt,
+)
 from .matmul_transform import construct_boundary_a, construct_boundary_s, orthogonalize
 from .sparse_math import (
     batch_mm,
@@ -33,7 +40,7 @@ def _construct_a_2(
     dtype: torch.dtype = torch.float64,
     mode: str = "sameshift",
 ) -> torch.Tensor:
-    """Construct a raw two dimensional analysis wavelet transformation matrix.
+    """Construct a raw two-dimensional analysis wavelet transformation matrix.
 
     Args:
         wavelet (Wavelet or str): A pywt wavelet compatible object or
@@ -41,7 +48,7 @@ def _construct_a_2(
         height (int): The height of the input image.
         width (int): The width of the input image.
         device (torch.device or str): Where to place the matrix.
-        dtype (torch.dtype, optional): Desired matrix data-type.
+        dtype (torch.dtype, optional): Desired matrix data type.
             Defaults to torch.float64.
         mode (str): The convolution type.
             Options are 'full', 'valid', 'same' and 'sameshift'.
@@ -53,11 +60,11 @@ def _construct_a_2(
             ll, lh, hl, hh.
 
     Note:
-        The construced matrix is NOT necessary orthogonal.
-        In most cases construct_boundary_a2d should be used instead.
+        The constructed matrix is NOT necessarily orthogonal.
+        In most cases, construct_boundary_a2d should be used instead.
 
     """
-    dec_lo, dec_hi, _, _ = get_filter_tensors(
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype
     )
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
@@ -81,8 +88,8 @@ def _construct_s_2(
     """Construct a raw fast wavelet transformation synthesis matrix.
 
     Note:
-        The construced matrix is NOT necessary orthogonal.
-        In most cases construct_boundary_s2d should be used instead.
+        The constructed matrix is NOT necessarily orthogonal.
+        In most cases, construct_boundary_s2d should be used instead.
 
     Args:
         wavelet (Wavelet or str): A pywt wavelet compatible object or
@@ -91,9 +98,9 @@ def _construct_s_2(
             transformed.
         width (int): The width of the input image, which was originally
             transformed.
-        device ([type]): Where to place the synthesis matrix,
-            usually cpu or gpu.
-        dtype ([type], optional): The data-type the matrix should have.
+        device (torch.device): Where to place the synthesis matrix,
+            usually CPU or GPU.
+        dtype (torch.dtype, optional): The data type the matrix should have.
             Defaults to torch.float64.
         mode (str): The convolution type.
             Options are 'full', 'valid', 'same' and 'sameshift'.
@@ -103,7 +110,7 @@ def _construct_s_2(
         [torch.Tensor]: The generated fast wavelet synthesis matrix.
     """
     wavelet = _as_wavelet(wavelet)
-    _, _, rec_lo, rec_hi = get_filter_tensors(
+    _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype
     )
     dec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
@@ -145,7 +152,7 @@ def construct_boundary_a2(
             the CPU or GPU.
         boundary (str): The method to use for matrix orthogonalization.
             Choose "qr" or "gramschmidt". Defaults to "qr".
-        dtype (torch.dtype, optional): The desired data-type for the matrix.
+        dtype (torch.dtype, optional): The desired data type for the matrix.
             Defaults to torch.float64.
 
     Returns:
@@ -176,7 +183,7 @@ def construct_boundary_s2(
         device (torch.device): Choose CPU or GPU.
         boundary (str): The method to use for matrix orthogonalization.
             Choose qr or gramschmidt. Defaults to qr.
-        dtype (torch.dtype, optional): The data-type of the
+        dtype (torch.dtype, optional): The data type of the
             sparse matrix, choose float32 or 64.
             Defaults to torch.float64.
 
@@ -206,7 +213,7 @@ def _matrix_pad_2(height: int, width: int) -> Tuple[int, int, Tuple[bool, bool]]
 class MatrixWavedec2(object):
     """Experimental sparse matrix 2d wavelet transform.
 
-        For a completely pad free transform,
+        For a completely pad-free transform,
         input images are expected to be divisible by two.
         For multiscale transforms all intermediate
         scale dimensions should be divisible
@@ -217,10 +224,10 @@ class MatrixWavedec2(object):
 
     Note:
         Constructing the sparse fwt-matrix is expensive.
-        For longer wavelets, high level transforms, and large
+        For longer wavelets, high-level transforms, and large
         input images this may take a while.
         The matrix is therefore constructed only once.
-        In the non separable case, it can be accessed via
+        In the non-separable case, it can be accessed via
         the sparse_fwt_operator property.
 
     Example:
@@ -250,7 +257,7 @@ class MatrixWavedec2(object):
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
             boundary (str): The method used for boundary filter treatment.
-                Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's
+                Choose 'qr' or 'gramschmidt'. 'qr' relies on Pytorch's
                 dense qr implementation, it is fast but memory hungry.
                 The 'gramschmidt' option is sparse, memory efficient,
                 and slow.
@@ -264,7 +271,7 @@ class MatrixWavedec2(object):
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
-            ValueError: If the wavelet filters have different lenghts.
+            ValueError: If the wavelet filters have different lengths.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.level = level
@@ -344,7 +351,7 @@ class MatrixWavedec2(object):
                     f" is too large for the given input shape {self.input_signal_shape}"
                     f". At level {curr_level}, at least one of the current signal "
                     f"height and width ({current_height}, {current_width}) is smaller "
-                    f"than the filter length {filt_len}. Therefore, the transformation "
+                    f"then the filter length {filt_len}. Therefore, the transformation "
                     f"is only computed up to the decomposition level {curr_level-1}.\n"
                 )
                 break
@@ -398,34 +405,39 @@ class MatrixWavedec2(object):
 
         Args:
             input_signal (torch.Tensor): An input signal of shape
-                [batch_size, height, width].
-                2d inputs are interpreted as [height, width].
-                Inputs of the form [batch_size, 1, height, width] are squeezed.
+                ``[batch_size, height, width]``.
+                2d inputs are interpreted as ``[height, width]``.
+                4d inputs as ``[batch_size, channels, height, width]``.
+                This transform affects the last two dimensions.
 
         Returns:
-            (list): The resulting coefficients per level stored in
+            (list): The resulting coefficients per level are stored in
             a pywt style list. The list is ordered as::
 
                 (ll, (lh, hl, hh), ...)
 
-            with 'l' for low-pass and 'h' for high pass filters.
+            with 'l' for low-pass and 'h' for high-pass filters.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
+        fold = False
         if input_signal.dim() == 2:
             # add batch dim to unbatched input
             input_signal = input_signal.unsqueeze(0)
-        elif input_signal.dim() == 4 and input_signal.size(1) == 1:
+        elif input_signal.dim() == 4:
             # we assume the shape [batch_size, color_channels, height, width]
-            # and squeeze the single color channel
-            input_signal = input_signal.squeeze(1)
+            # and fold the color channel
+            fold = True
+            ds = input_signal.shape
+            input_signal = _fold_channels(input_signal)
         elif input_signal.dim() != 3:
             raise ValueError(
                 f"Invalid input tensor shape {input_signal.size()}. "
                 "The input signal is expected to be of the form "
-                "[batch_size, height, width]."
+                "[batch_size, height, width] or "
+                "[batch_size, channels, height, width]."
             )
 
         batch_size, height, width = input_signal.shape
@@ -526,6 +538,10 @@ class MatrixWavedec2(object):
             split_list.append(
                 ll.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(2, 1)
             )
+
+        if fold:
+            split_list = _wavedec2d_unfold_channels_2d_list(split_list, list(ds))
+
         return split_list[::-1]
 
 
@@ -550,7 +566,7 @@ class MatrixWaverec2(object):
         boundary: str = "qr",
         separable: bool = True,
     ):
-        """Create the inverse matrix based fast wavelet transformation.
+        """Create the inverse matrix-based fast wavelet transformation.
 
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
@@ -564,12 +580,12 @@ class MatrixWaverec2(object):
                 is used, i.e. a 1d transformation along each axis. This is significantly
                 faster than a non-separable transformation since only a small constant-
                 size part of the matrices must be orthogonalized.
-                For invertability the analysis and synthesis values must be identical!
+                For invertibility, the analysis and synthesis values must be identical!
                 Defaults to True.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
-            ValueError: If the wavelet filters have different lenghts.
+            ValueError: If the wavelet filters have different lengths.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.boundary = boundary
@@ -594,7 +610,7 @@ class MatrixWaverec2(object):
         """Compute the ifwt operator matrix for pad-free cases.
 
         Returns:
-            torch.Tensor: The sparse 2d-ifwt operator matrix.
+            torch.Tensor: The sparse 2d ifwt operator matrix.
 
         Raises:
             NotImplementedError: if a separable transformation was used or if padding
@@ -647,7 +663,7 @@ class MatrixWaverec2(object):
                     f" is too large for the given input shape {self.input_signal_shape}"
                     f". At level {curr_level}, at least one of the current signal "
                     f"height and width ({current_height}, {current_width}) is smaller "
-                    f"than the filter length {filt_len}. Therefore, the transformation "
+                    f"then the filter length {filt_len}. Therefore, the transformation "
                     f"is only computed up to the decomposition level {curr_level-1}.\n"
                 )
                 break
@@ -701,13 +717,23 @@ class MatrixWaverec2(object):
 
         Returns:
             torch.Tensor: The original signal reconstruction of
-                shape [batch_size, height, width].
+                shape ``[batch_size, height, width]`` or
+                ``[batch_size, channels, height, width]``
+                depending on the input to the forward transform.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec2` object.
         """
+        ll = _check_if_tensor(coefficients[0])
+        fold = False
+        if ll.dim() == 4:
+            # fold all channels into the batches.
+            fold = True
+            coefficients, ds = _waverec2d_fold_channels_2d_list(coefficients)
+            ll = _check_if_tensor(coefficients[0])
+
         level = len(coefficients) - 1
         height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
 
@@ -723,12 +749,6 @@ class MatrixWaverec2(object):
         if self.level != level:
             self.level = level
             re_build = True
-
-        ll = coefficients[0]
-        if not isinstance(ll, torch.Tensor):
-            raise ValueError(
-                "First element of coeffs must be the approximation coefficient tensor."
-            )
 
         batch_size = ll.shape[0]
         torch_device = ll.device
@@ -804,5 +824,8 @@ class MatrixWaverec2(object):
                         ll = ll[:, :-1, :]
                     if pred_len[1] != next_len[1]:
                         ll = ll[:, :, :-1]
+
+        if fold:
+            ll = _unfold_channels(ll, list(ds))
 
         return ll

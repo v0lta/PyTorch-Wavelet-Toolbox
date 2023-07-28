@@ -5,17 +5,26 @@ torch.nn.functional.conv_transpose2d under the hood.
 """
 
 
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _outer
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _fold_channels,
+    _get_len,
+    _is_dtype_supported,
+    _outer,
+    _pad_symmetric,
+    _unfold_channels,
+)
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
+    _get_filter_tensors,
     _get_pad,
     _translate_boundary_strings,
-    get_filter_tensors,
 )
 
 
@@ -57,7 +66,7 @@ def _fwt_pad2(
         mode (str): The padding mode.
             Supported modes are::
 
-                "reflect", "zero", "constant", "periodic".
+                "reflect", "zero", "constant", "periodic", "symmetric".
 
             "reflect" is the default mode.
 
@@ -66,12 +75,63 @@ def _fwt_pad2(
 
     """
     mode = _translate_boundary_strings(mode)
-
     wavelet = _as_wavelet(wavelet)
     padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
     padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
-    data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
+    if mode == "symmetric":
+        data_pad = _pad_symmetric(data, [(padt, padb), (padl, padr)])
+    else:
+        data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
     return data_pad
+
+
+def _wavedec2d_unfold_channels_2d_list(
+    result_list: List[
+        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+    ],
+    ds: List[int],
+) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+    # unfolds the wavedec2d result lists, restoring the channel dimension.
+    unfold_res: List[
+        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+    ] = []
+    for cres in result_list:
+        if isinstance(cres, torch.Tensor):
+            unfold_res.append(_unfold_channels(cres, list(ds)))
+        else:
+            unfold_res.append(
+                (
+                    _unfold_channels(cres[0], list(ds)),
+                    _unfold_channels(cres[1], list(ds)),
+                    _unfold_channels(cres[2], list(ds)),
+                )
+            )
+    return unfold_res
+
+
+def _waverec2d_fold_channels_2d_list(
+    coeffs: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+) -> Tuple[
+    List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    List[int],
+]:
+    # fold the input coefficients for processing conv2d_transpose.
+    fold_coeffs: List[
+        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+    ] = []
+    ds = list(_check_if_tensor(coeffs[0]).shape)
+    for coeff in coeffs:
+        if isinstance(coeff, torch.Tensor):
+            fold_coeffs.append(_fold_channels(coeff))
+        else:
+            fold_coeffs.append(
+                (
+                    _fold_channels(coeff[0]),
+                    _fold_channels(coeff[1]),
+                    _fold_channels(coeff[2]),
+                )
+            )
+    return fold_coeffs, ds
 
 
 def wavedec2(
@@ -80,18 +140,19 @@ def wavedec2(
     mode: str = "reflect",
     level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-    """Non separated two-dimensional wavelet transform.
+    """Non-separated two-dimensional wavelet transform. Only the last two axes change.
 
     Args:
         data (torch.Tensor): The input data tensor with up to three dimensions.
-            2d inputs are interpreted as [height, width],
-            3d inputs are interpreted as [batch_size, height, width].
+            2d inputs are interpreted as ``[height, width]``,
+            3d inputs are interpreted as ``[batch_size, height, width]``.
+            4d inputs are interpreted as ``[batch_size, channels, height, width]``.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
         mode (str): The padding mode. Options are::
 
-                "reflect", "zero", "constant", "periodic".
+                "reflect", "zero", "constant", "periodic", "symmetric".
 
             This function defaults to "reflect".
         level (int): The number of desired scales.
@@ -122,24 +183,30 @@ def wavedec2(
         >>>                              level=2, mode="zero")
 
     """
+    fold = False
     if data.dim() == 2:
         data = data.unsqueeze(0).unsqueeze(0)
     elif data.dim() == 3:
         # add a channel dimension for torch.
         data = data.unsqueeze(1)
     elif data.dim() == 4:
+        # avoid the channel sum, fold the channels into batches.
+        fold = True
+        ds = data.shape
+        data = _fold_channels(data).unsqueeze(1)
+    elif data.dim() == 1:
+        raise ValueError("Wavedec2 needs more than one input dimension to work.")
+    else:
         raise ValueError(
             "Wavedec2 does not support four input dimensions. \
              Optionally-batched two-dimensional inputs work."
         )
-    elif data.dim() == 1:
-        raise ValueError("Wavedec2 needs more than one input dimension to work.")
 
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
     wavelet = _as_wavelet(wavelet)
-    dec_lo, dec_hi, _, _ = get_filter_tensors(
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
@@ -158,7 +225,21 @@ def wavedec2(
         to_append = (res_lh.squeeze(1), res_hl.squeeze(1), res_hh.squeeze(1))
         result_lst.append(to_append)
     result_lst.append(res_ll.squeeze(1))
+
+    if fold:
+        result_lst = _wavedec2d_unfold_channels_2d_list(result_lst, list(ds))
+
     return result_lst[::-1]
+
+
+def _check_if_tensor(to_check: Any) -> torch.Tensor:
+    # Ensuring the first list elements are tensors makes mypy happy :-).
+    if not isinstance(to_check, torch.Tensor):
+        raise ValueError(
+            "First element of coeffs must be the approximation coefficient tensor."
+        )
+    else:
+        return to_check
 
 
 def waverec2(
@@ -179,10 +260,11 @@ def waverec2(
             the name of a pywt wavelet.
 
     Returns:
-        torch.Tensor: The reconstructed signal of shape [batch, height, width].
+        torch.Tensor: The reconstructed signal of shape ``[batch, height, width]`` or
+            ``[batch, channel, height, width]`` depending on the input to `wavedec2`.
 
     Raises:
-        ValueError: If `coeffs` is not in a shape as returned from `wavedec2` or
+        ValueError: If coeffs is not in a shape as returned from wavedec2 or
             if the dtype is not supported.
 
     Example:
@@ -199,19 +281,21 @@ def waverec2(
     """
     wavelet = _as_wavelet(wavelet)
 
-    res_ll = coeffs[0]
-    if not isinstance(res_ll, torch.Tensor):
-        raise ValueError(
-            "First element of coeffs must be the approximation coefficient tensor."
-        )
-
+    res_ll = _check_if_tensor(coeffs[0])
     torch_device = res_ll.device
     torch_dtype = res_ll.dtype
+
+    fold = False
+    if res_ll.dim() == 4:
+        # avoid the channel sum, fold the channels into batches.
+        fold = True
+        coeffs, ds = _waverec2d_fold_channels_2d_list(coeffs)
+        res_ll = _check_if_tensor(coeffs[0])
 
     if not _is_dtype_supported(torch_dtype):
         raise ValueError(f"Input dtype {torch_dtype} not supported")
 
-    _, _, rec_lo, rec_hi = get_filter_tensors(
+    _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
@@ -237,7 +321,6 @@ def waverec2(
                 )
 
         res_lh, res_hl, res_hh = coeff_tuple
-
         res_ll = torch.stack([res_ll, res_lh, res_hl, res_hh], 1)
         res_ll = torch.nn.functional.conv_transpose2d(
             res_ll, rec_filt, stride=2
@@ -264,4 +347,8 @@ def waverec2(
             res_ll = res_ll[..., padl:]
         if padr > 0:
             res_ll = res_ll[..., :-padr]
+
+    if fold:
+        res_ll = _unfold_channels(res_ll, list(ds))
+
     return res_ll

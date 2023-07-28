@@ -8,17 +8,24 @@ from typing import Dict, List, Optional, Sequence, Union, cast
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _outer
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _get_len,
+    _is_dtype_supported,
+    _outer,
+    _pad_symmetric,
+)
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
+    _get_filter_tensors,
     _get_pad,
     _translate_boundary_strings,
-    get_filter_tensors,
 )
 
 
 def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct three dimensional filters using outer products.
+    """Construct three-dimensional filters using outer products.
 
     Args:
         lo (torch.Tensor): Low-pass input filter.
@@ -58,7 +65,9 @@ def _fwt_pad3(
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode (str): The padding mode. Supported modes are "zero".
+        mode (str): The padding mode. Supported modes are::
+
+            "reflect", "zero", "constant", "periodic", "symmetric".
 
     Returns:
         The padded output tensor.
@@ -70,9 +79,16 @@ def _fwt_pad3(
     pad_back, pad_front = _get_pad(data.shape[-3], _get_len(wavelet))
     pad_bottom, pad_top = _get_pad(data.shape[-2], _get_len(wavelet))
     pad_right, pad_left = _get_pad(data.shape[-1], _get_len(wavelet))
-    data_pad = torch.nn.functional.pad(
-        data, [pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back], mode=mode
-    )
+    if mode == "symmetric":
+        data_pad = _pad_symmetric(
+            data, [(pad_front, pad_back), (pad_top, pad_bottom), (pad_left, pad_right)]
+        )
+    else:
+        data_pad = torch.nn.functional.pad(
+            data,
+            [pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back],
+            mode=mode,
+        )
     return data_pad
 
 
@@ -89,8 +105,10 @@ def wavedec3(
             [batch_size, length, height, width]
         wavelet (Union[Wavelet, str]): The wavelet to transform with.
             ``pywt.wavelist(kind='discrete')`` lists possible choices.
-        mode (str): The padding mode. Possible options are
+        mode (str): The padding mode. Possible options are::
+
             "zero", "constant" or "periodic".
+
             Defaults to "zero".
         level (Optional[int]): The maximum decomposition level.
             This argument defaults to None.
@@ -124,7 +142,7 @@ def wavedec3(
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
     wavelet = _as_wavelet(wavelet)
-    dec_lo, dec_hi, _, _ = get_filter_tensors(
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
     dec_filt = _construct_3d_filt(lo=dec_lo, hi=dec_hi)
@@ -173,7 +191,7 @@ def waverec3(
         [batch, depth, height, width].
 
     Raises:
-        ValueError: If `coeffs` is not in a shape as returned from `wavedec3` or
+        ValueError: If coeffs is not in a shape as returned from wavedec3 or
             if the dtype is not supported.
 
     Example:
@@ -198,7 +216,7 @@ def waverec3(
         if not _is_dtype_supported(torch_dtype):
             raise ValueError(f"Input dtype {torch_dtype} not supported")
 
-    _, _, rec_lo, rec_hi = get_filter_tensors(
+    _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]

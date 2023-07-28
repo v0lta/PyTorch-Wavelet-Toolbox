@@ -42,7 +42,7 @@ def _wpfreq(fs: float, level: int) -> List[float]:
 
 
 class WaveletPacket(BaseDict):
-    """One dimensional wavelet packets."""
+    """Implements a single-dimensional wavelet packets analysis transform."""
 
     def __init__(
         self,
@@ -57,8 +57,9 @@ class WaveletPacket(BaseDict):
         The decompositions will rely on padded fast wavelet transforms.
 
         Args:
-            data (torch.Tensor, optional): The input data array of shape [time]
-                or [batch_size, time]. If None, the object is initialized without
+            data (torch.Tensor, optional): The input data array of shape ``[time]``,
+                ``[batch_size, time]`` or ``[batch_size, channels, time]``.
+                If None, the object is initialized without
                 performing a decomposition.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
@@ -124,12 +125,12 @@ class WaveletPacket(BaseDict):
     def reconstruct(self) -> "WaveletPacket":
         """Recursively reconstruct the input starting from the leaf nodes.
 
-        Reconstruction replaces the input-data originally assigned to this object.
+        Reconstruction replaces the input data originally assigned to this object.
 
         Note:
-           Only changes to leaf node data impacts the results,
+           Only changes to leaf node data impact the results,
            since changes in all other nodes will be replaced with
-           a reconstruction from the leafs.
+           a reconstruction from the leaves.
 
         Example:
             >>> import numpy as np
@@ -185,7 +186,7 @@ class WaveletPacket(BaseDict):
             return partial(waverec, wavelet=self.wavelet)
 
     def get_level(self, level: int) -> List[str]:
-        """Return the graycode ordered paths to the filter tree nodes.
+        """Return the graycode-ordered paths to the filter tree nodes.
 
         Args:
             level (int): The depth of the tree.
@@ -220,7 +221,7 @@ class WaveletPacket(BaseDict):
         """Access the coefficients in the wavelet packets tree.
 
         Args:
-            key (str): The key of the accessed coefficents. The string may only consist
+            key (str): The key of the accessed coefficients. The string may only consist
                 of the following chars: 'a', 'd'.
 
         Returns:
@@ -245,7 +246,7 @@ class WaveletPacket(BaseDict):
 
 
 class WaveletPacket2D(BaseDict):
-    """Two dimensional wavelet packets.
+    """Two-dimensional wavelet packets.
 
     Example code illustrating the use of this class is available at:
     https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples/deepfake_analysis
@@ -264,8 +265,10 @@ class WaveletPacket2D(BaseDict):
 
         Args:
             data (torch.tensor, optional): The input data tensor
-                of shape [batch_size, height, width].  If None, the object
-                is initialized without performing a decomposition.
+                of shape ``[batch_size, height, width]`` or
+                ``[batch_size, channels, height, width]``.
+                If None, the object is initialized without performing
+                a decomposition.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
             mode (str): A string indicating the desired padding mode.
@@ -324,9 +327,9 @@ class WaveletPacket2D(BaseDict):
         """Recursively reconstruct the input starting from the leaf nodes.
 
         Note:
-           Only changes to leaf node data impacts the results,
+           Only changes to leaf node data impact the results,
            since changes in all other nodes will be replaced with
-           a reconstruction from the leafs.
+           a reconstruction from the leaves.
         """
         if self.maxlevel is None:
             self.maxlevel = pywt.dwt_max_level(
@@ -346,12 +349,12 @@ class WaveletPacket2D(BaseDict):
                     if rec.shape[-1] != self[node].shape[-1]:
                         assert (
                             rec.shape[-1] == self[node].shape[-1] + 1
-                        ), "padding error, please open an issue on github"
+                        ), "padding error, please open an issue on GitHub"
                         rec = rec[..., :-1]
                     if rec.shape[-2] != self[node].shape[-2]:
                         assert (
                             rec.shape[-2] == self[node].shape[-2] + 1
-                        ), "padding error, please open an issue on github"
+                        ), "padding error, please open an issue on GitHub"
                         rec = rec[..., :-1, :]
                 self[node] = rec
         return self
@@ -473,7 +476,8 @@ class WaveletPacket2D(BaseDict):
         """Access the coefficients in the wavelet packets tree.
 
         Args:
-            key (str): The key of the accessed coefficents. The string may only consist
+            key (str): The key of the accessed coefficients.
+                The string may only consist
                 of the following chars: 'a', 'h', 'v', 'd'.
 
         Returns:

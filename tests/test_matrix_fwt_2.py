@@ -1,4 +1,4 @@
-"""Test code for the boundary wavelets."""
+"""Test code for the 2d boundary wavelets."""
 # Created by moritz ( wolter@cs.uni-bonn.de ), 08.09.21
 import numpy as np
 import pytest
@@ -184,6 +184,26 @@ def test_separable_haar_2d():
             for pywt_test, ptwt_test in zip(pywtres, ptwtres)
         ]
     )
+
+
+@pytest.mark.parametrize("size", [[3, 2, 32, 32], [4, 32, 32], [1, 1, 32, 32]])
+def test_batch_channel_2d_haar(size):
+    """Test matrix fwt-2d leading channel and batch dimension code."""
+    signal = torch.randn(*size).type(torch.float64)
+    ptwt_coeff = MatrixWavedec2("haar", 2, separable=False)(signal)
+    pywt_coeff = pywt.wavedec2(signal, "haar", level=2)
+
+    for ptwtc, pywtc in zip(ptwt_coeff, pywt_coeff):
+        if isinstance(ptwtc, torch.Tensor):
+            assert np.allclose(ptwtc.numpy(), pywtc)
+        else:
+            test = [
+                np.allclose(ptwtcel, pywtcel) for ptwtcel, pywtcel in zip(ptwtc, pywtc)
+            ]
+            assert all(test)
+
+    rec = MatrixWaverec2("haar", separable=False)(ptwt_coeff)
+    assert np.allclose(rec.numpy(), signal.numpy())
 
 
 @pytest.mark.parametrize("operator", [MatrixWavedec2, MatrixWavedec])

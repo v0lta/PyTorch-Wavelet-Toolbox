@@ -8,7 +8,15 @@ from typing import List, Optional, Sequence, Tuple, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _fold_channels,
+    _get_len,
+    _is_dtype_supported,
+    _pad_symmetric,
+    _unfold_channels,
+)
 
 
 def _create_tensor(
@@ -26,7 +34,7 @@ def _create_tensor(
             return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
 
 
-def get_filter_tensors(
+def _get_filter_tensors(
     wavelet: Union[Wavelet, str],
     flip: bool,
     device: Union[torch.device, str],
@@ -116,6 +124,10 @@ def _translate_boundary_strings(pywt_mode: str) -> str:
         pt_mode = pywt_mode
     elif pywt_mode == "periodic":
         pt_mode = "circular"
+    elif pywt_mode == "symmetric":
+        # pytorch does not support symmetric mode,
+        # we have our own implementation.
+        pt_mode = pywt_mode
     else:
         raise ValueError("Padding mode not supported.")
     return pt_mode
@@ -129,12 +141,12 @@ def _fwt_pad(
     The padding assumes a future step will transform the last axis.
 
     Args:
-        data (torch.Tensor): Input data [batch_size, 1, time]
+        data (torch.Tensor): Input data ``[batch_size, 1, time]``
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         mode (str): The desired way to pad. The following methods are supported::
 
-                "reflect", "zero", "constant", "periodic".
+                "reflect", "zero", "constant", "periodic", "symmetric".
 
             Refection padding mirrors samples along the border.
             Zero padding pads zeros.
@@ -151,7 +163,10 @@ def _fwt_pad(
     mode = _translate_boundary_strings(mode)
 
     padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
-    data_pad = torch.nn.functional.pad(data, [padl, padr], mode=mode)
+    if mode == "symmetric":
+        data_pad = _pad_symmetric(data, [(padl, padr)])
+    else:
+        data_pad = torch.nn.functional.pad(data, [padl, padr], mode=mode)
     return data_pad
 
 
@@ -196,8 +211,38 @@ def _adjust_padding_at_reconstruction(
     elif next_size == pred_size - 1:
         pad_end += 1
     else:
-        raise AssertionError("padding error, please open an issue on github")
+        raise AssertionError(
+            "padding error, please check if dec and rec wavelets are identical."
+        )
     return pad_end, pad_start
+
+
+def _wavedec_fold_channels_1d(data: torch.Tensor) -> Tuple[torch.Tensor, List[int]]:
+    data = data.unsqueeze(-2)
+    ds = data.shape
+    data = _fold_channels(data)
+    return data, list(ds)
+
+
+def _wavedec_unfold_channels_1d_list(
+    result_list: List[torch.Tensor], ds: List[int]
+) -> List[torch.Tensor]:
+    unfold_res = []
+    for res_coeff in result_list:
+        unfold_res.append(
+            _unfold_channels(res_coeff.unsqueeze(1), list(ds)).squeeze(-2)
+        )
+    return unfold_res
+
+
+def _waverec_fold_channels_1d_list(
+    coeff_list: List[torch.Tensor],
+) -> Tuple[List[torch.Tensor], List[int]]:
+    folded = []
+    ds = coeff_list[0].unsqueeze(-2).shape
+    for to_fold_coeff in coeff_list:
+        folded.append(_fold_channels(to_fold_coeff.unsqueeze(-2)).squeeze(-2))
+    return folded, list(ds)
 
 
 def wavedec(
@@ -209,9 +254,10 @@ def wavedec(
     """Compute the analysis (forward) 1d fast wavelet transform.
 
     Args:
-        data (torch.Tensor): Input time series of shape [batch_size, 1, time]
-                             1d inputs are interpreted as [time],
-                             2d inputs are interpreted as [batch_size, time].
+        data (torch.Tensor): The input time series,
+                             1d inputs are interpreted as ``[time]``,
+                             2d inputs as ``[batch_size, time]``,
+                             and 3d inputs as ``[batch_size, channels, time]``.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Please consider the output from ``pywt.wavelist(kind='discrete')``
@@ -219,9 +265,16 @@ def wavedec(
         mode (str): The desired padding mode. Padding extends the signal along
             the edges. Supported methods are::
 
-                "reflect", "zero", "constant", "periodic".
+                "reflect", "zero", "constant", "periodic", "symmetric".
 
             Defaults to "reflect".
+
+            Symmetric padding mirrors samples along the border.
+            Refection padding reflects samples along the border.
+            Zero padding pads zeros.
+            Constant padding replicates border values.
+            Periodic padding cyclically repeats samples.
+
         level (int): The scale level to be computed.
                                Defaults to None.
 
@@ -246,19 +299,23 @@ def wavedec(
         >>> # compute the forward fwt coefficients
         >>> ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
         >>>              mode='zero', level=2)
-
     """
+    fold = False
     if data.dim() == 1:
         # assume time series
         data = data.unsqueeze(0).unsqueeze(0)
     elif data.dim() == 2:
         # assume batched time series
         data = data.unsqueeze(1)
+    elif data.dim() == 3:
+        # assume batch, channels, time -> fold channels
+        fold = True
+        data, ds = _wavedec_fold_channels_1d(data)
 
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
-    dec_lo, dec_hi, _, _ = get_filter_tensors(
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
     filt_len = dec_lo.shape[-1]
@@ -267,15 +324,20 @@ def wavedec(
     if level is None:
         level = pywt.dwt_max_level(data.shape[-1], filt_len)
 
-    result_lst = []
+    result_list = []
     res_lo = data
     for _ in range(level):
         res_lo = _fwt_pad(res_lo, wavelet, mode=mode)
         res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)
-        result_lst.append(res_hi.squeeze(1))
-    result_lst.append(res_lo.squeeze(1))
-    return result_lst[::-1]
+        result_list.append(res_hi.squeeze(1))
+    result_list.append(res_lo.squeeze(1))
+
+    # unfold if necessary
+    if fold:
+        result_list = _wavedec_unfold_channels_1d_list(result_list, ds)
+
+    return result_list[::-1]
 
 
 def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.Tensor:
@@ -317,7 +379,13 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
         elif torch_dtype != coeff.dtype:
             raise ValueError("coefficients must have the same dtype")
 
-    _, _, rec_lo, rec_hi = get_filter_tensors(
+    # fold channels, if necessary.
+    fold = False
+    if coeffs[0].dim() == 3:
+        fold = True
+        coeffs, ds = _waverec_fold_channels_1d_list(coeffs)
+
+    _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
@@ -339,4 +407,8 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
             res_lo = res_lo[..., padl:]
         if padr > 0:
             res_lo = res_lo[..., :-padr]
+
+    if fold:
+        res_lo = _unfold_channels(res_lo.unsqueeze(-2), list(ds)).squeeze(-2)
+
     return res_lo
