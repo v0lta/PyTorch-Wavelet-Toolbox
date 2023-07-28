@@ -123,22 +123,22 @@ class WaveletFilter(ABC):
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the perfect reconstruction loss.
 
-        Strang 107: Assuming alias cancellation holds:
-        P(z) = F(z)H(z)
-        Product filter P(z) + P(-z) = 2.
-        However, since alias cancellation is implemented as a soft constraint:
-        P_0 + P_1 = 2
-        Somehow NumPy and PyTorch implement convolution differently.
-        For some reason, the machine learning people call cross-correlation
-        convolution.
-        https://discuss.pytorch.org/t/numpy-convolve-and-conv1d-in-pytorch/12172
-        Therefore for true convolution, one element needs to be flipped.
-
         Returns:
             list: The numerical value of the alias cancellation loss,
                   as well as both intermediate values for analysis.
 
         """
+        # Strang 107: Assuming alias cancellation holds:
+        # P(z) = F(z)H(z)
+        # Product filter P(z) + P(-z) = 2.
+        # However, since alias cancellation is implemented as a soft constraint:
+        # P_0 + P_1 = 2
+        # Somehow NumPy and PyTorch implement convolution differently.
+        # For some reason, the machine learning people call cross-correlation
+        # convolution.
+        # https://discuss.pytorch.org/t/numpy-convolve-and-conv1d-in-pytorch/12172
+        # Therefore for true convolution, one element needs to be flipped.
+
         dec_lo, dec_hi, rec_lo, rec_hi = self.filter_bank
         # polynomial multiplication is convolution, compute p(z):
         pad = dec_lo.shape[0] - 1

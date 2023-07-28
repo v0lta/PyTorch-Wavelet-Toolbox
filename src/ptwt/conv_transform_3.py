@@ -117,7 +117,7 @@ def wavedec3(
         list: A list with the lll coefficients and dictionaries
         with the filter order strings::
 
-        ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
+            ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
 
         as keys. With a for the low pass or approximation filter and
         d for the high-pass or detail filter.
