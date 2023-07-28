@@ -7,7 +7,7 @@ import torch
 
 from src.ptwt._stationary_transform import swt
 
-
+@pytest.mark.slow
 @pytest.mark.parametrize("size", [32, 64])
 @pytest.mark.parametrize("wavelet", ["db1", "db2"])  # TODO: explore lonnger wavelets.
 @pytest.mark.parametrize("level", [1, 2, None])
