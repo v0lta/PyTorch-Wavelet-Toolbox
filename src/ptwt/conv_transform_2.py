@@ -5,7 +5,7 @@ torch.nn.functional.conv_transpose2d under the hood.
 """
 
 
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import pywt
 import torch
@@ -13,18 +13,18 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
+    _fold_channels,
     _get_len,
     _is_dtype_supported,
     _outer,
     _pad_symmetric,
+    _unfold_channels,
 )
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
-    _fold_channels,
+    _get_filter_tensors,
     _get_pad,
     _translate_boundary_strings,
-    _unfold_channels,
-    _get_filter_tensors,
 )
 
 
@@ -75,7 +75,6 @@ def _fwt_pad2(
 
     """
     mode = _translate_boundary_strings(mode)
-
     wavelet = _as_wavelet(wavelet)
     padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
     padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
@@ -84,6 +83,55 @@ def _fwt_pad2(
     else:
         data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
     return data_pad
+
+
+def _wavedec2d_unfold_channels_2d_list(
+    result_list: List[
+        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+    ],
+    ds: List[int],
+) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+    # unfolds the wavedec2d result lists, restoring the channel dimension.
+    unfold_res: List[
+        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+    ] = []
+    for cres in result_list:
+        if isinstance(cres, torch.Tensor):
+            unfold_res.append(_unfold_channels(cres, list(ds)))
+        else:
+            unfold_res.append(
+                (
+                    _unfold_channels(cres[0], list(ds)),
+                    _unfold_channels(cres[1], list(ds)),
+                    _unfold_channels(cres[2], list(ds)),
+                )
+            )
+    return unfold_res
+
+
+def _waverec2d_fold_channels_2d_list(
+    coeffs: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+) -> Tuple[
+    List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    List[int],
+]:
+    # fold the input coefficients for processing conv2d_transpose.
+    fold_coeffs: List[
+        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+    ] = []
+    ds = list(_check_if_tensor(coeffs[0]).shape)
+    for coeff in coeffs:
+        if isinstance(coeff, torch.Tensor):
+            fold_coeffs.append(_fold_channels(coeff))
+        else:
+            fold_coeffs.append(
+                (
+                    _fold_channels(coeff[0]),
+                    _fold_channels(coeff[1]),
+                    _fold_channels(coeff[2]),
+                )
+            )
+    return fold_coeffs, ds
 
 
 def wavedec2(
@@ -179,23 +227,19 @@ def wavedec2(
     result_lst.append(res_ll.squeeze(1))
 
     if fold:
-        unfold_res: List[
-            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-        ] = []
-        for cres in result_lst:
-            if isinstance(cres, torch.Tensor):
-                unfold_res.append(_unfold_channels(cres, list(ds)))
-            else:
-                unfold_res.append(
-                    (
-                        _unfold_channels(cres[0], list(ds)),
-                        _unfold_channels(cres[1], list(ds)),
-                        _unfold_channels(cres[2], list(ds)),
-                    )
-                )
-        result_lst = unfold_res
+        result_lst = _wavedec2d_unfold_channels_2d_list(result_lst, list(ds))
 
     return result_lst[::-1]
+
+
+def _check_if_tensor(to_check: Any) -> torch.Tensor:
+    # ensuring the first list elements are tensors makes mypy happy :-).
+    if not isinstance(to_check, torch.Tensor):
+        raise ValueError(
+            "First element of coeffs must be the approximation coefficient tensor."
+        )
+    else:
+        return to_check
 
 
 def waverec2(
@@ -237,11 +281,7 @@ def waverec2(
     """
     wavelet = _as_wavelet(wavelet)
 
-    res_ll = coeffs[0]
-    if not isinstance(res_ll, torch.Tensor):
-        raise ValueError(
-            "First element of coeffs must be the approximation coefficient tensor."
-        )
+    res_ll = _check_if_tensor(coeffs[0])
     torch_device = res_ll.device
     torch_dtype = res_ll.dtype
 
@@ -249,23 +289,8 @@ def waverec2(
     if res_ll.dim() == 4:
         # avoid the channel sum, fold the channels into batches.
         fold = True
-        fold_coeffs: List[
-            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-        ] = []
-        ds = res_ll.shape
-        for coeff in coeffs:
-            if isinstance(coeff, torch.Tensor):
-                fold_coeffs.append(_fold_channels(coeff))
-            else:
-                fold_coeffs.append(
-                    (
-                        _fold_channels(coeff[0]),
-                        _fold_channels(coeff[1]),
-                        _fold_channels(coeff[2]),
-                    )
-                )
-        coeffs = fold_coeffs
-        res_ll = coeffs[0]
+        coeffs, ds = _waverec2d_fold_channels_2d_list(coeffs)
+        res_ll = _check_if_tensor(coeffs[0])
 
     if not _is_dtype_supported(torch_dtype):
         raise ValueError(f"Input dtype {torch_dtype} not supported")
@@ -284,7 +309,7 @@ def waverec2(
                 "wavedec2."
             )
 
-        curr_shape = res_ll.shape  # type: ignore
+        curr_shape = res_ll.shape
         for coeff in coeff_tuple:
             if torch_device != coeff.device:
                 raise ValueError("coefficients must be on the same device")
@@ -296,8 +321,7 @@ def waverec2(
                 )
 
         res_lh, res_hl, res_hh = coeff_tuple
-
-        res_ll = torch.stack([res_ll, res_lh, res_hl, res_hh], 1)  # type: ignore
+        res_ll = torch.stack([res_ll, res_lh, res_hl, res_hh], 1)
         res_ll = torch.nn.functional.conv_transpose2d(
             res_ll, rec_filt, stride=2
         ).squeeze(1)
@@ -325,6 +349,6 @@ def waverec2(
             res_ll = res_ll[..., :-padr]
 
     if fold:
-        res_ll = _unfold_channels(res_ll, list(ds))  # type: ignore
+        res_ll = _unfold_channels(res_ll, list(ds))
 
-    return res_ll  # type: ignore
+    return res_ll

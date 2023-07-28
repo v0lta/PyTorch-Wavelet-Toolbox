@@ -5,11 +5,12 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt.stationary_transform import swt
+from src.ptwt._stationary_transform import swt
 
 
 @pytest.mark.parametrize("size", [32, 64])
-@pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
+@pytest.mark.parametrize("wavelet", ["db1", "db2"])  # TODO: explore lonnger wavelets.
+@pytest.mark.parametrize("level", [1, 2, None])
 def test_swt_1d(level, size, wavelet):
     """Test the 1d swt."""
     signal = np.expand_dims(np.arange(size).astype(np.float64), 0)

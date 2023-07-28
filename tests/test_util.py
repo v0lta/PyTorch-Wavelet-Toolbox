@@ -6,7 +6,13 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt._util import _as_wavelet, _pad_symmetric, _pad_symmetric_1d
+from src.ptwt._util import (
+    _as_wavelet,
+    _fold_channels,
+    _pad_symmetric,
+    _pad_symmetric_1d,
+    _unfold_channels,
+)
 
 
 class _MyHaarFilterBank(object):
@@ -62,3 +68,13 @@ def test_pad_symmetric(size, pad_list):
     my_pad = _pad_symmetric(torch.from_numpy(array), pad_list)
     np_pad = np.pad(array, pad_list, mode="symmetric")
     assert np.allclose(my_pad.numpy(), np_pad)
+
+
+@pytest.mark.parametrize("size", [[20, 21, 22, 23], [1, 2, 3, 4], [4, 3, 2, 1]])
+def test_fold(size):
+    """Ensure channel folding works as expected."""
+    array = torch.randn(*size).type(torch.float64)
+    folded = _fold_channels(array)
+    assert tuple(folded.shape) == (size[0] * size[1], size[2], size[3])
+    rec = _unfold_channels(folded, size)
+    np.allclose(array.numpy(), rec.numpy())

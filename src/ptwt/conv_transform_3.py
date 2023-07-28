@@ -18,9 +18,9 @@ from ._util import (
 )
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
+    _get_filter_tensors,
     _get_pad,
     _translate_boundary_strings,
-    _get_filter_tensors,
 )
 
 

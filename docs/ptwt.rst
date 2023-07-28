@@ -27,13 +27,14 @@ ptwt.conv\_transform\_3 module
    :undoc-members:
    :show-inheritance:
 
-ptwt.separable\_conv\_transform module
---------------------------------------
+ptwt.packets module
+-------------------
 
-.. automodule:: ptwt.separable_conv_transform
+.. automodule:: ptwt.packets
    :members:
    :undoc-members:
    :show-inheritance:
+
 
 ptwt.continuous\_transform module
 ---------------------------------
@@ -43,10 +44,11 @@ ptwt.continuous\_transform module
    :undoc-members:
    :show-inheritance:
 
-ptwt.packets module
--------------------
 
-.. automodule:: ptwt.packets
+ptwt.separable\_conv\_transform module
+--------------------------------------
+
+.. automodule:: ptwt.separable_conv_transform
    :members:
    :undoc-members:
    :show-inheritance:

@@ -55,7 +55,7 @@ def test_conv_fwt1d(wavelet_string, level, mode, length, batch_size, dtype):
 
 @pytest.mark.parametrize("size", [[5, 10, 64], [1, 1, 32]])
 @pytest.mark.parametrize("wavelet", ["haar", "db2"])
-def test_conv_fwt1d_shape(size, wavelet):
+def test_conv_fwt1d_channel(size, wavelet):
     """Test channel dimension support."""
     data = torch.randn(*size).type(torch.float64)
     ptwt_coeff = wavedec(data, wavelet)

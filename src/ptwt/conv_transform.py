@@ -8,26 +8,15 @@ from typing import List, Optional, Sequence, Tuple, Union
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _pad_symmetric
-
-
-def _fold_channels(data: torch.Tensor) -> torch.Tensor:
-    # Fold a [batch, channel, height width] array into
-    # [batch*channel, height, widht]
-    ds = data.shape
-    fold_data = torch.permute(data, [2, 3, 0, 1])
-    fold_data = torch.reshape(fold_data, [ds[2], ds[3], ds[0] * ds[1]])
-    return torch.permute(fold_data, [2, 0, 1])
-
-
-def _unfold_channels(data: torch.Tensor, ds: List[int]) -> torch.Tensor:
-    # unfold a [batch*channel, height, widht] array into
-    # [batch, channel, height, width]
-    unfold_data = torch.permute(data, [1, 2, 0])
-    unfold_data = torch.reshape(
-        unfold_data, [data.shape[1], data.shape[2], ds[0], ds[1]]
-    )
-    return torch.permute(unfold_data, [2, 3, 0, 1])
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _fold_channels,
+    _get_len,
+    _is_dtype_supported,
+    _pad_symmetric,
+    _unfold_channels,
+)
 
 
 def _create_tensor(
@@ -228,6 +217,34 @@ def _adjust_padding_at_reconstruction(
     return pad_end, pad_start
 
 
+def _wavedec_fold_channels_1d(data: torch.Tensor) -> Tuple[torch.Tensor, List[int]]:
+    data = data.unsqueeze(-2)
+    ds = data.shape
+    data = _fold_channels(data)
+    return data, list(ds)
+
+
+def _wavedec_unfold_channels_1d_list(
+    result_list: List[torch.Tensor], ds: List[int]
+) -> List[torch.Tensor]:
+    unfold_res = []
+    for res_coeff in result_list:
+        unfold_res.append(
+            _unfold_channels(res_coeff.unsqueeze(1), list(ds)).squeeze(-2)
+        )
+    return unfold_res
+
+
+def _waverec_fold_channels_1d_list(
+    coeff_list: List[torch.Tensor],
+) -> Tuple[List[torch.Tensor], List[int]]:
+    folded = []
+    ds = coeff_list[0].unsqueeze(-2).shape
+    for to_fold_coeff in coeff_list:
+        folded.append(_fold_channels(to_fold_coeff.unsqueeze(-2)).squeeze(-2))
+    return folded, list(ds)
+
+
 def wavedec(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
@@ -291,11 +308,9 @@ def wavedec(
         # assume batched time series
         data = data.unsqueeze(1)
     elif data.dim() == 3:
-        # assume batch, channels, time
+        # assume batch, channels, time -> fold channels
         fold = True
-        data = data.unsqueeze(-2)
-        ds = data.shape
-        data = _fold_channels(data)
+        data, ds = _wavedec_fold_channels_1d(data)
 
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
@@ -320,12 +335,7 @@ def wavedec(
 
     # unfold if necessary
     if fold:
-        unfold_res = []
-        for res_coeff in result_list:
-            unfold_res.append(
-                _unfold_channels(res_coeff.unsqueeze(1), list(ds)).squeeze(-2)
-            )
-        result_list = unfold_res
+        result_list = _wavedec_unfold_channels_1d_list(result_list, ds)
 
     return result_list[::-1]
 
@@ -373,11 +383,7 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
     fold = False
     if coeffs[0].dim() == 3:
         fold = True
-        folded = []
-        ds = coeffs[0].unsqueeze(-2).shape
-        for to_fold_coeff in coeffs:
-            folded.append(_fold_channels(to_fold_coeff.unsqueeze(-2)).squeeze(-2))
-        coeffs = folded
+        coeffs, ds = _waverec_fold_channels_1d_list(coeffs)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
