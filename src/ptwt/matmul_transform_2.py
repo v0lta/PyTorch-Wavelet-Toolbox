@@ -12,11 +12,18 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
+    _fold_channels,
     _is_boundary_mode_supported,
     _is_dtype_supported,
+    _unfold_channels,
 )
 from .conv_transform import _get_filter_tensors
-from .conv_transform_2 import construct_2d_filt
+from .conv_transform_2 import (
+    _check_if_tensor,
+    _wavedec2d_unfold_channels_2d_list,
+    _waverec2d_fold_channels_2d_list,
+    construct_2d_filt,
+)
 from .matmul_transform import construct_boundary_a, construct_boundary_s, orthogonalize
 from .sparse_math import (
     batch_mm,
@@ -398,9 +405,10 @@ class MatrixWavedec2(object):
 
         Args:
             input_signal (torch.Tensor): An input signal of shape
-                [batch_size, height, width].
-                2d inputs are interpreted as [height, width].
-                Inputs of the form [batch_size, 1, height, width] are squeezed.
+                ``[batch_size, height, width]``.
+                2d inputs are interpreted as ``[height, width]``.
+                4d inputs as ``[batch_size, channels, height, width]``.
+                This transform affects the last two dimensions.
 
         Returns:
             (list): The resulting coefficients per level stored in
@@ -414,18 +422,22 @@ class MatrixWavedec2(object):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
+        fold = False
         if input_signal.dim() == 2:
             # add batch dim to unbatched input
             input_signal = input_signal.unsqueeze(0)
-        elif input_signal.dim() == 4 and input_signal.size(1) == 1:
+        elif input_signal.dim() == 4:
             # we assume the shape [batch_size, color_channels, height, width]
-            # and squeeze the single color channel
-            input_signal = input_signal.squeeze(1)
+            # and fold the color channel
+            fold = True
+            ds = input_signal.shape
+            input_signal = _fold_channels(input_signal)
         elif input_signal.dim() != 3:
             raise ValueError(
                 f"Invalid input tensor shape {input_signal.size()}. "
                 "The input signal is expected to be of the form "
-                "[batch_size, height, width]."
+                "[batch_size, height, width] or "
+                "[batch_size, channels, height, width]."
             )
 
         batch_size, height, width = input_signal.shape
@@ -526,6 +538,10 @@ class MatrixWavedec2(object):
             split_list.append(
                 ll.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(2, 1)
             )
+
+        if fold:
+            split_list = _wavedec2d_unfold_channels_2d_list(split_list, list(ds))
+
         return split_list[::-1]
 
 
@@ -701,13 +717,23 @@ class MatrixWaverec2(object):
 
         Returns:
             torch.Tensor: The original signal reconstruction of
-                shape [batch_size, height, width].
+                shape ``[batch_size, height, width]`` or
+                ``[batch_size, channels, height, width]`` 
+                depending on the input to the forward transform.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec2` object.
         """
+        ll = _check_if_tensor(coefficients[0])
+        fold = False
+        if ll.dim() == 4:
+            # fold all channels into the batches.
+            fold = True
+            coefficients, ds = _waverec2d_fold_channels_2d_list(coefficients)
+            ll = _check_if_tensor(coefficients[0])
+
         level = len(coefficients) - 1
         height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
 
@@ -723,12 +749,6 @@ class MatrixWaverec2(object):
         if self.level != level:
             self.level = level
             re_build = True
-
-        ll = coefficients[0]
-        if not isinstance(ll, torch.Tensor):
-            raise ValueError(
-                "First element of coeffs must be the approximation coefficient tensor."
-            )
 
         batch_size = ll.shape[0]
         torch_device = ll.device
@@ -804,5 +824,8 @@ class MatrixWaverec2(object):
                         ll = ll[:, :-1, :]
                     if pred_len[1] != next_len[1]:
                         ll = ll[:, :, :-1]
+
+        if fold:
+            ll = _unfold_channels(ll, list(ds))
 
         return ll

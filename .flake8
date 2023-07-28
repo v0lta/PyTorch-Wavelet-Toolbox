@@ -22,6 +22,7 @@ ignore =
     N400
     # asserts are ok in test.
     S101
+    C901
 exclude =
     .tox,
     .git,

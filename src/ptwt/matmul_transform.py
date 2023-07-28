@@ -18,8 +18,14 @@ from ._util import (
     _as_wavelet,
     _is_boundary_mode_supported,
     _is_dtype_supported,
+    _unfold_channels,
 )
-from .conv_transform import _get_filter_tensors
+from .conv_transform import (
+    _get_filter_tensors,
+    _wavedec_fold_channels_1d,
+    _wavedec_unfold_channels_1d_list,
+    _waverec_fold_channels_1d_list,
+)
 from .sparse_math import (
     _orth_by_gram_schmidt,
     _orth_by_qr,
@@ -298,8 +304,10 @@ class MatrixWavedec(object):
         Matrix fwt are used to avoid padding.
 
         Args:
-            input_signal (torch.Tensor): Batched input data [batch_size, time],
-                should be of even length. 1d inputs are interpreted as [time].
+            input_signal (torch.Tensor): Batched input data ``[batch_size, time]``,
+                should be of even length. 1d inputs are interpreted as ``[time]``.
+                3d inputs are treated as ``[batch, channels, time]``.
+                This transform only affects the last axis.
 
         Returns:
             List[torch.Tensor]: A list with the coefficients for each scale.
@@ -308,14 +316,20 @@ class MatrixWavedec(object):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
+        fold = False
         if input_signal.dim() == 1:
             # assume time series
             input_signal = input_signal.unsqueeze(0)
-        elif input_signal.dim() != 2:
+        elif input_signal.dim() == 3:
+            # assume batch, channels, time -> fold channels
+            fold = True
+            input_signal, ds = _wavedec_fold_channels_1d(input_signal)
+            input_signal = input_signal.squeeze(1)
+        elif input_signal.dim() > 3:
             raise ValueError(
                 f"Invalid input tensor shape {input_signal.size()}. "
                 "The input signal is expected to be of the form "
-                "[batch_size, length]."
+                "[batch_size, (channels), length]."
             )
 
         if not _is_dtype_supported(input_signal.dtype):
@@ -356,7 +370,13 @@ class MatrixWavedec(object):
             split_list.append(hi)
         split_list.append(lo)
         # undo the transpose we used to handle the batch dimension.
-        return [s.T for s in split_list[::-1]]
+        result_list = [s.T for s in split_list[::-1]]
+
+        # unfold if necessary
+        if fold:
+            result_list = _wavedec_unfold_channels_1d_list(result_list, ds)
+
+        return result_list
 
 
 def construct_boundary_a(
@@ -567,6 +587,11 @@ class MatrixWaverec(object):
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec` object.
         """
+        fold = False
+        if coefficients[0].dim() == 3:
+            fold = True
+            coefficients, ds = _waverec_fold_channels_1d_list(coefficients)
+
         level = len(coefficients) - 1
         input_length = coefficients[-1].shape[-1] * 2
 
@@ -615,4 +640,9 @@ class MatrixWaverec(object):
                         pred_len == next_len
                     ), "padding error, please open an issue on github"
 
-        return lo.T
+        res_lo = lo.T
+
+        if fold:
+            res_lo = _unfold_channels(res_lo.unsqueeze(-2), list(ds)).squeeze(-2)
+
+        return res_lo

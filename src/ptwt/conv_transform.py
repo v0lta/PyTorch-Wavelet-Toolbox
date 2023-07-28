@@ -141,7 +141,7 @@ def _fwt_pad(
     The padding assumes a future step will transform the last axis.
 
     Args:
-        data (torch.Tensor): Input data [batch_size, 1, time]
+        data (torch.Tensor): Input data ``[batch_size, 1, time]``
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         mode (str): The desired way to pad. The following methods are supported::
