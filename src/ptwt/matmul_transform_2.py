@@ -20,9 +20,9 @@ from ._util import (
 from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import (
     _check_if_tensor,
+    _construct_2d_filt,
     _wavedec2d_unfold_channels_2d_list,
     _waverec2d_fold_channels_2d_list,
-    _construct_2d_filt,
 )
 from .matmul_transform import construct_boundary_a, construct_boundary_s, orthogonalize
 from .sparse_math import (
