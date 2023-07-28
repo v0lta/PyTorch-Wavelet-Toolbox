@@ -30,7 +30,7 @@ def _dense_kron(
 def sparse_kron(
     sparse_tensor_a: torch.Tensor, sparse_tensor_b: torch.Tensor
 ) -> torch.Tensor:
-    """Compute a sparse kronecker product.
+    """Compute a sparse Kronecker product.
 
     As defined at:
     https://en.wikipedia.org/wiki/Kronecker_product
@@ -107,8 +107,8 @@ def cat_sparse_identity_matrix(
     # assert square matrix.
     assert (
         sparse_matrix.shape[0] == sparse_matrix.shape[1]
-    ), "Matrices must be square. Odd inputs can cause to non-square matrices."
-    assert new_length > sparse_matrix.shape[0], "cant add negatively many entries."
+    ), "Matrices must be square. Odd inputs can cause non-square matrices."
+    assert new_length > sparse_matrix.shape[0], "can't add negatively many entries."
     x = torch.arange(
         sparse_matrix.shape[0],
         new_length,
@@ -138,10 +138,11 @@ def cat_sparse_identity_matrix(
 def sparse_diag(
     diagonal: torch.Tensor, col_offset: int, rows: int, cols: int
 ) -> torch.Tensor:
-    """Create a rows-by-cols sparse diagnoal-matrix.
+    """Create a rows-by-cols sparse diagonal-matrix.
 
-    The matrix is construced by taking the columns of Bin and
-    placing them along the diagonal specified by col_offset.
+    The matrix is constructed by taking the columns of the
+    input and placing them along the diagonal
+    specified by col_offset.
 
     Args:
         diagonal (torch.Tensor): The values for the diagonal.
@@ -151,7 +152,7 @@ def sparse_diag(
         cols (int): The number of columns in the final matrix.
 
     Returns:
-        torch.Tensor: A sparse matrix with a shifted diaginal.
+        torch.Tensor: A sparse matrix with a shifted diagonal.
 
     """
     diag_indices = torch.stack(
@@ -193,7 +194,7 @@ def sparse_replace_row(
     I.e. matrix[row_no, :] = row.
 
     Args:
-        matrix (torch.Tensor): A sparse two dimensional matrix.
+        matrix (torch.Tensor): A sparse two-dimensional matrix.
         row_index (int): The row to replace.
         row (torch.Tensor): The row to insert into the sparse matrix.
 
@@ -204,7 +205,7 @@ def sparse_replace_row(
     matrix = matrix.coalesce()
     assert (
         matrix.shape[-1] == row.shape[-1]
-    ), "matrix and replacement-row must share the same column number."
+    ), "matrix and replacement row must share the same column number."
 
     # delete existing indices we dont want
     diag_indices = torch.arange(matrix.shape[0])
@@ -235,7 +236,7 @@ def _orth_by_qr(
 ) -> torch.Tensor:
     """Orthogonalize a wavelet matrix through qr decomposition.
 
-    A dense qr-decomposition is used for gpu-efficiency reasons.
+    A dense qr-decomposition is used for GPU-efficiency reasons.
     If memory becomes a constraint choose _orth_by_gram_schmidt
     instead, which is implemented using only sparse function calls.
 
@@ -338,9 +339,9 @@ def construct_conv_matrix(
     master/StackOverflow/Q2080835/CreateConvMtxSparse.m
 
     Args:
-        filter (torch.tensor): The 1d-filter to convolve with.
+        filter (torch.tensor): The 1D-filter to convolve with.
         input_rows (int): The number of columns in the input.
-        mode (str): String indetifier for the desired padding.
+        mode (str): String identifier for the desired padding.
             Choose 'full', 'valid' or 'same'.
             Defaults to valid.
 
@@ -497,7 +498,7 @@ def construct_strided_conv2d_matrix(
     """Create a strided sparse two dimensional convolution matrix.
 
     Args:
-        filter (torch.Tensor): The two dimensional convolution filter.
+        filter (torch.Tensor): The two-dimensional convolution filter.
         input_rows (int): The number of rows in the 2d-input matrix.
         input_columns (int): The number of columns in the 2d- input matrix.
         stride (int): The stride between the filter positions.

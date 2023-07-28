@@ -105,7 +105,7 @@ class MatrixWavedec3(object):
                     f". At level {curr_level}, at least one of the current signal "
                     f"depth, height, and width ({current_depth}, {current_height},"
                     f"{current_width}) is smaller "
-                    f"than the filter length {filt_len}. Therefore, the transformation "
+                    f"then the filter length {filt_len}. Therefore, the transformation "
                     f"is only computed up to the decomposition level {curr_level-1}.\n"
                 )
                 break
@@ -149,7 +149,7 @@ class MatrixWavedec3(object):
                 [batch_size, depth, height, width].
 
         Raises:
-            ValueError: If the input dimensions dont work.
+            ValueError: If the input dimensions don't work.
 
         Returns:
             List[Union[torch.Tensor, TypedDict[str, torch.Tensor]]]:
@@ -259,7 +259,7 @@ class MatrixWaverec3(object):
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
             boundary (str): The method used for boundary filter treatment.
-                Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
+                Choose 'qr' or 'gramschmidt'. 'qr' relies on Pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt' option
                 is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs
                 out of memory. Defaults to 'qr'.
@@ -354,7 +354,7 @@ class MatrixWaverec3(object):
     def __call__(
         self, coefficients: List[Union[torch.Tensor, Dict[str, torch.Tensor]]]
     ) -> torch.Tensor:
-        """Reconstruct a batched 3d-signal from it's coefficients.
+        """Reconstruct a batched 3d-signal from its coefficients.
 
         Args:
             coefficients (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):

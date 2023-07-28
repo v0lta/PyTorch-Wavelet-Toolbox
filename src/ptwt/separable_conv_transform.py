@@ -1,4 +1,4 @@
-"""Implement separable convolution based transforms.
+"""Implement separable convolution-based transforms.
 
 Under the hood code in this module transforms all dimensions
 individually using torch.nn.functional.conv1d and it's
@@ -21,7 +21,7 @@ def _separable_conv_dwtn_(
     mode: str = "reflect",
     key: str = "",
 ) -> None:
-    """Compute a single level separable fast wavelet transform.
+    """Compute a single-level separable fast wavelet transform.
 
     All but the first axes are transformed.
 
@@ -154,7 +154,7 @@ def _separable_conv_waverecn(
         torch.Tensor: The reconstruction of the original signal.
 
     Raises:
-        ValueError: If the coeff_list is no not structured as expected.
+        ValueError: If the coeff_list is not structured as expected.
     """
     if not isinstance(coeff_list[0], torch.Tensor):
         raise ValueError("approximation tensor must be first in coefficient list.")
@@ -192,7 +192,7 @@ def fswavedec2(
             Defaults to None.
 
     Raises:
-        ValueError: If the input is not a batched 2d-signal.
+        ValueError: If the input is not a batched 2D signal.
 
     Returns:
         List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
@@ -260,7 +260,7 @@ def fswavedec3(
             Defaults to None.
 
     Raises:
-        ValueError: If the input is not a batched 3d-signal.
+        ValueError: If the input is not a batched 3D signal.
 
     Returns:
         List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:

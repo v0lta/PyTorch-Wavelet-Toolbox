@@ -25,7 +25,7 @@ from .conv_transform import (
 
 
 def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct three dimensional filters using outer products.
+    """Construct three-dimensional filters using outer products.
 
     Args:
         lo (torch.Tensor): Low-pass input filter.
@@ -191,7 +191,7 @@ def waverec3(
         [batch, depth, height, width].
 
     Raises:
-        ValueError: If `coeffs` is not in a shape as returned from `wavedec3` or
+        ValueError: If coeffs is not in a shape as returned from wavedec3 or
             if the dtype is not supported.
 
     Example:

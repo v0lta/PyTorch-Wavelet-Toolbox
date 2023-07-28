@@ -140,7 +140,7 @@ def wavedec2(
     mode: str = "reflect",
     level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-    """Non separated two-dimensional wavelet transform. Only the last two axes change.
+    """Non-separated two-dimensional wavelet transform. Only the last two axes change.
 
     Args:
         data (torch.Tensor): The input data tensor with up to three dimensions.
@@ -233,7 +233,7 @@ def wavedec2(
 
 
 def _check_if_tensor(to_check: Any) -> torch.Tensor:
-    # ensuring the first list elements are tensors makes mypy happy :-).
+    # Ensuring the first list elements are tensors makes mypy happy :-).
     if not isinstance(to_check, torch.Tensor):
         raise ValueError(
             "First element of coeffs must be the approximation coefficient tensor."
