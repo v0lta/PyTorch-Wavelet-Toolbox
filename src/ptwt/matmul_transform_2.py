@@ -718,7 +718,7 @@ class MatrixWaverec2(object):
         Returns:
             torch.Tensor: The original signal reconstruction of
                 shape ``[batch_size, height, width]`` or
-                ``[batch_size, channels, height, width]`` 
+                ``[batch_size, channels, height, width]``
                 depending on the input to the forward transform.
 
         Raises:
