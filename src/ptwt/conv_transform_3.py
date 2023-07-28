@@ -109,7 +109,7 @@ def wavedec3(
 
             "zero", "constant" or "periodic".
 
-            Defaults to "zero".
+        Defaults to "zero".
         level (Optional[int]): The maximum decomposition level.
             This argument defaults to None.
 
