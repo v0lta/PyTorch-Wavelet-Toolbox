@@ -22,7 +22,7 @@ from .conv_transform_2 import (
     _check_if_tensor,
     _wavedec2d_unfold_channels_2d_list,
     _waverec2d_fold_channels_2d_list,
-    construct_2d_filt,
+    _construct_2d_filt,
 )
 from .matmul_transform import construct_boundary_a, construct_boundary_s, orthogonalize
 from .sparse_math import (
@@ -67,7 +67,7 @@ def _construct_a_2(
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype
     )
-    dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
+    dec_filt = _construct_2d_filt(lo=dec_lo, hi=dec_hi)
     ll, lh, hl, hh = dec_filt.squeeze(1)
     analysis_ll = construct_strided_conv2d_matrix(ll, height, width, mode=mode)
     analysis_lh = construct_strided_conv2d_matrix(lh, height, width, mode=mode)
@@ -113,7 +113,7 @@ def _construct_s_2(
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype
     )
-    dec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
+    dec_filt = _construct_2d_filt(lo=rec_lo, hi=rec_hi)
     ll, lh, hl, hh = dec_filt.squeeze(1)
     synthesis_ll = construct_strided_conv2d_matrix(ll, height, width, mode=mode)
     synthesis_lh = construct_strided_conv2d_matrix(lh, height, width, mode=mode)
