@@ -15,7 +15,7 @@ from ._util import (
     _is_boundary_mode_supported,
     _is_dtype_supported,
 )
-from .conv_transform import get_filter_tensors
+from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import construct_2d_filt
 from .matmul_transform import construct_boundary_a, construct_boundary_s, orthogonalize
 from .sparse_math import (
@@ -57,7 +57,7 @@ def _construct_a_2(
         In most cases construct_boundary_a2d should be used instead.
 
     """
-    dec_lo, dec_hi, _, _ = get_filter_tensors(
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype
     )
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
@@ -103,7 +103,7 @@ def _construct_s_2(
         [torch.Tensor]: The generated fast wavelet synthesis matrix.
     """
     wavelet = _as_wavelet(wavelet)
-    _, _, rec_lo, rec_hi = get_filter_tensors(
+    _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype
     )
     dec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)

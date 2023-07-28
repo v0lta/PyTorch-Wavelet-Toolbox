@@ -24,7 +24,7 @@ from .conv_transform import (
     _get_pad,
     _translate_boundary_strings,
     _unfold_channels,
-    get_filter_tensors,
+    _get_filter_tensors,
 )
 
 
@@ -158,7 +158,7 @@ def wavedec2(
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
     wavelet = _as_wavelet(wavelet)
-    dec_lo, dec_hi, _, _ = get_filter_tensors(
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
     dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
@@ -216,11 +216,11 @@ def waverec2(
             the name of a pywt wavelet.
 
     Returns:
-        torch.Tensor: The reconstructed signal of shape [batch, height, width] or
-            [batch, channel, height, width] depending on the input to `wavedec2`.
+        torch.Tensor: The reconstructed signal of shape ``[batch, height, width]`` or
+            ``[batch, channel, height, width]`` depending on the input to `wavedec2`.
 
     Raises:
-        ValueError: If `coeffs` is not in a shape as returned from `wavedec2` or
+        ValueError: If coeffs is not in a shape as returned from wavedec2 or
             if the dtype is not supported.
 
     Example:
@@ -270,7 +270,7 @@ def waverec2(
     if not _is_dtype_supported(torch_dtype):
         raise ValueError(f"Input dtype {torch_dtype} not supported")
 
-    _, _, rec_lo, rec_hi = get_filter_tensors(
+    _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]

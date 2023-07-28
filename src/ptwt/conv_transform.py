@@ -45,7 +45,7 @@ def _create_tensor(
             return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
 
 
-def get_filter_tensors(
+def _get_filter_tensors(
     wavelet: Union[Wavelet, str],
     flip: bool,
     device: Union[torch.device, str],
@@ -300,7 +300,7 @@ def wavedec(
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
-    dec_lo, dec_hi, _, _ = get_filter_tensors(
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
     filt_len = dec_lo.shape[-1]
@@ -379,7 +379,7 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
             folded.append(_fold_channels(to_fold_coeff.unsqueeze(-2)).squeeze(-2))
         coeffs = folded
 
-    _, _, rec_lo, rec_hi = get_filter_tensors(
+    _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]

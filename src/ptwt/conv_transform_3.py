@@ -20,7 +20,7 @@ from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_pad,
     _translate_boundary_strings,
-    get_filter_tensors,
+    _get_filter_tensors,
 )
 
 
@@ -142,7 +142,7 @@ def wavedec3(
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
     wavelet = _as_wavelet(wavelet)
-    dec_lo, dec_hi, _, _ = get_filter_tensors(
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
     dec_filt = _construct_3d_filt(lo=dec_lo, hi=dec_hi)
@@ -216,7 +216,7 @@ def waverec3(
         if not _is_dtype_supported(torch_dtype):
             raise ValueError(f"Input dtype {torch_dtype} not supported")
 
-    _, _, rec_lo, rec_hi = get_filter_tensors(
+    _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]

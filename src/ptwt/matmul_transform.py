@@ -19,7 +19,7 @@ from ._util import (
     _is_boundary_mode_supported,
     _is_dtype_supported,
 )
-from .conv_transform import get_filter_tensors
+from .conv_transform import _get_filter_tensors
 from .sparse_math import (
     _orth_by_gram_schmidt,
     _orth_by_qr,
@@ -52,7 +52,7 @@ def _construct_a(
         torch.Tensor: The sparse raw analysis matrix.
     """
     wavelet = _as_wavelet(wavelet)
-    dec_lo, dec_hi, _, _ = get_filter_tensors(
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype
     )
     analysis_lo = construct_strided_conv_matrix(
@@ -89,7 +89,7 @@ def _construct_s(
         torch.Tensor: The raw sparse synthesis matrix.
     """
     wavelet = _as_wavelet(wavelet)
-    _, _, rec_lo, rec_hi = get_filter_tensors(
+    _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype
     )
     synthesis_lo = construct_strided_conv_matrix(
