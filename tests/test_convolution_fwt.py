@@ -24,12 +24,11 @@ from tests._mackey_glass import MackeyGenerator
 @pytest.mark.parametrize("batch_size", [1, 3])
 @pytest.mark.parametrize("mode", ["reflect", "zero", "constant", "periodic"])
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
-def test_conv_fwt(wavelet_string, level, mode, length, batch_size, dtype):
+def test_conv_fwt1d(wavelet_string, level, mode, length, batch_size, dtype):
     """Test multiple convolution fwt, for various levels and padding options."""
     generator = MackeyGenerator(
         batch_size=batch_size, tmax=length, delta_t=1, device="cpu"
     )
-
     mackey_data_1 = torch.squeeze(generator(), -1).type(dtype)
     wavelet = pywt.Wavelet(wavelet_string)
     ptcoeff = wavedec(mackey_data_1, wavelet, level=level, mode=mode)
@@ -50,6 +49,23 @@ def test_conv_fwt(wavelet_string, level, mode, length, batch_size, dtype):
     )
     res = waverec(ptcoeff, wavelet)
     assert np.allclose(mackey_data_1.numpy(), res.numpy()[:, : mackey_data_1.shape[-1]])
+
+
+@pytest.mark.parametrize("size", [[5, 10, 64], [1, 1, 32]])
+@pytest.mark.parametrize("wavelet", ["haar", "db2"])
+def test_conv_fwt1d_shape(size, wavelet):
+    """Test channel dimension support."""
+    data = torch.randn(*size).type(torch.float64)
+    ptwt_coeff = wavedec(data, wavelet)
+    pywt_coeff = pywt.wavedec(data.numpy(), wavelet, mode="reflect")
+    assert all(
+        [
+            np.allclose(ptwtc.numpy(), pywtc)
+            for ptwtc, pywtc in zip(ptwt_coeff, pywt_coeff)
+        ]
+    )
+    rec = waverec(ptwt_coeff, wavelet)
+    assert np.allclose(data.numpy(), rec.numpy())
 
 
 def test_ripples_haar_lvl3():
@@ -191,13 +207,15 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
 @pytest.mark.parametrize(
     "size", [(50, 20, 128, 128), (49, 21, 128, 128), (4, 5, 64, 64)]
 )
-def test_input_4d(size):
+@pytest.mark.parametrize("level", [1, 3, None])
+@pytest.mark.parametrize("wavelet", ["haar", "db2", "sym3"])
+def test_input_4d(size, level, wavelet):
     """Test the error for 4d inputs to wavedec2."""
     data = torch.randn(*size).type(torch.float64)
 
-    pt_res = wavedec2(data, wavelet="haar", level=4)
-    pywt_res = pywt.wavedec2(data.numpy(), wavelet="haar", level=4)
-    rec = waverec2(pt_res, "haar")
+    pt_res = wavedec2(data, wavelet=wavelet, level=level, mode="reflect")
+    pywt_res = pywt.wavedec2(data.numpy(), wavelet=wavelet, level=level, mode="reflect")
+    rec = waverec2(pt_res, wavelet)
 
     # test coefficients
     for ptwtcs, pywtcs in zip(pt_res, pywt_res):
@@ -212,7 +230,9 @@ def test_input_4d(size):
             assert np.allclose(ptwtcs, pywtcs)
 
     # test reconstruction.
-    assert np.allclose(data.numpy(), rec.numpy())
+    assert np.allclose(
+        data.numpy(), rec.numpy()[..., : data.shape[-2], : data.shape[-1]]
+    )
 
 
 @pytest.mark.parametrize("padding_str", ["invalid_padding_name"])

@@ -13,29 +13,12 @@ import torch
 from ._util import Wavelet, _as_wavelet, _get_len, _is_dtype_supported, _outer
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
+    _fold_channels,
     _get_pad,
     _translate_boundary_strings,
+    _unfold_channels,
     get_filter_tensors,
 )
-
-
-def _fold_channels(data: torch.Tensor) -> torch.Tensor:
-    # Fold a [batch, channel, height width] array into
-    # [batch*channel, height, widht]
-    ds = data.shape
-    fold_data = torch.permute(data, [2, 3, 0, 1])
-    fold_data = torch.reshape(fold_data, [ds[2], ds[3], ds[0] * ds[1]])
-    return torch.permute(fold_data, [2, 0, 1])
-
-
-def _unfold_channels(data: torch.Tensor, ds: List[int]) -> torch.Tensor:
-    # unfold a [batch*channel, height, widht] array into
-    # [batch, channel, height, width]
-    unfold_data = torch.permute(data, [1, 2, 0])
-    unfold_data = torch.reshape(
-        unfold_data, [data.shape[1], data.shape[2], ds[0], ds[1]]
-    )
-    return torch.permute(unfold_data, [2, 3, 0, 1])
 
 
 def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
@@ -99,13 +82,13 @@ def wavedec2(
     mode: str = "reflect",
     level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-    """Non separated two-dimensional wavelet transform.
+    """Non separated two-dimensional wavelet transform. Only the last two axes change.
 
     Args:
         data (torch.Tensor): The input data tensor with up to three dimensions.
-            2d inputs are interpreted as [height, width],
-            3d inputs are interpreted as [batch_size, height, width].
-            4d inputs are interpreted as [batch_size, channels, height, width].
+            2d inputs are interpreted as ``[height, width]``,
+            3d inputs are interpreted as ``[batch_size, height, width]``.
+            4d inputs are interpreted as ``[batch_size, channels, height, width]``.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
@@ -252,6 +235,7 @@ def waverec2(
     torch_device = res_ll.device
     torch_dtype = res_ll.dtype
 
+    fold = False
     if res_ll.dim() == 4:
         # avoid the channel sum, fold the channels into batches.
         fold = True
