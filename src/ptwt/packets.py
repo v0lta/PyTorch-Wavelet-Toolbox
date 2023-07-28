@@ -57,8 +57,9 @@ class WaveletPacket(BaseDict):
         The decompositions will rely on padded fast wavelet transforms.
 
         Args:
-            data (torch.Tensor, optional): The input data array of shape [time]
-                or [batch_size, time]. If None, the object is initialized without
+            data (torch.Tensor, optional): The input data array of shape ``[time]``,
+                ``[batch_size, time]`` or ``[batch_size, channels, time]``.
+                If None, the object is initialized without
                 performing a decomposition.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
@@ -264,8 +265,10 @@ class WaveletPacket2D(BaseDict):
 
         Args:
             data (torch.tensor, optional): The input data tensor
-                of shape [batch_size, height, width].  If None, the object
-                is initialized without performing a decomposition.
+                of shape ``[batch_size, height, width]`` or
+                ``[batch_size, channels, height, width]``.
+                If None, the object is initialized without performing
+                a decomposition.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
             mode (str): A string indicating the desired padding mode.
