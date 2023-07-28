@@ -107,9 +107,9 @@ def wavedec3(
             ``pywt.wavelist(kind='discrete')`` lists possible choices.
         mode (str): The padding mode. Possible options are::
 
-            "zero", "constant" or "periodic".
+                "zero", "constant" or "periodic".
 
-        Defaults to "zero".
+            Defaults to "zero".
         level (Optional[int]): The maximum decomposition level.
             This argument defaults to None.
 
