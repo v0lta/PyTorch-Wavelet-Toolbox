@@ -49,7 +49,7 @@ Welcome to the PyTorch wavelet toolbox. This package implements:
 - finally, this package provides adaptive wavelet support (experimental).
 
 This toolbox extends `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_. In addition to boundary wavelets, we provide GPU and gradient support via a PyTorch backend.
-Complete documentation is available at: https://pytorch-wavelet-toolbox.readthedocs.io/
+Complete documentation is available at: https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/ptwt.html
 
 
 **Installation**
