@@ -28,9 +28,9 @@ def _cat_batch_list(batch_lists: List) -> List:
             cat_list = batch_list
         else:
             for pos, (cat_el, batch_el) in enumerate(zip(cat_list, batch_list)):
-                if type(cat_el) == np.ndarray:
+                if isinstance(cat_el, np.ndarray):
                     cat_list[pos] = np.concatenate([cat_el, batch_el])
-                elif type(cat_el) == dict:
+                elif isinstance(cat_el, dict):
                     for key, tensor in cat_el.items():
                         cat_el[key] = np.concatenate([tensor, batch_el[key]])
                 else:
