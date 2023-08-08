@@ -69,7 +69,7 @@ html_sidebars = {
 html_theme_options = {
     'github_user': 'v0lta',
     'github_repo': 'PyTorch-Wavelet-Toolbox',
-    'github_banner': 'true',
+    'github_banner': 'false',
     'show_related': 'true',
     'page_width': 'auto',
     'sidebar_width': '250px'

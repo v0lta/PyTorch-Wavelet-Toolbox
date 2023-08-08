@@ -54,7 +54,9 @@ def _cat_batch_list(batch_lists: List) -> List:
 )
 @pytest.mark.parametrize("wavelet", ["haar", "db2", "db4"])
 @pytest.mark.parametrize("level", [1, 2, None])
-@pytest.mark.parametrize("mode", ["zero", "constant", "periodic", "symmetric"])
+@pytest.mark.parametrize(
+    "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
+)
 def test_waverec3(shape: list, wavelet: str, level: int, mode: str) -> None:
     """Ensure the 3d analysis transform is invertible."""
     data = np.random.randn(*shape)

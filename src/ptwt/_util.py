@@ -106,15 +106,16 @@ def _pad_symmetric(
 def _fold_channels(data: torch.Tensor) -> torch.Tensor:
     """Fold [batch, channel, height width] into [batch*channel, height, widht]."""
     ds = data.shape
-    fold_data = torch.permute(data, [2, 3, 0, 1])
-    fold_data = torch.reshape(fold_data, [ds[2], ds[3], ds[0] * ds[1]])
-    return torch.permute(fold_data, [2, 0, 1])
+    return torch.reshape(
+        data,
+        [
+            ds[0] * ds[1],
+            ds[2],
+            ds[3],
+        ],
+    )
 
 
 def _unfold_channels(data: torch.Tensor, ds: List[int]) -> torch.Tensor:
     """Unfold [batch*channel, height, widht] into [batch, channel, height, width]."""
-    unfold_data = torch.permute(data, [1, 2, 0])
-    unfold_data = torch.reshape(
-        unfold_data, [data.shape[1], data.shape[2], ds[0], ds[1]]
-    )
-    return torch.permute(unfold_data, [2, 3, 0, 1])
+    return torch.reshape(data, [ds[0], ds[1], data.shape[1], data.shape[2]])

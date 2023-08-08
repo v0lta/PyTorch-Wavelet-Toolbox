@@ -27,7 +27,7 @@ def cwt(
     wavelet: Union[ContinuousWavelet, str],
     sampling_period: float = 1.0,
 ) -> Tuple[torch.Tensor, np.ndarray]:  # type: ignore
-    """Compute the single dimensional continuous wavelet transform.
+    """Compute the single-dimensional continuous wavelet transform.
 
     This function is a PyTorch port of pywt.cwt as found at:
     https://github.com/PyWavelets/pywt/blob/master/pywt/_cwt.py
@@ -166,7 +166,7 @@ def _integrate_wavelet(
 
     Parameters
     ----------
-    wavelet : Wavelet instance or str
+    wavelet: Wavelet instance or str
         Wavelet to integrate.  If a string, should be the name of a wavelet.
     precision : int, optional
         Precision that will be used for wavelet function

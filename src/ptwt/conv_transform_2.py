@@ -28,7 +28,7 @@ from .conv_transform import (
 )
 
 
-def construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
+def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     """Construct two-dimensional filters using outer products.
 
     Args:
@@ -140,7 +140,7 @@ def wavedec2(
     mode: str = "reflect",
     level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-    """Non separated two-dimensional wavelet transform. Only the last two axes change.
+    """Non-separated two-dimensional wavelet transform. Only the last two axes change.
 
     Args:
         data (torch.Tensor): The input data tensor with up to three dimensions.
@@ -178,7 +178,7 @@ def wavedec2(
         >>> from scipy import datasets
         >>> face = np.transpose(datasets.face(),
         >>>                     [2, 0, 1]).astype(np.float64)
-        >>> pytorch_face = torch.tensor(face)
+        >>> pytorch_face = torch.tensor(face) # try unsqueeze(0)
         >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
         >>>                              level=2, mode="zero")
 
@@ -209,7 +209,7 @@ def wavedec2(
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
-    dec_filt = construct_2d_filt(lo=dec_lo, hi=dec_hi)
+    dec_filt = _construct_2d_filt(lo=dec_lo, hi=dec_hi)
 
     if level is None:
         level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
@@ -233,7 +233,7 @@ def wavedec2(
 
 
 def _check_if_tensor(to_check: Any) -> torch.Tensor:
-    # ensuring the first list elements are tensors makes mypy happy :-).
+    # Ensuring the first list elements are tensors makes mypy happy :-).
     if not isinstance(to_check, torch.Tensor):
         raise ValueError(
             "First element of coeffs must be the approximation coefficient tensor."
@@ -299,7 +299,7 @@ def waverec2(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
-    rec_filt = construct_2d_filt(lo=rec_lo, hi=rec_hi)
+    rec_filt = _construct_2d_filt(lo=rec_lo, hi=rec_hi)
 
     for c_pos, coeff_tuple in enumerate(coeffs[1:]):
         if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:

@@ -25,7 +25,7 @@ from .conv_transform import (
 
 
 def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct three dimensional filters using outer products.
+    """Construct three-dimensional filters using outer products.
 
     Args:
         lo (torch.Tensor): Low-pass input filter.
@@ -107,7 +107,7 @@ def wavedec3(
             ``pywt.wavelist(kind='discrete')`` lists possible choices.
         mode (str): The padding mode. Possible options are::
 
-            "zero", "constant" or "periodic".
+                "reflect", "zero", "constant", "periodic", "symmetric".
 
             Defaults to "zero".
         level (Optional[int]): The maximum decomposition level.
@@ -117,7 +117,7 @@ def wavedec3(
         list: A list with the lll coefficients and dictionaries
         with the filter order strings::
 
-        ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
+            ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
 
         as keys. With a for the low pass or approximation filter and
         d for the high-pass or detail filter.
@@ -191,7 +191,7 @@ def waverec3(
         [batch, depth, height, width].
 
     Raises:
-        ValueError: If `coeffs` is not in a shape as returned from `wavedec3` or
+        ValueError: If coeffs is not in a shape as returned from wavedec3 or
             if the dtype is not supported.
 
     Example:
