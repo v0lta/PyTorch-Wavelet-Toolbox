@@ -4,12 +4,12 @@ on: [ push, pull_request ]
 
 jobs:
   tests:
-    name: Tests
+    name: tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        python-version: [ 3.8, 3.11 ]
+        python-version: [3.9, 3.11]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -20,13 +20,13 @@ jobs:
         run: pip install nox
       - name: Test with pytest
         run:
-          nox -s fast-test
+          nox -s test
   lint:
-    name: Lint
+    name: lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ 3.8, 3.11 ]
+        python-version: [3.9, 3.11]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -37,5 +37,35 @@ jobs:
         run: pip install nox
       - name: Run flake8
         run: nox -s lint
+  typing:
+    name: typing
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.11]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: pip install nox
       - name: Run mypy
         run: nox -s typing
+  package-check:
+    name: pyroma
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: pip install nox
+      - name: Run pyroma
+        run: nox -s check-package
