@@ -198,7 +198,7 @@ def wavedec2(
         raise ValueError("Wavedec2 needs more than one input dimension to work.")
     else:
         raise ValueError(
-            "Wavedec2 does not support four input dimensions. \
+            "Wavedec2 does not support more than four input dimensions. \
              Optionally-batched two-dimensional inputs work."
         )
 
