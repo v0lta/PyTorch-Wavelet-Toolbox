@@ -255,9 +255,7 @@ def wavedec(
 
     Args:
         data (torch.Tensor): The input time series,
-                             1d inputs are interpreted as ``[time]``,
-                             2d inputs as ``[batch_size, time]``,
-                             and 3d inputs as ``[batch_size, channels, time]``.
+                             By default the last axis is transformed.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Please consider the output from ``pywt.wavelist(kind='discrete')``

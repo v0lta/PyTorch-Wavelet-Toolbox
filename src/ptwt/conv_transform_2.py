@@ -143,7 +143,7 @@ def wavedec2(
     """Non-separated two-dimensional wavelet transform. Only the last two axes change.
 
     Args:
-        data (torch.Tensor): The input data tensor with up to three dimensions.
+        data (torch.Tensor): The input data tensor with up to four dimensions.
             2d inputs are interpreted as ``[height, width]``,
             3d inputs are interpreted as ``[batch_size, height, width]``.
             4d inputs are interpreted as ``[batch_size, channels, height, width]``.
