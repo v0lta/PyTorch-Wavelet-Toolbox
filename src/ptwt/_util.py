@@ -134,11 +134,14 @@ def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, List[int
             The folded result array, and the shape of the original input.
     """
     dshape = list(data.shape)
-    return torch.reshape(data, [np.prod(dshape[:-keep_no])] + dshape[-keep_no:]), dshape
+    return (
+        torch.reshape(data, [int(np.prod(dshape[:-keep_no]))] + dshape[-keep_no:]),
+        dshape,
+    )
 
 
 def _unfold_axes(data: torch.Tensor, ds: List[int], keep_no: int) -> torch.Tensor:
-    """Unfold i.e. [batch*channel, height, widht] into [batch, channel, height, width]."""
+    """Unfold [batch*channel, height, widht] into [batch, channel, height, width]."""
     return torch.reshape(data, ds[:-keep_no] + list(data.shape[-keep_no:]))
 
 
@@ -167,11 +170,11 @@ def _get_transpose_order(
 def _swap_axes(data: torch.Tensor, axes: List[int]) -> torch.Tensor:
     _check_axes_argument(axes)
     front, back = _get_transpose_order(axes, list(data.shape))
-    return torch.transpose(data, front + back)
+    return torch.permute(data, front + back)
 
 
 def _undo_swap_axes(data: torch.Tensor, axes: List[int]) -> torch.Tensor:
     _check_axes_argument(axes)
     front, back = _get_transpose_order(axes, list(data.shape))
-    restore_sorted = torch.argsort(torch.tensor(front + back))
-    return torch.transpose(data, restore_sorted)
+    restore_sorted = torch.argsort(torch.tensor(front + back)).tolist()
+    return torch.permute(data, restore_sorted)
