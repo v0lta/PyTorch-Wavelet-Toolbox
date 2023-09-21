@@ -110,6 +110,38 @@ def test_orth_wavelet():
     assert np.allclose(res.detach().numpy(), mackey_data_1.numpy())
 
 
+@pytest.mark.parametrize("level", [1, 2, 3, None])
+@pytest.mark.parametrize("shape", [(64,), (1, 64), (3, 2, 64), (4, 3, 2, 64)])
+def test_1d_multibatch(level, shape):
+    """Test 1D conv support for multiple inert batch dimensions."""
+    data = torch.randn(*shape, dtype=torch.float64)
+    ptwt_coeff = wavedec(data, "haar", level=level)
+    pywt_coeff = pywt.wavedec(data, "haar", level=level, mode="reflect")
+
+    # test coefficients
+    test_list = _compare_coeffs(ptwt_coeff, pywt_coeff)
+    assert all(test_list)
+
+    # test reconstruction
+    rec = waverec(ptwt_coeff, "haar")
+    assert torch.allclose(rec, data)
+
+
+@pytest.mark.parametrize("axis", [-1, 0, 1, 2])
+def test_1d_axis_arg(axis):
+    """Ensure the axis argument works as expected."""
+    data = torch.randn([16, 16, 16], dtype=torch.float64)
+
+    ptwtcs = wavedec(data, "haar", level=2, axis=axis)
+    pywtcs = pywt.wavedec(data, "haar", level=2, axis=axis)
+
+    test_list = _compare_coeffs(ptwtcs, pywtcs)
+    assert all(test_list)
+
+    rec = waverec(ptwtcs, "haar", axis=axis)
+    assert torch.allclose(rec, data)
+
+
 def test_2d_haar_lvl1():
     """Test a 2d-Haar wavelet conv-fwt."""
     # ------------------------- 2d haar wavelet tests -----------------------
@@ -271,7 +303,7 @@ def _compare_coeffs(ptwt_res, pywt_res):
 @pytest.mark.parametrize(
     "size", [(50, 20, 128, 128), (8, 49, 21, 128, 128), (6, 4, 4, 5, 64, 64)]
 )
-def test_multidim_input(size):
+def test_2d_multidim_input(size):
     """Test the error for multi-dimensional inputs to wavedec2."""
     data = torch.randn(*size, dtype=torch.float64)
     wavelet = "db2"
@@ -292,7 +324,7 @@ def test_multidim_input(size):
 
 
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (-3, -2), (0, 1), (1, 0)])
-def test_axis_argument(axes):
+def test_2d_axis_argument(axes):
     """Ensure the axes argument works as expected."""
     data = torch.randn([32, 32, 32, 32], dtype=torch.float64)
 
@@ -310,14 +342,14 @@ def test_axis_argument(axes):
     )
 
 
-def test_axis_error_axes_count():
+def test_2d_axis_error_axes_count():
     """Check the error for too many axes."""
     with pytest.raises(ValueError):
         data = torch.randn([32, 32, 32, 32], dtype=torch.float64)
         wavedec2(data, "haar", 1, axes=(1, 2, 3))
 
 
-def test_axis_error_axes_repetition():
+def test_2d_axis_error_axes_repetition():
     """Check the error for axes repetition."""
     with pytest.raises(ValueError):
         data = torch.randn([32, 32, 32, 32], dtype=torch.float64)

@@ -11,10 +11,12 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
+    _fold_axes,
     _fold_channels,
     _get_len,
     _is_dtype_supported,
     _pad_symmetric,
+    _unfold_axes,
     _unfold_channels,
 )
 
@@ -245,11 +247,51 @@ def _waverec_fold_channels_1d_list(
     return folded, list(ds)
 
 
+def _preprocess_tensor_dec1d(
+    data: torch.Tensor,
+) -> Tuple[torch.Tensor, Union[List[int], None]]:
+    # Preprocess input tensor dimensions
+    ds = None
+    if len(data.shape) == 1:
+        # assume time series
+        data = data.unsqueeze(0).unsqueeze(0)
+    elif len(data.shape) == 2:
+        # assume batched time series
+        data = data.unsqueeze(1)
+    else:
+        data, ds = _fold_axes(data, 1)
+        data = data.unsqueeze(1)
+    return data, ds
+
+
+def _postprocess_result_list_dec1d(
+    result_lst: List[torch.Tensor], ds: List[int]
+) -> List[torch.Tensor]:
+    # Unfold axes for the wavelets
+    unfold_list = []
+    for fres in result_lst:
+        unfold_list.append(_unfold_axes(fres, ds, 1))
+    return unfold_list
+
+
+def _preprocess_result_list_dec1d(
+    result_lst: List[torch.Tensor],
+) -> Tuple[List[torch.Tensor], List[int]]:
+    # Fold axes for the wavelets
+    fold_coeffs = []
+    ds = list(result_lst[0].shape)  # TODO: Check if the input is tensor
+    for uf_coeff in result_lst:
+        f_coeff, _ = _fold_axes(uf_coeff, 1)
+        fold_coeffs.append(f_coeff)
+    return fold_coeffs, ds
+
+
 def wavedec(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
     mode: str = "reflect",
     level: Optional[int] = None,
+    axis: int = -1,
 ) -> List[torch.Tensor]:
     """Compute the analysis (forward) 1d fast wavelet transform.
 
@@ -272,9 +314,11 @@ def wavedec(
             Zero padding pads zeros.
             Constant padding replicates border values.
             Periodic padding cyclically repeats samples.
-
         level (int): The scale level to be computed.
                                Defaults to None.
+        axis (int): Compute the transform over this axis instead of the
+            last one. Defaults to -1.
+
 
     Returns:
         list: A list::
@@ -298,20 +342,16 @@ def wavedec(
         >>> ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
         >>>              mode='zero', level=2)
     """
-    fold = False
-    if data.dim() == 1:
-        # assume time series
-        data = data.unsqueeze(0).unsqueeze(0)
-    elif data.dim() == 2:
-        # assume batched time series
-        data = data.unsqueeze(1)
-    elif data.dim() == 3:
-        # assume batch, channels, time -> fold channels
-        fold = True
-        data, ds = _wavedec_fold_channels_1d(data)
+    if axis != -1:
+        if isinstance(axis, int):
+            data = data.swapaxes(axis, -1)
+        else:
+            raise ValueError("wavedec transforms a single axis only.")
 
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
+
+    data, ds = _preprocess_tensor_dec1d(data)
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -330,21 +370,30 @@ def wavedec(
         res_lo, res_hi = torch.split(res, 1, 1)
         result_list.append(res_hi.squeeze(1))
     result_list.append(res_lo.squeeze(1))
+    result_list.reverse()
 
-    # unfold if necessary
-    if fold:
-        result_list = _wavedec_unfold_channels_1d_list(result_list, ds)
+    if ds:
+        result_list = _postprocess_result_list_dec1d(result_list, ds)
 
-    return result_list[::-1]
+    if axis != -1:
+        swap = []
+        for coeff in result_list:
+            swap.append(coeff.swapaxes(axis, -1))
+        result_list = swap
+
+    return result_list
 
 
-def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.Tensor:
+def waverec(
+    coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str], axis: int = -1
+) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
         coeffs (list): The wavelet coefficient list produced by wavedec.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+        axis (int): Transform this axis instead of the last one. Defaults to -1.
 
     Returns:
         torch.Tensor: The reconstructed signal.
@@ -377,11 +426,19 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
         elif torch_dtype != coeff.dtype:
             raise ValueError("coefficients must have the same dtype")
 
+    if axis != -1:
+        swap = []
+        if isinstance(axis, int):
+            for coeff in coeffs:
+                swap.append(coeff.swapaxes(axis, -1))
+            coeffs = swap
+        else:
+            raise ValueError("waverec transforms a single axis only.")
+
     # fold channels, if necessary.
-    fold = False
-    if coeffs[0].dim() == 3:
-        fold = True
-        coeffs, ds = _waverec_fold_channels_1d_list(coeffs)
+    ds = None
+    if coeffs[0].dim() >= 3:
+        coeffs, ds = _preprocess_result_list_dec1d(coeffs)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
@@ -406,7 +463,10 @@ def waverec(coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str]) -> torch.T
         if padr > 0:
             res_lo = res_lo[..., :-padr]
 
-    if fold:
-        res_lo = _unfold_channels(res_lo.unsqueeze(-2), list(ds)).squeeze(-2)
+    if ds:
+        res_lo = _unfold_axes(res_lo, ds, 1)
+
+    if axis != -1:
+        res_lo = res_lo.swapaxes(axis, -1)
 
     return res_lo
