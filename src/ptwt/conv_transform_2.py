@@ -24,6 +24,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
     _unfold_channels,
+    _map_result,
 )
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
@@ -249,24 +250,6 @@ def wavedec2(
         undo_swap_fn = partial(_undo_swap_axes, axes=axes)
         result_lst = _map_result(result_lst, undo_swap_fn)
 
-    return result_lst
-
-
-def _map_result(
-    data: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
-    function: Callable[[Any], torch.Tensor],
-) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-    # Apply the given function to the input list of tensor and tuples.
-    result_lst: List[
-        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-    ] = []
-    for element in data:
-        if isinstance(element, torch.Tensor):
-            result_lst.append(function(element))
-        else:
-            result_lst.append(
-                (function(element[0]), function(element[1]), function(element[2]))
-            )
     return result_lst
 
 

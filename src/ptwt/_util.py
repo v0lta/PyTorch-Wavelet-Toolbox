@@ -1,5 +1,5 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
-from typing import Any, List, Optional, Protocol, Sequence, Tuple, Union
+from typing import Any, List, Optional, Protocol, Sequence, Tuple, Union, Callable
 
 import numpy as np
 import pywt
@@ -178,3 +178,21 @@ def _undo_swap_axes(data: torch.Tensor, axes: List[int]) -> torch.Tensor:
     front, back = _get_transpose_order(axes, list(data.shape))
     restore_sorted = torch.argsort(torch.tensor(front + back)).tolist()
     return torch.permute(data, restore_sorted)
+
+
+def _map_result(
+    data: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    function: Callable[[Any], torch.Tensor],
+) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+    # Apply the given function to the input list of tensor and tuples.
+    result_lst: List[
+        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+    ] = []
+    for element in data:
+        if isinstance(element, torch.Tensor):
+            result_lst.append(function(element))
+        else:
+            result_lst.append(
+                (function(element[0]), function(element[1]), function(element[2]))
+            )
+    return result_lst

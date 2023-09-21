@@ -4,6 +4,7 @@ The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
 
 from typing import Dict, List, Optional, Sequence, Union, cast
+from functools import partial
 
 import pywt
 import torch
@@ -15,6 +16,11 @@ from ._util import (
     _is_dtype_supported,
     _outer,
     _pad_symmetric,
+    _fold_axes,
+    _unfold_axes,
+    _swap_axes,
+    _undo_swap_axes,
+    _map_result,
 )
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
@@ -97,6 +103,7 @@ def wavedec3(
     wavelet: Union[Wavelet, str],
     mode: str = "zero",
     level: Optional[int] = None,
+    axes: Tuple[int, int, int] = (-3, -2, -1),
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a three-dimensional wavelet transform.
 
@@ -112,6 +119,8 @@ def wavedec3(
             Defaults to "zero".
         level (Optional[int]): The maximum decomposition level.
             This argument defaults to None.
+        axes (Tuple[int, int, int]): Compute the transform over these axes instead of the
+            last three. Defaults to (-3, -2, -1).
 
     Returns:
         list: A list with the lll coefficients and dictionaries
@@ -132,11 +141,29 @@ def wavedec3(
         >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
 
     """
-    if data.dim() < 3:
-        raise ValueError("Three dimensional inputs required for 3d wavedec.")
-    elif data.dim() == 3:
-        # add batch dim.
-        data = data.unsqueeze(0)
+    # TODO: add axes error raise in docstring at all the places. Check all other messages and update docstrings.
+
+    # if data.dim() < 3:
+    #     raise ValueError("Three dimensional inputs required for 3d wavedec.")
+    # elif data.dim() == 3:
+    #     # add batch dim.
+    #     data = data.unsqueeze(0)
+    if tuple(axes) != (-3, -2, -1):
+        if len(axes) != 3:
+            raise ValueError("3D transforms work with two axes.")
+        else:
+            data = _swap_axes(
+                data, list(axes)
+            )  # TODO: Look at other usages, they can be different but working.
+
+    ds = None
+    if len(data.shape) == 3:
+        data = data.unsqueeze(1)
+    elif len(data.shape) >= 4:
+        data, ds = _fold_axes(data, 3)
+        data = data.unsqueeze(1)
+    else:
+        raise ValueError("Input to wavedec3 needs to be at least three dimensions.")
 
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
@@ -172,6 +199,20 @@ def wavedec3(
             }
         )
     result_lst.append(res_lll)
+    result_lst.reverse()
+
+    if ds:
+        _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
+        result_lst = _map_result(
+            result_lst, _unfold_axes_fn
+        )  # TODO: Will error out because input is dict and not tuple.
+
+    if tuple(axes) != (-3, -2, -1):
+        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
+        result_lst = _map_result(
+            result_lst, undo_swap_fn
+        )  # TODO: Will error out because input is dict and not tuple.
+
     return result_lst[::-1]
 
 
