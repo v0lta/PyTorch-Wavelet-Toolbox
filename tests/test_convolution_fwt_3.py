@@ -83,3 +83,59 @@ def test_waverec3(shape: list, wavelet: str, level: int, mode: str) -> None:
     assert np.allclose(
         rec.numpy()[..., : shape[1], : shape[2], : shape[3]], data.numpy()
     )
+
+
+@pytest.mark.parametrize(
+    "size", [[5, 32, 32, 32], [4, 3, 32, 32, 32], [1, 1, 1, 32, 32, 32]]
+)
+@pytest.mark.parametrize("level", [1, 2, None])
+@pytest.mark.parametrize("wavelet", ["haar", "sym3", "db3"])
+@pytest.mark.parametrize("mode", ["zero", "symmetric", "reflect"])
+def test_multidim_input(size: List[int], level: int, wavelet: str, mode: str):
+    """Ensure correct folding of multidimensional inputs."""
+    data = torch.randn(size, dtype=torch.float64)
+    ptwc = ptwt.wavedec3(data, wavelet, level=level, mode=mode)
+    # batch_list = []
+    # for batch_no in range(data.shape[0]):
+    #     pywc = pywt.wavedecn(data[batch_no].numpy(), wavelet, level=level, mode=mode)
+    #     batch_list.append(pywc)
+    # cat_pywc = _cat_batch_list(batch_list)
+    cat_pywc = pywt.wavedecn(data, wavelet, level=level, mode=mode, axes=[-3, -2, -1])
+
+    # ensure ptwt and pywt coefficients are identical.
+    test_list = []
+    for a, b in zip(ptwc, cat_pywc):
+        if type(a) is torch.Tensor:
+            test_list.append(np.allclose(a, b))
+        else:
+            test_list.extend([np.allclose(a[key], b[key]) for key in a.keys()])
+
+    assert all(test_list)
+
+    rec = ptwt.waverec3(ptwc, wavelet)
+    assert np.allclose(
+        rec.numpy()[..., : size[-3], : size[-2], : size[-1]], data.numpy()
+    )
+
+
+@pytest.mark.parametrize("axes", [[-3, -2, -1], [0, 2, 1]])
+@pytest.mark.parametrize("level", [1, 2, None])
+@pytest.mark.parametrize("wavelet", ["haar", "sym3", "db3"])
+@pytest.mark.parametrize("mode", ["zero", "symmetric", "reflect"])
+def test_axes_arg(axes: List[int], wavelet: str, level: int, mode: str) -> None:
+    """Test axes argument support."""
+    data = torch.randn([17, 17, 17, 17, 17], dtype=torch.float64)
+    ptwc = ptwt.wavedec3(data, wavelet, level=level, mode=mode, axes=axes)
+    cat_pywc = pywt.wavedecn(data, wavelet, level=level, mode=mode, axes=axes)
+
+    # ensure ptwt and pywt coefficients are identical.
+    test_list = []
+    for a, b in zip(ptwc, cat_pywc):
+        if type(a) is torch.Tensor:
+            test_list.append(np.allclose(a, b))
+        else:
+            test_list.extend([np.allclose(a[key], b[key]) for key in a.keys()])
+
+    assert all(test_list)
+
+    # rec = ptwt.waverec3(ptwc, wavelet)

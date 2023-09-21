@@ -3,7 +3,7 @@
 The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
 
-from typing import Dict, List, Optional, Sequence, Union, cast
+from typing import Dict, List, Optional, Sequence, Union, cast, Tuple, Any
 from functools import partial
 
 import pywt
@@ -21,6 +21,7 @@ from ._util import (
     _swap_axes,
     _undo_swap_axes,
     _map_result,
+    _check_axes_argument
 )
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
@@ -182,7 +183,9 @@ def wavedec3(
     result_lst: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
     res_lll = data
     for _ in range(level):
-        res_lll = _fwt_pad3(res_lll.unsqueeze(1), wavelet, mode=mode)
+        if len(res_lll.shape) == 4:
+            res_lll = res_lll.unsqueeze(1)
+        res_lll = _fwt_pad3(res_lll, wavelet, mode=mode)
         res = torch.nn.functional.conv3d(res_lll, dec_filt, stride=2)
         res_lll, res_llh, res_lhl, res_lhh, res_hll, res_hlh, res_hhl, res_hhh = [
             sr.squeeze(1) for sr in torch.split(res, 1, 1)
@@ -205,20 +208,38 @@ def wavedec3(
         _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
         result_lst = _map_result(
             result_lst, _unfold_axes_fn
-        )  # TODO: Will error out because input is dict and not tuple.
+        )
 
     if tuple(axes) != (-3, -2, -1):
         undo_swap_fn = partial(_undo_swap_axes, axes=axes)
         result_lst = _map_result(
             result_lst, undo_swap_fn
-        )  # TODO: Will error out because input is dict and not tuple.
+        )
 
-    return result_lst[::-1]
+    return result_lst
+
+
+def _waverec3d_fold_channels_3d_list(
+    coeffs,
+):
+    # fold the input coefficients for processing conv2d_transpose.
+    fold_coeffs = []
+    ds = list(coeffs[0].shape)
+    for coeff in coeffs:
+        if isinstance(coeff, torch.Tensor):
+            fold_coeffs.append(_fold_axes(coeff, 3)[0])
+        else:
+            new_dict = {}
+            for key, value in coeff.items():
+                new_dict[key] = _fold_axes(value, 3)[0]
+            fold_coeffs.append(new_dict)
+    return fold_coeffs, ds
 
 
 def waverec3(
     coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[Wavelet, str],
+    axes: Tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
@@ -226,6 +247,8 @@ def waverec3(
         coeffs (list): The wavelet coefficient list produced by wavedec3.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+        axes (Tuple[int, int, int]): Transform these axes instead of the
+            last three. Defaults to (-3, -2, -1).
 
     Returns:
         torch.Tensor: The reconstructed four-dimensional signal of shape
@@ -242,13 +265,26 @@ def waverec3(
         >>> reconstruction = ptwt.waverec3(transformed, "haar")
 
     """
+    if tuple(axes) != (-3, -2, -1):
+        if len(axes) != 3:
+            raise ValueError("3D transforms work with two axes")
+        else:
+            _check_axes_argument(axes)
+            swap_axes_fn = partial(_swap_axes, axes= list(axes))
+            coeffs = _map_result(coeffs, swap_axes_fn)
+
     wavelet = _as_wavelet(wavelet)
+    ds = None
     # the Union[tensor, dict] idea is coming from pywt. We don't change it here.
     res_lll = coeffs[0]
     if not isinstance(res_lll, torch.Tensor):
         raise ValueError(
             "First element of coeffs must be the approximation coefficient tensor."
         )
+    
+    if len(res_lll.shape) >= 5:
+        coeffs, ds = _waverec3d_fold_channels_3d_list(coeffs)
+        res_lll = coeffs[0] # TODO: Check if this is tensor.
 
     torch_device = res_lll.device
     torch_dtype = res_lll.dtype
@@ -325,4 +361,11 @@ def waverec3(
             res_lll = res_lll[..., padfr:, :, :]
         if padba > 0:
             res_lll = res_lll[..., :-padba, :, :]
+    res_lll = res_lll.squeeze(1)
+
+    if ds:
+        res_lll = _unfold_axes(res_lll, ds, 3)
+    
+    if axes != (-3, -2, -1):
+        res_lll = _undo_swap_axes(res_lll, list(axes))
     return res_lll
