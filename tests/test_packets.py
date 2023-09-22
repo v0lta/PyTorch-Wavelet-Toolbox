@@ -289,6 +289,7 @@ def test_access_errors_2d():
         twp["a" * 100]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("level", [1, 2, 3])
 @pytest.mark.parametrize("base_key", ["a", "d"])
 @pytest.mark.parametrize("shape", [[1, 63], [3, 2, 64], [128]])
@@ -306,6 +307,7 @@ def test_inverse_packet_1d(level, base_key, shape, wavelet):
     assert np.allclose(wp[""].data, ptwp[""].numpy()[..., : shape[-1]])
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("level", [1, 3])
 @pytest.mark.parametrize("base_key", ["a", "h", "d"])
 @pytest.mark.parametrize("size", [(1, 32, 32), (2, 1, 31, 64)])
