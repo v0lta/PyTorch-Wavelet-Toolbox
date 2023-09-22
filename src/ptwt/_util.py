@@ -1,5 +1,5 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
-from typing import Any, List, Optional, Protocol, Sequence, Tuple, Union, Callable, Dict
+from typing import Any, Callable, List, Optional, Protocol, Sequence, Tuple, Union
 
 import numpy as np
 import pywt
@@ -181,13 +181,11 @@ def _undo_swap_axes(data: torch.Tensor, axes: List[int]) -> torch.Tensor:
 
 
 def _map_result(
-    data: List[Union[torch.Tensor, Any]],
+    data: List[Union[torch.Tensor, Any]],  # following jax tree_map typing can be Any
     function: Callable[[Any], torch.Tensor],
-) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+) -> List[Union[torch.Tensor, Any]]:
     # Apply the given function to the input list of tensor and tuples.
-    result_lst: List[
-        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-    ] = []
+    result_lst: List[Union[torch.Tensor, Any]] = []
     for element in data:
         if isinstance(element, torch.Tensor):
             result_lst.append(function(element))

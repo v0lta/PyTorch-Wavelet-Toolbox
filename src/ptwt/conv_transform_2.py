@@ -6,7 +6,7 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 
 from functools import partial
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import pywt
 import torch
@@ -18,13 +18,13 @@ from ._util import (
     _fold_axes,
     _get_len,
     _is_dtype_supported,
+    _map_result,
     _outer,
     _pad_symmetric,
     _swap_axes,
     _undo_swap_axes,
     _unfold_axes,
     _unfold_channels,
-    _map_result,
 )
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
@@ -158,6 +158,16 @@ def _preprocess_tensor_dec2d(
     return data, ds
 
 
+def _check_if_tensor(to_check: Any) -> torch.Tensor:
+    # Ensuring the first list elements are tensors makes mypy happy :-).
+    if not isinstance(to_check, torch.Tensor):
+        raise ValueError(
+            "First element of coeffs must be the approximation coefficient tensor."
+        )
+    else:
+        return to_check
+
+
 def wavedec2(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
@@ -196,7 +206,7 @@ def wavedec2(
 
     Raises:
         ValueError: If the dimensionality or the dtype of the input data tensor
-            is unsupported.
+            is unsupported or if the provided axes input has length other than two.
 
     Example:
         >>> import torch
@@ -253,16 +263,6 @@ def wavedec2(
     return result_lst
 
 
-def _check_if_tensor(to_check: Any) -> torch.Tensor:
-    # Ensuring the first list elements are tensors makes mypy happy :-).
-    if not isinstance(to_check, torch.Tensor):
-        raise ValueError(
-            "First element of coeffs must be the approximation coefficient tensor."
-        )
-    else:
-        return to_check
-
-
 def waverec2(
     coeffs: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
     wavelet: Union[Wavelet, str],
@@ -289,7 +289,8 @@ def waverec2(
 
     Raises:
         ValueError: If coeffs is not in a shape as returned from wavedec2 or
-            if the dtype is not supported.
+            if the dtype is not supported or if the provided axes input has length other
+            than two or if the same axes it repeated twice.
 
     Example:
         >>> import ptwt, pywt, torch
