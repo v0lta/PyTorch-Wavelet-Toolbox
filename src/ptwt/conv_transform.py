@@ -288,7 +288,7 @@ def _preprocess_result_list_rec1d(
 ) -> Tuple[List[torch.Tensor], List[int]]:
     # Fold axes for the wavelets
     fold_coeffs = []
-    ds = list(result_lst[0].shape)  # TODO: Check if the input is tensor
+    ds = list(result_lst[0].shape)
     for uf_coeff in result_lst:
         f_coeff, _ = _fold_axes(uf_coeff, 1)
         fold_coeffs.append(f_coeff)
@@ -338,7 +338,8 @@ def wavedec(
         approximation and D detail coefficients.
 
     Raises:
-        ValueError: If the dtype of the input data tensor is unsupported.
+        ValueError: If the dtype of the input data tensor is unsupported or
+            if more than one axis is provided.
 
     Example:
         >>> import torch
@@ -409,7 +410,8 @@ def waverec(
 
     Raises:
         ValueError: If the dtype of the coeffs tensor is unsupported or if the
-            coefficients have incompatible shapes, dtypes or devices.
+            coefficients have incompatible shapes, dtypes or devices or if
+            more than one axis is provided.
 
     Example:
         >>> import torch
