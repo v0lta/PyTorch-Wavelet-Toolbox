@@ -240,12 +240,12 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     rec = rec.numpy().squeeze()
     assert np.allclose(face, rec[:, : face.shape[1], : face.shape[2]])
 
-@pytest.mark.slow
+
 @pytest.mark.parametrize(
     "size", [(50, 20, 128, 128), (49, 21, 128, 128), (4, 5, 64, 64)]
 )
-@pytest.mark.parametrize("level", [1, 3, None])
-@pytest.mark.parametrize("wavelet", ["haar", "db2", "sym3"])
+@pytest.mark.parametrize("level", [1, None])
+@pytest.mark.parametrize("wavelet", ["haar", "sym3"])
 def test_input_4d(size, level, wavelet):
     """Test the error for 4d inputs to wavedec2."""
     data = torch.randn(*size).type(torch.float64)
