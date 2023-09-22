@@ -240,7 +240,7 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
     rec = rec.numpy().squeeze()
     assert np.allclose(face, rec[:, : face.shape[1], : face.shape[2]])
 
-
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "size", [(50, 20, 128, 128), (49, 21, 128, 128), (4, 5, 64, 64)]
 )
