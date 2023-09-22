@@ -177,7 +177,7 @@ class MatrixWavedec(object):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         boundary: str = "qr",
-        axis: int = -1,
+        axis: Optional[int] = -1,
     ) -> None:
         """Create a matrix-fwt object.
 
@@ -313,11 +313,11 @@ class MatrixWavedec(object):
 
         Args:
             input_signal (torch.Tensor): Batched input data.
-            An example shape could be ``[batch_size, time]``.
-            Inputs can have any dimension.
-            This transform affects the last axis by default.
-            Use the axis argument in the constructor to choose
-            another axis.
+                An example shape could be ``[batch_size, time]``.
+                Inputs can have any dimension.
+                This transform affects the last axis by default.
+                Use the axis argument in the constructor to choose
+                another axis.
 
         Returns:
             List[torch.Tensor]: A list with the coefficients for each scale.

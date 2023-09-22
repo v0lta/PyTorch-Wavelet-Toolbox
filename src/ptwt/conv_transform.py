@@ -250,7 +250,7 @@ def _waverec_fold_channels_1d_list(
 def _preprocess_tensor_dec1d(
     data: torch.Tensor,
 ) -> Tuple[torch.Tensor, Union[List[int], None]]:
-    """Preprocess input tensor dimensions
+    """Preprocess input tensor dimensions.
 
     Args:
         data (torch.Tensor): An input tensor of any shape.

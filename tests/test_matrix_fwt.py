@@ -213,6 +213,7 @@ def test_matrix1d_batch_channel(size):
 
 @pytest.mark.parametrize("axis", (0, 1, 2, 3, 4))
 def test_axis_1d(axis):
+    """Ensure the axis argument is supported correctly."""
     data = torch.randn(24, 24, 24, 24, 24).type(torch.float64)
     matrix_wavedec = MatrixWavedec(wavelet="haar", level=3, axis=axis)
     coeff = matrix_wavedec(data)

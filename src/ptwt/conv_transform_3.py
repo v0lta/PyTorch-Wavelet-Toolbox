@@ -259,34 +259,18 @@ def waverec3(
         if len(axes) != 3:
             raise ValueError("3D transforms work with two axes")
         else:
-<<<<<<< HEAD
-            _check_axes_argument(axes)
-=======
             _check_axes_argument(list(axes))
->>>>>>> ac76b4478066c7891b94e00ed661712991214d5c
             swap_axes_fn = partial(_swap_axes, axes=list(axes))
             coeffs = _map_result(coeffs, swap_axes_fn)
 
     wavelet = _as_wavelet(wavelet)
     ds = None
     # the Union[tensor, dict] idea is coming from pywt. We don't change it here.
-<<<<<<< HEAD
-    res_lll = coeffs[0]
-    if not isinstance(res_lll, torch.Tensor):
-        raise ValueError(
-            "First element of coeffs must be the approximation coefficient tensor."
-        )
-
-    if len(res_lll.shape) >= 5:
-        coeffs, ds = _waverec3d_fold_channels_3d_list(coeffs)
-        res_lll = coeffs[0]  # TODO: Check if this is tensor.
-=======
     res_lll = _check_if_tensor(coeffs[0])
 
     if len(res_lll.shape) >= 5:
         coeffs, ds = _waverec3d_fold_channels_3d_list(coeffs)
         res_lll = _check_if_tensor(coeffs[0])
->>>>>>> ac76b4478066c7891b94e00ed661712991214d5c
 
     torch_device = res_lll.device
     torch_dtype = res_lll.dtype
