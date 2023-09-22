@@ -18,13 +18,13 @@ from ._util import (
     _as_wavelet,
     _is_boundary_mode_supported,
     _is_dtype_supported,
-    _unfold_channels,
+    _unfold_axes,
 )
 from .conv_transform import (
     _get_filter_tensors,
-    _wavedec_fold_channels_1d,
-    _wavedec_unfold_channels_1d_list,
-    _waverec_fold_channels_1d_list,
+    _postprocess_result_list_dec1d,
+    _preprocess_result_list_rec1d,
+    _preprocess_tensor_dec1d,
 )
 from .sparse_math import (
     _orth_by_gram_schmidt,
@@ -177,6 +177,7 @@ class MatrixWavedec(object):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         boundary: str = "qr",
+        axis: int = -1,
     ) -> None:
         """Create a matrix-fwt object.
 
@@ -191,14 +192,21 @@ class MatrixWavedec(object):
                 implementation, it is fast but memory hungry. The 'gramschmidt'
                 option is sparse, memory efficient, and slow. Choose 'gramschmidt' if
                 'qr' runs out of memory. Defaults to 'qr'.
+            axis (int, optional): The axis we would like to transform.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
-            ValueError: If the wavelet filters have different lengths.
+            ValueError: If the wavelet filters have different lengths or
+                        if axis is not an integer.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.level = level
         self.boundary = boundary
+
+        if isinstance(axis, int):
+            self.axis = axis
+        else:
+            raise ValueError("MatrixWavedec transforms a single axis only.")
 
         self.input_length: Optional[int] = None
         self.fwt_matrix_list: List[torch.Tensor] = []
@@ -304,10 +312,12 @@ class MatrixWavedec(object):
         Matrix FWTs are used to avoid padding.
 
         Args:
-            input_signal (torch.Tensor): Batched input data ``[batch_size, time]``,
-                should be of even length. 1d inputs are interpreted as ``[time]``.
-                3d inputs are treated as ``[batch, channels, time]``.
-                This transform only affects the last axis.
+            input_signal (torch.Tensor): Batched input data.
+            An example shape could be ``[batch_size, time]``.
+            Inputs can have any dimension.
+            This transform affects the last axis by default.
+            Use the axis argument in the constructor to choose
+            another axis.
 
         Returns:
             List[torch.Tensor]: A list with the coefficients for each scale.
@@ -316,21 +326,11 @@ class MatrixWavedec(object):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
-        fold = False
-        if input_signal.dim() == 1:
-            # assume time series
-            input_signal = input_signal.unsqueeze(0)
-        elif input_signal.dim() == 3:
-            # assume batch, channels, time -> fold channels
-            fold = True
-            input_signal, ds = _wavedec_fold_channels_1d(input_signal)
-            input_signal = input_signal.squeeze(1)
-        elif input_signal.dim() > 3:
-            raise ValueError(
-                f"Invalid input tensor shape {input_signal.size()}. "
-                "The input signal is expected to be of the form "
-                "[batch_size, (channels), length]."
-            )
+        if self.axis != -1:
+            input_signal = input_signal.swapaxes(self.axis, -1)
+
+        input_signal, ds = _preprocess_tensor_dec1d(input_signal)
+        input_signal = input_signal.squeeze(1)
 
         if not _is_dtype_supported(input_signal.dtype):
             raise ValueError(f"Input dtype {input_signal.dtype} not supported")
@@ -373,8 +373,14 @@ class MatrixWavedec(object):
         result_list = [s.T for s in split_list[::-1]]
 
         # unfold if necessary
-        if fold:
-            result_list = _wavedec_unfold_channels_1d_list(result_list, ds)
+        if ds:
+            result_list = _postprocess_result_list_dec1d(result_list, ds)
+
+        if self.axis != -1:
+            swap = []
+            for coeff in result_list:
+                swap.append(coeff.swapaxes(self.axis, -1))
+            result_list = swap
 
         return result_list
 
@@ -455,9 +461,7 @@ class MatrixWaverec(object):
     """
 
     def __init__(
-        self,
-        wavelet: Union[Wavelet, str],
-        boundary: str = "qr",
+        self, wavelet: Union[Wavelet, str], boundary: str = "qr", axis: int = -1
     ) -> None:
         """Create the inverse matrix-based fast wavelet transformation.
 
@@ -472,10 +476,15 @@ class MatrixWaverec(object):
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
-            ValueError: If the wavelet filters have different lengths.
+            ValueError: If the wavelet filters have different lengths or if
+                        axis is not an integer.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.boundary = boundary
+        if isinstance(axis, int):
+            self.axis = axis
+        else:
+            raise ValueError("MatrixWaverec transforms a single axis only.")
 
         self.ifwt_matrix_list: List[torch.Tensor] = []
         self.level: Optional[int] = None
@@ -587,10 +596,15 @@ class MatrixWaverec(object):
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec` object.
         """
-        fold = False
-        if coefficients[0].dim() == 3:
-            fold = True
-            coefficients, ds = _waverec_fold_channels_1d_list(coefficients)
+        if self.axis != -1:
+            swap = []
+            for coeff in coefficients:
+                swap.append(coeff.swapaxes(self.axis, -1))
+            coefficients = swap
+
+        ds = None
+        if coefficients[0].ndim > 2:
+            coefficients, ds = _preprocess_result_list_rec1d(coefficients)
 
         level = len(coefficients) - 1
         input_length = coefficients[-1].shape[-1] * 2
@@ -642,7 +656,10 @@ class MatrixWaverec(object):
 
         res_lo = lo.T
 
-        if fold:
-            res_lo = _unfold_channels(res_lo.unsqueeze(-2), list(ds)).squeeze(-2)
+        if ds:
+            res_lo = _unfold_axes(res_lo.unsqueeze(-2), list(ds), 1).squeeze(-2)
+
+        if self.axis != -1:
+            res_lo = res_lo.swapaxes(self.axis, -1)
 
         return res_lo

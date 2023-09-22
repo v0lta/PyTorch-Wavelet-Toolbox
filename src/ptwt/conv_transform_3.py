@@ -3,8 +3,8 @@
 The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
 
-from typing import Dict, List, Optional, Sequence, Union, cast, Tuple, Any
 from functools import partial
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import pywt
 import torch
@@ -12,16 +12,16 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
+    _check_axes_argument,
+    _fold_axes,
     _get_len,
     _is_dtype_supported,
+    _map_result,
     _outer,
     _pad_symmetric,
-    _fold_axes,
-    _unfold_axes,
     _swap_axes,
     _undo_swap_axes,
-    _map_result,
-    _check_axes_argument
+    _unfold_axes,
 )
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
@@ -206,15 +206,11 @@ def wavedec3(
 
     if ds:
         _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
-        result_lst = _map_result(
-            result_lst, _unfold_axes_fn
-        )
+        result_lst = _map_result(result_lst, _unfold_axes_fn)
 
     if tuple(axes) != (-3, -2, -1):
         undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-        result_lst = _map_result(
-            result_lst, undo_swap_fn
-        )
+        result_lst = _map_result(result_lst, undo_swap_fn)
 
     return result_lst
 
@@ -270,7 +266,7 @@ def waverec3(
             raise ValueError("3D transforms work with two axes")
         else:
             _check_axes_argument(axes)
-            swap_axes_fn = partial(_swap_axes, axes= list(axes))
+            swap_axes_fn = partial(_swap_axes, axes=list(axes))
             coeffs = _map_result(coeffs, swap_axes_fn)
 
     wavelet = _as_wavelet(wavelet)
@@ -281,10 +277,10 @@ def waverec3(
         raise ValueError(
             "First element of coeffs must be the approximation coefficient tensor."
         )
-    
+
     if len(res_lll.shape) >= 5:
         coeffs, ds = _waverec3d_fold_channels_3d_list(coeffs)
-        res_lll = coeffs[0] # TODO: Check if this is tensor.
+        res_lll = coeffs[0]  # TODO: Check if this is tensor.
 
     torch_device = res_lll.device
     torch_dtype = res_lll.dtype
@@ -365,7 +361,7 @@ def waverec3(
 
     if ds:
         res_lll = _unfold_axes(res_lll, ds, 3)
-    
+
     if axes != (-3, -2, -1):
         res_lll = _undo_swap_axes(res_lll, list(axes))
     return res_lll

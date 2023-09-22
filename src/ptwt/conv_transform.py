@@ -250,7 +250,16 @@ def _waverec_fold_channels_1d_list(
 def _preprocess_tensor_dec1d(
     data: torch.Tensor,
 ) -> Tuple[torch.Tensor, Union[List[int], None]]:
-    # Preprocess input tensor dimensions
+    """Preprocess input tensor dimensions
+
+    Args:
+        data (torch.Tensor): An input tensor of any shape.
+
+    Returns:
+        Tuple[torch.Tensor, Union[List[int], None]]:
+            A data tensor of shape [new_batch, 1, to_process]
+            and the original shape, if the shape has changed.
+    """
     ds = None
     if len(data.shape) == 1:
         # assume time series
@@ -274,7 +283,7 @@ def _postprocess_result_list_dec1d(
     return unfold_list
 
 
-def _preprocess_result_list_dec1d(
+def _preprocess_result_list_rec1d(
     result_lst: List[torch.Tensor],
 ) -> Tuple[List[torch.Tensor], List[int]]:
     # Fold axes for the wavelets
@@ -438,7 +447,7 @@ def waverec(
     # fold channels, if necessary.
     ds = None
     if coeffs[0].dim() >= 3:
-        coeffs, ds = _preprocess_result_list_dec1d(coeffs)
+        coeffs, ds = _preprocess_result_list_rec1d(coeffs)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype

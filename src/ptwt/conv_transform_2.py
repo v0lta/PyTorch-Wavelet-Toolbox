@@ -18,13 +18,13 @@ from ._util import (
     _fold_axes,
     _get_len,
     _is_dtype_supported,
+    _map_result,
     _outer,
     _pad_symmetric,
     _swap_axes,
     _undo_swap_axes,
     _unfold_axes,
     _unfold_channels,
-    _map_result,
 )
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
