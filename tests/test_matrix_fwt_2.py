@@ -14,6 +14,7 @@ from src.ptwt.matmul_transform_2 import (
     construct_boundary_a2,
     construct_boundary_s2,
 )
+from tests.test_convolution_fwt import _compare_coeffs
 
 
 @pytest.mark.parametrize("size", [(16, 16), (16, 8), (8, 16)])
@@ -226,3 +227,20 @@ def test_empty_inverse_operators(operator) -> None:
         matrixifwt = operator("haar")
     with pytest.raises(ValueError):
         _ = matrixifwt.sparse_ifwt_operator
+
+
+@pytest.mark.parametrize("axes", ((-2, -1), (-1, -2), (-3, -2), (0, 1), (1, 0)))
+def test_axes_2d(axes):
+    """Ensure the axes argument is supported correctly."""
+    # TODO: write me.
+    data = torch.randn(24, 24, 24, 24, 24).type(torch.float64)
+    matrix_wavedec2 = MatrixWavedec2(wavelet="haar", level=3, axes=axes)
+    coeff = matrix_wavedec2(data)
+    coeff_pywt = pywt.wavedec2(data.numpy(), wavelet="haar", level=3, axes=axes)
+    assert len(coeff) == len(coeff_pywt)
+    assert _compare_coeffs(coeff, coeff_pywt)
+
+    matrix_waverec2 = MatrixWaverec2("haar", axes=axes)
+
+    rec = matrix_waverec2(coeff)
+    assert np.allclose(rec, data)

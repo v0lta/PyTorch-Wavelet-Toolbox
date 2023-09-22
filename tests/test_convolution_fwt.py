@@ -286,6 +286,15 @@ def test_input_1d_dimension_error():
 
 
 def _compare_coeffs(ptwt_res, pywt_res):
+    """Compare coefficient lists.
+
+    Args:
+        ptwt_res: Our result list.
+        pywt_res: A pyt result list.
+
+    Returns:
+        A list with bools from allclose.
+    """
     test_list = []
     for ptwtcs, pywtcs in zip(ptwt_res, pywt_res):
         if isinstance(ptwtcs, tuple):
