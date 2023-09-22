@@ -12,12 +12,10 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _fold_axes,
-    _fold_channels,
     _get_len,
     _is_dtype_supported,
     _pad_symmetric,
     _unfold_axes,
-    _unfold_channels,
 )
 
 
@@ -217,34 +215,6 @@ def _adjust_padding_at_reconstruction(
             "padding error, please check if dec and rec wavelets are identical."
         )
     return pad_end, pad_start
-
-
-def _wavedec_fold_channels_1d(data: torch.Tensor) -> Tuple[torch.Tensor, List[int]]:
-    data = data.unsqueeze(-2)
-    ds = data.shape
-    data = _fold_channels(data)
-    return data, list(ds)
-
-
-def _wavedec_unfold_channels_1d_list(
-    result_list: List[torch.Tensor], ds: List[int]
-) -> List[torch.Tensor]:
-    unfold_res = []
-    for res_coeff in result_list:
-        unfold_res.append(
-            _unfold_channels(res_coeff.unsqueeze(1), list(ds)).squeeze(-2)
-        )
-    return unfold_res
-
-
-def _waverec_fold_channels_1d_list(
-    coeff_list: List[torch.Tensor],
-) -> Tuple[List[torch.Tensor], List[int]]:
-    folded = []
-    ds = coeff_list[0].unsqueeze(-2).shape
-    for to_fold_coeff in coeff_list:
-        folded.append(_fold_channels(to_fold_coeff.unsqueeze(-2)).squeeze(-2))
-    return folded, list(ds)
 
 
 def _preprocess_tensor_dec1d(

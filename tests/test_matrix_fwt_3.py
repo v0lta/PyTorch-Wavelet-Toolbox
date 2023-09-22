@@ -1,4 +1,5 @@
 """Test the 3d matrix-fwt code."""
+from typing import List
 
 import numpy as np
 import pytest
@@ -82,3 +83,27 @@ def test_boundary_wavedec3_inverse(level, shape):
     assert np.allclose(
         test_data.numpy(), rec[:, : shape[0], : shape[1], : shape[2]].numpy()
     )
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("axes", [[-3, -2, -1], [0, 2, 1]])
+@pytest.mark.parametrize("level", [1, 2, None])
+def test_axes_arg_matrix_3d(axes: List[int], level: int) -> None:
+    """Test axes 3d matmul argument support."""
+    wavelet = "haar"
+    data = torch.randn([16, 16, 16, 16, 16], dtype=torch.float64)
+    ptwc = MatrixWavedec3(wavelet, level=level, axes=axes)(data)
+    pywc = pywt.wavedecn(data, wavelet, level=level, axes=axes)
+
+    # ensure ptwt and pywt coefficients are identical.
+    test_list = []
+    for a, b in zip(ptwc, pywc):
+        if type(a) is torch.Tensor:
+            test_list.append(np.allclose(a, b))
+        else:
+            for key in a.keys():
+                test_list.append(np.allclose(b[key], a[key].numpy()))
+
+    assert all(test_list)
+
+    # test inversion

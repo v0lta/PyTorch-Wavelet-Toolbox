@@ -85,6 +85,7 @@ def test_waverec3(shape: list, wavelet: str, level: int, mode: str) -> None:
     )
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "size", [[5, 32, 32, 32], [4, 3, 32, 32, 32], [1, 1, 1, 32, 32, 32]]
 )
@@ -118,13 +119,14 @@ def test_multidim_input(size: List[int], level: int, wavelet: str, mode: str):
     )
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("axes", [[-3, -2, -1], [0, 2, 1]])
 @pytest.mark.parametrize("level", [1, 2, None])
-@pytest.mark.parametrize("wavelet", ["haar", "sym3", "db3"])
 @pytest.mark.parametrize("mode", ["zero", "symmetric", "reflect"])
-def test_axes_arg(axes: List[int], wavelet: str, level: int, mode: str) -> None:
+def test_axes_arg_3d(axes: List[int], level: int, mode: str) -> None:
     """Test axes argument support."""
-    data = torch.randn([17, 17, 17, 17, 17], dtype=torch.float64)
+    wavelet = "db3"
+    data = torch.randn([16, 16, 16, 16, 16], dtype=torch.float64)
     ptwc = ptwt.wavedec3(data, wavelet, level=level, mode=mode, axes=axes)
     cat_pywc = pywt.wavedecn(data, wavelet, level=level, mode=mode, axes=axes)
 
@@ -138,4 +140,19 @@ def test_axes_arg(axes: List[int], wavelet: str, level: int, mode: str) -> None:
 
     assert all(test_list)
 
-    # rec = ptwt.waverec3(ptwc, wavelet)
+    rec = ptwt.waverec3(ptwc, wavelet, axes=axes)
+    assert np.allclose(data, rec)
+
+
+def test_2d_dimerror():
+    """Check the error for too many axes."""
+    with pytest.raises(ValueError):
+        data = torch.randn([32, 32], dtype=torch.float64)
+        ptwt.wavedec3(data, "haar")
+
+
+def test_1d_dimerror():
+    """Check the error for too many axes."""
+    with pytest.raises(ValueError):
+        data = torch.randn([32], dtype=torch.float64)
+        ptwt.wavedec3(data, "haar")

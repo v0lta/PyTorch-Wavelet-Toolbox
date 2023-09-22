@@ -145,7 +145,7 @@ def _unfold_axes(data: torch.Tensor, ds: List[int], keep_no: int) -> torch.Tenso
     return torch.reshape(data, ds[:-keep_no] + list(data.shape[-keep_no:]))
 
 
-def _check_if_array(array: Any) -> torch.Tensor:
+def _check_if_tensor(array: Any) -> torch.Tensor:
     if not isinstance(array, torch.Tensor):
         raise ValueError(
             "First element of coeffs must be the approximation coefficient tensor."

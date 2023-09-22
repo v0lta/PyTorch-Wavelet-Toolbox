@@ -13,6 +13,7 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _check_axes_argument,
+    _check_if_tensor,
     _fold_axes,
     _get_len,
     _is_dtype_supported,
@@ -29,7 +30,6 @@ from .conv_transform import (
     _get_pad,
     _translate_boundary_strings,
 )
-from .conv_transform_2 import _check_if_tensor
 
 
 def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
@@ -146,18 +146,19 @@ def wavedec3(
     """
     if tuple(axes) != (-3, -2, -1):
         if len(axes) != 3:
-            raise ValueError("3D transforms work with two axes.")
+            raise ValueError("3D transforms work with three axes.")
         else:
+            _check_axes_argument(list(axes))
             data = _swap_axes(data, list(axes))
 
     ds = None
-    if len(data.shape) == 3:
-        data = data.unsqueeze(1)
-    elif len(data.shape) >= 4:
-        data, ds = _fold_axes(data, 3)
+    if data.dim() < 3:
+        raise ValueError("At least three dimensions are required for 3d wavedec.")
+    elif len(data.shape) == 3:
         data = data.unsqueeze(1)
     else:
-        raise ValueError("Input to wavedec3 needs to be at least three dimensions.")
+        data, ds = _fold_axes(data, 3)
+        data = data.unsqueeze(1)
 
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
@@ -257,7 +258,7 @@ def waverec3(
     """
     if tuple(axes) != (-3, -2, -1):
         if len(axes) != 3:
-            raise ValueError("3D transforms work with two axes")
+            raise ValueError("3D transforms work with three axes")
         else:
             _check_axes_argument(list(axes))
             swap_axes_fn = partial(_swap_axes, axes=list(axes))
@@ -267,8 +268,11 @@ def waverec3(
     ds = None
     # the Union[tensor, dict] idea is coming from pywt. We don't change it here.
     res_lll = _check_if_tensor(coeffs[0])
-
-    if len(res_lll.shape) >= 5:
+    if res_lll.dim() < 3:
+        raise ValueError(
+            "Three dimensional transforms require at least three dimensions."
+        )
+    elif res_lll.dim() >= 5:
         coeffs, ds = _waverec3d_fold_channels_3d_list(coeffs)
         res_lll = _check_if_tensor(coeffs[0])
 

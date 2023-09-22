@@ -229,6 +229,7 @@ def test_empty_inverse_operators(operator) -> None:
         _ = matrixifwt.sparse_ifwt_operator
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("axes", ((-2, -1), (-1, -2), (-3, -2), (0, 1), (1, 0)))
 def test_axes_2d(axes):
     """Ensure the axes argument is supported correctly."""

@@ -176,8 +176,8 @@ class MatrixWavedec(object):
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
-        boundary: str = "qr",
         axis: Optional[int] = -1,
+        boundary: str = "qr",
     ) -> None:
         """Create a matrix-fwt object.
 
@@ -187,12 +187,12 @@ class MatrixWavedec(object):
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
+            axis (int, optional): The axis we would like to transform.
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt'
                 option is sparse, memory efficient, and slow. Choose 'gramschmidt' if
                 'qr' runs out of memory. Defaults to 'qr'.
-            axis (int, optional): The axis we would like to transform.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -461,13 +461,15 @@ class MatrixWaverec(object):
     """
 
     def __init__(
-        self, wavelet: Union[Wavelet, str], boundary: str = "qr", axis: int = -1
+        self, wavelet: Union[Wavelet, str], axis: int = -1, boundary: str = "qr"
     ) -> None:
         """Create the inverse matrix-based fast wavelet transformation.
 
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+            axis (int): The axis transformed by the original decomposition
+                defaults to -1 or the last axis.
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt' option

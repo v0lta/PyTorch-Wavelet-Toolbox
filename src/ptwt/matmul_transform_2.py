@@ -14,6 +14,7 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _check_axes_argument,
+    _check_if_tensor,
     _is_boundary_mode_supported,
     _is_dtype_supported,
     _map_result,
@@ -23,7 +24,6 @@ from ._util import (
 )
 from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import (
-    _check_if_tensor,
     _construct_2d_filt,
     _preprocess_tensor_dec2d,
     _waverec2d_fold_channels_2d_list,
@@ -249,9 +249,9 @@ class MatrixWavedec2(object):
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
+        axes: Tuple[int, int] = (-2, -1),
         boundary: str = "qr",
         separable: bool = True,
-        axes: Tuple[int, int] = (-2, -1),
     ):
         """Create a new matrix fwt object.
 
@@ -261,6 +261,8 @@ class MatrixWavedec2(object):
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
+            axes (int, int): A tuple with the axes to transform.
+                Defaults to (-2, -1).
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on Pytorch's
                 dense qr implementation, it is fast but memory hungry.
@@ -273,9 +275,6 @@ class MatrixWavedec2(object):
                 Matrix construction is significantly faster for separable
                 transformations since only a small constant-size part of the
                 matrices must be orthogonalized. Defaults to True.
-            axes (int, int): A tuple with the axes to transform.
-                Defaults to (-2, -1).
-
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -569,15 +568,17 @@ class MatrixWaverec2(object):
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
+        axes: Tuple[int, int] = (-2, -1),
         boundary: str = "qr",
         separable: bool = True,
-        axes: Tuple[int, int] = (-2, -1),
     ):
         """Create the inverse matrix-based fast wavelet transformation.
 
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+            axes (int, int): The axes transformed by waverec2.
+                Defaults to (-2, -1).
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt' option
@@ -589,8 +590,6 @@ class MatrixWaverec2(object):
                 size part of the matrices must be orthogonalized.
                 For invertibility, the analysis and synthesis values must be identical!
                 Defaults to True.
-            axes (int, int): The axes transformed by waverec2.
-                Defaults to (-2, -1).
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.

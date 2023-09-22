@@ -6,7 +6,7 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 
 from functools import partial
-from typing import Any, List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import pywt
 import torch
@@ -15,6 +15,7 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _check_axes_argument,
+    _check_if_tensor,
     _fold_axes,
     _get_len,
     _is_dtype_supported,
@@ -24,7 +25,6 @@ from ._util import (
     _swap_axes,
     _undo_swap_axes,
     _unfold_axes,
-    _unfold_channels,
 )
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
@@ -91,30 +91,6 @@ def _fwt_pad2(
     return data_pad
 
 
-def _wavedec2d_unfold_channels_2d_list(
-    result_list: List[
-        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-    ],
-    ds: List[int],
-) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-    # unfolds the wavedec2d result lists, restoring the channel dimension.
-    unfold_res: List[
-        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-    ] = []
-    for cres in result_list:
-        if isinstance(cres, torch.Tensor):
-            unfold_res.append(_unfold_channels(cres, list(ds)))
-        else:
-            unfold_res.append(
-                (
-                    _unfold_channels(cres[0], list(ds)),
-                    _unfold_channels(cres[1], list(ds)),
-                    _unfold_channels(cres[2], list(ds)),
-                )
-            )
-    return unfold_res
-
-
 def _waverec2d_fold_channels_2d_list(
     coeffs: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
 ) -> Tuple[
@@ -156,16 +132,6 @@ def _preprocess_tensor_dec2d(
     elif len(data.shape) == 1:
         raise ValueError("More than one input dimension required.")
     return data, ds
-
-
-def _check_if_tensor(to_check: Any) -> torch.Tensor:
-    # Ensuring the first list elements are tensors makes mypy happy :-).
-    if not isinstance(to_check, torch.Tensor):
-        raise ValueError(
-            "First element of coeffs must be the approximation coefficient tensor."
-        )
-    else:
-        return to_check
 
 
 def wavedec2(

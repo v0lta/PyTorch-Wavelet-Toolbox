@@ -18,6 +18,7 @@ from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
 from tests._mackey_glass import MackeyGenerator
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("wavelet_string", ["db1", "db2", "db3", "db4", "db5", "sym5"])
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("length", [64, 65])
@@ -309,6 +310,7 @@ def _compare_coeffs(ptwt_res, pywt_res):
     return test_list
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "size", [(50, 20, 128, 128), (8, 49, 21, 128, 128), (6, 4, 4, 5, 64, 64)]
 )
@@ -332,6 +334,7 @@ def test_2d_multidim_input(size):
     )
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (-3, -2), (0, 1), (1, 0)])
 def test_2d_axis_argument(axes):
     """Ensure the axes argument works as expected."""
