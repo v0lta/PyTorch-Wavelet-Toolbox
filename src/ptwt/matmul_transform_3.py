@@ -159,8 +159,8 @@ class MatrixWavedec3(object):
         """Compute a separable 3d-boundary wavelet transform.
 
         Args:
-            input_signal (torch.Tensor): An input signal of shape
-                [batch_size, depth, height, width].
+            input_signal (torch.Tensor): An input signal. For example
+                of shape [batch_size, depth, height, width].
 
         Raises:
             ValueError: If the input dimensions don't work.

@@ -130,10 +130,11 @@ def wavedec2(
     """Non-separated two-dimensional wavelet transform. Only the last two axes change.
 
     Args:
-        data (torch.Tensor): The input data tensor with up to four dimensions.
-            2d inputs are interpreted as ``[height, width]``,
+        data (torch.Tensor): The input data tensor with any number of dimensions.
+            By default 2d inputs are interpreted as ``[height, width]``,
             3d inputs are interpreted as ``[batch_size, height, width]``.
             4d inputs are interpreted as ``[batch_size, channels, height, width]``.
+            the ``axis`` argument allows other interpretations.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.

@@ -176,7 +176,7 @@ def fswavedec2(
     wavelet: Union[str, pywt.Wavelet],
     mode: str = "reflect",
     level: Optional[int] = None,
-    axes: Optional[Tuple[int, int]] = (-2, -1),
+    axes: Tuple[int, int] = (-2, -1),
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a fully separable 2D-padded analysis wavelet transform.
 
@@ -193,7 +193,7 @@ def fswavedec2(
             This function defaults to "reflect".
         level (int): The number of desired scales.
             Defaults to None.
-        axes ([int, int], optional): The axes we want to transform,
+        axes ([int, int]): The axes we want to transform,
             defaults to (-2, -1).
 
     Raises:
@@ -247,7 +247,7 @@ def fswavedec3(
     wavelet: Union[str, pywt.Wavelet],
     mode: str = "reflect",
     level: Optional[int] = None,
-    axes: Optional[Tuple[int, int]] = (-3, -2, -1),
+    axes: Tuple[int, int, int] = (-3, -2, -1),
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a fully separable 3D-padded analysis wavelet transform.
 
@@ -317,7 +317,7 @@ def fswavedec3(
 def fswaverec2(
     coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[str, pywt.Wavelet],
-    axes: Optional[Tuple[int, int]] = (-2, -1),
+    axes: Tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 2D-padded synthesis wavelet transform.
 
@@ -326,7 +326,7 @@ def fswaverec2(
             The wavelet coefficients as computed by `fswavedec2`.
         wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
             synthesis transform.
-        axes (Tuple[int, int], optional): Compute the transform over these
+        axes (Tuple[int, int]): Compute the transform over these
             axes instead of the last two. Defaults to (-2, -1).
 
     Returns:
@@ -381,7 +381,7 @@ def fswaverec2(
 def fswaverec3(
     coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[str, pywt.Wavelet],
-    axes: Optional[Tuple[int, int, int]] = (-3, -2, -1),
+    axes: Tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 3D-padded synthesis wavelet transform.
 

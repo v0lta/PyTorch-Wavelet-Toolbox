@@ -110,7 +110,7 @@ def wavedec3(
     """Compute a three-dimensional wavelet transform.
 
     Args:
-        data (torch.Tensor): The input data of shape
+        data (torch.Tensor): The input data. For example of shape
             [batch_size, length, height, width]
         wavelet (Union[Wavelet, str]): The wavelet to transform with.
             ``pywt.wavelist(kind='discrete')`` lists possible choices.

@@ -50,8 +50,8 @@ class WaveletPacket(BaseDict):
         wavelet: Union[Wavelet, str],
         mode: Optional[str] = "reflect",
         maxlevel: Optional[int] = None,
-        axis: Optional[int] = -1,
-        boundary_orthogonalization: Optional[str] = "qr",
+        axis: int = -1,
+        boundary_orthogonalization: str = "qr",
     ) -> None:
         """Create a wavelet packet decomposition object.
 
@@ -62,6 +62,8 @@ class WaveletPacket(BaseDict):
                 ``[batch_size, time]`` or ``[batch_size, channels, time]``.
                 If None, the object is initialized without
                 performing a decomposition.
+                The time axis is transformed by default.
+                Use the ``axis`` argument to choose another dimension.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
             mode (str, optional): The desired padding method. If you select 'boundary',
@@ -69,8 +71,7 @@ class WaveletPacket(BaseDict):
             maxlevel (int, optional): Value is passed on to `transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
-            axis (int, optional): The axis to transform.
-                Defaults to -1.
+            axis (int, optional): The axis to transform. Defaults to -1.
             boundary_orthogonalization (str): The orthogonalization method
                 to use. Only used if `mode` equals 'boundary'. Choose from
                 'qr' or 'gramschmidt'. Defaults to 'qr'.
@@ -113,8 +114,8 @@ class WaveletPacket(BaseDict):
         """Calculate the 1d wavelet packet transform for the input data.
 
         Args:
-            data (torch.Tensor): The input data array of shape [time]
-                or [batch_size, time].
+            data (torch.Tensor): The input data array of shape ``[time]``
+                or ``[batch_size, time]``.
             maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
@@ -262,17 +263,17 @@ class WaveletPacket2D(BaseDict):
         self,
         data: Optional[torch.Tensor],
         wavelet: Union[Wavelet, str],
-        mode: Optional[str] = "reflect",
+        mode: str = "reflect",
         maxlevel: Optional[int] = None,
-        axes: Optional[Tuple[int, int]] = (-2, -1),
-        boundary_orthogonalization: Optional[str] = "qr",
-        separable: Optional[bool] = False,
+        axes: Tuple[int, int] = (-2, -1),
+        boundary_orthogonalization: str = "qr",
+        separable: bool = False,
     ) -> None:
         """Create a 2D-Wavelet packet tree.
 
         Args:
-            data (torch.tensor, optional): The input data tensor
-                of shape ``[batch_size, height, width]`` or
+            data (torch.tensor, optional): The input data tensor.
+                For example of shape ``[batch_size, height, width]`` or
                 ``[batch_size, channels, height, width]``.
                 If None, the object is initialized without performing
                 a decomposition.
