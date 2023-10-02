@@ -71,7 +71,7 @@ class WaveletPacket(BaseDict):
             maxlevel (int, optional): Value is passed on to `transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
-            axis (int, optional): The axis to transform. Defaults to -1.
+            axis (int): The axis to transform. Defaults to -1.
             boundary_orthogonalization (str): The orthogonalization method
                 to use. Only used if `mode` equals 'boundary'. Choose from
                 'qr' or 'gramschmidt'. Defaults to 'qr'.
