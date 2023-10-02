@@ -107,3 +107,5 @@ def test_axes_arg_matrix_3d(axes: List[int], level: int) -> None:
     assert all(test_list)
 
     # test inversion
+    rec = MatrixWaverec3(wavelet, axes=axes)(ptwc)
+    assert np.allclose(data, rec.numpy())

@@ -98,22 +98,8 @@ def _waverec2d_fold_channels_2d_list(
     List[int],
 ]:
     # fold the input coefficients for processing conv2d_transpose.
-    fold_coeffs: List[
-        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-    ] = []
     ds = list(_check_if_tensor(coeffs[0]).shape)
-    for coeff in coeffs:
-        if isinstance(coeff, torch.Tensor):
-            fold_coeffs.append(_fold_axes(coeff, 2)[0])
-        else:
-            fold_coeffs.append(
-                (
-                    _fold_axes(coeff[0], 2)[0],
-                    _fold_axes(coeff[1], 2)[0],
-                    _fold_axes(coeff[2], 2)[0],
-                )
-            )
-    return fold_coeffs, ds
+    return _map_result(coeffs, lambda t: _fold_axes(t, 2)[0]), ds
 
 
 def _preprocess_tensor_dec2d(

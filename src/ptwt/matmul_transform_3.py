@@ -481,9 +481,9 @@ class MatrixWaverec3(object):
                 lll = _batch_dim_mm(mat, lll, dim=(-1) * (dim + 1))
 
         if ds:
-            res_lll = _unfold_axes(res_lll, ds, 3)
+            lll = _unfold_axes(lll, ds, 3)
 
         if self.axes != (-3, -2, -1):
-            res_lll = _undo_swap_axes(res_lll, list(self.axes))
+            lll = _undo_swap_axes(lll, list(self.axes))
 
         return lll

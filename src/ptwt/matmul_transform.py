@@ -188,6 +188,7 @@ class MatrixWavedec(object):
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
             axis (int, optional): The axis we would like to transform.
+                Defaults to -1.
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt'

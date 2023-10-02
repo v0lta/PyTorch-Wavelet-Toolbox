@@ -104,24 +104,6 @@ def _pad_symmetric(
     return signal
 
 
-def _fold_channels(data: torch.Tensor) -> torch.Tensor:
-    """Fold [batch, channel, height width] into [batch*channel, height, widht]."""
-    ds = data.shape
-    return torch.reshape(
-        data,
-        [
-            ds[0] * ds[1],
-            ds[2],
-            ds[3],
-        ],
-    )
-
-
-def _unfold_channels(data: torch.Tensor, ds: List[int]) -> torch.Tensor:
-    """Unfold [batch*channel, height, widht] into [batch, channel, height, width]."""
-    return torch.reshape(data, [ds[0], ds[1], data.shape[1], data.shape[2]])
-
-
 def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, List[int]]:
     """Fold unchanged leading dimensions into a single batch dimension.
 
@@ -141,7 +123,7 @@ def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, List[int
 
 
 def _unfold_axes(data: torch.Tensor, ds: List[int], keep_no: int) -> torch.Tensor:
-    """Unfold [batch*channel, height, widht] into [batch, channel, height, width]."""
+    """Unfold i.e. [batch*channel,height,widht] to [batch,channel,height,width]."""
     return torch.reshape(data, ds[:-keep_no] + list(data.shape[-keep_no:]))
 
 
