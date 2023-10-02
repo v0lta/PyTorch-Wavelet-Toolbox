@@ -113,23 +113,13 @@ def _separable_conv_wavedecn(
     """Compute a multilevel separable padded wavelet analysis transform.
 
     Args:
-        input (torch.Tensor): A tensor of shape [batch, axis_1, ... axis_n].
-            Everything but the batch axis will be transformed.
-        wavelet (Wavelet: A pywt wavelet compatible object.
-            Please consider the output from ``pywt.wavelist(kind='discrete')``
-            for possible choices.
-        mode (str): The desired padding mode. Padding extends the signal along
-            the edges. Supported methods are::
-
-                "reflect", "zero", "constant", "periodic".
-
-            Defaults to "reflect".
-        level (int): The desired decomposition level. If None the
-            largest possible decomposition value is used.
+        input (torch.Tensor): A tensor i.e. of shape [batch,axis_1, ... axis_n].
+        wavelet (Wavelet): A pywt wavelet compatible object.
+        mode (str): The desired padding mode.
+        level (int): The desired decomposition level.
 
     Returns:
-        List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
-            The transformed signal.
+        List[Union[torch.Tensor, Dict[str, torch.Tensor]]]: The wavelet coeffs.
     """
     result: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
     approx = input
