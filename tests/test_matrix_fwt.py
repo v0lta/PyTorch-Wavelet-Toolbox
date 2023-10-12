@@ -183,11 +183,11 @@ def test_matrix_transform_1d_rebuild(wavelet_str: str, boundary: str):
                 )
 
 
-def test_4d_input_to_1d_transform_dimension_error():
-    """Test the error for 1d inputs to the MatrixWavedec __call__."""
+def test_4d_invalid_axis_error():
+    """Test the error for 1d axis arguments."""
     with pytest.raises(ValueError):
         data = torch.randn(50, 50, 50, 50)
-        matrix_wavedec_1d = MatrixWavedec("haar", 4)
+        matrix_wavedec_1d = MatrixWavedec("haar", axis=(1, 2))
         matrix_wavedec_1d(data)
 
 
@@ -209,3 +209,21 @@ def test_matrix1d_batch_channel(size):
     rec = matrix_waverec_2d(ptwt_coeff)
 
     assert np.allclose(data.numpy(), rec.numpy())
+
+
+@pytest.mark.parametrize("axis", (0, 1, 2, 3, 4))
+def test_axis_1d(axis):
+    """Ensure the axis argument is supported correctly."""
+    data = torch.randn(24, 24, 24, 24, 24).type(torch.float64)
+    matrix_wavedec = MatrixWavedec(wavelet="haar", level=3, axis=axis)
+    coeff = matrix_wavedec(data)
+    coeff_pywt = pywt.wavedec(data.numpy(), wavelet="haar", level=3, axis=axis)
+    assert len(coeff) == len(coeff_pywt)
+    assert all(
+        [np.allclose(coeff, coeff_pywt) for coeff, coeff_pywt in zip(coeff, coeff_pywt)]
+    )
+
+    matrix_waverec = MatrixWaverec("haar", axis=axis)
+
+    rec = matrix_waverec(coeff)
+    assert np.allclose(rec, data)

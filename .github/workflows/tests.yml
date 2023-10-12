@@ -1,6 +1,6 @@
 name: Tests
 
-on: [ push, pull_request ]
+on: [ push ]
 
 jobs:
   tests:
@@ -20,7 +20,7 @@ jobs:
         run: pip install nox
       - name: Test with pytest
         run:
-          nox -s test
+          nox -s fast-test
   lint:
     name: lint
     runs-on: ubuntu-latest

@@ -1,6 +1,7 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
-from typing import List, Optional, Protocol, Sequence, Tuple, Union
+from typing import Any, Callable, List, Optional, Protocol, Sequence, Tuple, Union
 
+import numpy as np
 import pywt
 import torch
 
@@ -103,19 +104,80 @@ def _pad_symmetric(
     return signal
 
 
-def _fold_channels(data: torch.Tensor) -> torch.Tensor:
-    """Fold [batch, channel, height width] into [batch*channel, height, widht]."""
-    ds = data.shape
-    return torch.reshape(
-        data,
-        [
-            ds[0] * ds[1],
-            ds[2],
-            ds[3],
-        ],
+def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, List[int]]:
+    """Fold unchanged leading dimensions into a single batch dimension.
+
+    Args:
+        data ( torch.Tensor): The input data array.
+        keep_no (int): The number of dimensions to keep.
+
+    Returns:
+        Tuple[ torch.Tensor, List[int]]:
+            The folded result array, and the shape of the original input.
+    """
+    dshape = list(data.shape)
+    return (
+        torch.reshape(data, [int(np.prod(dshape[:-keep_no]))] + dshape[-keep_no:]),
+        dshape,
     )
 
 
-def _unfold_channels(data: torch.Tensor, ds: List[int]) -> torch.Tensor:
-    """Unfold [batch*channel, height, widht] into [batch, channel, height, width]."""
-    return torch.reshape(data, [ds[0], ds[1], data.shape[1], data.shape[2]])
+def _unfold_axes(data: torch.Tensor, ds: List[int], keep_no: int) -> torch.Tensor:
+    """Unfold i.e. [batch*channel,height,widht] to [batch,channel,height,width]."""
+    return torch.reshape(data, ds[:-keep_no] + list(data.shape[-keep_no:]))
+
+
+def _check_if_tensor(array: Any) -> torch.Tensor:
+    if not isinstance(array, torch.Tensor):
+        raise ValueError(
+            "First element of coeffs must be the approximation coefficient tensor."
+        )
+    return array
+
+
+def _check_axes_argument(axes: List[int]) -> None:
+    if len(set(axes)) != len(axes):
+        raise ValueError("Cant transform the same axis twice.")
+
+
+def _get_transpose_order(
+    axes: List[int], data_shape: List[int]
+) -> Tuple[List[int], List[int]]:
+    axes = list(map(lambda a: a + len(data_shape) if a < 0 else a, axes))
+    all_axes = list(range(len(data_shape)))
+    remove_transformed = list(filter(lambda a: a not in axes, all_axes))
+    return remove_transformed, axes
+
+
+def _swap_axes(data: torch.Tensor, axes: List[int]) -> torch.Tensor:
+    _check_axes_argument(axes)
+    front, back = _get_transpose_order(axes, list(data.shape))
+    return torch.permute(data, front + back)
+
+
+def _undo_swap_axes(data: torch.Tensor, axes: List[int]) -> torch.Tensor:
+    _check_axes_argument(axes)
+    front, back = _get_transpose_order(axes, list(data.shape))
+    restore_sorted = torch.argsort(torch.tensor(front + back)).tolist()
+    return torch.permute(data, restore_sorted)
+
+
+def _map_result(
+    data: List[Union[torch.Tensor, Any]],  # following jax tree_map typing can be Any
+    function: Callable[[Any], torch.Tensor],
+) -> List[Union[torch.Tensor, Any]]:
+    # Apply the given function to the input list of tensor and tuples.
+    result_lst: List[Union[torch.Tensor, Any]] = []
+    for element in data:
+        if isinstance(element, torch.Tensor):
+            result_lst.append(function(element))
+        elif isinstance(element, tuple):
+            result_lst.append(
+                (function(element[0]), function(element[1]), function(element[2]))
+            )
+        elif isinstance(element, dict):
+            new_dict = {}
+            for key, value in element.items():
+                new_dict[key] = function(value)
+            result_lst.append(new_dict)
+    return result_lst

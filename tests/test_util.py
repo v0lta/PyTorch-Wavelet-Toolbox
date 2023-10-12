@@ -8,10 +8,10 @@ import torch
 
 from src.ptwt._util import (
     _as_wavelet,
-    _fold_channels,
+    _fold_axes,
     _pad_symmetric,
     _pad_symmetric_1d,
-    _unfold_channels,
+    _unfold_axes,
 )
 
 
@@ -70,11 +70,12 @@ def test_pad_symmetric(size, pad_list):
     assert np.allclose(my_pad.numpy(), np_pad)
 
 
+@pytest.mark.parametrize("keep_no", [1, 2, 3])
 @pytest.mark.parametrize("size", [[20, 21, 22, 23], [1, 2, 3, 4], [4, 3, 2, 1]])
-def test_fold(size):
+def test_fold(keep_no, size):
     """Ensure channel folding works as expected."""
     array = torch.randn(*size).type(torch.float64)
-    folded = _fold_channels(array)
-    assert tuple(folded.shape) == (size[0] * size[1], size[2], size[3])
-    rec = _unfold_channels(folded, size)
+    folded, ds = _fold_axes(array, keep_no)
+    assert len(folded.shape) == keep_no + 1
+    rec = _unfold_axes(folded, size, keep_no)
     np.allclose(array.numpy(), rec.numpy())

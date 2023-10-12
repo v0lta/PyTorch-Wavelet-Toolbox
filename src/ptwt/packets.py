@@ -48,9 +48,10 @@ class WaveletPacket(BaseDict):
         self,
         data: Optional[torch.Tensor],
         wavelet: Union[Wavelet, str],
-        mode: str = "reflect",
-        boundary_orthogonalization: str = "qr",
+        mode: Optional[str] = "reflect",
         maxlevel: Optional[int] = None,
+        axis: int = -1,
+        boundary_orthogonalization: str = "qr",
     ) -> None:
         """Create a wavelet packet decomposition object.
 
@@ -61,16 +62,19 @@ class WaveletPacket(BaseDict):
                 ``[batch_size, time]`` or ``[batch_size, channels, time]``.
                 If None, the object is initialized without
                 performing a decomposition.
+                The time axis is transformed by default.
+                Use the ``axis`` argument to choose another dimension.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
-            mode (str): The desired padding method. If you select 'boundary',
+            mode (str, optional): The desired padding method. If you select 'boundary',
                 the sparse matrix backend will be used. Defaults to 'reflect'.
-            boundary_orthogonalization (str): The orthogonalization method
-                to use. Only used if `mode` equals 'boundary'. Choose from
-                'qr' or 'gramschmidt'. Defaults to 'qr'.
             maxlevel (int, optional): Value is passed on to `transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
+            axis (int): The axis to transform. Defaults to -1.
+            boundary_orthogonalization (str): The orthogonalization method
+                to use. Only used if `mode` equals 'boundary'. Choose from
+                'qr' or 'gramschmidt'. Defaults to 'qr'.
 
         Example:
             >>> import torch, pywt, ptwt
@@ -95,6 +99,7 @@ class WaveletPacket(BaseDict):
         self._matrix_wavedec_dict: Dict[int, MatrixWavedec] = {}
         self._matrix_waverec_dict: Dict[int, MatrixWaverec] = {}
         self.maxlevel: Optional[int] = None
+        self.axis = axis
         if data is not None:
             if len(data.shape) == 1:
                 # add a batch dimension.
@@ -109,8 +114,8 @@ class WaveletPacket(BaseDict):
         """Calculate the 1d wavelet packet transform for the input data.
 
         Args:
-            data (torch.Tensor): The input data array of shape [time]
-                or [batch_size, time].
+            data (torch.Tensor): The input data array of shape ``[time]``
+                or ``[batch_size, time]``.
             maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
@@ -166,11 +171,13 @@ class WaveletPacket(BaseDict):
         if self.mode == "boundary":
             if length not in self._matrix_wavedec_dict.keys():
                 self._matrix_wavedec_dict[length] = MatrixWavedec(
-                    self.wavelet, level=1, boundary=self.boundary
+                    self.wavelet, level=1, boundary=self.boundary, axis=self.axis
                 )
             return self._matrix_wavedec_dict[length]
         else:
-            return partial(wavedec, wavelet=self.wavelet, level=1, mode=self.mode)
+            return partial(
+                wavedec, wavelet=self.wavelet, level=1, mode=self.mode, axis=self.axis
+            )
 
     def _get_waverec(
         self,
@@ -179,11 +186,11 @@ class WaveletPacket(BaseDict):
         if self.mode == "boundary":
             if length not in self._matrix_waverec_dict.keys():
                 self._matrix_waverec_dict[length] = MatrixWaverec(
-                    self.wavelet, boundary=self.boundary
+                    self.wavelet, boundary=self.boundary, axis=self.axis
                 )
             return self._matrix_waverec_dict[length]
         else:
-            return partial(waverec, wavelet=self.wavelet)
+            return partial(waverec, wavelet=self.wavelet, axis=self.axis)
 
     def get_level(self, level: int) -> List[str]:
         """Return the graycode-ordered paths to the filter tree nodes.
@@ -257,15 +264,16 @@ class WaveletPacket2D(BaseDict):
         data: Optional[torch.Tensor],
         wavelet: Union[Wavelet, str],
         mode: str = "reflect",
+        maxlevel: Optional[int] = None,
+        axes: Tuple[int, int] = (-2, -1),
         boundary_orthogonalization: str = "qr",
         separable: bool = False,
-        maxlevel: Optional[int] = None,
     ) -> None:
         """Create a 2D-Wavelet packet tree.
 
         Args:
-            data (torch.tensor, optional): The input data tensor
-                of shape ``[batch_size, height, width]`` or
+            data (torch.tensor, optional): The input data tensor.
+                For example of shape ``[batch_size, height, width]`` or
                 ``[batch_size, channels, height, width]``.
                 If None, the object is initialized without performing
                 a decomposition.
@@ -274,15 +282,18 @@ class WaveletPacket2D(BaseDict):
             mode (str): A string indicating the desired padding mode.
                 If you select 'boundary', the sparse matrix backend is used.
                 Defaults to 'reflect'
+            maxlevel (int, optional): Value is passed on to `transform`.
+                The highest decomposition level to compute. If None, the maximum level
+                is determined from the input data shape. Defaults to None.
+            axes ([int, int], optional): The tensor axes that should be transformed.
+                Defaults to (-2, -1).
             boundary_orthogonalization (str): The orthogonalization method
                 to use in the sparse matrix backend. Only used if `mode`
                 equals 'boundary'. Choose from 'qr' or 'gramschmidt'.
                 Defaults to 'qr'.
             separable (bool): If true, a separable transform is performed,
                 i.e. each image axis is transformed separately. Defaults to False.
-            maxlevel (int, optional): Value is passed on to `transform`.
-                The highest decomposition level to compute. If None, the maximum level
-                is determined from the input data shape. Defaults to None.
+
         """
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
@@ -290,6 +301,7 @@ class WaveletPacket2D(BaseDict):
         self.separable = separable
         self.matrix_wavedec2_dict: Dict[Tuple[int, ...], MatrixWavedec2] = {}
         self.matrix_waverec2_dict: Dict[Tuple[int, ...], MatrixWaverec2] = {}
+        self.axes = axes
 
         self.maxlevel: Optional[int] = None
         if data is not None:
@@ -382,6 +394,7 @@ class WaveletPacket2D(BaseDict):
                 self.matrix_wavedec2_dict[shape] = MatrixWavedec2(
                     self.wavelet,
                     level=1,
+                    axes=self.axes,
                     boundary=self.boundary,
                     separable=self.separable,
                 )
@@ -389,10 +402,18 @@ class WaveletPacket2D(BaseDict):
             return fun
         elif self.separable:
             return self._transform_fsdict_to_tuple_func(
-                partial(fswavedec2, wavelet=self.wavelet, level=1, mode=self.mode)
+                partial(
+                    fswavedec2,
+                    wavelet=self.wavelet,
+                    level=1,
+                    mode=self.mode,
+                    axes=self.axes,
+                )
             )
         else:
-            return partial(wavedec2, wavelet=self.wavelet, level=1, mode=self.mode)
+            return partial(
+                wavedec2, wavelet=self.wavelet, level=1, mode=self.mode, axes=self.axes
+            )
 
     def _get_waverec(
         self, shape: Tuple[int, ...]
@@ -405,16 +426,17 @@ class WaveletPacket2D(BaseDict):
             if shape not in self.matrix_waverec2_dict.keys():
                 self.matrix_waverec2_dict[shape] = MatrixWaverec2(
                     self.wavelet,
+                    axes=self.axes,
                     boundary=self.boundary,
                     separable=self.separable,
                 )
             return self.matrix_waverec2_dict[shape]
         elif self.separable:
             return self._transform_tuple_to_fsdict_func(
-                partial(fswaverec2, wavelet=self.wavelet)
+                partial(fswaverec2, wavelet=self.wavelet, axes=self.axes)
             )
         else:
-            return partial(waverec2, wavelet=self.wavelet)
+            return partial(waverec2, wavelet=self.wavelet, axes=self.axes)
 
     def _transform_fsdict_to_tuple_func(
         self,

@@ -4,6 +4,7 @@ This module uses boundary filters to minimize padding.
 """
 # Written by moritz ( @ wolter.tech ) in 2021
 import sys
+from functools import partial
 from typing import List, Optional, Tuple, Union, cast
 
 import numpy as np
@@ -12,16 +13,19 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
-    _fold_channels,
+    _check_axes_argument,
+    _check_if_tensor,
     _is_boundary_mode_supported,
     _is_dtype_supported,
-    _unfold_channels,
+    _map_result,
+    _swap_axes,
+    _undo_swap_axes,
+    _unfold_axes,
 )
 from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import (
-    _check_if_tensor,
     _construct_2d_filt,
-    _wavedec2d_unfold_channels_2d_list,
+    _preprocess_tensor_dec2d,
     _waverec2d_fold_channels_2d_list,
 )
 from .matmul_transform import construct_boundary_a, construct_boundary_s, orthogonalize
@@ -245,6 +249,7 @@ class MatrixWavedec2(object):
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
+        axes: Tuple[int, int] = (-2, -1),
         boundary: str = "qr",
         separable: bool = True,
     ):
@@ -256,6 +261,8 @@ class MatrixWavedec2(object):
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
+            axes (int, int): A tuple with the axes to transform.
+                Defaults to (-2, -1).
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on Pytorch's
                 dense qr implementation, it is fast but memory hungry.
@@ -274,6 +281,11 @@ class MatrixWavedec2(object):
             ValueError: If the wavelet filters have different lengths.
         """
         self.wavelet = _as_wavelet(wavelet)
+        if len(axes) != 2:
+            raise ValueError("2D transforms work with two axes.")
+        else:
+            _check_axes_argument(list(axes))
+            self.axes = tuple(axes)
         self.level = level
         self.boundary = boundary
         self.separable = separable
@@ -422,23 +434,11 @@ class MatrixWavedec2(object):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
-        fold = False
-        if input_signal.dim() == 2:
-            # add batch dim to unbatched input
-            input_signal = input_signal.unsqueeze(0)
-        elif input_signal.dim() == 4:
-            # we assume the shape [batch_size, color_channels, height, width]
-            # and fold the color channel
-            fold = True
-            ds = input_signal.shape
-            input_signal = _fold_channels(input_signal)
-        elif input_signal.dim() != 3:
-            raise ValueError(
-                f"Invalid input tensor shape {input_signal.size()}. "
-                "The input signal is expected to be of the form "
-                "[batch_size, height, width] or "
-                "[batch_size, channels, height, width]."
-            )
+        if self.axes != (-2, -1):
+            input_signal = _swap_axes(input_signal, list(self.axes))
+
+        input_signal, ds = _preprocess_tensor_dec2d(input_signal)
+        input_signal = input_signal.squeeze(1)
 
         batch_size, height, width = input_signal.shape
 
@@ -539,8 +539,13 @@ class MatrixWavedec2(object):
                 ll.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(2, 1)
             )
 
-        if fold:
-            split_list = _wavedec2d_unfold_channels_2d_list(split_list, list(ds))
+        if ds:
+            _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
+            split_list = _map_result(split_list, _unfold_axes2)
+
+        if self.axes != (-2, -1):
+            undo_swap_fn = partial(_undo_swap_axes, axes=self.axes)
+            split_list = _map_result(split_list, undo_swap_fn)
 
         return split_list[::-1]
 
@@ -563,6 +568,7 @@ class MatrixWaverec2(object):
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
+        axes: Tuple[int, int] = (-2, -1),
         boundary: str = "qr",
         separable: bool = True,
     ):
@@ -571,6 +577,8 @@ class MatrixWaverec2(object):
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+            axes (int, int): The axes transformed by waverec2.
+                Defaults to (-2, -1).
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt' option
@@ -590,6 +598,12 @@ class MatrixWaverec2(object):
         self.wavelet = _as_wavelet(wavelet)
         self.boundary = boundary
         self.separable = separable
+
+        if len(axes) != 2:
+            raise ValueError("2D transforms work with two axes.")
+        else:
+            _check_axes_argument(list(axes))
+            self.axes = axes
 
         self.ifwt_matrix_list: List[
             Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]
@@ -716,10 +730,12 @@ class MatrixWaverec2(object):
                 by the `MatrixWavedec2`-Object.
 
         Returns:
-            torch.Tensor: The original signal reconstruction of
-                shape ``[batch_size, height, width]`` or
+            torch.Tensor: The original signal reconstruction.
+                For example of shape
+                ``[batch_size, height, width]`` or
                 ``[batch_size, channels, height, width]``
                 depending on the input to the forward transform.
+                and the value of the `axis` argument.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the
@@ -727,10 +743,20 @@ class MatrixWaverec2(object):
                 `MatrixWavedec2` object.
         """
         ll = _check_if_tensor(coefficients[0])
-        fold = False
-        if ll.dim() == 4:
-            # fold all channels into the batches.
-            fold = True
+
+        if tuple(self.axes) != (-2, -1):
+            swap_fn = partial(_swap_axes, axes=list(self.axes))
+            coefficients = _map_result(coefficients, swap_fn)
+            ll = _check_if_tensor(coefficients[0])
+
+        ds = None
+        if ll.dim() == 1:
+            raise ValueError("2d transforms require more than a single input dim.")
+        elif ll.dim() == 2:
+            # add batch dim to unbatched input
+            ll = ll.unsqueeze(0)
+        elif ll.dim() >= 4:
+            # avoid the channel sum, fold the channels into batches.
             coefficients, ds = _waverec2d_fold_channels_2d_list(coefficients)
             ll = _check_if_tensor(coefficients[0])
 
@@ -825,7 +851,9 @@ class MatrixWaverec2(object):
                     if pred_len[1] != next_len[1]:
                         ll = ll[:, :, :-1]
 
-        if fold:
-            ll = _unfold_channels(ll, list(ds))
+        if ds:
+            ll = _unfold_axes(ll, list(ds), 2)
 
+        if self.axes != (-2, -1):
+            ll = _undo_swap_axes(ll, list(self.axes))
         return ll

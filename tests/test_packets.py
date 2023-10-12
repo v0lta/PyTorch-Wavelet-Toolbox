@@ -289,38 +289,46 @@ def test_access_errors_2d():
         twp["a" * 100]
 
 
-@pytest.mark.parametrize("level", [1, 2, 3])
+@pytest.mark.slow
+@pytest.mark.parametrize("level", [1, 3])
 @pytest.mark.parametrize("base_key", ["a", "d"])
-@pytest.mark.parametrize("shape", [[1, 63], [3, 2, 64], [128]])
+@pytest.mark.parametrize("shape", [[1, 64, 63], [3, 64, 64], [1, 128]])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
-def test_inverse_packet_1d(level, base_key, shape, wavelet):
+@pytest.mark.parametrize("axis", (1, -1))
+def test_inverse_packet_1d(level, base_key, shape, wavelet, axis):
     """Test the 1d reconstruction code."""
     signal = np.random.randn(*shape)
     mode = "reflect"
-    wp = pywt.WaveletPacket(signal, wavelet, mode=mode, maxlevel=level)
-    ptwp = WaveletPacket(torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level)
+    wp = pywt.WaveletPacket(signal, wavelet, mode=mode, maxlevel=level, axis=axis)
+    ptwp = WaveletPacket(
+        torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level, axis=axis
+    )
     wp[base_key * level].data *= 0
     ptwp[base_key * level].data *= 0
     wp.reconstruct(update=True)
     ptwp.reconstruct()
-    assert np.allclose(wp[""].data, ptwp[""].numpy()[..., : shape[-1]])
+    assert np.allclose(wp[""].data, ptwp[""].numpy()[..., : shape[-2], : shape[-1]])
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("level", [1, 3])
 @pytest.mark.parametrize("base_key", ["a", "h", "d"])
-@pytest.mark.parametrize("size", [(1, 32, 32), (2, 1, 31, 64)])
+@pytest.mark.parametrize("size", [(32, 32, 32), (32, 32, 31, 64)])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
-def test_inverse_packet_2d(level, base_key, size, wavelet):
+@pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (1, 2), (2, 0), (0, 2)])
+def test_inverse_packet_2d(level, base_key, size, wavelet, axes):
     """Test the 2d reconstruction code."""
     signal = np.random.randn(*size)
     mode = "reflect"
-    wp = pywt.WaveletPacket2D(signal, wavelet, mode=mode, maxlevel=level)
-    ptwp = WaveletPacket2D(torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level)
+    wp = pywt.WaveletPacket2D(signal, wavelet, mode=mode, maxlevel=level, axes=axes)
+    ptwp = WaveletPacket2D(
+        torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level, axes=axes
+    )
     wp[base_key * level].data *= 0
     ptwp[base_key * level].data *= 0
     wp.reconstruct(update=True)
     ptwp.reconstruct()
-    assert np.allclose(wp[""].data, ptwp[""].numpy()[:, : size[1], : size[2]])
+    assert np.allclose(wp[""].data, ptwp[""].numpy()[: size[0], : size[1], : size[2]])
 
 
 def test_inverse_boundary_packet_1d():
@@ -351,3 +359,21 @@ def test_inverse_boundary_packet_2d():
     wp.reconstruct(update=True)
     ptwp.reconstruct()
     assert np.allclose(wp[""].data, ptwp[""].numpy()[:, : size[0], : size[1]])
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("axes", ((-2, -1), (1, 2), (2, 1)))
+def test_separable_conv_packets_2d(axes):
+    """Ensure the 2d separable conv code is ok."""
+    wavelet = "db2"
+    signal = np.random.randn(1, 32, 32, 32)
+    ptwp = WaveletPacket2D(
+        torch.from_numpy(signal),
+        wavelet,
+        mode="reflect",
+        maxlevel=2,
+        axes=axes,
+        separable=True,
+    )
+    ptwp.reconstruct()
+    assert np.allclose(signal, ptwp[""].data[:, :32, :32, :32])

@@ -83,12 +83,17 @@ def test_example_fs3d(shape, wavelet):
 # test separable conv and mamul consistency for the Haar case.
 @pytest.mark.slow
 @pytest.mark.parametrize("level", [1, 2, 3, None])
-@pytest.mark.parametrize("shape", [[5, 128, 128], [3, 2, 64, 64], [1, 1, 64, 64]])
-def test_conv_mm_2d(level, shape):
+@pytest.mark.parametrize(
+    "shape", [[1, 64, 128, 128], [1, 3, 64, 64, 64], [2, 1, 64, 64, 64]]
+)
+@pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (2, 3), (3, 2)])
+def test_conv_mm_2d(level, shape, axes):
     """Compare mm and conv fully separable results."""
     data = torch.randn(*shape).type(torch.float64)
-    fs_conv_coeff = fswavedec2(data, "haar", level=level)
-    fs_mm_coeff = MatrixWavedec2("haar", level, separable=True)(data)
+    fs_conv_coeff = fswavedec2(data, "haar", level=level, axes=axes)
+    fs_mm_coeff = MatrixWavedec2(
+        wavelet="haar", level=level, separable=True, axes=axes
+    )(data)
     # compare coefficients
     assert len(fs_conv_coeff) == len(fs_mm_coeff)
     for c_conv, c_mm in zip(fs_conv_coeff, fs_mm_coeff):
@@ -101,18 +106,19 @@ def test_conv_mm_2d(level, shape):
                 np.allclose(c_el_conv.numpy(), c_el_mm.numpy())
                 for c_el_conv, c_el_mm in zip(c_conv_list, c_mm)
             )
-    rec = fswaverec2(fs_conv_coeff, "haar")
+    rec = fswaverec2(fs_conv_coeff, "haar", axes=axes)
     assert np.allclose(data.numpy(), rec.numpy())
 
 
 @pytest.mark.slow
 @pytest.mark.parametrize("level", [1, 2, 3, None])
-def test_conv_mm_3d(level):
+@pytest.mark.parametrize("axes", [(-3, -2, -1), (-1, -2, -3), (2, 3, 1)])
+@pytest.mark.parametrize("shape", [(5, 64, 128, 256)])
+def test_conv_mm_3d(level, axes, shape):
     """Compare mm and conv 3d fully separable results."""
-    shape = (5, 128, 128, 128)
     data = torch.randn(*shape).type(torch.float64)
-    fs_conv_coeff = fswavedec3(data, "haar", level=level)
-    fs_mm_coeff = MatrixWavedec3("haar", level)(data)
+    fs_conv_coeff = fswavedec3(data, "haar", level=level, axes=axes)
+    fs_mm_coeff = MatrixWavedec3("haar", level, axes=axes)(data)
     # compare coefficients
     assert len(fs_conv_coeff) == len(fs_mm_coeff)
     for c_conv, c_mm in zip(fs_conv_coeff, fs_mm_coeff):
@@ -121,5 +127,5 @@ def test_conv_mm_3d(level):
         else:
             keys = c_conv.keys()
             assert all(np.allclose(c_conv[key], c_mm[key]) for key in keys)
-    rec = fswaverec3(fs_conv_coeff, "haar")
+    rec = fswaverec3(fs_conv_coeff, "haar", axes=axes)
     assert np.allclose(data.numpy(), rec.numpy())

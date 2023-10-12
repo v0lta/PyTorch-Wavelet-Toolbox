@@ -9,9 +9,17 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
+    _check_axes_argument,
+    _check_if_tensor,
+    _fold_axes,
     _is_boundary_mode_supported,
     _is_dtype_supported,
+    _map_result,
+    _swap_axes,
+    _undo_swap_axes,
+    _unfold_axes,
 )
+from .conv_transform_3 import _waverec3d_fold_channels_3d_list
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
 
@@ -47,6 +55,7 @@ class MatrixWavedec3(object):
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
+        axes: Tuple[int, int, int] = (-3, -2, -1),
         boundary: Optional[str] = "qr",
     ):
         """Create a *separable* three-dimensional fast boundary wavelet transform.
@@ -70,6 +79,11 @@ class MatrixWavedec3(object):
         self.wavelet = _as_wavelet(wavelet)
         self.level = level
         self.boundary = boundary
+        if len(axes) != 3:
+            raise ValueError("3D transforms work with three axes.")
+        else:
+            _check_axes_argument(list(axes))
+            self.axes = axes
         self.input_signal_shape: Optional[Tuple[int, int, int]] = None
         self.fwt_matrix_list: List[List[torch.Tensor]] = []
 
@@ -145,8 +159,8 @@ class MatrixWavedec3(object):
         """Compute a separable 3d-boundary wavelet transform.
 
         Args:
-            input_signal (torch.Tensor): An input signal of shape
-                [batch_size, depth, height, width].
+            input_signal (torch.Tensor): An input signal. For example
+                of shape [batch_size, depth, height, width].
 
         Raises:
             ValueError: If the input dimensions don't work.
@@ -156,15 +170,16 @@ class MatrixWavedec3(object):
                 A list with the approximation coefficients,
                 and a coefficient dict for each scale.
         """
-        if input_signal.dim() == 3:
-            # add batch dim to unbatched input
-            input_signal = input_signal.unsqueeze(0)
-        elif input_signal.dim() != 4:
-            raise ValueError(
-                f"Invalid input tensor shape {input_signal.size()}. "
-                "The input signal is expected to be of the form "
-                "[batch_size, depth, height, width]."
-            )
+        if self.axes != (-3, -2, -1):
+            input_signal = _swap_axes(input_signal, list(self.axes))
+
+        ds = None
+        if input_signal.dim() < 3:
+            raise ValueError("At least three dimensions are required for 3d wavedec.")
+        elif len(input_signal.shape) == 3:
+            input_signal = input_signal.unsqueeze(1)
+        else:
+            input_signal, ds = _fold_axes(input_signal, 3)
 
         _, depth, height, width = input_signal.shape
 
@@ -242,6 +257,15 @@ class MatrixWavedec3(object):
             }
             split_list.append(coeff_dict)
         split_list.append(lll)
+
+        if ds:
+            _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
+            split_list = _map_result(split_list, _unfold_axes_fn)
+
+        if self.axes != (-3, -2, -1):
+            undo_swap_fn = partial(_undo_swap_axes, axes=self.axes)
+            split_list = _map_result(split_list, undo_swap_fn)
+
         return split_list[::-1]
 
 
@@ -251,6 +275,7 @@ class MatrixWaverec3(object):
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
+        axes: Tuple[int, int, int] = (-3, -2, -1),
         boundary: str = "qr",
     ):
         """Compute a three-dimensional separable boundary wavelet synthesis transform.
@@ -258,6 +283,8 @@ class MatrixWaverec3(object):
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+            axes (Tuple[int, int, int]): Transform these axes instead of the
+                last three. Defaults to (-3, -2, -1).
             boundary (str): The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on Pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt' option
@@ -269,6 +296,11 @@ class MatrixWaverec3(object):
             ValueError: If the wavelet filters have different lengths.
         """
         self.wavelet = _as_wavelet(wavelet)
+        if len(axes) != 3:
+            raise ValueError("3D transforms work with three axes")
+        else:
+            _check_axes_argument(list(axes))
+            self.axes = axes
         self.boundary = boundary
         self.ifwt_matrix_list: List[List[torch.Tensor]] = []
         self.input_signal_shape: Optional[Tuple[int, int, int]] = None
@@ -366,6 +398,21 @@ class MatrixWaverec3(object):
         Raises:
             ValueError: If the data structure is inconsistent.
         """
+        if self.axes != (-3, -2, -1):
+            swap_axes_fn = partial(_swap_axes, axes=list(self.axes))
+            coefficients = _map_result(coefficients, swap_axes_fn)
+
+        ds = None
+        # the Union[tensor, dict] idea is coming from pywt. We don't change it here.
+        res_lll = _check_if_tensor(coefficients[0])
+        if res_lll.dim() < 3:
+            raise ValueError(
+                "Three dimensional transforms require at least three dimensions."
+            )
+        elif res_lll.dim() >= 5:
+            coefficients, ds = _waverec3d_fold_channels_3d_list(coefficients)
+            res_lll = _check_if_tensor(coefficients[0])
+
         level = len(coefficients) - 1
         if type(coefficients[-1]) is dict:
             depth, height, width = tuple(
@@ -432,5 +479,11 @@ class MatrixWaverec3(object):
 
             for dim, mat in enumerate(self.ifwt_matrix_list[level - 1 - c_pos][::-1]):
                 lll = _batch_dim_mm(mat, lll, dim=(-1) * (dim + 1))
+
+        if ds:
+            lll = _unfold_axes(lll, ds, 3)
+
+        if self.axes != (-3, -2, -1):
+            lll = _undo_swap_axes(lll, list(self.axes))
 
         return lll
