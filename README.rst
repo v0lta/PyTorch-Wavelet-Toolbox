@@ -195,7 +195,6 @@ If you use this work in a scientific context, please cite the following:
 .. code-block::
 
   @phdthesis{handle:20.500.11811/9245,
-    urn: https://nbn-resolving.org/urn:nbn:de:hbz:5-63361,
     author = {{Moritz Wolter}},
     title = {Frequency Domain Methods in Recurrent Neural Networks for Sequential Data Processing},
     school = {Rheinische Friedrich-Wilhelms-Universität Bonn},
