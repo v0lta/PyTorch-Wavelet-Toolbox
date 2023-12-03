@@ -247,21 +247,15 @@ def _postprocess_result_list_dec1d(
     result_lst: List[torch.Tensor], ds: List[int]
 ) -> List[torch.Tensor]:
     # Unfold axes for the wavelets
-    unfold_list = []
-    for fres in result_lst:
-        unfold_list.append(_unfold_axes(fres, ds, 1))
-    return unfold_list
+    return [_unfold_axes(fres, ds, 1) for fres in result_lst]
 
 
 def _preprocess_result_list_rec1d(
     result_lst: List[torch.Tensor],
 ) -> Tuple[List[torch.Tensor], List[int]]:
     # Fold axes for the wavelets
-    fold_coeffs = []
     ds = list(result_lst[0].shape)
-    for uf_coeff in result_lst:
-        f_coeff, _ = _fold_axes(uf_coeff, 1)
-        fold_coeffs.append(f_coeff)
+    fold_coeffs = [_fold_axes(uf_coeff, 1)[0] for uf_coeff in result_lst]
     return fold_coeffs, ds
 
 
@@ -356,10 +350,7 @@ def wavedec(
         result_list = _postprocess_result_list_dec1d(result_list, ds)
 
     if axis != -1:
-        swap = []
-        for coeff in result_list:
-            swap.append(coeff.swapaxes(axis, -1))
-        result_list = swap
+        result_list = [coeff.swapaxes(axis, -1) for coeff in result_list]
 
     return result_list
 

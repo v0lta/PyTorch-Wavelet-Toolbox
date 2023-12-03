@@ -6,6 +6,7 @@ htmlcov
 examples/ffhq_style_gan/
 examples/ffhq_style_gan.zip
 examples/data
+log/
 
 
 # Byte-compiled / optimized / DLL files
