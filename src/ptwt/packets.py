@@ -104,7 +104,7 @@ class WaveletPacket(BaseDict):
             if len(data.shape) == 1:
                 # add a batch dimension.
                 data = data.unsqueeze(0)
-            self.transform(data, maxlevel) # type: ignore
+            self.transform(data, maxlevel)  # type: ignore
         else:
             self.data = {}
 
