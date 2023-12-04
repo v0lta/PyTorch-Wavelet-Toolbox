@@ -6,7 +6,6 @@ import time
 from typing import NamedTuple
 
 import matplotlib.pyplot as plt
-import tikzplotlib
 
 class WaveletTuple(NamedTuple):
     """Replaces namedtuple("Wavelet", ("dec_lo", "dec_hi", "rec_lo", "rec_hi"))."""
@@ -99,10 +98,10 @@ if __name__ == '__main__':
         ptwt_time_gpu_jit.append(end-start)
 
     print("1d fwt results")
-    print(f"1d-pywt-cpu:{np.mean(pywt_time_cpu):5.5f} +- {np.std(pywt_time_cpu):5.5f}")
-    print(f"1d-ptwt-cpu:{np.mean(ptwt_time_cpu):5.5f} +- {np.std(ptwt_time_cpu):5.5f}")    
+    print(f"1d-pywt-cpu    :{np.mean(pywt_time_cpu):5.5f} +- {np.std(pywt_time_cpu):5.5f}")
+    print(f"1d-ptwt-cpu    :{np.mean(ptwt_time_cpu):5.5f} +- {np.std(ptwt_time_cpu):5.5f}")    
     print(f"1d-ptwt-cpu-jit:{np.mean(ptwt_time_cpu_jit):5.5f} +- {np.std(ptwt_time_cpu_jit):5.5f}")
-    print(f"1d-ptwt-gpu:{np.mean(ptwt_time_gpu):5.5f} +- {np.std(ptwt_time_gpu):5.5f}")
+    print(f"1d-ptwt-gpu    :{np.mean(ptwt_time_gpu):5.5f} +- {np.std(ptwt_time_gpu):5.5f}")
     print(f"1d-ptwt-gpu-jit:{np.mean(ptwt_time_gpu_jit):5.5f} +- {np.std(ptwt_time_gpu_jit):5.5f}")
     # plt.semilogy(pywt_time_cpu, label='pywt-cpu')
     # plt.semilogy(ptwt_time_cpu, label='ptwt-cpu')
@@ -120,6 +119,5 @@ if __name__ == '__main__':
     plt.xticks(rotation=20)
     plt.ylabel('runtime [s]')
     plt.title('DWT-1D')
-    tikzplotlib.save("./figs/timeitconv1d.tex", standalone=True, encoding="utf8")
     plt.savefig('./figs/timeitconv1d.png')
     # plt.show()

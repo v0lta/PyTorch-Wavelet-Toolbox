@@ -7,7 +7,6 @@ import numpy as np
 import time
 
 import matplotlib.pyplot as plt
-import tikzplotlib
 
 
 class WaveletTuple(NamedTuple):
@@ -106,15 +105,6 @@ if __name__ == '__main__':
     print(f"3d-ptwt-cpu    :{np.mean(ptwt_time_cpu):5.5f} +- {np.std(ptwt_time_cpu):5.5f}")
     print(f"3d-ptwt-gpu    :{np.mean(ptwt_time_gpu):5.5f} +- {np.std(ptwt_time_gpu):5.5f}")
     print(f"3d-ptwt-gpu-jit:{np.mean(ptwt_time_gpu_jit):5.5f} +- {np.std(ptwt_time_gpu_jit):5.5f}")
-    # plt.semilogy(pywt_time_cpu, label='pywt-cpu')
-    # plt.semilogy(ptwt_time_cpu, label='ptwt-cpu')
-    # plt.semilogy(ptwt_time_gpu, label='ptwt-gpu')
-    # plt.semilogy(ptwt_time_gpu_jit, label='ptwt-gpu-jit')
-    # plt.legend()
-    # plt.xlabel('repetition')
-    # plt.ylabel('runtime [s]')
-    # plt.show()
-
 
     time_stack = np.stack([pywt_time_cpu, ptwt_time_cpu, ptwt_time_gpu, ptwt_time_gpu_jit], -1)
     plt.boxplot(time_stack)
@@ -123,6 +113,4 @@ if __name__ == '__main__':
     plt.xticks(rotation=20)
     plt.ylabel('runtime [s]')
     plt.title('DWT-3D')
-    tikzplotlib.save("./figs/timeitconv3d.tex", standalone=True, encoding="utf8")
     plt.savefig('./figs/timeitconv3d.png')
-    # plt.show()

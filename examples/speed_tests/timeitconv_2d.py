@@ -7,7 +7,6 @@ import numpy as np
 import time
 
 import matplotlib.pyplot as plt
-import tikzplotlib
 
 
 class WaveletTuple(NamedTuple):
@@ -120,6 +119,4 @@ if __name__ == '__main__':
     plt.xticks(rotation=20)
     plt.ylabel('runtime [s]')
     plt.title('DWT-2D')
-    tikzplotlib.save("./figs/timeitconv2d.tex", standalone=True, encoding="utf8")
     plt.savefig('./figs/timeitconv2d.png')
-    # plt.show()

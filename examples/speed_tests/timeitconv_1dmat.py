@@ -3,10 +3,8 @@ import ptwt
 import torch
 import numpy as np
 import time
-from typing import NamedTuple
 
 import matplotlib.pyplot as plt
-import tikzplotlib
 
 
 if __name__ == '__main__':
@@ -66,5 +64,4 @@ if __name__ == '__main__':
     plt.xticks(rotation=20)
     plt.ylabel('runtime [s]')
     plt.title('DWT-1D-boundary')
-    tikzplotlib.save("./figs/timeitconv1dmat.tex", standalone=True, encoding="utf8")
     plt.savefig('./figs/timeitconv1dmat.png')

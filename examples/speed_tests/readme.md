@@ -12,11 +12,12 @@ python timeitconv_1d.py
 it produces the output and plot below:
 
 ```bash
-1d-pywt-cpu    :0.25709 +- 0.00751
-1d-ptwt-cpu    :0.42198 +- 0.00624
-1d-ptwt-cpu-jit:0.42223 +- 0.00571
-1d-ptwt-gpu    :0.00878 +- 0.04315
-1d-ptwt-gpu-jit:0.00440 +- 0.00055
+1d-pywt-cpu    :0.25841 +- 0.00907
+1d-ptwt-cpu    :0.40286 +- 0.00638
+1d-ptwt-cpu-jit:0.40119 +- 0.00537
+1d-ptwt-gpu    :0.00887 +- 0.04413
+1d-ptwt-gpu-jit:0.00439 +- 0.00051
+
 ```
 
 The 1d cython code from the pywt library does pretty well on our CPU. However, ptwt supports GPUs, which provide a speedup by several orders of magnitude.
@@ -31,10 +32,10 @@ python timeitconv_2d.py
 ```
 Result:
 ```bash
-2d-pywt-cpu    :0.55641 +- 0.01785
-2d-ptwt-cpu    :0.19519 +- 0.02337
-2d-ptwt-gpu    :0.01468 +- 0.04192
-2d-ptwt-gpu-jit:0.01110 +- 0.00051
+2d-pywt-cpu    :0.54936 +- 0.00924
+2d-ptwt-cpu    :0.17453 +- 0.01335
+2d-ptwt-gpu    :0.01447 +- 0.03995
+2d-ptwt-gpu-jit:0.01110 +- 0.00050
 ```
 
 ![2d-speed](figs/timeitconv2d.png)
@@ -44,13 +45,12 @@ Result:
 Separable transforms are also commonly implemented. Pytorch-wavelets does this see (2d-fwt-object)[https://github.com/fbcotter/pytorch_wavelets/blob/9a0c507f04f43c5397e384bb6be8340169b2fd9a/pytorch_wavelets/dwt/transform2d.py#L70] and the (underlying implementation)[https://github.com/fbcotter/pytorch_wavelets/blob/9a0c507f04f43c5397e384bb6be8340169b2fd9a/pytorch_wavelets/dwt/lowlevel.py#L312] . We study the performance with periodic padding below:
 
 ```bash
-2d-pywt-cpu:0.93269 +- 0.00272
-2d-pytorch_wavelets-cpu:0.41937 +- 0.00649
-2d-pytorch_wavelets-gpu:0.01481 +- 0.04748
-2d-ptwt-cpu    :0.55668 +- 0.01268
-2d-ptwt-cpu-jit:0.54582 +- 0.00561
-2d-ptwt-gpu    :0.00993 +- 0.00068
-2d-ptwt-gpu-jit:0.00889 +- 0.00169
+2d-pywt-cpu:0.92772 +- 0.00295
+2d-pytorch_wavelets-cpu:0.40189 +- 0.00727
+2d-pytorch_wavelets-gpu:0.01474 +- 0.04667
+2d-ptwt-cpu    :0.52484 +- 0.00790
+2d-ptwt-gpu    :0.00995 +- 0.00062
+2d-ptwt-gpu-jit:0.00886 +- 0.00171
 ```
 
 
@@ -67,10 +67,10 @@ python timeitconv_3d.py
 for the three-dimensional case. It should produce something like the output below:
 
 ```bash
-3d-pywt-cpu:0.83785 +- 0.03117
-3d-ptwt-cpu:0.35998 +- 0.03619
-3d-ptwt-gpu:0.00499 +- 0.04062
-3d-ptwt-jit:0.01852 +- 0.17757
+3d-pywt-cpu    :0.81744 +- 0.01047
+3d-ptwt-cpu    :0.39827 +- 0.04912
+3d-ptwt-gpu    :0.08047 +- 0.04310
+3d-ptwt-gpu-jit:0.08096 +- 0.00410
 ```
 
 ![3d-speed](figs/timeitconv3d.png)
@@ -88,10 +88,10 @@ python timeitcwt_1d.py
 to reproduce the result. We observe:
 
 ```bash
-cwt-pywt-cpu:0.70588 +- 0.01531
-cwt-ptwt-cpu:0.16132 +- 0.00837
-cwt-ptwt-gpu:0.01798 +- 0.00392
-cwt-ptwt-jit:0.00360 +- 0.00870
+cwt-pywt-cpu    :0.94439 +- 0.01742
+cwt-ptwt-cpu    :0.16029 +- 0.00925
+cwt-ptwt-gpu    :0.01957 +- 0.01081
+cwt-ptwt-gpu-jit:0.01566 +- 0.00193
 ```
 on our hardware.
 

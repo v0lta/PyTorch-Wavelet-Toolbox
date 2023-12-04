@@ -8,7 +8,6 @@ import time
 from pytorch_wavelets import DWTForward
 
 import matplotlib.pyplot as plt
-import tikzplotlib
 
 
 class WaveletTuple(NamedTuple):
@@ -164,6 +163,4 @@ if __name__ == '__main__':
     plt.xticks(rotation=20)
     plt.ylabel('runtime [s]')
     plt.title('DWT-2D-separable')
-    tikzplotlib.save("figs/timeitconv2d_sep.tex", standalone=True)
     plt.savefig('figs/timeitconv2d_sep.png')
-    # plt.show()
