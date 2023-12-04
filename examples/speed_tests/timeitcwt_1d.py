@@ -4,7 +4,6 @@ import pywt
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-import tikzplotlib
 
 
 from ptwt.continuous_transform import _ShannonWavelet
@@ -63,12 +62,13 @@ if __name__ == '__main__':
             pywt.ContinuousWavelet("shan0.1-0.4"),
             sampling_period=(4 / 800) * np.pi,
         )
+        torch.cuda.synchronize()
         end = time.perf_counter()
         ptwt_time_gpu.append(end - start)
 
    
 
-    jit_cwt = torch.jit.trace(_to_jit_cwt, (sig), strict=False)    
+    jit_cwt = torch.jit.trace(_to_jit_cwt, (sig.cuda()), strict=False)    
 
 
     for _ in range(repetitions):
@@ -76,20 +76,21 @@ if __name__ == '__main__':
         sig = torch.from_numpy(sig).cuda()
         start = time.perf_counter()
         cwtmatr = jit_cwt(sig)
+        torch.cuda.synchronize()
         end = time.perf_counter()
         ptwt_time_gpu_jit.append(end - start)
     
-    print(f"cwt-pywt-cpu:{np.mean(pywt_time_cpu):5.5f} +- {np.std(pywt_time_cpu):5.5f}")
-    print(f"cwt-ptwt-cpu:{np.mean(ptwt_time_cpu):5.5f} +- {np.std(ptwt_time_cpu):5.5f}")    
-    print(f"cwt-ptwt-gpu:{np.mean(ptwt_time_gpu):5.5f} +- {np.std(ptwt_time_gpu):5.5f}")
-    print(f"cwt-ptwt-jit:{np.mean(ptwt_time_gpu_jit):5.5f} +- {np.std(ptwt_time_gpu_jit):5.5f}")
-    plt.semilogy(pywt_time_cpu, label='pywt-cpu')
-    plt.semilogy(ptwt_time_cpu, label='ptwt-cpu')
-    plt.semilogy(ptwt_time_gpu, label='ptwt-gpu')
-    plt.semilogy(ptwt_time_gpu_jit, label='ptwt-gpu-jit')
-    plt.legend()
-    plt.xlabel('repetition')
+    print("1d cwt results")
+    print(f"cwt-pywt-cpu    :{np.mean(pywt_time_cpu):5.5f} +- {np.std(pywt_time_cpu):5.5f}")
+    print(f"cwt-ptwt-cpu    :{np.mean(ptwt_time_cpu):5.5f} +- {np.std(ptwt_time_cpu):5.5f}")    
+    print(f"cwt-ptwt-gpu    :{np.mean(ptwt_time_gpu):5.5f} +- {np.std(ptwt_time_gpu):5.5f}")
+    print(f"cwt-ptwt-gpu-jit:{np.mean(ptwt_time_gpu_jit):5.5f} +- {np.std(ptwt_time_gpu_jit):5.5f}")
+
+    time_stack = np.stack([pywt_time_cpu, ptwt_time_cpu, ptwt_time_gpu, ptwt_time_gpu_jit], -1)
+    plt.boxplot(time_stack)
+    plt.yscale('log')
+    plt.xticks([1,2,3,4], ["pywt-cpu", "ptwt-cpu", "ptwt-gpu", "ptwt-gpu-jit"])
+    plt.xticks(rotation=20)
     plt.ylabel('runtime [s]')
-    # tikzplotlib.save("timeitcwt.tex", standalone=True)
-    # plt.savefig('timeitcwt.pdf')
-    plt.show()
+    plt.title('CWT-1D')
+    plt.savefig('./figs/timeitcwt.png')

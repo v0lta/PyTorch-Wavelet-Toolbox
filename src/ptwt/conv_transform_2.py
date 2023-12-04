@@ -127,7 +127,10 @@ def wavedec2(
     level: Optional[int] = None,
     axes: Tuple[int, int] = (-2, -1),
 ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-    """Non-separated two-dimensional wavelet transform. Only the last two axes change.
+    """Run a two-dimensional wavelet transformation.
+
+    This function relies on two-dimensional convolutions.
+    We transform the last two axes by default.
 
     Args:
         data (torch.Tensor): The input data tensor with any number of dimensions.
@@ -159,7 +162,8 @@ def wavedec2(
 
     Raises:
         ValueError: If the dimensionality or the dtype of the input data tensor
-            is unsupported or if the provided axes input has length other than two.
+            is unsupported or if the provided ``axes``
+            input has a length other than two.
 
     Example:
         >>> import torch

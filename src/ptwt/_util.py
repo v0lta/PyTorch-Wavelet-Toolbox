@@ -81,11 +81,9 @@ def _pad_symmetric_1d(signal: torch.Tensor, pad_list: Tuple[int, int]) -> torch.
     else:
         cat_list = [signal]
         if padl > 0:
-            topadl = signal[:padl].flip(0)
-            cat_list.insert(0, topadl)
+            cat_list.insert(0, signal[:padl].flip(0))
         if padr > 0:
-            topadr = signal[-padr::].flip(0)
-            cat_list.append(topadr)
+            cat_list.append(signal[-padr::].flip(0))
         return torch.cat(cat_list, axis=0)  # type: ignore
 
 

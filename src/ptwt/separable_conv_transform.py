@@ -1,8 +1,10 @@
-"""Implement separable convolution-based transforms.
+"""Compute separable convolution-based transforms.
 
-Under the hood code in this module transforms all dimensions
-individually using torch.nn.functional.conv1d and it's
-transpose.
+This module takes multi-dimensional convolutions apart.
+It uses single-dimensional convolutions to transform
+axes individually.
+Under the hood, code in this module transforms all dimensions
+using torch.nn.functional.conv1d and it's transpose.
 """
 from functools import partial
 from typing import Dict, List, Optional, Tuple, Union
@@ -28,7 +30,7 @@ from .conv_transform_2 import _preprocess_tensor_dec2d
 
 def _separable_conv_dwtn_(
     rec_dict: Dict[str, torch.Tensor],
-    input: torch.Tensor,
+    input_arg: torch.Tensor,
     wavelet: Union[str, pywt.Wavelet],
     mode: str = "reflect",
     key: str = "",
@@ -38,7 +40,7 @@ def _separable_conv_dwtn_(
     All but the first axes are transformed.
 
     Args:
-        input (torch.Tensor): Tensor of shape [batch, data_1, ... data_n].
+        input_arg (torch.Tensor): Tensor of shape [batch, data_1, ... data_n].
         wavelet (Union[str, pywt.Wavelet]): The Wavelet to work with.
         mode (str): The padding mode. The following methods are supported::
 
@@ -49,18 +51,14 @@ def _separable_conv_dwtn_(
         dict (Dict[str, torch.Tensor]): The result will be stored here
             in place. Defaults to {}.
     """
-    axis_total = len(input.shape) - 1
+    axis_total = len(input_arg.shape) - 1
     if len(key) == axis_total:
-        rec_dict[key] = input
+        rec_dict[key] = input_arg
     if len(key) < axis_total:
         current_axis = len(key) + 1
-        transposed = input.transpose(-current_axis, -1)
-        flat = transposed.reshape(-1, transposed.shape[-1])
-        res_a, res_d = wavedec(flat, wavelet, level=1, mode=mode)
-        res_a = res_a.reshape(list(transposed.shape[:-1]) + [res_a.shape[-1]])
-        res_d = res_d.reshape(list(transposed.shape[:-1]) + [res_d.shape[-1]])
-        res_a = res_a.transpose(-1, -current_axis)
-        res_d = res_d.transpose(-1, -current_axis)
+        res_a, res_d = wavedec(
+            input_arg, wavelet, level=1, mode=mode, axis=-current_axis
+        )
         _separable_conv_dwtn_(rec_dict, res_a, wavelet, mode, "a" + key)
         _separable_conv_dwtn_(rec_dict, res_d, wavelet, mode, "d" + key)
 
@@ -165,9 +163,9 @@ def _separable_conv_waverecn(
 
     approx: torch.Tensor = coeffs[0]
     for level_dict in coeffs[1:]:
-        keys = list(level_dict.keys())  # type: ignore
-        level_dict["a" * max(map(len, keys))] = approx  # type: ignore
-        approx = _separable_conv_idwtn(level_dict, wavelet)  # type: ignore
+        keys = list(level_dict.keys())
+        level_dict["a" * max(map(len, keys))] = approx
+        approx = _separable_conv_idwtn(level_dict, wavelet)
     return approx
 
 
@@ -320,6 +318,9 @@ def fswaverec2(
     axes: Tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 2D-padded synthesis wavelet transform.
+
+    The function uses separate single-dimensional convolutions under
+    the hood.
 
     Args:
         coeffs (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):

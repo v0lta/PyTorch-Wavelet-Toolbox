@@ -290,10 +290,10 @@ class _ShannonWavelet(_DifferentiableContinuousWavelet):
         shannon = (
             torch.sqrt(self.bandwidth)
             * (
-                torch.sin(torch.pi * self.bandwidth * grid_values)
+                torch.sin(torch.pi * self.bandwidth * grid_values)  # type: ignore
                 / (torch.pi * self.bandwidth * grid_values)
             )
-            * torch.exp(1j * 2 * torch.pi * self.center * grid_values)
+            * torch.exp(1j * 2 * torch.pi * self.center * grid_values)  # type: ignore
         )
         return shannon
 
@@ -305,8 +305,8 @@ class _ComplexMorletWavelet(_DifferentiableContinuousWavelet):
         """Return numerical values for the wavelet on a grid."""
         morlet = (
             1.0
-            / torch.sqrt(torch.pi * self.bandwidth)
+            / torch.sqrt(torch.pi * self.bandwidth)  # type: ignore
             * torch.exp(-(grid_values**2) / self.bandwidth)
-            * torch.exp(1j * 2 * torch.pi * self.center * grid_values)
+            * torch.exp(1j * 2 * torch.pi * self.center * grid_values)  # type: ignore
         )
         return morlet
