@@ -42,7 +42,7 @@ Result:
 
 ### 2D-separable-FWT 
 
-Separable transforms are also commonly implemented. Pytorch-wavelets does this see (2d-fwt-object)[https://github.com/fbcotter/pytorch_wavelets/blob/9a0c507f04f43c5397e384bb6be8340169b2fd9a/pytorch_wavelets/dwt/transform2d.py#L70] and the (underlying implementation)[https://github.com/fbcotter/pytorch_wavelets/blob/9a0c507f04f43c5397e384bb6be8340169b2fd9a/pytorch_wavelets/dwt/lowlevel.py#L312] . We study the performance with periodic padding below:
+Separable transforms are also commonly implemented. Pytorch-wavelets does this see [2d-fwt-object](https://github.com/fbcotter/pytorch_wavelets/blob/9a0c507f04f43c5397e384bb6be8340169b2fd9a/pytorch_wavelets/dwt/transform2d.py#L70) and the [underlying implementation](https://github.com/fbcotter/pytorch_wavelets/blob/9a0c507f04f43c5397e384bb6be8340169b2fd9a/pytorch_wavelets/dwt/lowlevel.py#L312) . We study the performance with periodic padding below:
 
 ```bash
 2d-pywt-cpu:0.92772 +- 0.00295
