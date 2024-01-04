@@ -24,6 +24,9 @@ This documentation aims to explain the foundations of wavelet theory, introduce 
 deliver a complete documentation of all functions. Readers who are already familiar with the theory should directly
 jump to the examples or the API-documentation using the navigation on the left.
 
+``ptwt`` is build to be `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_ compatible. 
+It should be possible to switch back and forth with relative ease.
+
 
 If you use this work in a scientific context, please cite the following thesis:
 
