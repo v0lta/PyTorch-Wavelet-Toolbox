@@ -1,2 +1,2 @@
-ptwt examples
-=============
+Wavelet transforms by example
+=============================

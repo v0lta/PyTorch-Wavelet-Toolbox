@@ -33,6 +33,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.bibtex',
 ]
 
 napoleon_google_docstring = True
@@ -73,3 +74,6 @@ html_logo = '_static/shannon.png'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+
+bibtex_bibfiles = ['literature.bib']
