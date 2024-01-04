@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('../src'))
 # -- Project information -----------------------------------------------------
 
 project = 'PyTorch-Wavelet-Toolbox'
-copyright = '2022, the ptwt-team'
+copyright = '2024, the ptwt-team'
 
 # -- General configuration ---------------------------------------------------
 
@@ -77,3 +77,6 @@ html_static_path = ['_static']
 
 
 bibtex_bibfiles = ['literature.bib']
+
+# numbered figures
+numfig = True

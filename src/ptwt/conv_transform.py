@@ -274,7 +274,7 @@ def wavedec(
     .. math::
         x_s * h_k = c_{k,s+1}
 
-    Where ...
+    Where ... ``TODO``
 
     Args:
         data (torch.Tensor): The input time series,

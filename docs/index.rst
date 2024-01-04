@@ -25,6 +25,36 @@ deliver a complete documentation of all functions. Readers who are already famil
 jump to the examples or the API-documentation using the navigation on the left.
 
 
+If you use this work in a scientific context, please cite the following thesis:
+
+.. code-block::
+
+  @phdthesis{handle:20.500.11811/9245,
+    author = {{Moritz Wolter}},
+    title = {Frequency Domain Methods in Recurrent Neural Networks for Sequential Data Processing},
+    school = {Rheinische Friedrich-Wilhelms-Universität Bonn},
+    year = 2021,
+    month = jul,
+    url = {https://hdl.handle.net/20.500.11811/9245}
+  }
+
+If you use the boundary wavelet support, please additionally cite:
+
+.. code-block::
+
+  @thesis{Blanke2021,
+    author = {Felix Blanke},
+    title = {{Randbehandlung bei Wavelets für Faltungsnetzwerke}},
+    type = {Bachelor's Thesis},
+    annote = {Gbachelor},
+    year = {2021},
+    school = {Institut f\"ur Numerische Simulation, Universit\"at Bonn}
+  }
+
+
+
+
+
 .. toctree::
    :hidden:
    :maxdepth: 1
