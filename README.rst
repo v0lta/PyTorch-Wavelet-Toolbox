@@ -58,7 +58,7 @@ Install the toolbox via pip or clone this repository. In order to use ``pip``, t
 
 .. code-block:: sh
 
-    $ pip install ptwt
+    pip install ptwt
   
 
 You can remove it later by typing ``pip uninstall ptwt``.
@@ -158,7 +158,7 @@ Reconsidering the 1d case, try:
 The process for the 2d transforms ``MatrixWavedec2``, ``MatrixWaverec2`` works similarly.
 By default, a separable transformation is used.
 To use a non-separable transformation, pass ``separable=False`` to ``MatrixWavedec2`` and ``MatrixWaverec2``.
-Separable transformations use a 1d transformation along both axes, which might be faster since fewer matrix entries
+Separable transformations use a 1D transformation along both axes, which might be faster since fewer matrix entries
 have to be orthogonalized.
 
 
@@ -181,11 +181,11 @@ After cloning the repository, moving into the main directory, and installing ``n
 
 .. code-block:: sh
 
-  $ nox --session test
+  nox --session test
 
 
 
-to run all existing tests.
+for all existing tests.
 
 Citation
 """"""""

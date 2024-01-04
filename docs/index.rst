@@ -3,28 +3,24 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+Pytorch Wavelet Toolbox (`ptwt`) 
+================================
 
-
-.. include:: ../README.rst
-
-
-
-Full documentation
-==================
-
-Use the ptwt package link below to jump to the documentation of all functions.
+.. include:: intro.rst
 
 .. toctree::
+   :hidden:
+   :maxdepth: 1
+   :caption: Getting Started
+
+   installation
+   examples
+
+
+.. toctree::
+   :hidden:
    :maxdepth: 2
-   :caption: ptwt module overview:
+   :caption: Public API
 
    ptwt
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

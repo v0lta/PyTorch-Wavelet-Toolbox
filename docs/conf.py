@@ -18,9 +18,7 @@ sys.path.insert(0, os.path.abspath('../src'))
 # -- Project information -----------------------------------------------------
 
 project = 'PyTorch-Wavelet-Toolbox'
-copyright = '2022, Moritz Wolter'
-author = 'Moritz Wolter'
-
+copyright = '2022, the ptwt-team'
 
 # -- General configuration ---------------------------------------------------
 
@@ -31,6 +29,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.mathjax',
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
@@ -57,28 +56,20 @@ autoclass_content = 'both'
 # a list of builtin themes.
 #
 
-html_theme = 'alabaster'
-html_sidebars = {
-    '**': [
-        'about.html',
-        'navigation.html',
-        'searchbox.html',
-    ]
-}
+html_theme = 'sphinx_book_theme'
 
 html_theme_options = {
-    'github_user': 'v0lta',
-    'github_repo': 'PyTorch-Wavelet-Toolbox',
-    'github_banner': 'false',
-    'show_related': 'true',
-    'page_width': 'auto',
-    'sidebar_width': '250px'
+    'show_toc_level': 2,
+    'repository_url': "https://github.com/v0lta/PyTorch-Wavelet-Toolbox",
+    'use_repository_button': True,
+    'navigation_with_keys': False
 }
 
+html_favicon = '_static/favicon.ico'
+html_logo = '_static/shannon.png'
 
-html_favicon = 'favicon/favicon.ico'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
+html_static_path = ['_static']

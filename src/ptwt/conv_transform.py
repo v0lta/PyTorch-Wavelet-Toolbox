@@ -268,6 +268,14 @@ def wavedec(
 ) -> List[torch.Tensor]:
     """Compute the analysis (forward) 1d fast wavelet transform.
 
+    The transformation relies on convolution operations with filter
+    pairs. 
+
+    .. math::
+        x_s * h_k = c_{k,s+1}
+
+    Where ...
+
     Args:
         data (torch.Tensor): The input time series,
                              By default the last axis is transformed.
