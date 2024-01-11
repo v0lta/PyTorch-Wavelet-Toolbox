@@ -19,16 +19,15 @@ The fwt relies on convolution operations with filter pairs.
 
 :numref:`fig-fwt` illustrates the process. :math:`\mathbf{h}_\mathcal{L}` denotes the analysis low-pass filter. :math:`\mathbf{h}_\mathcal{H}` the analysis high pass filter.  :math:`\mathbf{f}_\mathcal{L}` and :math:`\mathbf{f}_\mathcal{H}` the synthesis filer pair. :math:`\downarrow_2` denotes downsampling with a factor of two, :math:`\uparrow_2` means upsampling. In machine learning terms, the analysis transform relies on stride two convolutions. The synthesis or inverse transform on the right works with stride two transposed convolutions. :math:`\mathbf{H}_{k}` and :math:`\mathbf{F}_{k}` with :math:`k \in [\mathcal{L}, \mathcal{H}]` denote the corresponding convolution operators.
 
-
 .. math::
   \mathbf{x}_s * \mathbf{h}_k = \mathbf{c}_{k, s+1}
 
 with :math:`k \in [\mathcal{L}, \mathcal{H}]` and :math:`s \in \mathbb{N}_0` the set of natural numbers, where :math:`\mathbf{x}_0` is equal to
 the original input signal :math:`\mathbf{x}`. At higher scales, the fwt uses the low-pass filtered result as input,
 :math:`\mathbf{x}_s = \mathbf{c}_{\mathcal{L}, s}` if :math:`s > 0`. 
-The dashed arrow indicates that we could continue to expand the fwt tree here.
+The dashed arrow indicates that we could continue to expand the fwt tree here. :py:meth:`ptwt.conv_transform.wavedec` implements this transformation.
 
-The wpt additionally expands the high-frequency part of the tree.
+The wavelet packet transform (pwt) additionally expands the high-frequency part of the tree. The figure below depicts the idea.
 
 .. _fig-wpt:
 
@@ -39,12 +38,13 @@ The wpt additionally expands the high-frequency part of the tree.
 
    Scematic drawing of the full wpt in a single dimension. Compared to figure~\ref{fig:fwt}, the high-pass filtered side of the tree is expanded, too.
 
-A comparison of :numref:`fig-fwt` and :numref:`fig-wpt` illustrates this difference.
 Whole expansion is not the only possible way to construct a wavelet packet tree. See :cite:`jensen2001ripples` for a discussion of other options.
-In both figures, capital letters denote convolution operators. These may be expressed as Toeplitz matrices :cite:`strang1996wavelets`.
-The matrix nature of these operators explains the capital boldface notation.
-Coefficient subscripts record the path that leads to a particular coefficient.
+In :numref:`fig-fwt` and :numref:`fig-wpt`, capital letters denote convolution operators. These may be expressed as Toeplitz matrices :cite:`strang1996wavelets`.
+The matrix nature of these operators explains the capital boldface notation. Coefficient subscripts record the path that leads to a particular coefficient.
+:py:meth:`ptwt.packets.WaveletPacket` provides this functionality for single dimensional inputs.
 
+
+This toolbox provides two dimensional input processing functionality. 
 We construct filter quadruples from the original filter pairs to process two-dimensional inputs. The process uses outer products :cite:`vyas2018multiscale`:
 
 .. math::
@@ -54,6 +54,10 @@ We construct filter quadruples from the original filter pairs to process two-dim
     \mathbf{h}_{d} = \mathbf{h}_\mathcal{H}\mathbf{h}_\mathcal{H}^T
 
 With :math:`a` for approximation, :math:`h` for horizontal, :math:`v` for vertical, and :math:`d` for diagonal :cite:`lee2019pywavelets`.
+
+*TODO*: Describe the two dimensional fwt 
+
+
 We can construct a wpt-tree for images with these two-dimensional filters.
 
 .. _fig-wpt2d:
@@ -63,7 +67,7 @@ We can construct a wpt-tree for images with these two-dimensional filters.
    :alt: 2d wavelet packet transform computation diagram.
    :align: center
 
-   2d wavelet packet transform computation diagram.
+   Two dimensional wavelet packet transform computation diagram.
 
 Two dimensional wavelet packet computation overview. :math:`\mathbf{X}` and :math:`\hat{\mathbf{X}}` denote input image and
 reconstruction respectively.
@@ -108,7 +112,6 @@ Filters that satisfy both equations qualify as wavelets. Daubechies wavelets and
    
    Visualization of the Symlet 6 filter coefficients.
 
-bla bla
 
 .. _fig-db6:
 
