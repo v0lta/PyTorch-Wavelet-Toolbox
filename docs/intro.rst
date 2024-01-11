@@ -1,8 +1,8 @@
 Understanding wavelets
 ======================
 
-This supplementary section summarizes key wavelet facts as a convenience for the hasty reader.
-See, for example, :cite:`strang1996wavelets,mallat1999wavelet` or :cite:`jensen2001ripples` for excellent detailed introductions to the topic.
+This text summarizes key wavelet facts as a convenience for the hasty reader.
+See, for example, :cite:`strang1996wavelets,mallat1999wavelet` or :cite:`jensen2001ripples` for excellent detailed introductions to the topic. This text is based on the supplementary material of :cite:`wolter2022wavelet`.
 
 The fwt relies on convolution operations with filter pairs.
 
@@ -56,15 +56,18 @@ We construct filter quadruples from the original filter pairs to process two-dim
 With :math:`a` for approximation, :math:`h` for horizontal, :math:`v` for vertical, and :math:`d` for diagonal :cite:`lee2019pywavelets`.
 We can construct a wpt-tree for images with these two-dimensional filters.
 
+.. _fig-wpt2d:
 
-.. image:: figures/packets_2d.png
+.. figure:: figures/packets_2d.png
    :scale: 45 %
    :alt: 2d wavelet packet transform computation diagram.
    :align: center
 
-Two dimensional \acf{wpt} computation overview. :math:`\mathbf{X}` and :math:`\hat{\mathbf{X}}` denote input image and
+   2d wavelet packet transform computation diagram.
+
+Two dimensional wavelet packet computation overview. :math:`\mathbf{X}` and :math:`\hat{\mathbf{X}}` denote input image and
 reconstruction respectively.
-Figure~\ref{fig:wpt2d} illustrates the computation of a full two-dimensional wavelet packet tree.
+:numref:`fig-wpt2d` illustrates the computation of a full two-dimensional wavelet packet tree.
 More formally, the process initially evaluates
 
 .. math::
@@ -87,6 +90,8 @@ and alias cancellation conditions to satisfy both requirements. For an analysis 
 
 Similarly
 
+.. _eq-alias:
+
 .. math::
   F_\mathcal{L}(z)H_\mathcal{L}(-z) + F_\mathcal{H}(z)H_\mathcal{H}(-z) = 0 
 
@@ -94,24 +99,29 @@ guarantees alias cancellation.
 
 Filters that satisfy both equations qualify as wavelets. Daubechies wavelets and Symlets appear in this paper.
 
+.. _fig-sym6:
+
 .. figure:: figures/sym6.png
    :scale: 45 %
    :alt: sym6 filter values
    :align: center
+   
+   Visualization of the Symlet 6 filter coefficients.
 
-Visualization of the Symlet 6 filter coefficients.
+bla bla
 
+.. _fig-db6:
 
 .. figure:: figures/db6.png
    :scale: 45 %
    :alt: 2d wavelet packet transform computation diagram.
    :align: center
 
-Visualization of the Daubechies 6 filter coefficients.
+   Visualization of the Daubechies 6 filter coefficients.
 
-Figures~\ref{fig:sym6_vis} and \ref{fig:db6_vis} visualize the Daubechies and Symlet filters of 6th degree.
-Compared to the Daubechies Wavelet family, their Symlet cousins have more mass at the center. Figure~\ref{fig:sym6_vis} illustrates this fact. Large deviations occur around the fifth filter in the center, unlike the Daubechies' six filters in Figure~\ref{fig:db6_vis}.
-Consider the sign patterns in Figure~\ref{fig:db6_vis}. The decomposition highpass (orange) and the reconstruction lowpass (green) filters display an alternating sign pattern. This behavior is a possible solution to the alias cancellation condition. To understand why substitute :math:`F_\mathcal{L}(z) = H_\mathcal{H}(-z)` and :math:`F_\mathcal{H} = -H_\mathcal{L}(-z)` into equation~\ref{eq:alias_cancellation} :cite:`strang1996wavelets`. :math:`F_\mathcal{L}(z) = H_\mathcal{H}(-z)` requires an opposing sign at even and equal signs at odd powers of the polynomial.
+:numref:`fig-sym6` and :numref:`fig-db6` visualize the Daubechies and Symlet filters of 6th degree.
+Compared to the Daubechies Wavelet family, their Symlet cousins have more mass at the center. :numref:`fig-sym6` illustrates this fact. Large deviations occur around the fifth filter in the center, unlike the Daubechies' six filters in :numref:`fig-db6`.
+Consider the sign patterns in :numref:`fig-db6`. The decomposition highpass (orange) and the reconstruction lowpass (green) filters display an alternating sign pattern. This behavior is a possible solution to the alias cancellation condition. To understand why substitute :math:`F_\mathcal{L}(z) = H_\mathcal{H}(-z)` and :math:`F_\mathcal{H} = -H_\mathcal{L}(-z)` into the perfect reconstruction condition :cite:`strang1996wavelets`. :math:`F_\mathcal{L}(z) = H_\mathcal{H}(-z)` requires an opposing sign at even and equal signs at odd powers of the polynomial.
 
 
 
