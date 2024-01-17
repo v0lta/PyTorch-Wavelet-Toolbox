@@ -3,6 +3,7 @@
 The implementation relies on torch.nn.functional.conv2d and
 torch.nn.functional.conv_transpose2d under the hood.
 """
+# Written by the Pytorch wavelet toolbox team in 2024
 
 
 from functools import partial

@@ -2,6 +2,7 @@
 
 The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
+# Written by the Pytorch wavelet toolbox team in 2024
 
 from functools import partial
 from typing import Dict, List, Optional, Sequence, Tuple, Union, cast
