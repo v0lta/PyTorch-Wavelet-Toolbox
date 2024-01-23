@@ -102,7 +102,9 @@ def _conv_transpose_dedilate(
     return rec.swapaxes(0, -1) / 2.0
 
 
-def _iswt(coeffs, wavelet, axis=-1):
+def _iswt(coeffs: List[torch.Tensor], 
+          wavelet: Union[pywt.Wavelet, str],
+          axis: int=-1) -> torch.Tensor:
     if axis != -1:
         swap = []
         if isinstance(axis, int):
@@ -118,7 +120,6 @@ def _iswt(coeffs, wavelet, axis=-1):
         coeffs, ds = _preprocess_result_list_rec1d(coeffs)
 
     wavelet = _as_wavelet(wavelet)
-    # unlike pytorch lax's transpose conv requires filter flips.
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=True, dtype=coeffs[0].dtype, device=coeffs[0].device
     )
