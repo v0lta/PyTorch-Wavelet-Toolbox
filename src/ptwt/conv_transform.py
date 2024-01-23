@@ -269,7 +269,7 @@ def wavedec(
     """Compute the analysis (forward) 1d fast wavelet transform.
 
     The transformation relies on convolution operations with filter
-    pairs. 
+    pairs.
 
     .. math::
         x_s * h_k = c_{k,s+1}
