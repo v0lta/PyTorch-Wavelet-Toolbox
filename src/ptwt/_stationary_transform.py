@@ -102,9 +102,9 @@ def _conv_transpose_dedilate(
     return rec.swapaxes(0, -1) / 2.0
 
 
-def _iswt(coeffs: List[torch.Tensor], 
-          wavelet: Union[pywt.Wavelet, str],
-          axis: int=-1) -> torch.Tensor:
+def _iswt(
+    coeffs: List[torch.Tensor], wavelet: Union[pywt.Wavelet, str], axis: int = -1
+) -> torch.Tensor:
     if axis != -1:
         swap = []
         if isinstance(axis, int):
