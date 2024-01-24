@@ -1,8 +1,9 @@
-Understanding wavelets
-======================
+Introduction to discrete wavelet transforms
+===========================================
 
 This text summarizes key wavelet facts as a convenience for the hasty reader.
-See, for example, :cite:`strang1996wavelets,mallat1999wavelet` or :cite:`jensen2001ripples` for excellent detailed introductions to the topic. This text is based on the supplementary material of :cite:`wolter2022wavelet`.
+See, for example, :cite:`strang1996wavelets,mallat1999wavelet` or :cite:`jensen2001ripples` for excellent detailed introductions to the topic.
+This text is based on the supplementary material of :cite:`wolter2022wavelet`.
 
 The fwt relies on convolution operations with filter pairs.
 
