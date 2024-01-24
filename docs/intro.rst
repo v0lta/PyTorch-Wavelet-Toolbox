@@ -17,14 +17,14 @@ The fwt relies on convolution operations with filter pairs.
    Overview of the fwt computation.
    
 
-:numref:`fig-fwt` illustrates the process. :math:`\mathbf{h}_\mathcal{L}` denotes the analysis low-pass filter. :math:`\mathbf{h}_\mathcal{H}` the analysis high pass filter.  :math:`\mathbf{f}_\mathcal{L}` and :math:`\mathbf{f}_\mathcal{H}` the synthesis filer pair. :math:`\downarrow_2` denotes downsampling with a factor of two, :math:`\uparrow_2` means upsampling. In machine learning terms, the analysis transform relies on stride two convolutions. The synthesis or inverse transform on the right works with stride two transposed convolutions. :math:`\mathbf{H}_{k}` and :math:`\mathbf{F}_{k}` with :math:`k \in [\mathcal{L}, \mathcal{H}]` denote the corresponding convolution operators.
+:numref:`fig-fwt` illustrates the process. :math:`\mathbf{h}_\mathcal{A}` denotes the analysis low-pass filter. :math:`\mathbf{h}_\mathcal{D}` the analysis high pass filter.  :math:`\mathbf{f}_\mathcal{A}` and :math:`\mathbf{f}_\mathcal{D}` the synthesis filer pair. :math:`\downarrow_2` denotes downsampling with a factor of two, :math:`\uparrow_2` means upsampling. In machine learning terms, the analysis transform relies on stride two convolutions. The synthesis or inverse transform on the right works with stride two transposed convolutions. :math:`\mathbf{H}_{k}` and :math:`\mathbf{F}_{k}` with :math:`k \in [\mathcal{A}, \mathcal{D}]` denote the corresponding convolution operators.
 
 .. math::
   \mathbf{x}_s * \mathbf{h}_k = \mathbf{c}_{k, s+1}
 
-with :math:`k \in [\mathcal{L}, \mathcal{H}]` and :math:`s \in \mathbb{N}_0` the set of natural numbers, where :math:`\mathbf{x}_0` is equal to
+with :math:`k \in [\mathcal{A}, \mathcal{D}]` and :math:`s \in \mathbb{N}_0` the set of natural numbers, where :math:`\mathbf{x}_0` is equal to
 the original input signal :math:`\mathbf{x}`. At higher scales, the fwt uses the low-pass filtered result as input,
-:math:`\mathbf{x}_s = \mathbf{c}_{\mathcal{L}, s}` if :math:`s > 0`. 
+:math:`\mathbf{x}_s = \mathbf{c}_{\mathcal{A}, s}` if :math:`s > 0`. 
 The dashed arrow indicates that we could continue to expand the fwt tree here. :py:meth:`ptwt.conv_transform.wavedec` implements this transformation.
 
 The wavelet packet transform (pwt) additionally expands the high-frequency part of the tree. The figure below depicts the idea.
@@ -36,7 +36,7 @@ The wavelet packet transform (pwt) additionally expands the high-frequency part 
    :alt: wavelet packet transform computation diagram.
    :align: center
 
-   Scematic drawing of the full wpt in a single dimension. Compared to figure~\ref{fig:fwt}, the high-pass filtered side of the tree is expanded, too.
+   Scematic drawing of the full wpt in a single dimension. Compared to :numref:`fig-fwt`, the high-pass filtered side of the tree is expanded, too.
 
 Whole expansion is not the only possible way to construct a wavelet packet tree. See :cite:`jensen2001ripples` for a discussion of other options.
 In :numref:`fig-fwt` and :numref:`fig-wpt`, capital letters denote convolution operators. These may be expressed as Toeplitz matrices :cite:`strang1996wavelets`.
@@ -48,10 +48,10 @@ This toolbox provides two dimensional input processing functionality.
 We construct filter quadruples from the original filter pairs to process two-dimensional inputs. The process uses outer products :cite:`vyas2018multiscale`:
 
 .. math::
-    \mathbf{h}_{a} = \mathbf{h}_\mathcal{L}\mathbf{h}_\mathcal{L}^T,
-    \mathbf{h}_{h} = \mathbf{h}_\mathcal{L}\mathbf{h}_\mathcal{H}^T,
-    \mathbf{h}_{v} = \mathbf{h}_\mathcal{H}\mathbf{h}_\mathcal{L}^T,
-    \mathbf{h}_{d} = \mathbf{h}_\mathcal{H}\mathbf{h}_\mathcal{H}^T
+    \mathbf{h}_{a} = \mathbf{h}_\mathcal{A}\mathbf{h}_\mathcal{A}^T,
+    \mathbf{h}_{h} = \mathbf{h}_\mathcal{A}\mathbf{h}_\mathcal{D}^T,
+    \mathbf{h}_{v} = \mathbf{h}_\mathcal{D}\mathbf{h}_\mathcal{A}^T,
+    \mathbf{h}_{d} = \mathbf{h}_\mathcal{D}\mathbf{h}_\mathcal{D}^T
 
 With :math:`a` for approximation, :math:`h` for horizontal, :math:`v` for vertical, and :math:`d` for diagonal :cite:`lee2019pywavelets`.
 
@@ -67,7 +67,7 @@ We can construct a wpt-tree for images with these two-dimensional filters.
    :alt: 2d wavelet packet transform computation diagram.
    :align: center
 
-   Two dimensional wavelet packet transform computation diagram.
+   Two-dimensional wavelet packet transform computation diagram.
 
 Two dimensional wavelet packet computation overview. :math:`\mathbf{X}` and :math:`\hat{\mathbf{X}}` denote input image and
 reconstruction respectively.
@@ -90,14 +90,14 @@ Standard literature like :cite:`strang1996wavelets` formulates the perfect recon
 and alias cancellation conditions to satisfy both requirements. For an analysis filter coefficient vector :math:`\mathbf{h}` the equations below use the polynomial :math:`H(z) = \sum_n h(n)z^{-n}`. We construct :math:`F(z)` the same way using the synthesis filter coefficients in :math:`\mathbf{f}`. To guarantee perfect reconstruction the filters must respect 
 
 .. math::
-    H_\mathcal{L}(z)F_\mathcal{L}(z) + H_\mathcal{H}(-z)F_\mathcal{H}(z) = 2z^{-l}.
+    H_\mathcal{A}(z)F_\mathcal{A}(z) + H_\mathcal{D}(-z)F_\mathcal{D}(z) = 2z^{-l}.
 
 Similarly
 
 .. _eq-alias:
 
 .. math::
-  F_\mathcal{L}(z)H_\mathcal{L}(-z) + F_\mathcal{H}(z)H_\mathcal{H}(-z) = 0 
+  F_\mathcal{A}(z)H_\mathcal{A}(-z) + F_\mathcal{D}(z)H_\mathcal{D}(-z) = 0 
 
 guarantees alias cancellation.
 
@@ -124,7 +124,7 @@ Filters that satisfy both equations qualify as wavelets. Daubechies wavelets and
 
 :numref:`fig-sym6` and :numref:`fig-db6` visualize the Daubechies and Symlet filters of 6th degree.
 Compared to the Daubechies Wavelet family, their Symlet cousins have more mass at the center. :numref:`fig-sym6` illustrates this fact. Large deviations occur around the fifth filter in the center, unlike the Daubechies' six filters in :numref:`fig-db6`.
-Consider the sign patterns in :numref:`fig-db6`. The decomposition highpass (orange) and the reconstruction lowpass (green) filters display an alternating sign pattern. This behavior is a possible solution to the alias cancellation condition. To understand why substitute :math:`F_\mathcal{L}(z) = H_\mathcal{H}(-z)` and :math:`F_\mathcal{H} = -H_\mathcal{L}(-z)` into the perfect reconstruction condition :cite:`strang1996wavelets`. :math:`F_\mathcal{L}(z) = H_\mathcal{H}(-z)` requires an opposing sign at even and equal signs at odd powers of the polynomial.
+Consider the sign patterns in :numref:`fig-db6`. The decomposition highpass (orange) and the reconstruction lowpass (green) filters display an alternating sign pattern. This behavior is a possible solution to the alias cancellation condition. To understand why substitute :math:`F_\mathcal{A}(z) = H_\mathcal{D}(-z)` and :math:`F_\mathcal{D} = -H_\mathcal{A}(-z)` into the perfect reconstruction condition :cite:`strang1996wavelets`. :math:`F_\mathcal{A}(z) = H_\mathcal{D}(-z)` requires an opposing sign at even and equal signs at odd powers of the polynomial.
 
 
 
