@@ -8,6 +8,7 @@ This text is based on the supplementary material of :cite:`wolter2022wavelet`.
 The fwt relies on convolution operations with filter pairs.
 
 
+
 .. _fig-fwt:
 
 .. figure:: figures/fwt.png
