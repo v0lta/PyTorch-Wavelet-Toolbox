@@ -114,7 +114,7 @@ def _separable_conv_wavedecn(
     Args:
         input (torch.Tensor): A tensor i.e. of shape [batch,axis_1, ... axis_n].
         wavelet (Wavelet): A pywt wavelet compatible object.
-        mode (str): The desired padding mode.
+        mode : The desired padding mode.
         level (int): The desired decomposition level.
 
     Returns:
@@ -185,7 +185,7 @@ def fswavedec2(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
-        mode (str): The padding mode. Options are::
+        mode : The padding mode. Options are::
 
                 "reflect", "zero", "constant", "periodic".
 
@@ -255,7 +255,7 @@ def fswavedec3(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
-        mode (str): The padding mode. Options are::
+        mode : The padding mode. Options are::
 
                 "reflect", "zero", "constant", "periodic".
 
