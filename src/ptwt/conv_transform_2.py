@@ -149,7 +149,7 @@ def wavedec2(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
-        mode (str): The padding mode. Options are::
+        mode : The padding mode. Options are::
 
                 "reflect", "zero", "constant", "periodic", "symmetric".
 

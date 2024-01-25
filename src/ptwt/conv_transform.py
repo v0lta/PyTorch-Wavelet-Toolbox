@@ -129,7 +129,7 @@ def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
         # pytorch does not support symmetric mode,
         # we have our own implementation.
         return pywt_mode
-    raise TypeError("Padding mode not supported.")
+    raise TypeError(f"Padding mode not supported: {pywt_mode}")
 
 
 def _fwt_pad(
