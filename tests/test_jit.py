@@ -69,7 +69,7 @@ def _to_jit_wavedec_2(data, wavelet):
     means we have to stack the lists in the output.
     """
     assert data.shape == (10, 20, 20), "Changing the chape requires re-tracing."
-    coeff = ptwt.wavedec2(data, wavelet, "reflect", 2)
+    coeff = ptwt.wavedec2(data, wavelet, mode="reflect", level=2)
     coeff2 = []
     for c in coeff:
         if isinstance(c, torch.Tensor):

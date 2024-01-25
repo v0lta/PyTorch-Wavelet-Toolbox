@@ -106,7 +106,7 @@ def _separable_conv_idwtn(
 def _separable_conv_wavedecn(
     input: torch.Tensor,
     wavelet: pywt.Wavelet,
-    mode: str = "reflect",
+    mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a multilevel separable padded wavelet analysis transform.
@@ -131,7 +131,7 @@ def _separable_conv_wavedecn(
 
     for _ in range(level):
         level_dict: Dict[str, torch.Tensor] = {}
-        _separable_conv_dwtn_(level_dict, approx, wavelet, mode, "")
+        _separable_conv_dwtn_(level_dict, approx, wavelet, mode=mode, key="")
         approx_key = "a" * (len(input.shape) - 1)
         approx = level_dict.pop(approx_key)
         result.append(level_dict)
@@ -173,7 +173,7 @@ def _separable_conv_waverecn(
 def fswavedec2(
     data: torch.Tensor,
     wavelet: Union[str, pywt.Wavelet],
-    mode: str = "reflect",
+    mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: Tuple[int, int] = (-2, -1),
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
@@ -244,7 +244,7 @@ def fswavedec2(
 def fswavedec3(
     data: torch.Tensor,
     wavelet: Union[str, pywt.Wavelet],
-    mode: str = "reflect",
+    mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: Tuple[int, int, int] = (-3, -2, -1),
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
