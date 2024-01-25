@@ -1,5 +1,5 @@
 """Test our 3d for loop-convolution based fwt code."""
-import typing
+
 from typing import List
 
 import numpy as np
@@ -8,7 +8,6 @@ import pywt
 import torch
 
 import ptwt
-from ptwt.constants import BoundaryMode
 
 
 def _expand_dims(batch_list: List) -> List:
