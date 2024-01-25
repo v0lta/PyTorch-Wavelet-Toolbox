@@ -5,19 +5,18 @@
 
 .. _PyTorch install instructions: https://pytorch.org/get-started/locally/
 
-Pytorch Wavelet Toolbox (``ptwt``) 
+PyTorch Wavelet Toolbox (``ptwt``)
 ==================================
 
 ``ptwt`` brings wavelet transforms to PyTorch. The code is open-source, follow the link above
 to go to the source. This package is listed in the Python Package Index (PyPI). Its best installed via pip.
 GPU support depends on PyTorch. To take advantage of GPU-processing follow the `PyTorch install instructions`_.
-Install the version that best suits your systems hardware setup. Once PyTorch ist set up, type:
+Install the version that best suits your systems hardware setup. Once PyTorch ist set up, type the following
+to get started:
 
 .. code-block:: sh
 
     pip install ptwt
-
-to get started.
 
 This documentation aims to explain the foundations of wavelet theory, introduce the ``ptwt`` package by example, and
 deliver a complete documentation of all functions. Readers who are already familiar with the theory should directly
