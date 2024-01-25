@@ -61,8 +61,8 @@ def _separable_conv_dwtn_(
         res_a, res_d = wavedec(
             input_arg, wavelet, level=1, mode=mode, axis=-current_axis
         )
-        _separable_conv_dwtn_(rec_dict, res_a, wavelet, mode, "a" + key)
-        _separable_conv_dwtn_(rec_dict, res_d, wavelet, mode, "d" + key)
+        _separable_conv_dwtn_(rec_dict, res_a, wavelet, mode=mode, key="a" + key)
+        _separable_conv_dwtn_(rec_dict, res_d, wavelet, mode=mode, key="d" + key)
 
 
 def _separable_conv_idwtn(
@@ -231,7 +231,7 @@ def fswavedec2(
     wavelet = _as_wavelet(wavelet)
     data, ds = _preprocess_tensor_dec2d(data)
     data = data.squeeze(1)
-    res = _separable_conv_wavedecn(data, wavelet, mode, level)
+    res = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
 
     if ds:
         _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
