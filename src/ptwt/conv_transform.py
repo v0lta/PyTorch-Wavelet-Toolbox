@@ -266,7 +266,7 @@ def wavedec(
     level: Optional[int] = None,
     axis: int = -1,
 ) -> List[torch.Tensor]:
-    """Compute the analysis (forward) 1d fast wavelet transform.
+    r"""Compute the analysis (forward) 1d fast wavelet transform.
 
     The transformation relies on convolution operations with filter
     pairs.
@@ -276,9 +276,9 @@ def wavedec(
 
     Where :math:`x_s` denotes the input at scale :math:`s`, with
     :math:`x_0` equal to the original input. :math:`h_k` denotes
-    the convolution filter, with :math:`k \in {A, D}`, where :math:`A` for approximation and
-    :math:`D` for detail. The processes uses approximation coefficients
-    as inputs for higher scales.
+    the convolution filter, with :math:`k \in {A, D}`, where :math:`A` for
+    approximation and :math:`D` for detail. The processes uses approximation
+    coefficients as inputs for higher scales.
 
     Args:
         data (torch.Tensor): The input time series,
