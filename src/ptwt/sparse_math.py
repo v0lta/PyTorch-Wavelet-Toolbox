@@ -462,8 +462,8 @@ def construct_conv2d_matrix(
 def construct_strided_conv_matrix(
     filter: torch.Tensor,
     input_rows: int,
-    *,
     stride: int = 2,
+    *,
     mode: Conv2DMode = "valid"
 ) -> torch.Tensor:
     """Construct a strided convolution matrix.
