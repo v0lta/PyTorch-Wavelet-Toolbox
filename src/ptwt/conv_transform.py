@@ -146,13 +146,9 @@ def _fwt_pad(
         data (torch.Tensor): Input data ``[batch_size, 1, time]``
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode : The desired way to pad. The following methods are supported::
-
-            1. Refection padding mirrors samples along the border (default)
-            2. Zero padding pads zeros.
-            3. Constant padding replicates border values.
-            4. Periodic padding cyclically repeats samples.
-            5. ...
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
 
     Returns:
         torch.Tensor: A PyTorch tensor with the padded input data
@@ -279,18 +275,9 @@ def wavedec(
             the name of a pywt wavelet.
             Please consider the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        mode : The desired padding mode. Padding extends the signal along
-            the edges. Supported methods are::
-
-                "reflect", "zero", "constant", "periodic", "symmetric".
-
-            Defaults to "reflect".
-
-            Symmetric padding mirrors samples along the border.
-            Refection padding reflects samples along the border.
-            Zero padding pads zeros.
-            Constant padding replicates border values.
-            Periodic padding cyclically repeats samples.
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The scale level to be computed.
                                Defaults to None.
         axis (int): Compute the transform over this axis instead of the

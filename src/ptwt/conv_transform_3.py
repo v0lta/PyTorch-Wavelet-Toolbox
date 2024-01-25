@@ -74,9 +74,9 @@ def _fwt_pad3(
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode : The padding mode. Supported modes are::
-
-            "reflect", "zero", "constant", "periodic", "symmetric".
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            See :data:`ptwt.constants.BoundaryMode`.
 
     Returns:
         The padded output tensor.
@@ -116,11 +116,9 @@ def wavedec3(
             [batch_size, length, height, width]
         wavelet (Union[Wavelet, str]): The wavelet to transform with.
             ``pywt.wavelist(kind='discrete')`` lists possible choices.
-        mode : The padding mode. Possible options are::
-
-                "reflect", "zero", "constant", "periodic", "symmetric".
-
-            Defaults to "zero".
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "zero". See :data:`ptwt.constants.BoundaryMode`.
         level (Optional[int]): The maximum decomposition level.
             This argument defaults to None.
         axes (Tuple[int, int, int]): Compute the transform over these axes

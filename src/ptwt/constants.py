@@ -14,5 +14,5 @@ This is a type literal for the way of padding.
 - Zero padding pads zeros.
 - Constant padding replicates border values.
 - Periodic padding cyclically repeats samples.
-- Symmetric padding does ..todo:: moritz, write this!
+- Symmetric padding mirrors samples along the border
 """

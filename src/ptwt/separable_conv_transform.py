@@ -188,11 +188,9 @@ def fswavedec2(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
-        mode : The padding mode. Options are::
-
-                "reflect", "zero", "constant", "periodic".
-
-            This function defaults to "reflect".
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The number of desired scales.
             Defaults to None.
         axes ([int, int]): The axes we want to transform,
@@ -259,11 +257,9 @@ def fswavedec3(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
-        mode : The padding mode. Options are::
-
-                "reflect", "zero", "constant", "periodic".
-
-            This function defaults to "reflect".
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The number of desired scales.
             Defaults to None.
         axes (Tuple[int, int, int]): Compute the transform over these axes

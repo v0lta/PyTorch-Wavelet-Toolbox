@@ -73,12 +73,9 @@ def _fwt_pad2(
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode (str): The padding mode.
-            Supported modes are::
-
-                "reflect", "zero", "constant", "periodic", "symmetric".
-
-            "reflect" is the default mode.
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
 
     Returns:
         The padded output tensor.
@@ -150,11 +147,9 @@ def wavedec2(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
-        mode : The padding mode. Options are::
-
-                "reflect", "zero", "constant", "periodic", "symmetric".
-
-            This function defaults to "reflect".
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The number of desired scales.
             Defaults to None.
         axes (Tuple[int, int]): Compute the transform over these axes instead of the
