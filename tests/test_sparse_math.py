@@ -6,6 +6,7 @@ import scipy.signal
 import torch
 from scipy import datasets
 
+from ptwt.constants import Conv2DMode
 from src.ptwt.sparse_math import (
     batch_mm,
     construct_conv2d_matrix,
@@ -38,10 +39,10 @@ def test_kron() -> None:
 @pytest.mark.parametrize("input_signal", [torch.rand([8]), torch.rand([9])])
 @pytest.mark.parametrize("padding", ["full", "same", "valid"])
 def test_conv_matrix(
-    test_filter: torch.Tensor, input_signal: torch.Tensor, padding: str
+    test_filter: torch.Tensor, input_signal: torch.Tensor, padding: Conv2DMode
 ) -> None:
     """Test the 1d sparse convolution matrix code."""
-    conv_matrix = construct_conv_matrix(test_filter, len(input_signal), padding)
+    conv_matrix = construct_conv_matrix(test_filter, len(input_signal), mode=padding)
     mm_conv_res = torch.sparse.mm(conv_matrix, input_signal.unsqueeze(-1)).squeeze()
     conv_res = scipy.signal.convolve(input_signal.numpy(), test_filter.numpy(), padding)
     error = np.sum(np.abs(conv_res - mm_conv_res.numpy()))

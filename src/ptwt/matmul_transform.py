@@ -63,10 +63,10 @@ def _construct_a(
         wavelet, flip=False, device=device, dtype=dtype
     )
     analysis_lo = construct_strided_conv_matrix(
-        dec_lo.squeeze(), length, 2, "sameshift"
+        dec_lo.squeeze(), length, 2, mode="sameshift"
     )
     analysis_hi = construct_strided_conv_matrix(
-        dec_hi.squeeze(), length, 2, "sameshift"
+        dec_hi.squeeze(), length, 2, mode="sameshift"
     )
     analysis = torch.cat([analysis_lo, analysis_hi])
     return analysis
@@ -100,10 +100,10 @@ def _construct_s(
         wavelet, flip=True, device=device, dtype=dtype
     )
     synthesis_lo = construct_strided_conv_matrix(
-        rec_lo.squeeze(), length, 2, "sameshift"
+        rec_lo.squeeze(), length, 2, mode="sameshift"
     )
     synthesis_hi = construct_strided_conv_matrix(
-        rec_hi.squeeze(), length, 2, "sameshift"
+        rec_hi.squeeze(), length, 2, mode="sameshift"
     )
     synthesis = torch.cat([synthesis_lo, synthesis_hi])
     return synthesis.transpose(0, 1)
