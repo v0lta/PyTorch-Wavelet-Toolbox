@@ -1,9 +1,13 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
+
+import typing
 from typing import Any, Callable, List, Optional, Protocol, Sequence, Tuple, Union
 
 import numpy as np
 import pywt
 import torch
+
+from ptwt.constants import OrthogonalizeMethod
 
 
 class Wavelet(Protocol):
@@ -42,8 +46,8 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
         return wavelet
 
 
-def _is_boundary_mode_supported(boundary_mode: Optional[str]) -> bool:
-    return boundary_mode in ["qr", "gramschmidt"]
+def _is_boundary_mode_supported(boundary_mode: Optional[OrthogonalizeMethod]) -> bool:
+    return boundary_mode in typing.get_args(OrthogonalizeMethod)
 
 
 def _is_dtype_supported(dtype: torch.dtype) -> bool:

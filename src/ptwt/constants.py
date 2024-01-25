@@ -4,6 +4,8 @@ from typing import Literal
 
 __all__ = [
     "BoundaryMode",
+    "Conv2DMode",
+    "OrthogonalizeMethod",
 ]
 
 BoundaryMode = Literal["constant", "zero", "reflect", "periodic", "symmetric"]
@@ -16,3 +18,7 @@ This is a type literal for the way of padding.
 - Periodic padding cyclically repeats samples.
 - Symmetric padding mirrors samples along the border
 """
+
+Conv2DMode = Literal["full", "valid", "same", "sameshift"]
+
+OrthogonalizeMethod = Literal["qr", "gramschmidt"]

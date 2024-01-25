@@ -20,6 +20,7 @@ from ._util import (
     _is_dtype_supported,
     _unfold_axes,
 )
+from .constants import OrthogonalizeMethod
 from .conv_transform import (
     _get_filter_tensors,
     _postprocess_result_list_dec1d,
@@ -127,14 +128,14 @@ def _get_to_orthogonalize(matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
 
 
 def orthogonalize(
-    matrix: torch.Tensor, filt_len: int, method: str = "qr"
+    matrix: torch.Tensor, filt_len: int, method: OrthogonalizeMethod = "qr"
 ) -> torch.Tensor:
     """Orthogonalization for sparse filter matrices.
 
     Args:
         matrix (torch.Tensor): The sparse filter matrix to orthogonalize.
         filt_len (int): The length of the wavelet filter coefficients.
-        method (str): The orthogonalization method to use. Choose qr
+        method : The orthogonalization method to use. Choose qr
             or gramschmidt. The dense qr code will run much faster
             than sparse gramschidt. Choose gramschmidt if qr fails.
             Defaults to qr.
@@ -143,13 +144,13 @@ def orthogonalize(
         torch.Tensor: Orthogonal sparse transformation matrix.
     """
     to_orthogonalize = _get_to_orthogonalize(matrix, filt_len)
-    if len(to_orthogonalize) > 0:
-        if method == "qr":
-            matrix = _orth_by_qr(matrix, to_orthogonalize)
-        else:
-            matrix = _orth_by_gram_schmidt(matrix, to_orthogonalize)
-
-    return matrix
+    if len(to_orthogonalize) == 0:
+        return matrix
+    if method == "qr":
+        return _orth_by_qr(matrix, to_orthogonalize)
+    elif method == "gramschmidt":
+        return _orth_by_gram_schmidt(matrix, to_orthogonalize)
+    raise ValueError(f"Invalid orthogonalization method: {method}")
 
 
 class MatrixWavedec(object):
@@ -177,7 +178,7 @@ class MatrixWavedec(object):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         axis: Optional[int] = -1,
-        boundary: str = "qr",
+        boundary: OrthogonalizeMethod = "qr",
     ) -> None:
         """Create a matrix-fwt object.
 
@@ -189,7 +190,7 @@ class MatrixWavedec(object):
                 None.
             axis (int, optional): The axis we would like to transform.
                 Defaults to -1.
-            boundary (str): The method used for boundary filter treatment.
+            boundary : The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt'
                 option is sparse, memory efficient, and slow. Choose 'gramschmidt' if
@@ -390,7 +391,7 @@ def construct_boundary_a(
     wavelet: Union[Wavelet, str],
     length: int,
     device: Union[torch.device, str] = "cpu",
-    boundary: str = "qr",
+    boundary: OrthogonalizeMethod = "qr",
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Construct a boundary-wavelet filter 1d-analysis matrix.
@@ -399,7 +400,7 @@ def construct_boundary_a(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         length (int): The number of entries in the input signal.
-        boundary (str): A string indicating the desired boundary treatment.
+        boundary : A string indicating the desired boundary treatment.
             Possible options are qr and gramschmidt. Defaults to
             qr.
         device: Where to place the matrix. Choose cpu or cuda.
@@ -419,7 +420,7 @@ def construct_boundary_s(
     wavelet: Union[Wavelet, str],
     length: int,
     device: Union[torch.device, str] = "cpu",
-    boundary: str = "qr",
+    boundary: OrthogonalizeMethod = "qr",
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Construct a boundary-wavelet filter 1d-synthesis matarix.
@@ -430,7 +431,7 @@ def construct_boundary_s(
         length (int): The number of entries in the input signal.
         device (torch.device): Where to place the matrix.
             Choose cpu or cuda. Defaults to cpu.
-        boundary (str): A string indicating the desired boundary treatment.
+        boundary : A string indicating the desired boundary treatment.
             Possible options are qr and gramschmidt. Defaults to qr.
         dtype: Choose torch.float32 or torch.float64.
             Defaults to torch.float64.
@@ -462,7 +463,10 @@ class MatrixWaverec(object):
     """
 
     def __init__(
-        self, wavelet: Union[Wavelet, str], axis: int = -1, boundary: str = "qr"
+        self,
+        wavelet: Union[Wavelet, str],
+        axis: int = -1,
+        boundary: OrthogonalizeMethod = "qr",
     ) -> None:
         """Create the inverse matrix-based fast wavelet transformation.
 
@@ -471,7 +475,7 @@ class MatrixWaverec(object):
                 the name of a pywt wavelet.
             axis (int): The axis transformed by the original decomposition
                 defaults to -1 or the last axis.
-            boundary (str): The method used for boundary filter treatment.
+            boundary : The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt' option
                 is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs
