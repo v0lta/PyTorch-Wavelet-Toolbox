@@ -5,7 +5,7 @@ from typing import List
 
 import torch
 
-from ptwt.constants import Conv2DMode
+from ptwt.constants import PaddingMode
 
 
 def _dense_kron(
@@ -331,7 +331,7 @@ def _orth_by_gram_schmidt(
 
 
 def construct_conv_matrix(
-    filter: torch.Tensor, input_rows: int, *, mode: Conv2DMode = "valid"
+    filter: torch.Tensor, input_rows: int, *, mode: PaddingMode = "valid"
 ) -> torch.Tensor:
     """Construct a convolution matrix.
 
@@ -392,7 +392,7 @@ def construct_conv2d_matrix(
     filter: torch.Tensor,
     input_rows: int,
     input_columns: int,
-    mode: Conv2DMode = "valid",
+    mode: PaddingMode = "valid",
     fully_sparse: bool = True,
 ) -> torch.Tensor:
     """Create a two-dimensional sparse convolution matrix.
@@ -464,7 +464,7 @@ def construct_strided_conv_matrix(
     input_rows: int,
     stride: int = 2,
     *,
-    mode: Conv2DMode = "valid"
+    mode: PaddingMode = "valid"
 ) -> torch.Tensor:
     """Construct a strided convolution matrix.
 
@@ -501,7 +501,7 @@ def construct_strided_conv2d_matrix(
     input_rows: int,
     input_columns: int,
     stride: int = 2,
-    mode: Conv2DMode = "full",
+    mode: PaddingMode = "full",
 ) -> torch.Tensor:
     """Create a strided sparse two-dimensional convolution matrix.
 

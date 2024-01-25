@@ -5,7 +5,7 @@ from typing import Literal, Union
 __all__ = [
     "BoundaryMode",
     "ExtendedBoundaryMode",
-    "Conv2DMode",
+    "PaddingMode",
     "OrthogonalizeMethod",
 ]
 
@@ -22,6 +22,17 @@ This is a type literal for the way of padding.
 
 ExtendedBoundaryMode = Union[Literal["boundary"], BoundaryMode]
 
-Conv2DMode = Literal["full", "valid", "same", "sameshift"]
+PaddingMode = Literal["full", "valid", "same", "sameshift"]
+"""
+The padding mode is used when construction convolution matrices.
+"""
 
 OrthogonalizeMethod = Literal["qr", "gramschmidt"]
+"""
+The method for orthogonalizing a matrix.
+
+1. 'qr' relies on pytorch's dense qr implementation, it is fast but memory hungry.
+2. 'gramschmidt' option is sparse, memory efficient, and slow. 
+
+Choose 'gramschmidt' if 'qr' runs out of memory.
+"""

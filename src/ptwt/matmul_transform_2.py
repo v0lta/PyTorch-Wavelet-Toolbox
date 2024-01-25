@@ -22,7 +22,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import Conv2DMode, OrthogonalizeMethod
+from .constants import OrthogonalizeMethod, PaddingMode
 from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import (
     _construct_2d_filt,
@@ -43,7 +43,7 @@ def _construct_a_2(
     width: int,
     device: Union[torch.device, str],
     dtype: torch.dtype = torch.float64,
-    mode: Conv2DMode = "sameshift",
+    mode: PaddingMode = "sameshift",
 ) -> torch.Tensor:
     """Construct a raw two-dimensional analysis wavelet transformation matrix.
 
@@ -88,7 +88,7 @@ def _construct_s_2(
     width: int,
     device: Union[torch.device, str],
     dtype: torch.dtype = torch.float64,
-    mode: Conv2DMode = "sameshift",
+    mode: PaddingMode = "sameshift",
 ) -> torch.Tensor:
     """Construct a raw fast wavelet transformation synthesis matrix.
 
