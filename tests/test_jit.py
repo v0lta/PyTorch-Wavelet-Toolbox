@@ -31,7 +31,7 @@ def _set_up_wavelet_tuple(wavelet, dtype):
 
 
 def _to_jit_wavedec_fun(data, wavelet, level):
-    return ptwt.wavedec(data, wavelet, "reflect", level)
+    return ptwt.wavedec(data, wavelet, mode="reflect", level=level)
 
 
 @pytest.mark.slow

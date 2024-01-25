@@ -304,7 +304,7 @@ def fswavedec3(
     elif len(data.shape) < 4:
         raise ValueError("At lest four input dimensions are required.")
     data = data.squeeze(1)
-    res = _separable_conv_wavedecn(data, wavelet, mode, level)
+    res = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
 
     if ds:
         _unfold_axes3 = partial(_unfold_axes, ds=ds, keep_no=3)

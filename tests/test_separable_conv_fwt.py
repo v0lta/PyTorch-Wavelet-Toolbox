@@ -118,7 +118,7 @@ def test_conv_mm_3d(level, axes, shape):
     """Compare mm and conv 3d fully separable results."""
     data = torch.randn(*shape).type(torch.float64)
     fs_conv_coeff = fswavedec3(data, "haar", level=level, axes=axes)
-    fs_mm_coeff = MatrixWavedec3("haar", level, axes=axes)(data)
+    fs_mm_coeff = MatrixWavedec3("haar", level=level, axes=axes)(data)
     # compare coefficients
     assert len(fs_conv_coeff) == len(fs_mm_coeff)
     for c_conv, c_mm in zip(fs_conv_coeff, fs_mm_coeff):
