@@ -4,15 +4,25 @@
 import collections
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 import numpy as np
 import pywt
 import torch
 
 from ._util import Wavelet, _as_wavelet
-from .constants import BoundaryMode, OrthogonalizeMethod
-from .conv_transform import wavedec, waverec
+from .constants import BoundaryMode, ExtendedBoundaryMode, OrthogonalizeMethod
+from .conv_transform import _translate_boundary_strings, wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
 from .matmul_transform import MatrixWavedec, MatrixWaverec
 from .matmul_transform_2 import MatrixWavedec2, MatrixWaverec2
@@ -49,7 +59,7 @@ class WaveletPacket(BaseDict):
         self,
         data: Optional[torch.Tensor],
         wavelet: Union[Wavelet, str],
-        mode: Optional[BoundaryMode] = "reflect",
+        mode: ExtendedBoundaryMode = "reflect",
         maxlevel: Optional[int] = None,
         axis: int = -1,
         boundary_orthogonalization: OrthogonalizeMethod = "qr",
@@ -264,7 +274,7 @@ class WaveletPacket2D(BaseDict):
         self,
         data: Optional[torch.Tensor],
         wavelet: Union[Wavelet, str],
-        mode: BoundaryMode = "reflect",
+        mode: ExtendedBoundaryMode = "reflect",
         maxlevel: Optional[int] = None,
         axes: Tuple[int, int] = (-2, -1),
         boundary_orthogonalization: OrthogonalizeMethod = "qr",

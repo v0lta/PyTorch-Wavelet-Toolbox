@@ -1,9 +1,10 @@
 """Constants and types used throughout the PyTorch Wavelet Toolbox."""
 
-from typing import Literal
+from typing import Literal, Union
 
 __all__ = [
     "BoundaryMode",
+    "ExtendedBoundaryMode",
     "Conv2DMode",
     "OrthogonalizeMethod",
 ]
@@ -18,6 +19,8 @@ This is a type literal for the way of padding.
 - Periodic padding cyclically repeats samples.
 - Symmetric padding mirrors samples along the border
 """
+
+ExtendedBoundaryMode = Union[Literal["boundary"], BoundaryMode]
 
 Conv2DMode = Literal["full", "valid", "same", "sameshift"]
 

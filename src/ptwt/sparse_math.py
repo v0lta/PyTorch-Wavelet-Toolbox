@@ -479,7 +479,7 @@ def construct_strided_conv_matrix(
     Returns:
         torch.Tensor: The strided sparse convolution matrix.
     """
-    conv_matrix = construct_conv_matrix(filter, input_rows, mode)
+    conv_matrix = construct_conv_matrix(filter, input_rows, mode=mode)
     if mode == "sameshift":
         # find conv_matrix[1:stride, :] sparsely
         select_rows = torch.arange(1, conv_matrix.shape[0], stride)
