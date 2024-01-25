@@ -114,7 +114,7 @@ def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
     Pytorch and PyWavelet communities.
 
     Raises:
-        TypeError: If the padding mode is not supported.
+        ValueError: If the padding mode is not supported.
 
     """
     if pywt_mode == "constant":
@@ -129,7 +129,7 @@ def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
         # pytorch does not support symmetric mode,
         # we have our own implementation.
         return pywt_mode
-    raise TypeError(f"Padding mode not supported: {pywt_mode}")
+    raise ValueError(f"Padding mode not supported: {pywt_mode}")
 
 
 def _fwt_pad(

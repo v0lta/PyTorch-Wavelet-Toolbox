@@ -283,7 +283,7 @@ def test_input_1d_dimension_error():
     """Test the error for 1d inputs to wavedec2."""
     with pytest.raises(ValueError):
         data = torch.randn(50)
-        wavedec2(data, "haar", 4)
+        wavedec2(data, "haar", level=4)
 
 
 def _compare_coeffs(ptwt_res, pywt_res):
