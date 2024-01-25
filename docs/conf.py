@@ -12,14 +12,15 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../src'))
+
+sys.path.insert(0, os.path.abspath("../src"))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'PyTorch-Wavelet-Toolbox'
-copyright = '2022, Moritz Wolter'
-author = 'Moritz Wolter'
+project = "PyTorch-Wavelet-Toolbox"
+copyright = "2022, Moritz Wolter"
+author = "Moritz Wolter"
 
 
 # -- General configuration ---------------------------------------------------
@@ -28,27 +29,27 @@ author = 'Moritz Wolter'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.napoleon',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
-    'sphinx.ext.coverage',
-    'sphinx.ext.viewcode',
+    "sphinx.ext.napoleon",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
+    "sphinx.ext.coverage",
+    "sphinx.ext.viewcode",
 ]
 
 napoleon_google_docstring = True
 # napoleon_use_admonition_for_examples = True
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # document __init__ in the docpages
-autoclass_content = 'both'
+autoclass_content = "both"
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -57,26 +58,26 @@ autoclass_content = 'both'
 # a list of builtin themes.
 #
 
-html_theme = 'alabaster'
+html_theme = "alabaster"
 html_sidebars = {
-    '**': [
-        'about.html',
-        'navigation.html',
-        'searchbox.html',
+    "**": [
+        "about.html",
+        "navigation.html",
+        "searchbox.html",
     ]
 }
 
 html_theme_options = {
-    'github_user': 'v0lta',
-    'github_repo': 'PyTorch-Wavelet-Toolbox',
-    'github_banner': 'false',
-    'show_related': 'true',
-    'page_width': 'auto',
-    'sidebar_width': '250px'
+    "github_user": "v0lta",
+    "github_repo": "PyTorch-Wavelet-Toolbox",
+    "github_banner": "false",
+    "show_related": "true",
+    "page_width": "auto",
+    "sidebar_width": "250px",
 }
 
 
-html_favicon = 'favicon/favicon.ico'
+html_favicon = "favicon/favicon.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
