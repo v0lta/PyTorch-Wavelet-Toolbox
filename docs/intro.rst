@@ -117,7 +117,7 @@ Similarly
 
 guarantees alias cancellation.
 
-Filters that satisfy both equations qualify as wavelets. Daubechies wavelets and Symlets appear in this paper.
+Filters that satisfy both equations qualify as wavelets. Lets consider i.e. a Daubechies wavelet and a Symlet:
 
 .. _fig-sym6:
 
