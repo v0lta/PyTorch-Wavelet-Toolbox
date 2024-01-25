@@ -5,7 +5,7 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt._stationary_transform import _swt
+from ptwt._stationary_transform import _swt
 
 
 @pytest.mark.slow

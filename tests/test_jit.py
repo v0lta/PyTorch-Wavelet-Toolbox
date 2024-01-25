@@ -7,8 +7,8 @@ import pywt
 import torch
 from scipy import signal
 
-import src.ptwt as ptwt
-from src.ptwt.continuous_transform import _ShannonWavelet
+import ptwt
+from ptwt.continuous_transform import _ShannonWavelet
 from tests._mackey_glass import MackeyGenerator
 
 
@@ -31,7 +31,7 @@ def _set_up_wavelet_tuple(wavelet, dtype):
 
 
 def _to_jit_wavedec_fun(data, wavelet, level):
-    return ptwt.wavedec(data, wavelet, "reflect", level)
+    return ptwt.wavedec(data, wavelet, mode="reflect", level=level)
 
 
 @pytest.mark.slow
@@ -117,7 +117,7 @@ def _to_jit_wavedec_3(data, wavelet):
     means we have to stack the lists in the output.
     """
     assert data.shape == (10, 20, 20, 20), "Changing the chape requires re-tracing."
-    coeff = ptwt.wavedec3(data, wavelet, "reflect", 2)
+    coeff = ptwt.wavedec3(data, wavelet, mode="reflect", level=2)
     coeff2 = []
     keys = ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
     for c in coeff:

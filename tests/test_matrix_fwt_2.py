@@ -1,14 +1,15 @@
 """Test code for the 2d boundary wavelets."""
 # Created by moritz ( wolter@cs.uni-bonn.de ), 08.09.21
+
 import numpy as np
 import pytest
 import pywt
 import scipy.signal
 import torch
 
-from src.ptwt.conv_transform import _flatten_2d_coeff_lst
-from src.ptwt.matmul_transform import MatrixWavedec, MatrixWaverec
-from src.ptwt.matmul_transform_2 import (
+from ptwt.conv_transform import _flatten_2d_coeff_lst
+from ptwt.matmul_transform import MatrixWavedec, MatrixWaverec
+from ptwt.matmul_transform_2 import (
     MatrixWavedec2,
     MatrixWaverec2,
     construct_boundary_a2,

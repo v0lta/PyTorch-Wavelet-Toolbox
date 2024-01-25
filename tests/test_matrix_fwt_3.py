@@ -1,4 +1,5 @@
 """Test the 3d matrix-fwt code."""
+
 from typing import List
 
 import numpy as np
@@ -6,9 +7,9 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt.matmul_transform import construct_boundary_a
-from src.ptwt.matmul_transform_3 import MatrixWavedec3, MatrixWaverec3
-from src.ptwt.sparse_math import _batch_dim_mm
+from ptwt.matmul_transform import construct_boundary_a
+from ptwt.matmul_transform_3 import MatrixWavedec3, MatrixWaverec3
+from ptwt.sparse_math import _batch_dim_mm
 
 
 @pytest.mark.parametrize("axis", [1, 2, 3])
