@@ -32,7 +32,7 @@ OrthogonalizeMethod = Literal["qr", "gramschmidt"]
 The method for orthogonalizing a matrix.
 
 1. 'qr' relies on pytorch's dense qr implementation, it is fast but memory hungry.
-2. 'gramschmidt' option is sparse, memory efficient, and slow. 
+2. 'gramschmidt' option is sparse, memory efficient, and slow.
 
 Choose 'gramschmidt' if 'qr' runs out of memory.
 """
