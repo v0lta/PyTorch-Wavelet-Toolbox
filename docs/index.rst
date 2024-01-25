@@ -64,6 +64,7 @@ If you use the boundary wavelet support, please additionally cite:
    :caption: Getting Started
 
    intro
+   intro_cwt
    examples
 
 

@@ -80,7 +80,7 @@ More formally, the process initially evaluates
 
 with :math:`\mathbf{x}_0` equal to an input image :math:`\mathbf{X}`, :math:`j \in [a,h,v,d]`, and :math:`*_2` for two-dimensional convolution. At higher scales, all resulting coefficients from previous scales serve as inputs. The four filters repeatedly convolved with all outputs to build the full tree. The inverse transforms work analogously. We refer to the standard literature :cite:`jensen2001ripples,strang1996wavelets` for an extended discussion.
 
-Compared to the \ac{fwt}, the high-frequency half of the tree is subdivided into more bins, yielding a fine-grained view of the entire spectrum.
+Compared to the FWT, the high-frequency half of the tree is subdivided into more bins, yielding a fine-grained view of the entire spectrum.
 We always show analysis and synthesis transforms to stress that all wavelet transforms are lossless. Synthesis transforms reconstruct the original input based on the results from the analysis transform.
 
 Common wavelets and their properties
