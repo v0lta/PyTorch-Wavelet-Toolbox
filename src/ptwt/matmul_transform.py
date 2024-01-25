@@ -142,6 +142,9 @@ def orthogonalize(
 
     Returns:
         torch.Tensor: Orthogonal sparse transformation matrix.
+
+    Raises:
+        ValueError: If an invalid orthogonalization method is given
     """
     to_orthogonalize = _get_to_orthogonalize(matrix, filt_len)
     if len(to_orthogonalize) == 0:
