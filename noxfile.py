@@ -51,6 +51,26 @@ def mypy(session):
     )
 
 
+@nox.session(name="docs")
+def docs(session):
+    """Build docs."""
+    session.install(".")
+    session.install("sphinx-book-theme")
+    session.install("sphinxcontrib-bibtex")
+    session.run(
+        "python",
+        "-m",
+        "sphinx",
+        "-W",
+        "-b",
+        "html",
+        "-d",
+        "docs/build/doctrees",
+        "docs/",
+        "docs/_build/html",
+    )
+
+
 @nox.session(name="format")
 def format(session):
     """Fix common convention problems automatically."""
