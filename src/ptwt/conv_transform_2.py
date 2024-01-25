@@ -131,6 +131,7 @@ def _preprocess_tensor_dec2d(
 def wavedec2(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
+    *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: Tuple[int, int] = (-2, -1),

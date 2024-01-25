@@ -64,7 +64,7 @@ def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
 
 
 def _fwt_pad3(
-    data: torch.Tensor, wavelet: Union[Wavelet, str], mode: BoundaryMode
+    data: torch.Tensor, wavelet: Union[Wavelet, str], *, mode: BoundaryMode
 ) -> torch.Tensor:
     """Pad data for the 3d-FWT.
 

@@ -33,6 +33,7 @@ def _separable_conv_dwtn_(
     rec_dict: Dict[str, torch.Tensor],
     input_arg: torch.Tensor,
     wavelet: Union[str, pywt.Wavelet],
+    *,
     mode: BoundaryMode = "reflect",
     key: str = "",
 ) -> None:
@@ -106,6 +107,7 @@ def _separable_conv_idwtn(
 def _separable_conv_wavedecn(
     input: torch.Tensor,
     wavelet: pywt.Wavelet,
+    *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
@@ -173,6 +175,7 @@ def _separable_conv_waverecn(
 def fswavedec2(
     data: torch.Tensor,
     wavelet: Union[str, pywt.Wavelet],
+    *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: Tuple[int, int] = (-2, -1),
@@ -244,6 +247,7 @@ def fswavedec2(
 def fswavedec3(
     data: torch.Tensor,
     wavelet: Union[str, pywt.Wavelet],
+    *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: Tuple[int, int, int] = (-3, -2, -1),
