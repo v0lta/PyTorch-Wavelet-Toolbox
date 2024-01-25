@@ -116,8 +116,8 @@ def _to_jit_wavedec_3(data, wavelet):
     Going from List[Union[torch.Tensor, Dict[str, torch.Tensor]]] to List[torch.Tensor]
     means we have to stack the lists in the output.
     """
-    assert data.shape == (10, 20, 20, 20), "Changing the chape requires re-tracing."
-    coeff = ptwt.wavedec3(data, wavelet, "reflect", 2)
+    assert data.shape == (10, 20, 20, 20), "Changing the shape requires re-tracing."
+    coeff = ptwt.wavedec3(data, wavelet, mode="reflect", level=2)
     coeff2 = []
     keys = ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
     for c in coeff:
