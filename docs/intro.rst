@@ -3,11 +3,9 @@ Introduction to discrete wavelet transforms
 
 This text summarizes key wavelet facts as a convenience for the hasty reader.
 See, for example, :cite:`strang1996wavelets,mallat1999wavelet` or :cite:`jensen2001ripples` for excellent detailed introductions to the topic.
-This text is based on the supplementary material of :cite:`wolter2022wavelet`.
+This text is partially based material from :cite:`wolter2022wavelet`.
 
 The fwt relies on convolution operations with filter pairs.
-
-
 
 .. _fig-fwt:
 
@@ -28,6 +26,7 @@ with :math:`k \in [\mathcal{A}, \mathcal{D}]` and :math:`s \in \mathbb{N}_0` the
 the original input signal :math:`\mathbf{x}`. At higher scales, the fwt uses the low-pass filtered result as input,
 :math:`\mathbf{x}_s = \mathbf{c}_{\mathcal{A}, s}` if :math:`s > 0`. 
 The dashed arrow indicates that we could continue to expand the fwt tree here. :py:meth:`ptwt.conv_transform.wavedec` implements this transformation.
+:py:meth:`ptwt.conv_transform.waverec` provides the inverse functionality visible on the right side of Figure :numref:`fig-fwt`.
 
 The wavelet packet transform (pwt) additionally expands the high-frequency part of the tree. The figure below depicts the idea.
 
@@ -57,10 +56,31 @@ We construct filter quadruples from the original filter pairs to process two-dim
 
 With :math:`a` for approximation, :math:`h` for horizontal, :math:`v` for vertical, and :math:`d` for diagonal :cite:`lee2019pywavelets`.
 
-*TODO*: Describe the two dimensional fwt 
+With the four filters we are now able to compute,
+
+.. math::
+  \mathbf{x}_s *_2 \mathbf{h}_k = \mathbf{c}_{k, s+1}
+
+with :math:`k \in [a, h, v, d]` and :math:`s \in \mathbb{N}_0` the set of natural numbers, where :math:`\mathbf{x}_0` is equal to
+the original input image :math:`\mathbf{X}`. :math:`*_2` indicates two dimensional-convolution.
+Computations at subsequent scales work exclusively with approximation coefficients :math:`c_{a, s}` as inputs.
+The figure below illustrates the process.
+
+.. _fig-fwt2d:
+
+.. figure:: figures/fwt_2d.png
+   :scale: 45 %
+   :alt: 2d wavelet transform computation diagram.
+   :align: center
+
+   Two-dimensional wavelet transform computation diagram. :math:`\mathbf{X}` and :math:`\hat{\mathbf{X}}` denote input image and
+   reconstruction respectively.
 
 
-We can construct a wpt-tree for images with these two-dimensional filters.
+:py:meth:`ptwt.conv_transform_2.wavedec2` and :py:meth:`ptwt.conv_transform_2.waverec2` support forward
+and backward transforms respectively. Potential further decomposition of all coefficient leads us to 
+wavelet packets.
+
 
 .. _fig-wpt2d:
 
@@ -69,17 +89,11 @@ We can construct a wpt-tree for images with these two-dimensional filters.
    :alt: 2d wavelet packet transform computation diagram.
    :align: center
 
-   Two-dimensional wavelet packet transform computation diagram.
+   Two-dimensional wavelet packet transform computation diagram. Dashed lines indicate potential full expansion of the tree.
 
-Two dimensional wavelet packet computation overview. :math:`\mathbf{X}` and :math:`\hat{\mathbf{X}}` denote input image and
-reconstruction respectively.
 :numref:`fig-wpt2d` illustrates the computation of a full two-dimensional wavelet packet tree.
-More formally, the process initially evaluates
-
-.. math::
-    \mathbf{x}_0 *_2 \mathbf{h}_j = \mathbf{c}_{j, 1}
-
-with :math:`\mathbf{x}_0` equal to an input image :math:`\mathbf{X}`, :math:`j \in [a,h,v,d]`, and :math:`*_2` for two-dimensional convolution. At higher scales, all resulting coefficients from previous scales serve as inputs. The four filters repeatedly convolved with all outputs to build the full tree. The inverse transforms work analogously. We refer to the standard literature :cite:`jensen2001ripples,strang1996wavelets` for an extended discussion.
+At higher scales, all resulting coefficients from previous scales serve as inputs. The four filters repeatedly convolved with all outputs to build the full tree. The inverse transforms work analogously.
+:py:meth:`ptwt.packets.WaveletPacket2D` provides this functionality. We refer to the standard literature :cite:`jensen2001ripples,strang1996wavelets` for an extended discussion.
 
 Compared to the FWT, the high-frequency half of the tree is subdivided into more bins, yielding a fine-grained view of the entire spectrum.
 We always show analysis and synthesis transforms to stress that all wavelet transforms are lossless. Synthesis transforms reconstruct the original input based on the results from the analysis transform.
@@ -128,6 +142,3 @@ Filters that satisfy both equations qualify as wavelets. Daubechies wavelets and
 Compared to the Daubechies Wavelet family, their Symlet cousins have more mass at the center. :numref:`fig-sym6` illustrates this fact. Large deviations occur around the fifth filter in the center, unlike the Daubechies' six filters in :numref:`fig-db6`.
 Consider the sign patterns in :numref:`fig-db6`. The decomposition highpass (orange) and the reconstruction lowpass (green) filters display an alternating sign pattern. This behavior is a possible solution to the alias cancellation condition. To understand why substitute :math:`F_\mathcal{A}(z) = H_\mathcal{D}(-z)` and :math:`F_\mathcal{D} = -H_\mathcal{A}(-z)` into the perfect reconstruction condition :cite:`strang1996wavelets`. :math:`F_\mathcal{A}(z) = H_\mathcal{D}(-z)` requires an opposing sign at even and equal signs at odd powers of the polynomial.
 
-
-
-.. bibliography::

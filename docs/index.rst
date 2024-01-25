@@ -32,31 +32,12 @@ If you use this work in a scientific context, please cite the following thesis:
 
 .. code-block::
 
-  @phdthesis{handle:20.500.11811/9245,
-    author = {{Moritz Wolter}},
-    title = {Frequency Domain Methods in Recurrent Neural Networks for Sequential Data Processing},
-    school = {Rheinische Friedrich-Wilhelms-Universität Bonn},
-    year = 2021,
-    month = jul,
-    url = {https://hdl.handle.net/20.500.11811/9245}
-  }
-
-If you use the boundary wavelet support, please additionally cite:
-
-.. code-block::
-
-  @thesis{Blanke2021,
-    author = {Felix Blanke},
-    title = {{Randbehandlung bei Wavelets für Faltungsnetzwerke}},
-    type = {Bachelor's Thesis},
-    annote = {Gbachelor},
-    year = {2021},
-    school = {Institut f\"ur Numerische Simulation, Universit\"at Bonn}
-  }
-
-
-
-
+    @article{ptwt_2023, 
+      author = {Wolter, Moritz and Blanke, Felix and Garcke, Jochen and Hoyt, Charles Tapley},
+      title = {ptwt - The PyTorch Wavelet Toolbox},
+      journal = {Journal of Machine Learning Research},
+      year = {2023}
+      }
 
 .. toctree::
    :hidden:
