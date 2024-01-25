@@ -24,6 +24,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
+from .constants import BoundaryMode
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_filter_tensors,
@@ -63,7 +64,7 @@ def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
 
 
 def _fwt_pad3(
-    data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str
+    data: torch.Tensor, wavelet: Union[Wavelet, str], mode: BoundaryMode
 ) -> torch.Tensor:
     """Pad data for the 3d-FWT.
 
@@ -73,7 +74,7 @@ def _fwt_pad3(
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode (str): The padding mode. Supported modes are::
+        mode : The padding mode. Supported modes are::
 
             "reflect", "zero", "constant", "periodic", "symmetric".
 
@@ -81,13 +82,13 @@ def _fwt_pad3(
         The padded output tensor.
 
     """
-    mode = _translate_boundary_strings(mode)
+    pytorch_mode = _translate_boundary_strings(mode)
 
     wavelet = _as_wavelet(wavelet)
     pad_back, pad_front = _get_pad(data.shape[-3], _get_len(wavelet))
     pad_bottom, pad_top = _get_pad(data.shape[-2], _get_len(wavelet))
     pad_right, pad_left = _get_pad(data.shape[-1], _get_len(wavelet))
-    if mode == "symmetric":
+    if pytorch_mode == "symmetric":
         data_pad = _pad_symmetric(
             data, [(pad_front, pad_back), (pad_top, pad_bottom), (pad_left, pad_right)]
         )
@@ -95,7 +96,7 @@ def _fwt_pad3(
         data_pad = torch.nn.functional.pad(
             data,
             [pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back],
-            mode=mode,
+            mode=pytorch_mode,
         )
     return data_pad
 
@@ -103,7 +104,8 @@ def _fwt_pad3(
 def wavedec3(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
-    mode: str = "zero",
+    *,
+    mode: BoundaryMode = "zero",
     level: Optional[int] = None,
     axes: Tuple[int, int, int] = (-3, -2, -1),
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
@@ -114,7 +116,7 @@ def wavedec3(
             [batch_size, length, height, width]
         wavelet (Union[Wavelet, str]): The wavelet to transform with.
             ``pywt.wavelist(kind='discrete')`` lists possible choices.
-        mode (str): The padding mode. Possible options are::
+        mode : The padding mode. Possible options are::
 
                 "reflect", "zero", "constant", "periodic", "symmetric".
 

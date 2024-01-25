@@ -54,10 +54,8 @@ def _cat_batch_list(batch_lists: List) -> List:
 )
 @pytest.mark.parametrize("wavelet", ["haar", "db2", "db4"])
 @pytest.mark.parametrize("level", [1, 2, None])
-@pytest.mark.parametrize(
-    "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
-)
-def test_waverec3(shape: list, wavelet: str, level: int, mode: str) -> None:
+@pytest.mark.parametrize("mode", typing.get_args(BoundaryMode))
+def test_waverec3(shape: list, wavelet: str, level: int, mode: BoundaryMode) -> None:
     """Ensure the 3d analysis transform is invertible."""
     data = np.random.randn(*shape)
     data = torch.from_numpy(data)
@@ -120,10 +118,12 @@ def test_multidim_input(size: List[int], level: int, wavelet: str, mode: str):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("axes", [[-3, -2, -1], [0, 2, 1]])
+@pytest.mark.parametrize("axes", [(-3, -2, -1), (0, 2, 1)])
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("mode", ["zero", "symmetric", "reflect"])
-def test_axes_arg_3d(axes: List[int], level: int, mode: str) -> None:
+def test_axes_arg_3d(
+    axes: tuple[int, int, int], level: int, mode: BoundaryMode
+) -> None:
     """Test axes argument support."""
     wavelet = "db3"
     data = torch.randn([16, 16, 16, 16, 16], dtype=torch.float64)

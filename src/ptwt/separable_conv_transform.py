@@ -24,6 +24,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
+from .constants import BoundaryMode
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import _preprocess_tensor_dec2d
 
@@ -32,7 +33,7 @@ def _separable_conv_dwtn_(
     rec_dict: Dict[str, torch.Tensor],
     input_arg: torch.Tensor,
     wavelet: Union[str, pywt.Wavelet],
-    mode: str = "reflect",
+    mode: BoundaryMode = "reflect",
     key: str = "",
 ) -> None:
     """Compute a single-level separable fast wavelet transform.
@@ -42,7 +43,7 @@ def _separable_conv_dwtn_(
     Args:
         input_arg (torch.Tensor): Tensor of shape [batch, data_1, ... data_n].
         wavelet (Union[str, pywt.Wavelet]): The Wavelet to work with.
-        mode (str): The padding mode. The following methods are supported::
+        mode : The padding mode. The following methods are supported::
 
                 "reflect", "zero", "constant", "periodic".
 

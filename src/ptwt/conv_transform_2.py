@@ -6,7 +6,7 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 
 from functools import partial
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, cast
 
 import pywt
 import torch
@@ -26,6 +26,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
+from .constants import BoundaryMode
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_filter_tensors,
@@ -59,7 +60,10 @@ def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
 
 
 def _fwt_pad2(
-    data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str = "reflect"
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    *,
+    mode: Optional[BoundaryMode] = None,
 ) -> torch.Tensor:
     """Pad data for the 2d FWT.
 
@@ -80,14 +84,18 @@ def _fwt_pad2(
         The padded output tensor.
 
     """
-    mode = _translate_boundary_strings(mode)
+    if mode is None:
+        mode = cast(BoundaryMode, "reflect")
+    pytorch_mode = _translate_boundary_strings(mode)
     wavelet = _as_wavelet(wavelet)
     padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
     padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
-    if mode == "symmetric":
+    if pytorch_mode == "symmetric":
         data_pad = _pad_symmetric(data, [(padt, padb), (padl, padr)])
     else:
-        data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
+        data_pad = torch.nn.functional.pad(
+            data, [padl, padr, padt, padb], mode=pytorch_mode
+        )
     return data_pad
 
 
