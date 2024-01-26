@@ -1,4 +1,5 @@
 """Ensure pytorch's torch.jit.trace feature works properly."""
+
 from typing import NamedTuple
 
 import numpy as np

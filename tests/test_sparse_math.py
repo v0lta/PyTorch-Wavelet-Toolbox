@@ -1,4 +1,5 @@
 """Test the sparse math code from ptwt.sparse_math."""
+
 # Written by moritz ( @ wolter.tech ) in 2021
 
 import numpy as np

@@ -2,6 +2,7 @@
 
 This module is based on pywt's cwt implementation.
 """
+
 from typing import Any, Tuple, Union
 
 import numpy as np

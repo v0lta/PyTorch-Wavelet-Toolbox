@@ -6,6 +6,7 @@ axes individually.
 Under the hood, code in this module transforms all dimensions
 using torch.nn.functional.conv1d and it's transpose.
 """
+
 from functools import partial
 from typing import Dict, List, Optional, Tuple, Union
 
