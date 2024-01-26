@@ -1,4 +1,5 @@
 """Test the conv-fwt code."""
+
 # Written by moritz ( @ wolter.tech ) in 2021
 import numpy as np
 import pytest

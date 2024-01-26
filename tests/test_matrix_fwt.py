@@ -1,4 +1,5 @@
 """Test the fwt and ifwt matrices."""
+
 # Written by moritz ( @ wolter.tech ) in 2021
 
 from typing import List
