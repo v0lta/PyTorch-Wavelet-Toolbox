@@ -14,18 +14,13 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard.writer import SummaryWriter
 from torchvision import datasets, transforms
-from wavelet_linear import WaveletLayer
 
+from ptwt.nn import WaveletLayer
 from ptwt.wavelets_learnable import ProductFilter
 
 
-def compute_parameter_total(net):
-    total = 0
-    for p in net.parameters():
-        if p.requires_grad:
-            print(p.shape)
-            total += np.prod(p.shape)
-    return total
+def compute_parameter_total(net) -> int:
+    return sum(np.prod(p.shape) for p in net.parameters() if p.requires_grad)
 
 
 class Net(nn.Module):
@@ -300,7 +295,7 @@ def main():
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")
 
-    print(compute_parameter_total(model))
+    print("Number of parameters:", compute_parameter_total(model))
 
     # plt.semilogy(test_wvl_lst)
     # plt.semilogy(test_acc_lst)
