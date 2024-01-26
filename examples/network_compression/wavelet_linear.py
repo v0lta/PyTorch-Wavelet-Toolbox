@@ -1,9 +1,10 @@
 # Originally created by moritz (wolter@cs.uni-bonn.de)
 # at https://github.com/v0lta/Wavelet-network-compression/blob/master/wavelet_learning/wavelet_linear.py
-import torch
 import numpy as np
-from torch.nn.parameter import Parameter
 import pywt
+import torch
+from torch.nn.parameter import Parameter
+
 from ptwt.conv_transform import wavedec, waverec
 
 

@@ -3,17 +3,19 @@
 # based on https://github.com/pytorch/examples/blob/master/mnist/main.py
 
 import argparse
+import collections
+
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import collections
-import matplotlib.pyplot as plt
-from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
-from wavelet_linear import WaveletLayer
 from torch.utils.tensorboard.writer import SummaryWriter
+from torchvision import datasets, transforms
+from wavelet_linear import WaveletLayer
+
 from ptwt.wavelets_learnable import ProductFilter
 
 
