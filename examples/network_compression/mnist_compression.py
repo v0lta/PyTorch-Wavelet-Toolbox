@@ -64,11 +64,9 @@ class Net(nn.Module):
 
     def wavelet_loss(self):
         if self.wavelet is None:
-            return torch.tensor(0.0), torch.tensor(0.0)
+            return torch.tensor(0.0)
         else:
-            acl, _, _ = self.fc1.wavelet.alias_cancellation_loss()
-            prl, _, _ = self.fc1.wavelet.perfect_reconstruction_loss()
-            return acl, prl
+            return self.fc1.get_wavelet_loss()
 
 
 def train(args, model, device, train_loader, optimizer, epoch):
@@ -79,8 +77,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
         output = model(data)
         nll_loss = F.nll_loss(output, target)
         if args.compression == "Wavelet":
-            acl, prl = model.wavelet_loss()
-            wvl = acl + prl
+            wvl = model.wavelet_loss()
             loss = nll_loss + wvl * args.wave_loss_weight
         else:
             wvl = torch.tensor(0.0)
@@ -117,8 +114,7 @@ def test(args, model, device, test_loader, test_writer, epoch):
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
-    acl, prl = model.wavelet_loss()
-    wvl_loss = acl + prl
+    wvl_loss = model.wavelet_loss()
 
     print(
         "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(

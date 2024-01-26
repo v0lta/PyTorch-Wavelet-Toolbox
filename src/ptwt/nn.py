@@ -1,3 +1,5 @@
+"""Neural network modules."""
+
 import numpy as np
 import pywt
 import torch
@@ -20,11 +22,14 @@ class WaveletLayer(torch.nn.Module):
 
     .. note::
 
-        Originally created by moritz (wolter@cs.uni-bonn.de)
-        at https://github.com/v0lta/Wavelet-network-compression/blob/master/wavelet_learning/wavelet_linear.py
+        Originally created by moritz (wolter@cs.uni-bonn.de) at
+        https://github.com/v0lta/Wavelet-network-compression/blob/master/wavelet_learning/wavelet_linear.py
     """
 
-    def __init__(self, depth: int, init_wavelet, scales, p_drop=0.5):
+    def __init__(
+        self, depth: int, init_wavelet: pywt.Wavelet, scales: int, p_drop: float = 0.5
+    ):
+        """Initialize the wavelet layer."""
         super().__init__()
         self.scales = scales
         self.wavelet = init_wavelet
@@ -98,7 +103,7 @@ class WaveletLayer(torch.nn.Module):
         step6 = self._mul_s(step5)
         return step6
 
-    def extra_repr(self) -> str:
+    def extra_repr(self) -> str:  # noqa:D102
         return "depth={}".format(self.depth)
 
     def get_wavelet_loss(self) -> torch.Tensor:
