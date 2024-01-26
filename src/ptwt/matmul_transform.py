@@ -6,6 +6,7 @@ The implementation is based on the description
 in Strang Nguyen (p. 32), as well as the description
 of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
+
 # Created by moritz (wolter@cs.uni-bonn.de) at 14.04.20
 import sys
 from typing import List, Optional, Union

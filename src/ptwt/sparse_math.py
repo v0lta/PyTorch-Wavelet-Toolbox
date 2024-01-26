@@ -1,4 +1,5 @@
 """Efficiently construct fwt operations using sparse matrices."""
+
 # Written by moritz ( @ wolter.tech ) 17.09.21
 from itertools import product
 from typing import List

@@ -1,4 +1,5 @@
 """Test the wavelet packet code."""
+
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 
 from itertools import product
