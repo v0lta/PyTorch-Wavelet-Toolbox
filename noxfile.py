@@ -77,8 +77,8 @@ def format(session):
     """Fix common convention problems automatically."""
     session.install("black")
     session.install("isort")
-    session.run("isort", "src", "tests", "noxfile.py")
-    session.run("black", "src", "tests", "noxfile.py")
+    session.run("isort", ".")
+    session.run("black", ".")
 
 
 @nox.session(name="coverage")

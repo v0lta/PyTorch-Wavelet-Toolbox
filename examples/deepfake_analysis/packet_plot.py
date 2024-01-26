@@ -1,14 +1,14 @@
 import os
 from itertools import product
-from tqdm import tqdm
-
-from PIL import Image
-import numpy as np
-import torch
-import ptwt
-import pywt
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pywt
+import torch
+from PIL import Image
+from tqdm import tqdm
+
+import ptwt
 
 
 def get_freq_order(level: int):
@@ -78,13 +78,14 @@ def generate_frequency_packet_image(packet_array: np.ndarray, degree: int):
 
 
 def load_image(path_to_file: str) -> torch.Tensor:
-    
+
     image = Image.open(path_to_file)
     tensor = torch.from_numpy(np.nan_to_num(np.array(image), posinf=255, neginf=0))
     return tensor
 
+
 def process_images(tensor: torch.Tensor, paths: list) -> torch.Tensor:
-    tensor = torch.mean(tensor/255., -1)
+    tensor = torch.mean(tensor / 255.0, -1)
     packets = ptwt.WaveletPacket2D(tensor, pywt.Wavelet("Haar"))
 
     packet_list = []
@@ -103,10 +104,10 @@ def load_images(path: str) -> list:
             path = os.path.join(root, name)
             packets = load_image(path)
             image_list.append(packets)
-    return image_list 
+    return image_list
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     frequency_path, natural_path = get_freq_order(level=3)
     print("Loading ffhq images:")
     ffhq_images = load_images("./ffhq_style_gan/source_data/A_ffhq")
@@ -119,7 +120,6 @@ if __name__ == '__main__':
     mean_packets_ffhq = torch.mean(torch.cat(ffhq_packets), 0)
     del ffhq_images
     del ffhq_packets
-
 
     print("Loading style-gan images")
     gan_images = load_images("./ffhq_style_gan/source_data/B_stylegan")
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     plot_ffhq = generate_frequency_packet_image(mean_packets_ffhq, 3)
     plot_gan = generate_frequency_packet_image(mean_packets_gan, 3)
 
-    fig = plt.figure(figsize=(9,3))
+    fig = plt.figure(figsize=(9, 3))
     fig.add_subplot(1, 2, 1)
     plt.imshow(plot_ffhq, vmax=1.5, vmin=-7)
     plt.title("real")
@@ -151,9 +151,9 @@ if __name__ == '__main__':
     plt.colorbar()
     plt.show()
 
-    plt.plot(torch.mean(mean_packets_ffhq, (1, 2)).flatten().numpy(), label='real')
-    plt.plot(torch.mean(mean_packets_gan, (1, 2)).flatten().numpy(), label='fake')
-    plt.xlabel('mean packets')
-    plt.ylabel('magnitude')
+    plt.plot(torch.mean(mean_packets_ffhq, (1, 2)).flatten().numpy(), label="real")
+    plt.plot(torch.mean(mean_packets_gan, (1, 2)).flatten().numpy(), label="fake")
+    plt.xlabel("mean packets")
+    plt.ylabel("magnitude")
     plt.legend()
     plt.show()
