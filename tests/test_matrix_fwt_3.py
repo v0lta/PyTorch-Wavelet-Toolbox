@@ -1,4 +1,5 @@
 """Test the 3d matrix-fwt code."""
+
 from typing import List
 
 import numpy as np

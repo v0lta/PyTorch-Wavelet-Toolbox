@@ -1,4 +1,5 @@
 """Test the adaptive wavelet cost functions."""
+
 import pytest
 import pywt
 import torch

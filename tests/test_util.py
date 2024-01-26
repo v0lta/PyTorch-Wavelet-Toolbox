@@ -1,4 +1,5 @@
 """Test the util methods."""
+
 from typing import Tuple
 
 import numpy as np

@@ -1,4 +1,5 @@
 """This module implements stationary wavelet transforms."""
+
 # Created by the pytorch wavelet toolbox team, in 2024
 
 from typing import List, Optional, Union

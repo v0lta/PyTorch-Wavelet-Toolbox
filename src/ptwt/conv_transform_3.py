@@ -2,6 +2,7 @@
 
 The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
+
 # Written by the Pytorch wavelet toolbox team in 2024
 
 from functools import partial
@@ -212,7 +213,10 @@ def wavedec3(
 
 def _waverec3d_fold_channels_3d_list(
     coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
-) -> Tuple[List[Union[torch.Tensor, Dict[str, torch.Tensor]]], List[int],]:
+) -> Tuple[
+    List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    List[int],
+]:
     # fold the input coefficients for processing conv2d_transpose.
     fold_coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
     ds = list(_check_if_tensor(coeffs[0]).shape)

@@ -1,4 +1,5 @@
 """Test code for the 2d boundary wavelets."""
+
 # Created by moritz ( wolter@cs.uni-bonn.de ), 08.09.21
 import numpy as np
 import pytest

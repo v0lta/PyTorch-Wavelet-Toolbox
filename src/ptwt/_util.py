@@ -1,4 +1,5 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
+
 from typing import Any, Callable, List, Optional, Protocol, Sequence, Tuple, Union
 
 import numpy as np
