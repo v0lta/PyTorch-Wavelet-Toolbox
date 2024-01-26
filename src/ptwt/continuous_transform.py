@@ -3,7 +3,6 @@
 This module is based on pywt's cwt implementation.
 """
 
-# Written by the Pytorch wavelet toolbox team in 2024
 from typing import Any, Tuple, Union
 
 import numpy as np

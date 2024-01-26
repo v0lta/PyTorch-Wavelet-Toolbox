@@ -4,7 +4,7 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
+from ptwt.wavelets_learnable import SoftOrthogonalWavelet
 
 
 @pytest.mark.parametrize(

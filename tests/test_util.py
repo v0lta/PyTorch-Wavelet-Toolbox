@@ -7,7 +7,7 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt._util import (
+from ptwt._util import (
     _as_wavelet,
     _fold_axes,
     _pad_symmetric,

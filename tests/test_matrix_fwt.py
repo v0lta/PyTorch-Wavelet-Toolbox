@@ -1,6 +1,7 @@
 """Test the fwt and ifwt matrices."""
 
 # Written by moritz ( @ wolter.tech ) in 2021
+
 from typing import List
 
 import numpy as np
@@ -8,7 +9,7 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt.matmul_transform import (
+from ptwt.matmul_transform import (
     MatrixWavedec,
     MatrixWaverec,
     _construct_a,

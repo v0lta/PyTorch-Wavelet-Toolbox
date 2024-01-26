@@ -34,7 +34,7 @@ def _to_jit_wavedec_3(data, wavelet):
     means we have to stack the lists in the output.
     """
     assert data.shape == (32, 100, 100, 100), "Changing the chape requires re-tracing."
-    coeff = ptwt.wavedec3(data, wavelet, "reflect", level=3)
+    coeff = ptwt.wavedec3(data, wavelet, mode="reflect", level=3)
     coeff2 = []
     keys = ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
     for c in coeff:

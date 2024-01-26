@@ -8,7 +8,7 @@ import pywt
 import torch
 from scipy import signal
 
-from src.ptwt.continuous_transform import _ShannonWavelet, cwt
+from ptwt.continuous_transform import _ShannonWavelet, cwt
 
 continuous_wavelets = [
     "cgau1",

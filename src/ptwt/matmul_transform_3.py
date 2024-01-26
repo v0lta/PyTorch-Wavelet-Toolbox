@@ -1,7 +1,5 @@
 """Implement 3D separable boundary transforms."""
 
-# Written by the Pytorch wavelet toolbox team in 2024
-
 import sys
 from functools import partial
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union

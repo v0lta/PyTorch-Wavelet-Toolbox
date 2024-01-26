@@ -5,9 +5,9 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt.matmul_transform_2 import MatrixWavedec2
-from src.ptwt.matmul_transform_3 import MatrixWavedec3
-from src.ptwt.separable_conv_transform import (
+from ptwt.matmul_transform_2 import MatrixWavedec2
+from ptwt.matmul_transform_3 import MatrixWavedec3
+from ptwt.separable_conv_transform import (
     _separable_conv_wavedecn,
     _separable_conv_waverecn,
     fswavedec2,
