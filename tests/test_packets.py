@@ -1,5 +1,6 @@
 """Test the wavelet packet code."""
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
+
 from itertools import product
 
 import numpy as np
@@ -8,7 +9,7 @@ import pywt
 import torch
 from scipy import datasets
 
-from src.ptwt.packets import WaveletPacket, WaveletPacket2D, get_freq_order
+from ptwt.packets import WaveletPacket, WaveletPacket2D, get_freq_order
 
 
 def _compare_trees1(

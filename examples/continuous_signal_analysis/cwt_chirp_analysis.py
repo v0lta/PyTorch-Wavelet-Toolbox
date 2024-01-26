@@ -1,8 +1,9 @@
-import torch
-import numpy as np
-import ptwt
 import matplotlib.pyplot as plt
+import numpy as np
 import scipy.signal as signal
+import torch
+
+import ptwt
 
 if __name__ == "__main__":
     t = np.linspace(-2, 2, 800, endpoint=False)

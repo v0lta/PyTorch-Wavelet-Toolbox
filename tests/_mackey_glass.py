@@ -1,4 +1,5 @@
 """Generate artificial time-series data for debugging purposes."""
+
 from typing import Optional, Union
 
 import torch

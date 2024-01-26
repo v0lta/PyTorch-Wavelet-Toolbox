@@ -1,13 +1,13 @@
+import time
 from typing import NamedTuple
 
-import pywt
-import ptwt
-import torch
+import matplotlib.pyplot as plt
 import numpy as np
-import time
+import pywt
+import torch
 from pytorch_wavelets import DWTForward
 
-import matplotlib.pyplot as plt
+import ptwt
 
 
 class WaveletTuple(NamedTuple):
@@ -27,6 +27,7 @@ def _set_up_wavelet_tuple(wavelet, dtype):
         torch.tensor(wavelet.rec_hi).type(dtype),
     )
 
+
 def _to_jit_wavedec_2(data, wavelet):
     """Ensure uniform datatypes in lists for the tracer.
     Going from List[Union[torch.Tensor, List[torch.Tensor]]] to List[torch.Tensor]
@@ -39,11 +40,11 @@ def _to_jit_wavedec_2(data, wavelet):
         if isinstance(c, torch.Tensor):
             coeff2.append(c)
         else:
-            coeff2.append(torch.stack([cel for _,cel in c.items()]))
+            coeff2.append(torch.stack([cel for _, cel in c.items()]))
     return coeff2
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     repetitions = 100
     length = 1e3
 
@@ -60,7 +61,9 @@ if __name__ == '__main__':
     for _ in range(repetitions):
         data = np.random.randn(32, int(length), int(length)).astype(np.float32)
         start = time.perf_counter()
-        pywt_res = pywt.fswavedecn(data, "db5", levels=5, mode="periodic", axes=(-2, -1))
+        pywt_res = pywt.fswavedecn(
+            data, "db5", levels=5, mode="periodic", axes=(-2, -1)
+        )
         end = time.perf_counter()
         pywt_time_cpu.append(end - start)
 
@@ -100,13 +103,12 @@ if __name__ == '__main__':
         end = time.perf_counter()
         ptwt_time_gpu.append(end - start)
 
-
     wavelet = _set_up_wavelet_tuple(pywt.Wavelet("db5"), torch.float32)
     jit_wavedec = torch.jit.trace(
-            _to_jit_wavedec_2,
-            (data.cuda(), wavelet),
-            strict=False,
-        )
+        _to_jit_wavedec_2,
+        (data.cuda(), wavelet),
+        strict=False,
+    )
 
     for _ in range(repetitions):
         data = np.random.randn(32, int(length), int(length)).astype(np.float32)
@@ -119,10 +121,10 @@ if __name__ == '__main__':
         ptwt_time_jit.append(pc_end - pc_start)
 
     jit_wavedec = torch.jit.trace(
-            _to_jit_wavedec_2,
-            (data.cpu(), wavelet),
-            strict=False,
-        )
+        _to_jit_wavedec_2,
+        (data.cpu(), wavelet),
+        strict=False,
+    )
 
     for _ in range(repetitions):
         data = np.random.randn(32, int(length), int(length)).astype(np.float32)
@@ -136,14 +138,26 @@ if __name__ == '__main__':
     print("2d separable fwt results")
     print(f"2d-pywt-cpu:{np.mean(pywt_time_cpu):5.5f} +- {np.std(pywt_time_cpu):5.5f}")
 
-    print(f"2d-pytorch_wavelets-cpu:{np.mean(cotter_time_cpu):5.5f} +- {np.std(cotter_time_cpu):5.5f}")
-    print(f"2d-pytorch_wavelets-gpu:{np.mean(cotter_time_gpu):5.5f} +- {np.std(cotter_time_gpu):5.5f}")
+    print(
+        f"2d-pytorch_wavelets-cpu:{np.mean(cotter_time_cpu):5.5f} +- {np.std(cotter_time_cpu):5.5f}"
+    )
+    print(
+        f"2d-pytorch_wavelets-gpu:{np.mean(cotter_time_gpu):5.5f} +- {np.std(cotter_time_gpu):5.5f}"
+    )
 
-    print(f"2d-ptwt-cpu    :{np.mean(ptwt_time_cpu):5.5f} +- {np.std(ptwt_time_cpu):5.5f}")
-    print(f"2d-ptwt-cpu-jit:{np.mean(ptwt_time_jit_cpu):5.5f} +- {np.std(ptwt_time_jit_cpu):5.5f}")
-    
-    print(f"2d-ptwt-gpu    :{np.mean(ptwt_time_gpu):5.5f} +- {np.std(ptwt_time_gpu):5.5f}")
-    print(f"2d-ptwt-gpu-jit:{np.mean(ptwt_time_jit):5.5f} +- {np.std(ptwt_time_jit):5.5f}")
+    print(
+        f"2d-ptwt-cpu    :{np.mean(ptwt_time_cpu):5.5f} +- {np.std(ptwt_time_cpu):5.5f}"
+    )
+    print(
+        f"2d-ptwt-cpu-jit:{np.mean(ptwt_time_jit_cpu):5.5f} +- {np.std(ptwt_time_jit_cpu):5.5f}"
+    )
+
+    print(
+        f"2d-ptwt-gpu    :{np.mean(ptwt_time_gpu):5.5f} +- {np.std(ptwt_time_gpu):5.5f}"
+    )
+    print(
+        f"2d-ptwt-gpu-jit:{np.mean(ptwt_time_jit):5.5f} +- {np.std(ptwt_time_jit):5.5f}"
+    )
     # plt.semilogy(pywt_time_cpu, label='pywt-cpu')
     # plt.semilogy(ptwt_time_cpu, label='ptwt-cpu')
     # plt.semilogy(ptwt_time_jit_cpu, label='ptwt-cpu-jit')
@@ -156,11 +170,31 @@ if __name__ == '__main__':
     # plt.ylabel('runtime [s]')
     # plt.show()
 
-    time_stack = np.stack([pywt_time_cpu, cotter_time_cpu, ptwt_time_cpu, cotter_time_gpu, ptwt_time_gpu, ptwt_time_jit], -1)
+    time_stack = np.stack(
+        [
+            pywt_time_cpu,
+            cotter_time_cpu,
+            ptwt_time_cpu,
+            cotter_time_gpu,
+            ptwt_time_gpu,
+            ptwt_time_jit,
+        ],
+        -1,
+    )
     plt.boxplot(time_stack)
-    plt.yscale('log')
-    plt.xticks([1,2,3,4,5,6], ["pywt-cpu", "pytorch-wavelets-cpu", "ptwt-cpu", "pytorch-wavelets-gpu", "ptwt-gpu", "ptwt-gpu-jit"])
+    plt.yscale("log")
+    plt.xticks(
+        [1, 2, 3, 4, 5, 6],
+        [
+            "pywt-cpu",
+            "pytorch-wavelets-cpu",
+            "ptwt-cpu",
+            "pytorch-wavelets-gpu",
+            "ptwt-gpu",
+            "ptwt-gpu-jit",
+        ],
+    )
     plt.xticks(rotation=20)
-    plt.ylabel('runtime [s]')
-    plt.title('DWT-2D-separable')
-    plt.savefig('figs/timeitconv2d_sep.png')
+    plt.ylabel("runtime [s]")
+    plt.title("DWT-2D-separable")
+    plt.savefig("figs/timeitconv2d_sep.png")

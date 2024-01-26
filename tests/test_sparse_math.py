@@ -1,5 +1,6 @@
 """Test the sparse math code from ptwt.sparse_math."""
 # Written by moritz ( @ wolter.tech ) in 2021
+
 import numpy as np
 import pytest
 import scipy.signal
@@ -7,7 +8,7 @@ import torch
 from scipy import datasets
 
 from ptwt.constants import PaddingMode
-from src.ptwt.sparse_math import (
+from ptwt.sparse_math import (
     batch_mm,
     construct_conv2d_matrix,
     construct_conv_matrix,

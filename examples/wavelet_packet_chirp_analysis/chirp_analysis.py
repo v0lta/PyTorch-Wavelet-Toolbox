@@ -1,15 +1,15 @@
-import torch
-import pywt
-import numpy as np
-import scipy.signal
 import matplotlib.pyplot as plt
+import numpy as np
+import pywt
+import scipy.signal
+import torch
 
 # use from src.ptwt.packets if you cloned the repo instead of using pip.
 from ptwt import WaveletPacket
 
 fs = 1000
-t = np.linspace(0, 2, int(2//(1/fs)))
-w = np.sin(256*np.pi*t**2)
+t = np.linspace(0, 2, int(2 // (1 / fs)))
+w = np.sin(256 * np.pi * t**2)
 
 wavelet = pywt.Wavelet("sym8")
 wp = WaveletPacket(
@@ -23,7 +23,7 @@ for node in nodes:
 viz = np.stack(np_lst).squeeze()
 
 n = list(range(int(np.power(2, level))))
-freqs = (fs/2)*(n/(np.power(2, level)))
+freqs = (fs / 2) * (n / (np.power(2, level)))
 
 xticks = list(range(viz.shape[-1]))[::6]
 xlabels = np.round(np.linspace(min(t), max(t), viz.shape[-1]), 2)[::6]
