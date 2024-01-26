@@ -8,8 +8,8 @@ import pytest
 import pywt
 import torch
 
-from ptwt.constants import BoundaryMode
 import ptwt
+from ptwt.constants import BoundaryMode
 
 
 def _expand_dims(batch_list: List) -> List:
