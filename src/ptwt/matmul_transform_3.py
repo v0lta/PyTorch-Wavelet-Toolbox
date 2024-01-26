@@ -20,6 +20,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
+from .constants import OrthogonalizeMethod
 from .conv_transform_3 import _waverec3d_fold_channels_3d_list
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
@@ -277,7 +278,7 @@ class MatrixWaverec3(object):
         self,
         wavelet: Union[Wavelet, str],
         axes: Tuple[int, int, int] = (-3, -2, -1),
-        boundary: str = "qr",
+        boundary: OrthogonalizeMethod = "qr",
     ):
         """Compute a three-dimensional separable boundary wavelet synthesis transform.
 
@@ -286,7 +287,7 @@ class MatrixWaverec3(object):
                 the name of a pywt wavelet.
             axes (Tuple[int, int, int]): Transform these axes instead of the
                 last three. Defaults to (-3, -2, -1).
-            boundary (str): The method used for boundary filter treatment.
+            boundary : The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on Pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt' option
                 is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs
