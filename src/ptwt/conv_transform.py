@@ -4,7 +4,7 @@ This module treats boundaries with edge-padding.
 """
 
 # Created by moritz wolter, 14.04.20
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union, cast
 
 import pywt
 import torch
@@ -18,6 +18,7 @@ from ._util import (
     _pad_symmetric,
     _unfold_axes,
 )
+from .constants import BoundaryMode
 
 
 def _create_tensor(
@@ -106,7 +107,7 @@ def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
     return padr, padl
 
 
-def _translate_boundary_strings(pywt_mode: str) -> str:
+def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
     """Translate pywt mode strings to PyTorch mode strings.
 
     We support constant, zero, reflect, and periodic.
@@ -118,24 +119,25 @@ def _translate_boundary_strings(pywt_mode: str) -> str:
 
     """
     if pywt_mode == "constant":
-        pt_mode = "replicate"
+        return "replicate"
     elif pywt_mode == "zero":
-        pt_mode = "constant"
+        return "constant"
     elif pywt_mode == "reflect":
-        pt_mode = pywt_mode
+        return pywt_mode
     elif pywt_mode == "periodic":
-        pt_mode = "circular"
+        return "circular"
     elif pywt_mode == "symmetric":
         # pytorch does not support symmetric mode,
         # we have our own implementation.
-        pt_mode = pywt_mode
-    else:
-        raise ValueError("Padding mode not supported.")
-    return pt_mode
+        return pywt_mode
+    raise ValueError(f"Padding mode not supported: {pywt_mode}")
 
 
 def _fwt_pad(
-    data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str = "reflect"
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    *,
+    mode: Optional[BoundaryMode] = None,
 ) -> torch.Tensor:
     """Pad the input signal to make the fwt matrix work.
 
@@ -145,29 +147,26 @@ def _fwt_pad(
         data (torch.Tensor): Input data ``[batch_size, 1, time]``
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode (str): The desired way to pad. The following methods are supported::
-
-                "reflect", "zero", "constant", "periodic", "symmetric".
-
-            Refection padding mirrors samples along the border.
-            Zero padding pads zeros.
-            Constant padding replicates border values.
-            Periodic padding cyclically repeats samples.
-            This function defaults to reflect.
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
 
     Returns:
         torch.Tensor: A PyTorch tensor with the padded input data
 
     """
     wavelet = _as_wavelet(wavelet)
+
     # convert pywt to pytorch convention.
-    mode = _translate_boundary_strings(mode)
+    if mode is None:
+        mode = cast(BoundaryMode, "reflect")
+    pytorch_mode = _translate_boundary_strings(mode)
 
     padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
-    if mode == "symmetric":
+    if pytorch_mode == "symmetric":
         data_pad = _pad_symmetric(data, [(padl, padr)])
     else:
-        data_pad = torch.nn.functional.pad(data, [padl, padr], mode=mode)
+        data_pad = torch.nn.functional.pad(data, [padl, padr], mode=pytorch_mode)
     return data_pad
 
 
@@ -263,7 +262,8 @@ def _preprocess_result_list_rec1d(
 def wavedec(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
-    mode: str = "reflect",
+    *,
+    mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axis: int = -1,
 ) -> List[torch.Tensor]:
@@ -288,18 +288,9 @@ def wavedec(
             the name of a pywt wavelet.
             Please consider the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        mode (str): The desired padding mode. Padding extends the signal along
-            the edges. Supported methods are::
-
-                "reflect", "zero", "constant", "periodic", "symmetric".
-
-            Defaults to "reflect".
-
-            Symmetric padding mirrors samples along the border.
-            Refection padding reflects samples along the border.
-            Zero padding pads zeros.
-            Constant padding replicates border values.
-            Periodic padding cyclically repeats samples.
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The scale level to be computed.
                                Defaults to None.
         axis (int): Compute the transform over this axis instead of the

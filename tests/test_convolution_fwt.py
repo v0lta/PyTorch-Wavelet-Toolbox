@@ -284,7 +284,7 @@ def test_input_1d_dimension_error():
     """Test the error for 1d inputs to wavedec2."""
     with pytest.raises(ValueError):
         data = torch.randn(50)
-        wavedec2(data, "haar", 4)
+        wavedec2(data, "haar", level=4)
 
 
 def _compare_coeffs(ptwt_res, pywt_res):
@@ -359,11 +359,11 @@ def test_2d_axis_error_axes_count():
     """Check the error for too many axes."""
     with pytest.raises(ValueError):
         data = torch.randn([32, 32, 32, 32], dtype=torch.float64)
-        wavedec2(data, "haar", 1, axes=(1, 2, 3))
+        wavedec2(data, "haar", level=1, axes=(1, 2, 3))
 
 
 def test_2d_axis_error_axes_repetition():
     """Check the error for axes repetition."""
     with pytest.raises(ValueError):
         data = torch.randn([32, 32, 32, 32], dtype=torch.float64)
-        wavedec2(data, "haar", 1, axes=(2, 2))
+        wavedec2(data, "haar", level=1, axes=(2, 2))
