@@ -1,6 +1,6 @@
 """Ensure pytorch's torch.jit.trace feature works properly."""
 
-from typing import NamedTuple
+from typing import NamedTuple, List
 
 import numpy as np
 import pytest
@@ -82,7 +82,7 @@ def _to_jit_wavedec_2(data, wavelet):
     return coeff2
 
 
-def _to_jit_waverec_2(data, wavelet):
+def _to_jit_waverec_2(data, wavelet) -> torch.Tensor:
     """Undo the stacking from the jit wavedec2 wrapper."""
     d_unstack = [data[0]]
     for c in data[1:]:
@@ -113,7 +113,7 @@ def test_conv_fwt_jit_2d() -> None:
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy(), atol=1e-7)
 
 
-def _to_jit_wavedec_3(data, wavelet):
+def _to_jit_wavedec_3(data: torch.Tensor, wavelet: str) -> List[torch.Tensor]:
     """Ensure uniform datatypes in lists for the tracer.
 
     Going from List[Union[torch.Tensor, Dict[str, torch.Tensor]]] to List[torch.Tensor]
@@ -165,7 +165,7 @@ def test_conv_fwt_jit_3d() -> None:
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy(), atol=1e-7)
 
 
-def _to_jit_cwt(sig):
+def _to_jit_cwt(sig: torch.Tensor) -> torch.Tensor:
     widths = torch.arange(1, 31)
     wavelet = _ShannonWavelet("shan0.1-0.4")
     sampling_period = (4 / 800) * np.pi

@@ -18,7 +18,7 @@ from ptwt._util import (
 
 class _MyHaarFilterBank:
     @property
-    def filter_bank(self) -> Tuple[list, list, list, list]:
+    def filter_bank(self) -> Tuple[List[float], List[float], List[float], List[float]]:
         """Unscaled Haar wavelet filters."""
         return (
             [1 / 2, 1 / 2.0],

@@ -1,6 +1,6 @@
 """Test the conv-fwt code."""
 
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Tuple
 
 # Written by moritz ( @ wolter.tech ) in 2021
 import numpy as np
@@ -140,7 +140,7 @@ def test_1d_multibatch(level: Optional[int], shape: Sequence[int]) -> None:
 
 
 @pytest.mark.parametrize("axis", [-1, 0, 1, 2])
-def test_1d_axis_arg(axis):
+def test_1d_axis_arg(axis: int):
     """Ensure the axis argument works as expected."""
     data = torch.randn([16, 16, 16], dtype=torch.float64)
 
@@ -188,7 +188,7 @@ def test_2d_db2_lvl1() -> None:
     assert np.allclose(rec.numpy().squeeze(), face)
 
 
-def test_2d_haar_multi():
+def test_2d_haar_multi() -> None:
     """Test a 2d-db2 wavelet level 5 conv-fwt."""
     # multi level haar - 2d
     face = np.transpose(
@@ -205,7 +205,7 @@ def test_2d_haar_multi():
     assert np.allclose(rec, face)
 
 
-def test_outer():
+def test_outer() -> None:
     """Test the outer-product implementation."""
     a = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
     b = torch.tensor([6.0, 7.0, 8.0, 9.0, 10.0])
@@ -223,7 +223,9 @@ def test_outer():
 @pytest.mark.parametrize(
     "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
 )
-def test_2d_wavedec_rec(wavelet_str, level, size, mode):
+def test_2d_wavedec_rec(
+    wavelet_str: str, level: Optional[int], size: Tuple[int, int], mode: BoundaryMode
+):
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
 
     wavedec2 and waverec2 must invert each other.
@@ -257,7 +259,9 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
 )
 @pytest.mark.parametrize("level", [1, None])
 @pytest.mark.parametrize("wavelet", ["haar", "sym3"])
-def test_input_4d(size, level, wavelet):
+def test_input_4d(
+    size: Tuple[int, int, int, int], level: Optional[str], wavelet: str
+) -> None:
     """Test the error for 4d inputs to wavedec2."""
     data = torch.randn(*size).type(torch.float64)
 
@@ -284,20 +288,20 @@ def test_input_4d(size, level, wavelet):
 
 
 @pytest.mark.parametrize("padding_str", ["invalid_padding_name"])
-def test_incorrect_padding(padding_str):
+def test_incorrect_padding(padding_str: BoundaryMode) -> None:
     """Test expected errors for an invalid padding name."""
     with pytest.raises(ValueError):
         _ = _translate_boundary_strings(padding_str)
 
 
-def test_input_1d_dimension_error():
+def test_input_1d_dimension_error() -> None:
     """Test the error for 1d inputs to wavedec2."""
     with pytest.raises(ValueError):
         data = torch.randn(50)
         wavedec2(data, "haar", level=4)
 
 
-def _compare_coeffs(ptwt_res, pywt_res):
+def _compare_coeffs(ptwt_res, pywt_res) -> List[bool]:
     """Compare coefficient lists.
 
     Args:
@@ -311,10 +315,8 @@ def _compare_coeffs(ptwt_res, pywt_res):
     for ptwtcs, pywtcs in zip(ptwt_res, pywt_res):
         if isinstance(ptwtcs, tuple):
             test_list.extend(
-                tuple(
-                    np.allclose(ptwtc.numpy(), pywtc)
-                    for ptwtc, pywtc in zip(ptwtcs, pywtcs)
-                )
+                np.allclose(ptwtc.numpy(), pywtc)
+                for ptwtc, pywtc in zip(ptwtcs, pywtcs)
             )
         else:
             test_list.append(np.allclose(ptwtcs.numpy(), pywtcs))
@@ -325,7 +327,7 @@ def _compare_coeffs(ptwt_res, pywt_res):
 @pytest.mark.parametrize(
     "size", [(50, 20, 128, 128), (8, 49, 21, 128, 128), (6, 4, 4, 5, 64, 64)]
 )
-def test_2d_multidim_input(size):
+def test_2d_multidim_input(size: Tuple[int, ...]) -> None:
     """Test the error for multi-dimensional inputs to wavedec2."""
     data = torch.randn(*size, dtype=torch.float64)
     wavelet = "db2"
@@ -347,7 +349,7 @@ def test_2d_multidim_input(size):
 
 @pytest.mark.slow
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (-3, -2), (0, 1), (1, 0)])
-def test_2d_axis_argument(axes):
+def test_2d_axis_argument(axes: Tuple[int, int]) -> None:
     """Ensure the axes argument works as expected."""
     data = torch.randn([32, 32, 32, 32], dtype=torch.float64)
 
@@ -365,14 +367,14 @@ def test_2d_axis_argument(axes):
     )
 
 
-def test_2d_axis_error_axes_count():
+def test_2d_axis_error_axes_count() -> None:
     """Check the error for too many axes."""
     with pytest.raises(ValueError):
         data = torch.randn([32, 32, 32, 32], dtype=torch.float64)
         wavedec2(data, "haar", level=1, axes=(1, 2, 3))
 
 
-def test_2d_axis_error_axes_repetition():
+def test_2d_axis_error_axes_repetition() -> None:
     """Check the error for axes repetition."""
     with pytest.raises(ValueError):
         data = torch.randn([32, 32, 32, 32], dtype=torch.float64)
