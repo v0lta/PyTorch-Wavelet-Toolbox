@@ -68,7 +68,7 @@ def test_cwt_cuda(cuda: bool, wavelet: str = "cgau6") -> None:
 
 
 @pytest.mark.parametrize("wavelet", continuous_wavelets)
-def test_cwt_batched(wavelet):
+def test_cwt_batched(wavelet: str) -> None:
     """Test batched transforms."""
     sig = np.random.randn(10, 200)
     widths = np.arange(1, 30)
@@ -81,7 +81,7 @@ def test_cwt_batched(wavelet):
 
 @pytest.mark.parametrize("type", ["shan1-1"])
 @pytest.mark.parametrize("grid_size", [8, 9, 10])
-def test_nn_schannon_wavefun(type: str, grid_size: int):
+def test_nn_schannon_wavefun(type: str, grid_size: int) -> None:
     """Test the wavelet sampling for the differentiable shannon example."""
     pywt_shannon = pywt.ContinuousWavelet(type)
     ptwt_shannon = _ShannonWavelet(type)

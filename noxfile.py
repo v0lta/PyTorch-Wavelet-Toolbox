@@ -50,7 +50,6 @@ def mypy(session):
         "--explicit-package-bases",
         "src",
         "tests",
-        "examples",
     )
 
 

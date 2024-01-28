@@ -1,6 +1,6 @@
 """Test the sparse math code from ptwt.sparse_math."""
 
-# Written by moritz ( @ wolter.tech ) in 2021
+from typing import Tuple
 
 import numpy as np
 import pytest
@@ -17,6 +17,8 @@ from ptwt.sparse_math import (
     construct_strided_conv_matrix,
     sparse_kron,
 )
+
+# Written by moritz ( @ wolter.tech ) in 2021
 
 
 def test_kron() -> None:
@@ -70,7 +72,9 @@ def test_conv_matrix(
     ],
 )
 @pytest.mark.parametrize("mode", ["valid", "same"])
-def test_strided_conv_matrix(test_filter, input_signal, mode: PaddingMode) -> None:
+def test_strided_conv_matrix(
+    test_filter: torch.tensor, input_signal: torch.tensor, mode: PaddingMode
+) -> None:
     """Test the strided 1d sparse convolution matrix code."""
     strided_conv_matrix = construct_strided_conv_matrix(
         test_filter, len(input_signal), 2, mode=mode
@@ -126,7 +130,12 @@ def test_strided_conv_matrix(test_filter, input_signal, mode: PaddingMode) -> No
 )
 @pytest.mark.parametrize("mode", ["same", "full", "valid"])
 @pytest.mark.parametrize("fully_sparse", [True, False])
-def test_conv_matrix_2d(filter_shape, size, mode: PaddingMode, fully_sparse) -> None:
+def test_conv_matrix_2d(
+    filter_shape: Tuple[int, int],
+    size: Tuple[int, int],
+    mode: PaddingMode,
+    fully_sparse: bool,
+) -> None:
     """Test the validity of the 2d convolution matrix code.
 
     It should be equivalent to signal convolve2d.
@@ -165,7 +174,9 @@ def test_conv_matrix_2d(filter_shape, size, mode: PaddingMode, fully_sparse) -> 
     ],
 )
 @pytest.mark.parametrize("mode", ["full", "valid"])
-def test_strided_conv_matrix_2d(filter_shape, size, mode: PaddingMode) -> None:
+def test_strided_conv_matrix_2d(
+    filter_shape: Tuple[int, int], size: Tuple[int, int], mode: PaddingMode
+) -> None:
     """Test strided convolution matrices with full and valid padding."""
     test_filter = torch.rand(filter_shape)
     test_filter = test_filter.unsqueeze(0).unsqueeze(0)
@@ -207,7 +218,9 @@ def test_strided_conv_matrix_2d(filter_shape, size, mode: PaddingMode) -> None:
 @pytest.mark.parametrize(
     "size", [(7, 8), (8, 7), (7, 7), (8, 8), (16, 16), (8, 16), (16, 8)]
 )
-def test_strided_conv_matrix_2d_same(filter_shape, size) -> None:
+def test_strided_conv_matrix_2d_same(
+    filter_shape: Tuple[int, int], size: Tuple[int, int]
+) -> None:
     """Test strided conv matrix with same padding."""
     stride = 2
     test_filter = torch.rand(filter_shape)
@@ -236,7 +249,9 @@ def test_strided_conv_matrix_2d_same(filter_shape, size) -> None:
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
-def _get_2d_same_padding(filter_shape, input_size) -> tuple:
+def _get_2d_same_padding(
+    filter_shape: Tuple[int, int], input_size: Tuple[int, int]
+) -> Tuple[int, int, int, int]:
     height_offset = input_size[0] % 2
     width_offset = input_size[1] % 2
     padding = (
@@ -250,7 +265,7 @@ def _get_2d_same_padding(filter_shape, input_size) -> tuple:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("size", [(256, 512), (512, 256)])
-def test_strided_conv_matrix_2d_sameshift(size) -> None:
+def test_strided_conv_matrix_2d_sameshift(size: Tuple[int, int]) -> None:
     """Test strided conv matrix with sameshift padding."""
     stride = 2
     filter_shape = (3, 3)

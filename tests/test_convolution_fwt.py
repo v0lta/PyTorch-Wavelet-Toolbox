@@ -1,5 +1,7 @@
 """Test the conv-fwt code."""
 
+from typing import List, Optional, Sequence
+
 # Written by moritz ( @ wolter.tech ) in 2021
 import numpy as np
 import pytest
@@ -8,6 +10,7 @@ import torch
 from scipy import datasets
 
 from ptwt._util import _outer
+from ptwt.constants import BoundaryMode
 from ptwt.conv_transform import (
     _flatten_2d_coeff_lst,
     _translate_boundary_strings,
@@ -15,7 +18,7 @@ from ptwt.conv_transform import (
     waverec,
 )
 from ptwt.conv_transform_2 import wavedec2, waverec2
-from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
+from ptwt.wavelets_learnable import SoftOrthogonalWavelet
 from tests._mackey_glass import MackeyGenerator
 
 
@@ -28,7 +31,14 @@ from tests._mackey_glass import MackeyGenerator
     "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
 )
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
-def test_conv_fwt1d(wavelet_string, level, mode, length, batch_size, dtype):
+def test_conv_fwt1d(
+    wavelet_string: str,
+    level: Optional[int],
+    mode: BoundaryMode,
+    length: int,
+    batch_size: int,
+    dtype: torch.dtype,
+) -> None:
     """Test multiple convolution fwt, for various levels and padding options."""
     generator = MackeyGenerator(
         batch_size=batch_size, tmax=length, delta_t=1, device="cpu"
@@ -57,7 +67,7 @@ def test_conv_fwt1d(wavelet_string, level, mode, length, batch_size, dtype):
 
 @pytest.mark.parametrize("size", [[5, 10, 64], [1, 1, 32]])
 @pytest.mark.parametrize("wavelet", ["haar", "db2"])
-def test_conv_fwt1d_channel(size, wavelet):
+def test_conv_fwt1d_channel(size: List[int], wavelet: str) -> None:
     """Test channel dimension support."""
     data = torch.randn(*size).type(torch.float64)
     ptwt_coeff = wavedec(data, wavelet)
@@ -72,10 +82,10 @@ def test_conv_fwt1d_channel(size, wavelet):
     assert np.allclose(data.numpy(), rec.numpy())
 
 
-def test_ripples_haar_lvl3():
+def test_ripples_haar_lvl3() -> None:
     """Compute example from page 7 of Ripples in Mathematics, Jensen, la Cour-Harbo."""
 
-    class _MyHaarFilterBank(object):
+    class _MyHaarFilterBank:
         @property
         def filter_bank(self):
             """Unscaled Haar wavelet filters."""
@@ -95,7 +105,7 @@ def test_ripples_haar_lvl3():
     assert (torch.squeeze(coeffs[3]).numpy() == [8.0, -8.0, 0.0, 12.0]).all()
 
 
-def test_orth_wavelet():
+def test_orth_wavelet() -> None:
     """Test an orthogonal wavelet fwt."""
     generator = MackeyGenerator(batch_size=2, tmax=64, delta_t=1, device="cpu")
 
@@ -114,7 +124,7 @@ def test_orth_wavelet():
 
 @pytest.mark.parametrize("level", [1, 2, 3, None])
 @pytest.mark.parametrize("shape", [(64,), (1, 64), (3, 2, 64), (4, 3, 2, 64)])
-def test_1d_multibatch(level, shape):
+def test_1d_multibatch(level: Optional[int], shape: Sequence[int]) -> None:
     """Test 1D conv support for multiple inert batch dimensions."""
     data = torch.randn(*shape, dtype=torch.float64)
     ptwt_coeff = wavedec(data, "haar", level=level)
@@ -144,7 +154,7 @@ def test_1d_axis_arg(axis):
     assert torch.allclose(rec, data)
 
 
-def test_2d_haar_lvl1():
+def test_2d_haar_lvl1() -> None:
     """Test a 2d-Haar wavelet conv-fwt."""
     # ------------------------- 2d haar wavelet tests -----------------------
     face = np.transpose(
@@ -161,7 +171,7 @@ def test_2d_haar_lvl1():
     assert np.allclose(rec, face)
 
 
-def test_2d_db2_lvl1():
+def test_2d_db2_lvl1() -> None:
     """Test a 2d-db2 wavelet conv-fwt."""
     # single level db2 - 2d
     face = np.transpose(

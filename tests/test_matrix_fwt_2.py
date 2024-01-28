@@ -1,6 +1,6 @@
 """Test code for the 2d boundary wavelets."""
 
-# Created by moritz ( wolter@cs.uni-bonn.de ), 08.09.21
+from typing import List, Type
 
 import numpy as np
 import pytest
@@ -9,7 +9,7 @@ import scipy.signal
 import torch
 
 from ptwt.conv_transform import _flatten_2d_coeff_lst
-from ptwt.matmul_transform import MatrixWavedec, MatrixWaverec
+from ptwt.matmul_transform import BaseMatrixWaveDec, MatrixWavedec, MatrixWaverec
 from ptwt.matmul_transform_2 import (
     MatrixWavedec2,
     MatrixWaverec2,
@@ -17,6 +17,8 @@ from ptwt.matmul_transform_2 import (
     construct_boundary_s2,
 )
 from tests.test_convolution_fwt import _compare_coeffs
+
+# Created by moritz ( wolter@cs.uni-bonn.de ), 08.09.21
 
 
 @pytest.mark.parametrize("size", [(16, 16), (16, 8), (8, 16)])
@@ -190,7 +192,7 @@ def test_separable_haar_2d():
 
 
 @pytest.mark.parametrize("size", [[3, 2, 32, 32], [4, 32, 32], [1, 1, 32, 32]])
-def test_batch_channel_2d_haar(size):
+def test_batch_channel_2d_haar(size: List[int]):
     """Test matrix fwt-2d leading channel and batch dimension code."""
     signal = torch.randn(*size).type(torch.float64)
     ptwt_coeff = MatrixWavedec2("haar", 2, separable=False)(signal)
@@ -210,23 +212,23 @@ def test_batch_channel_2d_haar(size):
 
 
 @pytest.mark.parametrize("operator", [MatrixWavedec2, MatrixWavedec])
-def test_empty_operators(operator) -> None:
+def test_empty_operators(operator: Type[BaseMatrixWaveDec]) -> None:
     """Check if the error is thrown properly if no matrix was ever built."""
     if operator is MatrixWavedec2:
-        matrixfwt = operator("haar", separable=False)
+        matrixfwt = operator(wavelet="haar", separable=False)
     else:
-        matrixfwt = operator("haar")
+        matrixfwt = operator(wavelet="haar")
     with pytest.raises(ValueError):
         _ = matrixfwt.sparse_fwt_operator
 
 
 @pytest.mark.parametrize("operator", [MatrixWaverec2, MatrixWaverec])
-def test_empty_inverse_operators(operator) -> None:
+def test_empty_inverse_operators(operator: Type[BaseMatrixWaveDec]) -> None:
     """Check if the error is thrown properly if no matrix was ever built."""
     if operator is MatrixWaverec2:
-        matrixifwt = operator("haar", separable=False)
+        matrixifwt = operator(wavelet="haar", separable=False)
     else:
-        matrixifwt = operator("haar")
+        matrixifwt = operator(wavelet="haar")
     with pytest.raises(ValueError):
         _ = matrixifwt.sparse_ifwt_operator
 

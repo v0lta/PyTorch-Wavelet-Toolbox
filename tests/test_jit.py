@@ -41,7 +41,9 @@ def _to_jit_wavedec_fun(data, wavelet, level):
 @pytest.mark.parametrize("length", [64, 65])
 @pytest.mark.parametrize("batch_size", [1, 3])
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
-def test_conv_fwt_jit(wavelet_string, level, length, batch_size, dtype):
+def test_conv_fwt_jit(
+    wavelet_string: str, level: int, length: int, batch_size: int, dtype: torch.dtype
+) -> None:
     """Test jitting a convolution fwt, for various levels and padding options."""
     generator = MackeyGenerator(
         batch_size=batch_size, tmax=length, delta_t=1, device="cpu"
@@ -89,7 +91,7 @@ def _to_jit_waverec_2(data, wavelet):
     return rec
 
 
-def test_conv_fwt_jit_2d():
+def test_conv_fwt_jit_2d() -> None:
     """Test the jit compilation feature for the wavedec2 function."""
     data = torch.randn(10, 20, 20).type(torch.float64)
     wavelet = pywt.Wavelet("db4")
@@ -141,7 +143,7 @@ def _to_jit_waverec_3(data, wavelet):
     return rec
 
 
-def test_conv_fwt_jit_3d():
+def test_conv_fwt_jit_3d() -> None:
     """Test the jit compilation feature for the wavedec3 function."""
     data = torch.randn(10, 20, 20, 20).type(torch.float64)
     wavelet = pywt.Wavelet("db4")
@@ -171,7 +173,7 @@ def _to_jit_cwt(sig):
     return cwtmatr
 
 
-def test_cwt_jit():
+def test_cwt_jit() -> None:
     """Test cwt jitting."""
     t = np.linspace(-2, 2, 800, endpoint=False)
     sig = torch.from_numpy(signal.chirp(t, f0=1, f1=12, t1=2, method="linear"))

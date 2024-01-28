@@ -1,6 +1,6 @@
 """Test the util methods."""
 
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import pytest
@@ -16,7 +16,7 @@ from ptwt._util import (
 )
 
 
-class _MyHaarFilterBank(object):
+class _MyHaarFilterBank:
     @property
     def filter_bank(self) -> Tuple[list, list, list, list]:
         """Unscaled Haar wavelet filters."""
@@ -53,7 +53,7 @@ def test_failed_as_wavelet(wavelet: str) -> None:
 @pytest.mark.parametrize(
     "pad_list", [(2, 2), (0, 0), (1, 0), (0, 1), (2, 1), (1, 2), (10, 10)]
 )
-def test_pad_symmetric_1d(size, pad_list):
+def test_pad_symmetric_1d(size: List[int], pad_list: Tuple[int, int]) -> None:
     """Test symetric padding in a single dimension."""
     test_signal = np.random.randint(0, 9, size=size).astype(np.float32)
     my_pad = _pad_symmetric_1d(torch.from_numpy(test_signal), pad_list)
@@ -63,7 +63,7 @@ def test_pad_symmetric_1d(size, pad_list):
 
 @pytest.mark.parametrize("size", [[6, 5], [5, 6], [5, 5], [9, 9], [3, 3]])
 @pytest.mark.parametrize("pad_list", [[(1, 4), (4, 1)], [(2, 2), (3, 3)]])
-def test_pad_symmetric(size, pad_list):
+def test_pad_symmetric(size: List[int], pad_list: List[Tuple[int, int]]) -> None:
     """Test high-dimensional symetric padding."""
     array = np.random.randint(0, 9, size=size)
     my_pad = _pad_symmetric(torch.from_numpy(array), pad_list)
@@ -73,7 +73,7 @@ def test_pad_symmetric(size, pad_list):
 
 @pytest.mark.parametrize("keep_no", [1, 2, 3])
 @pytest.mark.parametrize("size", [[20, 21, 22, 23], [1, 2, 3, 4], [4, 3, 2, 1]])
-def test_fold(keep_no, size):
+def test_fold(keep_no: int, size: List[int]) -> None:
     """Ensure channel folding works as expected."""
     array = torch.randn(*size).type(torch.float64)
     folded, ds = _fold_axes(array, keep_no)

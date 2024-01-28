@@ -194,7 +194,7 @@ def test_4d_invalid_axis_error():
 
 
 @pytest.mark.parametrize("size", [[2, 3, 32], [5, 32], [32], [1, 1, 64]])
-def test_matrix1d_batch_channel(size):
+def test_matrix1d_batch_channel(size: List[int]):
     """Test if batch and channel support works as expected."""
     data = torch.randn(*size).type(torch.float64)
     matrix_wavedec_1d = MatrixWavedec("haar", 3)
@@ -214,7 +214,7 @@ def test_matrix1d_batch_channel(size):
 
 
 @pytest.mark.parametrize("axis", (0, 1, 2, 3, 4))
-def test_axis_1d(axis):
+def test_axis_1d(axis: int):
     """Ensure the axis argument is supported correctly."""
     data = torch.randn(24, 24, 24, 24, 24).type(torch.float64)
     matrix_wavedec = MatrixWavedec(wavelet="haar", level=3, axis=axis)
