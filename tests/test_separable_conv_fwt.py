@@ -1,6 +1,6 @@
 """Separable transform test code."""
 
-from typing import Optional, Tuple, Sequence
+from typing import Optional, Sequence, Tuple
 
 import numpy as np
 import pytest

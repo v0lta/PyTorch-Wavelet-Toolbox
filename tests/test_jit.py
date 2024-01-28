@@ -1,6 +1,6 @@
 """Ensure pytorch's torch.jit.trace feature works properly."""
 
-from typing import NamedTuple, List
+from typing import List, NamedTuple
 
 import numpy as np
 import pytest
@@ -54,13 +54,13 @@ def test_conv_fwt_jit(
     wavelet = _set_up_wavelet_tuple(wavelet, dtype)
 
     with pytest.warns(Warning):
-        jit_wavedec = torch.jit.trace(
+        jit_wavedec = torch.jit.trace(  # type: ignore
             _to_jit_wavedec_fun,
             (mackey_data_1, wavelet, torch.tensor(level)),
             strict=False,
         )
         ptcoeff = jit_wavedec(mackey_data_1, wavelet, level=torch.tensor(level))
-        jit_waverec = torch.jit.trace(ptwt.waverec, (ptcoeff, wavelet))
+        jit_waverec = torch.jit.trace(ptwt.waverec, (ptcoeff, wavelet))  # type: ignore
         res = jit_waverec(ptcoeff, wavelet)
     assert np.allclose(mackey_data_1.numpy(), res.numpy()[:, : mackey_data_1.shape[-1]])
 
@@ -101,14 +101,14 @@ def test_conv_fwt_jit_2d() -> None:
 
     wavelet = _set_up_wavelet_tuple(wavelet, dtype=torch.float64)
     with pytest.warns(Warning):
-        jit_wavedec2 = torch.jit.trace(
+        jit_wavedec2 = torch.jit.trace(  # type: ignore
             _to_jit_wavedec_2,
             (data, wavelet),
             strict=False,
         )
         jit_ptcoeff = jit_wavedec2(data, wavelet)
         # unstack the lists.
-        jit_waverec = torch.jit.trace(_to_jit_waverec_2, (jit_ptcoeff, wavelet))
+        jit_waverec = torch.jit.trace(_to_jit_waverec_2, (jit_ptcoeff, wavelet))  # type: ignore
         rec = jit_waverec(jit_ptcoeff, wavelet)
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy(), atol=1e-7)
 
@@ -153,14 +153,14 @@ def test_conv_fwt_jit_3d() -> None:
 
     wavelet = _set_up_wavelet_tuple(wavelet, dtype=torch.float64)
     with pytest.warns(Warning):
-        jit_wavedec3 = torch.jit.trace(
+        jit_wavedec3 = torch.jit.trace(  # type: ignore
             _to_jit_wavedec_3,
             (data, wavelet),
             strict=False,
         )
         jit_ptcoeff = jit_wavedec3(data, wavelet)
         # unstack the lists.
-        jit_waverec = torch.jit.trace(_to_jit_waverec_3, (jit_ptcoeff, wavelet))
+        jit_waverec = torch.jit.trace(_to_jit_waverec_3, (jit_ptcoeff, wavelet))  # type: ignore
         rec = jit_waverec(jit_ptcoeff, wavelet)
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy(), atol=1e-7)
 
@@ -178,7 +178,7 @@ def test_cwt_jit() -> None:
     t = np.linspace(-2, 2, 800, endpoint=False)
     sig = torch.from_numpy(signal.chirp(t, f0=1, f1=12, t1=2, method="linear"))
     with pytest.warns(Warning):
-        jit_cwt = torch.jit.trace(_to_jit_cwt, (sig), strict=False)
+        jit_cwt = torch.jit.trace(_to_jit_cwt, (sig), strict=False)  # type: ignore
     jitcwtmatr = jit_cwt(sig)
 
     cwtmatr, _ = ptwt.cwt(

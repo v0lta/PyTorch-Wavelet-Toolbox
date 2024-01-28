@@ -140,7 +140,7 @@ def test_1d_multibatch(level: Optional[int], shape: Sequence[int]) -> None:
 
 
 @pytest.mark.parametrize("axis", [-1, 0, 1, 2])
-def test_1d_axis_arg(axis: int):
+def test_1d_axis_arg(axis: int) -> None:
     """Ensure the axis argument works as expected."""
     data = torch.randn([16, 16, 16], dtype=torch.float64)
 
@@ -225,7 +225,7 @@ def test_outer() -> None:
 )
 def test_2d_wavedec_rec(
     wavelet_str: str, level: Optional[int], size: Tuple[int, int], mode: BoundaryMode
-):
+) -> None:
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
 
     wavedec2 and waverec2 must invert each other.

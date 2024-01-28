@@ -132,7 +132,12 @@ def _compare_trees2(
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
 def test_2d_packets(
-    max_lev: Optional[int], wavelet_str: str, boundary, batch_size, transform_mode, multiple_transforms
+    max_lev: Optional[int],
+    wavelet_str: str,
+    boundary,
+    batch_size,
+    transform_mode,
+    multiple_transforms,
 ) -> None:
     """Ensure pywt and ptwt produce equivalent wavelet 2d packet trees."""
     _compare_trees2(
