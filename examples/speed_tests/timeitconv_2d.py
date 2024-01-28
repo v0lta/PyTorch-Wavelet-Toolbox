@@ -33,7 +33,7 @@ def _to_jit_wavedec_2(data, wavelet):
     means we have to stack the lists in the output.
     """
     assert data.shape == (32, 1e3, 1e3), "Changing the chape requires re-tracing."
-    coeff = ptwt.wavedec2(data, wavelet, "periodic", level=5)
+    coeff = ptwt.wavedec2(data, wavelet, mode="periodic", level=5)
     coeff2 = []
     for c in coeff:
         if isinstance(c, torch.Tensor):

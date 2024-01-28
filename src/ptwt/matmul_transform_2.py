@@ -2,6 +2,7 @@
 
 This module uses boundary filters to minimize padding.
 """
+
 # Written by moritz ( @ wolter.tech ) in 2021
 import sys
 from functools import partial
@@ -22,6 +23,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
+from .constants import OrthogonalizeMethod, PaddingMode
 from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import (
     _construct_2d_filt,
@@ -42,7 +44,7 @@ def _construct_a_2(
     width: int,
     device: Union[torch.device, str],
     dtype: torch.dtype = torch.float64,
-    mode: str = "sameshift",
+    mode: PaddingMode = "sameshift",
 ) -> torch.Tensor:
     """Construct a raw two-dimensional analysis wavelet transformation matrix.
 
@@ -54,7 +56,7 @@ def _construct_a_2(
         device (torch.device or str): Where to place the matrix.
         dtype (torch.dtype, optional): Desired matrix data type.
             Defaults to torch.float64.
-        mode (str): The convolution type.
+        mode : The convolution type.
             Options are 'full', 'valid', 'same' and 'sameshift'.
             Defaults to 'sameshift'.
 
@@ -87,7 +89,7 @@ def _construct_s_2(
     width: int,
     device: Union[torch.device, str],
     dtype: torch.dtype = torch.float64,
-    mode: str = "sameshift",
+    mode: PaddingMode = "sameshift",
 ) -> torch.Tensor:
     """Construct a raw fast wavelet transformation synthesis matrix.
 
@@ -106,7 +108,7 @@ def _construct_s_2(
             usually CPU or GPU.
         dtype (torch.dtype, optional): The data type the matrix should have.
             Defaults to torch.float64.
-        mode (str): The convolution type.
+        mode : The convolution type.
             Options are 'full', 'valid', 'same' and 'sameshift'.
             Defaults to 'sameshift'.
 
@@ -140,7 +142,7 @@ def construct_boundary_a2(
     height: int,
     width: int,
     device: Union[torch.device, str],
-    boundary: str = "qr",
+    boundary: OrthogonalizeMethod = "qr",
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Construct a boundary fwt matrix for the input wavelet.
@@ -154,7 +156,7 @@ def construct_boundary_a2(
             Should be divisible by two.
         device (torch.device): Where to place the matrix. Either on
             the CPU or GPU.
-        boundary (str): The method to use for matrix orthogonalization.
+        boundary : The method to use for matrix orthogonalization.
             Choose "qr" or "gramschmidt". Defaults to "qr".
         dtype (torch.dtype, optional): The desired data type for the matrix.
             Defaults to torch.float64.
@@ -174,7 +176,8 @@ def construct_boundary_s2(
     height: int,
     width: int,
     device: Union[torch.device, str],
-    boundary: str = "qr",
+    *,
+    boundary: OrthogonalizeMethod = "qr",
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Construct a 2d-fwt matrix, with boundary wavelets.
@@ -185,7 +188,7 @@ def construct_boundary_s2(
         height (int): The original height of the input matrix.
         width (int): The width of the original input matrix.
         device (torch.device): Choose CPU or GPU.
-        boundary (str): The method to use for matrix orthogonalization.
+        boundary : The method to use for matrix orthogonalization.
             Choose qr or gramschmidt. Defaults to qr.
         dtype (torch.dtype, optional): The data type of the
             sparse matrix, choose float32 or 64.
@@ -250,7 +253,7 @@ class MatrixWavedec2(object):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         axes: Tuple[int, int] = (-2, -1),
-        boundary: str = "qr",
+        boundary: OrthogonalizeMethod = "qr",
         separable: bool = True,
     ):
         """Create a new matrix fwt object.
@@ -263,7 +266,7 @@ class MatrixWavedec2(object):
                 None.
             axes (int, int): A tuple with the axes to transform.
                 Defaults to (-2, -1).
-            boundary (str): The method used for boundary filter treatment.
+            boundary : The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on Pytorch's
                 dense qr implementation, it is fast but memory hungry.
                 The 'gramschmidt' option is sparse, memory efficient,
@@ -569,7 +572,7 @@ class MatrixWaverec2(object):
         self,
         wavelet: Union[Wavelet, str],
         axes: Tuple[int, int] = (-2, -1),
-        boundary: str = "qr",
+        boundary: OrthogonalizeMethod = "qr",
         separable: bool = True,
     ):
         """Create the inverse matrix-based fast wavelet transformation.
@@ -579,7 +582,7 @@ class MatrixWaverec2(object):
                 the name of a pywt wavelet.
             axes (int, int): The axes transformed by waverec2.
                 Defaults to (-2, -1).
-            boundary (str): The method used for boundary filter treatment.
+            boundary : The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
                 implementation, it is fast but memory hungry. The 'gramschmidt' option
                 is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs

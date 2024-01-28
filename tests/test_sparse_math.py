@@ -1,4 +1,5 @@
 """Test the sparse math code from ptwt.sparse_math."""
+
 # Written by moritz ( @ wolter.tech ) in 2021
 
 import numpy as np
@@ -7,6 +8,7 @@ import scipy.signal
 import torch
 from scipy import datasets
 
+from ptwt.constants import PaddingMode
 from ptwt.sparse_math import (
     batch_mm,
     construct_conv2d_matrix,
@@ -39,10 +41,10 @@ def test_kron() -> None:
 @pytest.mark.parametrize("input_signal", [torch.rand([8]), torch.rand([9])])
 @pytest.mark.parametrize("padding", ["full", "same", "valid"])
 def test_conv_matrix(
-    test_filter: torch.Tensor, input_signal: torch.Tensor, padding: str
+    test_filter: torch.Tensor, input_signal: torch.Tensor, padding: PaddingMode
 ) -> None:
     """Test the 1d sparse convolution matrix code."""
-    conv_matrix = construct_conv_matrix(test_filter, len(input_signal), padding)
+    conv_matrix = construct_conv_matrix(test_filter, len(input_signal), mode=padding)
     mm_conv_res = torch.sparse.mm(conv_matrix, input_signal.unsqueeze(-1)).squeeze()
     conv_res = scipy.signal.convolve(input_signal.numpy(), test_filter.numpy(), padding)
     error = np.sum(np.abs(conv_res - mm_conv_res.numpy()))
@@ -68,10 +70,10 @@ def test_conv_matrix(
     ],
 )
 @pytest.mark.parametrize("mode", ["valid", "same"])
-def test_strided_conv_matrix(test_filter, input_signal, mode) -> None:
+def test_strided_conv_matrix(test_filter, input_signal, mode: PaddingMode) -> None:
     """Test the strided 1d sparse convolution matrix code."""
     strided_conv_matrix = construct_strided_conv_matrix(
-        test_filter, len(input_signal), 2, mode
+        test_filter, len(input_signal), 2, mode=mode
     )
     mm_conv_res = torch.sparse.mm(
         strided_conv_matrix, input_signal.unsqueeze(-1)
@@ -124,7 +126,7 @@ def test_strided_conv_matrix(test_filter, input_signal, mode) -> None:
 )
 @pytest.mark.parametrize("mode", ["same", "full", "valid"])
 @pytest.mark.parametrize("fully_sparse", [True, False])
-def test_conv_matrix_2d(filter_shape, size, mode, fully_sparse) -> None:
+def test_conv_matrix_2d(filter_shape, size, mode: PaddingMode, fully_sparse) -> None:
     """Test the validity of the 2d convolution matrix code.
 
     It should be equivalent to signal convolve2d.
@@ -163,7 +165,7 @@ def test_conv_matrix_2d(filter_shape, size, mode, fully_sparse) -> None:
     ],
 )
 @pytest.mark.parametrize("mode", ["full", "valid"])
-def test_strided_conv_matrix_2d(filter_shape, size, mode) -> None:
+def test_strided_conv_matrix_2d(filter_shape, size, mode: PaddingMode) -> None:
     """Test strided convolution matrices with full and valid padding."""
     test_filter = torch.rand(filter_shape)
     test_filter = test_filter.unsqueeze(0).unsqueeze(0)

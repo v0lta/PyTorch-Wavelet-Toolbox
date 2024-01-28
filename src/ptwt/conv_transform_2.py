@@ -4,9 +4,8 @@ The implementation relies on torch.nn.functional.conv2d and
 torch.nn.functional.conv_transpose2d under the hood.
 """
 
-
 from functools import partial
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, cast
 
 import pywt
 import torch
@@ -26,6 +25,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
+from .constants import BoundaryMode
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_filter_tensors,
@@ -59,7 +59,10 @@ def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
 
 
 def _fwt_pad2(
-    data: torch.Tensor, wavelet: Union[Wavelet, str], mode: str = "reflect"
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    *,
+    mode: Optional[BoundaryMode] = None,
 ) -> torch.Tensor:
     """Pad data for the 2d FWT.
 
@@ -69,25 +72,26 @@ def _fwt_pad2(
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode (str): The padding mode.
-            Supported modes are::
-
-                "reflect", "zero", "constant", "periodic", "symmetric".
-
-            "reflect" is the default mode.
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
 
     Returns:
         The padded output tensor.
 
     """
-    mode = _translate_boundary_strings(mode)
+    if mode is None:
+        mode = cast(BoundaryMode, "reflect")
+    pytorch_mode = _translate_boundary_strings(mode)
     wavelet = _as_wavelet(wavelet)
     padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
     padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
-    if mode == "symmetric":
+    if pytorch_mode == "symmetric":
         data_pad = _pad_symmetric(data, [(padt, padb), (padl, padr)])
     else:
-        data_pad = torch.nn.functional.pad(data, [padl, padr, padt, padb], mode=mode)
+        data_pad = torch.nn.functional.pad(
+            data, [padl, padr, padt, padb], mode=pytorch_mode
+        )
     return data_pad
 
 
@@ -123,7 +127,8 @@ def _preprocess_tensor_dec2d(
 def wavedec2(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
-    mode: str = "reflect",
+    *,
+    mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: Tuple[int, int] = (-2, -1),
 ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
@@ -141,11 +146,9 @@ def wavedec2(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
-        mode (str): The padding mode. Options are::
-
-                "reflect", "zero", "constant", "periodic", "symmetric".
-
-            This function defaults to "reflect".
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The number of desired scales.
             Defaults to None.
         axes (Tuple[int, int]): Compute the transform over these axes instead of the

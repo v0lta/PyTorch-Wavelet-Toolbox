@@ -1,4 +1,5 @@
 """Compute analysis wavelet packet representations."""
+
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 
 import collections
@@ -11,6 +12,7 @@ import pywt
 import torch
 
 from ._util import Wavelet, _as_wavelet
+from .constants import ExtendedBoundaryMode, OrthogonalizeMethod
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
 from .matmul_transform import MatrixWavedec, MatrixWaverec
@@ -48,10 +50,10 @@ class WaveletPacket(BaseDict):
         self,
         data: Optional[torch.Tensor],
         wavelet: Union[Wavelet, str],
-        mode: Optional[str] = "reflect",
+        mode: ExtendedBoundaryMode = "reflect",
         maxlevel: Optional[int] = None,
         axis: int = -1,
-        boundary_orthogonalization: str = "qr",
+        boundary_orthogonalization: OrthogonalizeMethod = "qr",
     ) -> None:
         """Create a wavelet packet decomposition object.
 
@@ -66,13 +68,13 @@ class WaveletPacket(BaseDict):
                 Use the ``axis`` argument to choose another dimension.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
-            mode (str, optional): The desired padding method. If you select 'boundary',
+            mode : The desired padding method. If you select 'boundary',
                 the sparse matrix backend will be used. Defaults to 'reflect'.
             maxlevel (int, optional): Value is passed on to `transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
             axis (int): The axis to transform. Defaults to -1.
-            boundary_orthogonalization (str): The orthogonalization method
+            boundary_orthogonalization : The orthogonalization method
                 to use. Only used if `mode` equals 'boundary'. Choose from
                 'qr' or 'gramschmidt'. Defaults to 'qr'.
 
@@ -263,10 +265,10 @@ class WaveletPacket2D(BaseDict):
         self,
         data: Optional[torch.Tensor],
         wavelet: Union[Wavelet, str],
-        mode: str = "reflect",
+        mode: ExtendedBoundaryMode = "reflect",
         maxlevel: Optional[int] = None,
         axes: Tuple[int, int] = (-2, -1),
-        boundary_orthogonalization: str = "qr",
+        boundary_orthogonalization: OrthogonalizeMethod = "qr",
         separable: bool = False,
     ) -> None:
         """Create a 2D-Wavelet packet tree.
@@ -279,7 +281,7 @@ class WaveletPacket2D(BaseDict):
                 a decomposition.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
-            mode (str): A string indicating the desired padding mode.
+            mode : A string indicating the desired padding mode.
                 If you select 'boundary', the sparse matrix backend is used.
                 Defaults to 'reflect'
             maxlevel (int, optional): Value is passed on to `transform`.
@@ -287,7 +289,7 @@ class WaveletPacket2D(BaseDict):
                 is determined from the input data shape. Defaults to None.
             axes ([int, int], optional): The tensor axes that should be transformed.
                 Defaults to (-2, -1).
-            boundary_orthogonalization (str): The orthogonalization method
+            boundary_orthogonalization : The orthogonalization method
                 to use in the sparse matrix backend. Only used if `mode`
                 equals 'boundary'. Choose from 'qr' or 'gramschmidt'.
                 Defaults to 'qr'.
@@ -382,9 +384,7 @@ class WaveletPacket2D(BaseDict):
         """
         return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
 
-    def _get_wavedec(
-        self, shape: Tuple[int, ...]
-    ) -> Callable[
+    def _get_wavedec(self, shape: Tuple[int, ...]) -> Callable[
         [torch.Tensor],
         List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
     ]:
@@ -415,9 +415,7 @@ class WaveletPacket2D(BaseDict):
                 wavedec2, wavelet=self.wavelet, level=1, mode=self.mode, axes=self.axes
             )
 
-    def _get_waverec(
-        self, shape: Tuple[int, ...]
-    ) -> Callable[
+    def _get_waverec(self, shape: Tuple[int, ...]) -> Callable[
         [List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
         torch.Tensor,
     ]:

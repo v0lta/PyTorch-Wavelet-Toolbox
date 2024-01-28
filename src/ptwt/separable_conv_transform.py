@@ -6,6 +6,7 @@ axes individually.
 Under the hood, code in this module transforms all dimensions
 using torch.nn.functional.conv1d and it's transpose.
 """
+
 from functools import partial
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -24,6 +25,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
+from .constants import BoundaryMode
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import _preprocess_tensor_dec2d
 
@@ -32,7 +34,8 @@ def _separable_conv_dwtn_(
     rec_dict: Dict[str, torch.Tensor],
     input_arg: torch.Tensor,
     wavelet: Union[str, pywt.Wavelet],
-    mode: str = "reflect",
+    *,
+    mode: BoundaryMode = "reflect",
     key: str = "",
 ) -> None:
     """Compute a single-level separable fast wavelet transform.
@@ -42,7 +45,7 @@ def _separable_conv_dwtn_(
     Args:
         input_arg (torch.Tensor): Tensor of shape [batch, data_1, ... data_n].
         wavelet (Union[str, pywt.Wavelet]): The Wavelet to work with.
-        mode (str): The padding mode. The following methods are supported::
+        mode : The padding mode. The following methods are supported::
 
                 "reflect", "zero", "constant", "periodic".
 
@@ -59,8 +62,8 @@ def _separable_conv_dwtn_(
         res_a, res_d = wavedec(
             input_arg, wavelet, level=1, mode=mode, axis=-current_axis
         )
-        _separable_conv_dwtn_(rec_dict, res_a, wavelet, mode, "a" + key)
-        _separable_conv_dwtn_(rec_dict, res_d, wavelet, mode, "d" + key)
+        _separable_conv_dwtn_(rec_dict, res_a, wavelet, mode=mode, key="a" + key)
+        _separable_conv_dwtn_(rec_dict, res_d, wavelet, mode=mode, key="d" + key)
 
 
 def _separable_conv_idwtn(
@@ -105,7 +108,8 @@ def _separable_conv_idwtn(
 def _separable_conv_wavedecn(
     input: torch.Tensor,
     wavelet: pywt.Wavelet,
-    mode: str = "reflect",
+    *,
+    mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a multilevel separable padded wavelet analysis transform.
@@ -113,7 +117,7 @@ def _separable_conv_wavedecn(
     Args:
         input (torch.Tensor): A tensor i.e. of shape [batch,axis_1, ... axis_n].
         wavelet (Wavelet): A pywt wavelet compatible object.
-        mode (str): The desired padding mode.
+        mode : The desired padding mode.
         level (int): The desired decomposition level.
 
     Returns:
@@ -130,7 +134,7 @@ def _separable_conv_wavedecn(
 
     for _ in range(level):
         level_dict: Dict[str, torch.Tensor] = {}
-        _separable_conv_dwtn_(level_dict, approx, wavelet, mode, "")
+        _separable_conv_dwtn_(level_dict, approx, wavelet, mode=mode, key="")
         approx_key = "a" * (len(input.shape) - 1)
         approx = level_dict.pop(approx_key)
         result.append(level_dict)
@@ -172,7 +176,8 @@ def _separable_conv_waverecn(
 def fswavedec2(
     data: torch.Tensor,
     wavelet: Union[str, pywt.Wavelet],
-    mode: str = "reflect",
+    *,
+    mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: Tuple[int, int] = (-2, -1),
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
@@ -184,11 +189,9 @@ def fswavedec2(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
-        mode (str): The padding mode. Options are::
-
-                "reflect", "zero", "constant", "periodic".
-
-            This function defaults to "reflect".
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The number of desired scales.
             Defaults to None.
         axes ([int, int]): The axes we want to transform,
@@ -227,7 +230,7 @@ def fswavedec2(
     wavelet = _as_wavelet(wavelet)
     data, ds = _preprocess_tensor_dec2d(data)
     data = data.squeeze(1)
-    res = _separable_conv_wavedecn(data, wavelet, mode, level)
+    res = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
 
     if ds:
         _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
@@ -243,7 +246,8 @@ def fswavedec2(
 def fswavedec3(
     data: torch.Tensor,
     wavelet: Union[str, pywt.Wavelet],
-    mode: str = "reflect",
+    *,
+    mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: Tuple[int, int, int] = (-3, -2, -1),
 ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
@@ -254,11 +258,9 @@ def fswavedec3(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
-        mode (str): The padding mode. Options are::
-
-                "reflect", "zero", "constant", "periodic".
-
-            This function defaults to "reflect".
+        mode :
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The number of desired scales.
             Defaults to None.
         axes (Tuple[int, int, int]): Compute the transform over these axes
@@ -299,7 +301,7 @@ def fswavedec3(
     elif len(data.shape) < 4:
         raise ValueError("At lest four input dimensions are required.")
     data = data.squeeze(1)
-    res = _separable_conv_wavedecn(data, wavelet, mode, level)
+    res = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
 
     if ds:
         _unfold_axes3 = partial(_unfold_axes, ds=ds, keep_no=3)

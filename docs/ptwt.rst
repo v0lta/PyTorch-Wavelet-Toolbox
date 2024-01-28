@@ -102,4 +102,9 @@ ptwt.wavelets\_learnable module
    :undoc-members:
    :show-inheritance:
 
-
+ptwt.constants
+-------------------------------
+.. automodule:: ptwt.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
