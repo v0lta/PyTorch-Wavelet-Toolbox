@@ -1,6 +1,6 @@
 """Test the sparse math code from ptwt.sparse_math."""
 
-from typing import Tuple
+from typing import Callable, Tuple
 
 import numpy as np
 import pytest
@@ -73,7 +73,7 @@ def test_conv_matrix(
 )
 @pytest.mark.parametrize("mode", ["valid", "same"])
 def test_strided_conv_matrix(
-    test_filter: torch.tensor, input_signal: torch.tensor, mode: PaddingMode
+    test_filter: torch.Tensor, input_signal: torch.Tensor, mode: PaddingMode
 ) -> None:
     """Test the strided 1d sparse convolution matrix code."""
     strided_conv_matrix = construct_strided_conv_matrix(
@@ -318,26 +318,22 @@ def test_strided_conv_matrix_2d_sameshift(size: Tuple[int, int]) -> None:
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
-@pytest.mark.parametrize("mode", ["invalid_mode"])
-@pytest.mark.parametrize(
-    "function", [construct_conv2d_matrix, construct_strided_conv2d_matrix]
-)
-def test_mode_error_2(mode, function) -> None:
+def test_mode_error_2d() -> None:
     """Test the invalid padding-error."""
     test_filter = torch.rand([3, 3])
     with pytest.raises(ValueError):
-        _ = function(test_filter, 32, 32, mode=mode)
+        _ = construct_conv2d_matrix(test_filter, 32, 32, mode="invalid_mode")
+    with pytest.raises(ValueError):
+        _ = construct_strided_conv2d_matrix(test_filter, 32, 32, mode="invalid_mode")
 
 
-@pytest.mark.parametrize("mode", ["invalid_mode"])
-@pytest.mark.parametrize(
-    "function", [construct_conv_matrix, construct_strided_conv_matrix]
-)
-def test_mode_error(mode, function) -> None:
+def test_mode_error() -> None:
     """Test the invalid padding-error."""
     test_filter = torch.rand([3, 3])
     with pytest.raises(ValueError):
-        _ = function(test_filter, 32, mode=mode)
+        _ = construct_conv_matrix(test_filter, 32, mode="invalid_mode")
+    with pytest.raises(ValueError):
+        _ = construct_strided_conv_matrix(test_filter, 32, mode="invalid_mode")
 
 
 def test_shape_error() -> None:

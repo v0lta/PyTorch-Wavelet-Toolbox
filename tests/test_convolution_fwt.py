@@ -1,6 +1,6 @@
 """Test the conv-fwt code."""
 
-from typing import List, Optional, Sequence, Tuple
+from typing import Iterable, List, Optional, Sequence, Tuple, Union
 
 # Written by moritz ( @ wolter.tech ) in 2021
 import numpy as np
@@ -59,7 +59,7 @@ def test_conv_fwt1d(
         )
     py_coeff = np.stack(py_list)
     assert np.allclose(
-        cptcoeff.numpy(), py_coeff, atol=np.finfo(py_coeff.dtype).resolution
+        cptcoeff.numpy(), py_coeff, atol=float(np.finfo(py_coeff.dtype).resolution)
     )
     res = waverec(ptcoeff, wavelet)
     assert np.allclose(mackey_data_1.numpy(), res.numpy()[:, : mackey_data_1.shape[-1]])
@@ -87,7 +87,7 @@ def test_ripples_haar_lvl3() -> None:
 
     class _MyHaarFilterBank:
         @property
-        def filter_bank(self):
+        def filter_bank(self) -> Tuple[List[float], ...]:
             """Unscaled Haar wavelet filters."""
             return (
                 [1 / 2, 1 / 2.0],
@@ -301,7 +301,10 @@ def test_input_1d_dimension_error() -> None:
         wavedec2(data, "haar", level=4)
 
 
-def _compare_coeffs(ptwt_res, pywt_res) -> List[bool]:
+def _compare_coeffs(
+    ptwt_res: Iterable[Union[torch.Tensor, Tuple[torch.Tensor, ...]]],
+    pywt_res: Iterable[Union[torch.Tensor, Tuple[torch.Tensor, ...]]],
+) -> List[bool]:
     """Compare coefficient lists.
 
     Args:
@@ -313,7 +316,7 @@ def _compare_coeffs(ptwt_res, pywt_res) -> List[bool]:
     """
     test_list = []
     for ptwtcs, pywtcs in zip(ptwt_res, pywt_res):
-        if isinstance(ptwtcs, tuple):
+        if isinstance(ptwtcs, tuple) and isinstance(pywtcs, tuple):
             test_list.extend(
                 np.allclose(ptwtc.numpy(), pywtc)
                 for ptwtc, pywtc in zip(ptwtcs, pywtcs)

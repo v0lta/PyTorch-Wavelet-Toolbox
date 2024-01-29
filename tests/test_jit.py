@@ -1,6 +1,6 @@
 """Ensure pytorch's torch.jit.trace feature works properly."""
 
-from typing import List, NamedTuple
+from typing import List, NamedTuple, Optional, Union
 
 import numpy as np
 import pytest
@@ -22,7 +22,7 @@ class WaveletTuple(NamedTuple):
     rec_hi: torch.Tensor
 
 
-def _set_up_wavelet_tuple(wavelet, dtype):
+def _set_up_wavelet_tuple(wavelet: WaveletTuple, dtype: torch.dtype) -> WaveletTuple:
     return WaveletTuple(
         torch.tensor(wavelet.dec_lo).type(dtype),
         torch.tensor(wavelet.dec_hi).type(dtype),
@@ -31,7 +31,9 @@ def _set_up_wavelet_tuple(wavelet, dtype):
     )
 
 
-def _to_jit_wavedec_fun(data, wavelet, level):
+def _to_jit_wavedec_fun(
+    data: torch.Tensor, wavelet: Union[ptwt.Wavelet, str], level: Optional[int]
+) -> List[torch.Tensor]:
     return ptwt.wavedec(data, wavelet, mode="reflect", level=level)
 
 
@@ -65,7 +67,9 @@ def test_conv_fwt_jit(
     assert np.allclose(mackey_data_1.numpy(), res.numpy()[:, : mackey_data_1.shape[-1]])
 
 
-def _to_jit_wavedec_2(data, wavelet):
+def _to_jit_wavedec_2(
+    data: torch.Tensor, wavelet: Union[str, ptwt.Wavelet]
+) -> List[torch.Tensor]:
     """Ensure uniform datatypes in lists for the tracer.
 
     Going from List[Union[torch.Tensor, Tuple[torch.Tensor]]] to List[torch.Tensor]
@@ -82,7 +86,9 @@ def _to_jit_wavedec_2(data, wavelet):
     return coeff2
 
 
-def _to_jit_waverec_2(data, wavelet) -> torch.Tensor:
+def _to_jit_waverec_2(
+    data: List[torch.Tensor], wavelet: Union[str, ptwt.Wavelet]
+) -> torch.Tensor:
     """Undo the stacking from the jit wavedec2 wrapper."""
     d_unstack = [data[0]]
     for c in data[1:]:

@@ -159,7 +159,7 @@ def test_boundary_transform_1d(
 
 @pytest.mark.parametrize("wavelet_str", ["db2", "db3", "haar"])
 @pytest.mark.parametrize("boundary", ["qr", "gramschmidt"])
-def test_matrix_transform_1d_rebuild(wavelet_str: str, boundary: str):
+def test_matrix_transform_1d_rebuild(wavelet_str: str, boundary: str) -> None:
     """Ensure matrix fwt reconstructions are pywt compatible."""
     data_list = [np.random.randn(18), np.random.randn(21)]
     wavelet = pywt.Wavelet(wavelet_str)
@@ -185,7 +185,7 @@ def test_matrix_transform_1d_rebuild(wavelet_str: str, boundary: str):
                 )
 
 
-def test_4d_invalid_axis_error():
+def test_4d_invalid_axis_error() -> None:
     """Test the error for 1d axis arguments."""
     with pytest.raises(ValueError):
         data = torch.randn(50, 50, 50, 50)
@@ -194,7 +194,7 @@ def test_4d_invalid_axis_error():
 
 
 @pytest.mark.parametrize("size", [[2, 3, 32], [5, 32], [32], [1, 1, 64]])
-def test_matrix1d_batch_channel(size: List[int]):
+def test_matrix1d_batch_channel(size: List[int]) -> None:
     """Test if batch and channel support works as expected."""
     data = torch.randn(*size).type(torch.float64)
     matrix_wavedec_1d = MatrixWavedec("haar", 3)
@@ -214,7 +214,7 @@ def test_matrix1d_batch_channel(size: List[int]):
 
 
 @pytest.mark.parametrize("axis", (0, 1, 2, 3, 4))
-def test_axis_1d(axis: int):
+def test_axis_1d(axis: int) -> None:
     """Ensure the axis argument is supported correctly."""
     data = torch.randn(24, 24, 24, 24, 24).type(torch.float64)
     matrix_wavedec = MatrixWavedec(wavelet="haar", level=3, axis=axis)

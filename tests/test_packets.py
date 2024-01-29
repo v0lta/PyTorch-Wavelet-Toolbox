@@ -3,7 +3,7 @@
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 
 from itertools import product
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pytest
@@ -11,19 +11,20 @@ import pywt
 import torch
 from scipy import datasets
 
+from ptwt.constants import ExtendedBoundaryMode
 from ptwt.packets import WaveletPacket, WaveletPacket2D, get_freq_order
 
 
 def _compare_trees1(
     wavelet_str: str,
-    max_lev: int = 3,
+    max_lev: Optional[int] = 3,
     pywt_boundary: str = "zero",
-    ptwt_boundary: str = "zero",
+    ptwt_boundary: ExtendedBoundaryMode = "zero",
     length: int = 256,
     batch_size: int = 1,
     transform_mode: bool = False,
     multiple_transforms: bool = False,
-):
+) -> None:
     data = np.random.rand(batch_size, length)
     wavelet = pywt.Wavelet(wavelet_str)
 
@@ -67,15 +68,15 @@ def _compare_trees1(
 
 def _compare_trees2(
     wavelet_str: str,
-    max_lev: int,
+    max_lev: Optional[int],
     pywt_boundary: str = "zero",
-    ptwt_boundary: str = "zero",
+    ptwt_boundary: ExtendedBoundaryMode = "zero",
     height: int = 256,
     width: int = 256,
     batch_size: int = 1,
     transform_mode: bool = False,
     multiple_transforms: bool = False,
-):
+) -> None:
     face = datasets.face()[:height, :width]
     face = np.mean(face, axis=-1).astype(np.float64)
     wavelet = pywt.Wavelet(wavelet_str)
@@ -134,10 +135,10 @@ def _compare_trees2(
 def test_2d_packets(
     max_lev: Optional[int],
     wavelet_str: str,
-    boundary,
-    batch_size,
-    transform_mode,
-    multiple_transforms,
+    boundary: ExtendedBoundaryMode,
+    batch_size: int,
+    transform_mode: bool,
+    multiple_transforms: bool,
 ) -> None:
     """Ensure pywt and ptwt produce equivalent wavelet 2d packet trees."""
     _compare_trees2(
@@ -157,7 +158,10 @@ def test_2d_packets(
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
 def test_boundary_matrix_packets2(
-    max_lev, batch_size, transform_mode, multiple_transforms
+    max_lev: Optional[int],
+    batch_size: int,
+    transform_mode: bool,
+    multiple_transforms: bool,
 ) -> None:
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
     _compare_trees2(
@@ -199,7 +203,9 @@ def test_1d_packets(
 @pytest.mark.parametrize("max_lev", [1, 2, 3, 4, None])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
-def test_boundary_matrix_packets1(max_lev, transform_mode, multiple_transforms) -> None:
+def test_boundary_matrix_packets1(
+    max_lev: Optional[str], transform_mode: bool, multiple_transforms: bool
+) -> None:
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
     _compare_trees1(
         "db1",
@@ -244,7 +250,7 @@ def test_packet_harbo_lvl3() -> None:
 
     class _MyHaarFilterBank(object):
         @property
-        def filter_bank(self):
+        def filter_bank(self) -> Tuple[List[float], ...]:
             """Unscaled Haar wavelet filters."""
             return (
                 [1 / 2, 1 / 2.0],
@@ -303,7 +309,9 @@ def test_access_errors_2d() -> None:
 @pytest.mark.parametrize("shape", [[1, 64, 63], [3, 64, 64], [1, 128]])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
 @pytest.mark.parametrize("axis", (1, -1))
-def test_inverse_packet_1d(level, base_key, shape, wavelet, axis) -> None:
+def test_inverse_packet_1d(
+    level: int, base_key: str, shape: List[int], wavelet: str, axis: int
+) -> None:
     """Test the 1d reconstruction code."""
     signal = np.random.randn(*shape)
     mode = "reflect"
@@ -324,7 +332,13 @@ def test_inverse_packet_1d(level, base_key, shape, wavelet, axis) -> None:
 @pytest.mark.parametrize("size", [(32, 32, 32), (32, 32, 31, 64)])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (1, 2), (2, 0), (0, 2)])
-def test_inverse_packet_2d(level, base_key, size, wavelet, axes) -> None:
+def test_inverse_packet_2d(
+    level: int,
+    base_key: str,
+    size: Tuple[int, ...],
+    wavelet: str,
+    axes: Tuple[int, int],
+) -> None:
     """Test the 2d reconstruction code."""
     signal = np.random.randn(*size)
     mode = "reflect"
@@ -371,7 +385,7 @@ def test_inverse_boundary_packet_2d() -> None:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("axes", ((-2, -1), (1, 2), (2, 1)))
-def test_separable_conv_packets_2d(axes) -> None:
+def test_separable_conv_packets_2d(axes: Tuple[int, int]) -> None:
     """Ensure the 2d separable conv code is ok."""
     wavelet = "db2"
     signal = np.random.randn(1, 32, 32, 32)
