@@ -1,6 +1,6 @@
 """Test the sparse math code from ptwt.sparse_math."""
 
-from typing import Callable, Tuple
+from typing import Tuple
 
 import numpy as np
 import pytest

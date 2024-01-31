@@ -160,7 +160,9 @@ def test_boundary_transform_1d(
 
 @pytest.mark.parametrize("wavelet_str", ["db2", "db3", "haar"])
 @pytest.mark.parametrize("boundary", ["qr", "gramschmidt"])
-def test_matrix_transform_1d_rebuild(wavelet_str: str, boundary: OrthogonalizeMethod) -> None:
+def test_matrix_transform_1d_rebuild(
+    wavelet_str: str, boundary: OrthogonalizeMethod
+) -> None:
     """Ensure matrix fwt reconstructions are pywt compatible."""
     data_list = [np.random.randn(18), np.random.randn(21)]
     wavelet = pywt.Wavelet(wavelet_str)
