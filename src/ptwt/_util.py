@@ -7,7 +7,7 @@ import numpy as np
 import pywt
 import torch
 
-from ptwt.constants import OrthogonalizeMethod
+from .constants import OrthogonalizeMethod
 
 
 class Wavelet(Protocol):

@@ -6,7 +6,7 @@ from typing import List
 
 import torch
 
-from ptwt.constants import PaddingMode
+from .constants import PaddingMode
 
 
 def _dense_kron(

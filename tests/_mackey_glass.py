@@ -59,7 +59,7 @@ def generate_mackey(
     return x[:, discard:]
 
 
-class MackeyGenerator(object):
+class MackeyGenerator:
     """Generates lorenz attractor data in 1 or 3d on the GPU."""
 
     def __init__(

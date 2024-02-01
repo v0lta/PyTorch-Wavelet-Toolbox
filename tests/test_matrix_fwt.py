@@ -2,13 +2,15 @@
 
 # Written by moritz ( @ wolter.tech ) in 2021
 
-from typing import List
+from typing import Any, List
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 import pywt
 import torch
 
+from ptwt.constants import OrthogonalizeMethod
 from ptwt.matmul_transform import (
     MatrixWavedec,
     MatrixWaverec,
@@ -128,7 +130,7 @@ def test_boundary_filter_analysis_and_synthethis_matrices(
 @pytest.mark.parametrize("level", [2, 1])
 @pytest.mark.parametrize("boundary", ["gramschmidt", "qr"])
 def test_boundary_transform_1d(
-    wavelet_str: str, data: np.ndarray, level: int, boundary: str
+    wavelet_str: str, data: npt.NDArray[Any], level: int, boundary: OrthogonalizeMethod
 ) -> None:
     """Ensure matrix fwt reconstructions are pywt compatible."""
     data_torch = torch.from_numpy(data.astype(np.float64))
@@ -159,7 +161,9 @@ def test_boundary_transform_1d(
 
 @pytest.mark.parametrize("wavelet_str", ["db2", "db3", "haar"])
 @pytest.mark.parametrize("boundary", ["qr", "gramschmidt"])
-def test_matrix_transform_1d_rebuild(wavelet_str: str, boundary: str):
+def test_matrix_transform_1d_rebuild(
+    wavelet_str: str, boundary: OrthogonalizeMethod
+) -> None:
     """Ensure matrix fwt reconstructions are pywt compatible."""
     data_list = [np.random.randn(18), np.random.randn(21)]
     wavelet = pywt.Wavelet(wavelet_str)
@@ -185,16 +189,14 @@ def test_matrix_transform_1d_rebuild(wavelet_str: str, boundary: str):
                 )
 
 
-def test_4d_invalid_axis_error():
+def test_4d_invalid_axis_error() -> None:
     """Test the error for 1d axis arguments."""
     with pytest.raises(ValueError):
-        data = torch.randn(50, 50, 50, 50)
-        matrix_wavedec_1d = MatrixWavedec("haar", axis=(1, 2))
-        matrix_wavedec_1d(data)
+        MatrixWavedec("haar", axis=(1, 2))
 
 
 @pytest.mark.parametrize("size", [[2, 3, 32], [5, 32], [32], [1, 1, 64]])
-def test_matrix1d_batch_channel(size):
+def test_matrix1d_batch_channel(size: List[int]) -> None:
     """Test if batch and channel support works as expected."""
     data = torch.randn(*size).type(torch.float64)
     matrix_wavedec_1d = MatrixWavedec("haar", 3)
@@ -214,7 +216,7 @@ def test_matrix1d_batch_channel(size):
 
 
 @pytest.mark.parametrize("axis", (0, 1, 2, 3, 4))
-def test_axis_1d(axis):
+def test_axis_1d(axis: int) -> None:
     """Ensure the axis argument is supported correctly."""
     data = torch.randn(24, 24, 24, 24, 24).type(torch.float64)
     matrix_wavedec = MatrixWavedec(wavelet="haar", level=3, axis=axis)

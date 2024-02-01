@@ -49,6 +49,7 @@ def mypy(session):
         "--no-warn-return-any",
         "--explicit-package-bases",
         "src",
+        "tests",
     )
 
 

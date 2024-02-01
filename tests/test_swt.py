@@ -1,5 +1,7 @@
 """Test the stationary wavelet transformation code."""
 
+from typing import Optional
+
 import numpy as np
 import pytest
 import pywt
@@ -12,7 +14,7 @@ from ptwt._stationary_transform import _swt
 @pytest.mark.parametrize("size", [32, 64])
 @pytest.mark.parametrize("wavelet", ["db1", "db2"])  # TODO: explore lonnger wavelets.
 @pytest.mark.parametrize("level", [1, 2, None])
-def test_swt_1d(level, size, wavelet):
+def test_swt_1d(level: Optional[int], size: int, wavelet: str) -> None:
     """Test the 1d swt."""
     signal = np.expand_dims(np.arange(size).astype(np.float64), 0)
     ptwt_coeff = _swt(torch.from_numpy(signal), wavelet, level=level)

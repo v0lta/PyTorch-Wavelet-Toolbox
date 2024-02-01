@@ -157,7 +157,11 @@ def orthogonalize(
     raise ValueError(f"Invalid orthogonalization method: {method}")
 
 
-class MatrixWavedec(object):
+class BaseMatrixWaveDec:
+    """A base class for matrix wavedec."""
+
+
+class MatrixWavedec(BaseMatrixWaveDec):
     """Compute the sparse matrix fast wavelet transform.
 
     Intermediate scale results must be divisible

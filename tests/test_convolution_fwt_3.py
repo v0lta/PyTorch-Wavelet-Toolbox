@@ -1,9 +1,10 @@
 """Test our 3d for loop-convolution based fwt code."""
 
 import typing
-from typing import List
+from typing import Any, Dict, List, Union
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 import pywt
 import torch
@@ -12,17 +13,24 @@ import ptwt
 from ptwt.constants import BoundaryMode
 
 
-def _expand_dims(batch_list: List) -> List:
+def _expand_dims(
+    batch_list: List[Union[npt.NDArray[Any], Dict[Any, Any]]]
+) -> List[Any]:
     for pos, bel in enumerate(batch_list):
-        if type(bel) is np.ndarray:
+        if isinstance(bel, np.ndarray):
             batch_list[pos] = np.expand_dims(bel, 0)
-        else:
-            for key, item in batch_list[pos].items():
+        elif isinstance(bel, dict):
+            for key, item in bel.items():
                 batch_list[pos][key] = np.expand_dims(item, 0)
+        else:
+            raise TypeError(
+                "Argument type not supported,\
+                             batch_list element should have been a dict."
+            )
     return batch_list
 
 
-def _cat_batch_list(batch_lists: List) -> List:
+def _cat_batch_list(batch_lists: Any) -> Any:
     cat_list = None
     for batch_list in batch_lists:
         batch_list = _expand_dims(batch_list)
@@ -57,14 +65,16 @@ def _cat_batch_list(batch_lists: List) -> List:
 @pytest.mark.parametrize("wavelet", ["haar", "db2", "db4"])
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("mode", typing.get_args(BoundaryMode))
-def test_waverec3(shape: list, wavelet: str, level: int, mode: BoundaryMode) -> None:
+def test_waverec3(
+    shape: List[int], wavelet: str, level: int, mode: BoundaryMode
+) -> None:
     """Ensure the 3d analysis transform is invertible."""
     data = np.random.randn(*shape)
-    data = torch.from_numpy(data)
-    ptwc = ptwt.wavedec3(data, wavelet, level=level, mode=mode)
+    data_t = torch.from_numpy(data)
+    ptwc = ptwt.wavedec3(data_t, wavelet, level=level, mode=mode)
     batch_list = []
-    for batch_no in range(data.shape[0]):
-        pywc = pywt.wavedecn(data[batch_no].numpy(), wavelet, level=level, mode=mode)
+    for batch_no in range(data_t.shape[0]):
+        pywc = pywt.wavedecn(data_t[batch_no].numpy(), wavelet, level=level, mode=mode)
         batch_list.append(pywc)
     cat_pywc = _cat_batch_list(batch_list)
 
@@ -81,7 +91,7 @@ def test_waverec3(shape: list, wavelet: str, level: int, mode: BoundaryMode) -> 
     # ensure the transforms are invertible.
     rec = ptwt.waverec3(ptwc, wavelet)
     assert np.allclose(
-        rec.numpy()[..., : shape[1], : shape[2], : shape[3]], data.numpy()
+        rec.numpy()[..., : shape[1], : shape[2], : shape[3]], data_t.numpy()
     )
 
 
@@ -92,7 +102,7 @@ def test_waverec3(shape: list, wavelet: str, level: int, mode: BoundaryMode) -> 
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("wavelet", ["haar", "sym3", "db3"])
 @pytest.mark.parametrize("mode", ["zero", "symmetric", "reflect"])
-def test_multidim_input(size: List[int], level: int, wavelet: str, mode: str):
+def test_multidim_input(size: List[int], level: int, wavelet: str, mode: str) -> None:
     """Ensure correct folding of multidimensional inputs."""
     data = torch.randn(size, dtype=torch.float64)
     ptwc = ptwt.wavedec3(data, wavelet, level=level, mode=mode)
@@ -146,14 +156,14 @@ def test_axes_arg_3d(
     assert np.allclose(data, rec)
 
 
-def test_2d_dimerror():
+def test_2d_dimerror() -> None:
     """Check the error for too many axes."""
     with pytest.raises(ValueError):
         data = torch.randn([32, 32], dtype=torch.float64)
         ptwt.wavedec3(data, "haar")
 
 
-def test_1d_dimerror():
+def test_1d_dimerror() -> None:
     """Check the error for too many axes."""
     with pytest.raises(ValueError):
         data = torch.randn([32], dtype=torch.float64)

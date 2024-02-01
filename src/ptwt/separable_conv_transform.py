@@ -167,9 +167,9 @@ def _separable_conv_waverecn(
 
     approx: torch.Tensor = coeffs[0]
     for level_dict in coeffs[1:]:
-        keys = list(level_dict.keys())
-        level_dict["a" * max(map(len, keys))] = approx
-        approx = _separable_conv_idwtn(level_dict, wavelet)
+        keys = list(level_dict.keys())  # type: ignore
+        level_dict["a" * max(map(len, keys))] = approx  # type: ignore
+        approx = _separable_conv_idwtn(level_dict, wavelet)  # type: ignore
     return approx
 
 

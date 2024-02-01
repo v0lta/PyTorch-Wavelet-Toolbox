@@ -30,7 +30,12 @@ from .conv_transform_2 import (
     _preprocess_tensor_dec2d,
     _waverec2d_fold_channels_2d_list,
 )
-from .matmul_transform import construct_boundary_a, construct_boundary_s, orthogonalize
+from .matmul_transform import (
+    BaseMatrixWaveDec,
+    construct_boundary_a,
+    construct_boundary_s,
+    orthogonalize,
+)
 from .sparse_math import (
     batch_mm,
     cat_sparse_identity_matrix,
@@ -217,7 +222,7 @@ def _matrix_pad_2(height: int, width: int) -> Tuple[int, int, Tuple[bool, bool]]
     return height, width, pad_tuple
 
 
-class MatrixWavedec2(object):
+class MatrixWavedec2(BaseMatrixWaveDec):
     """Experimental sparse matrix 2d wavelet transform.
 
         For a completely pad-free transform,
