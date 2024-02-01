@@ -1,6 +1,6 @@
 """Ensure pytorch's torch.jit.trace feature works properly."""
 
-from typing import List, NamedTuple, Optional, Union
+from typing import List, NamedTuple, Optional, Union, Any, Tuple, Dict
 
 import numpy as np
 import pytest
@@ -90,7 +90,7 @@ def _to_jit_waverec_2(
     data: List[torch.Tensor], wavelet: Union[str, ptwt.Wavelet]
 ) -> torch.Tensor:
     """Undo the stacking from the jit wavedec2 wrapper."""
-    d_unstack = [data[0]]
+    d_unstack: List[Union[torch.Tensor, Tuple[torch.Tensor]]] = [data[0]]
     for c in data[1:]:
         d_unstack.append(tuple(sc.squeeze(0) for sc in torch.split(c, 1, dim=0)))
     rec = ptwt.waverec2(d_unstack, wavelet)
@@ -139,7 +139,8 @@ def _to_jit_wavedec_3(data: torch.Tensor, wavelet: str) -> List[torch.Tensor]:
     return coeff2
 
 
-def _to_jit_waverec_3(data, wavelet):
+def _to_jit_waverec_3(data: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+                      wavelet: pywt.Wavelet):
     """Undo the stacking from the jit wavedec3 wrapper."""
     d_unstack = [data[0]]
     keys = ("aad", "ada", "add", "daa", "dad", "dda", "ddd")

@@ -2,7 +2,8 @@
 
 # Written by moritz ( @ wolter.tech ) in 2021
 
-from typing import List
+from typing import List, Any
+import numpy.typing as npt
 
 import numpy as np
 import pytest
@@ -129,7 +130,7 @@ def test_boundary_filter_analysis_and_synthethis_matrices(
 @pytest.mark.parametrize("level", [2, 1])
 @pytest.mark.parametrize("boundary", ["gramschmidt", "qr"])
 def test_boundary_transform_1d(
-    wavelet_str: str, data: np.ndarray, level: int, boundary: OrthogonalizeMethod
+    wavelet_str: str, data: npt.NDArray[Any], level: int, boundary: OrthogonalizeMethod
 ) -> None:
     """Ensure matrix fwt reconstructions are pywt compatible."""
     data_torch = torch.from_numpy(data.astype(np.float64))

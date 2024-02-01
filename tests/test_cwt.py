@@ -1,6 +1,6 @@
 """Test the continuous transformation code."""
 
-from typing import Union
+from typing import Union, Any
 
 import numpy as np
 import pytest
@@ -36,7 +36,7 @@ continuous_wavelets = [
 @pytest.mark.parametrize("samples", [31, 32])
 @pytest.mark.parametrize("wavelet", continuous_wavelets)
 def test_cwt(
-    wavelet: str, samples: int, scales: Union[np.ndarray, torch.Tensor, float]
+    wavelet: str, samples: int, scales: Any
 ) -> None:
     """Test the cwt implementation for various wavelets."""
     t = np.linspace(-1, 1, samples, endpoint=False)
@@ -73,8 +73,8 @@ def test_cwt_batched(wavelet: str) -> None:
     sig = np.random.randn(10, 200)
     widths = np.arange(1, 30)
     cwtmatr, freqs = pywt.cwt(sig, widths, wavelet)
-    sig = torch.from_numpy(sig)
-    cwtmatr_pt, freqs_pt = cwt(sig, widths, wavelet)
+    sig_np = torch.from_numpy(sig)
+    cwtmatr_pt, freqs_pt = cwt(sig_np, widths, wavelet)
     assert np.allclose(cwtmatr_pt.numpy(), cwtmatr)
     assert np.allclose(freqs, freqs_pt)
 
@@ -97,7 +97,7 @@ def test_nn_schannon_wavefun(type: str, grid_size: int) -> None:
 @pytest.mark.parametrize("samples", [31, 32])
 @pytest.mark.parametrize("cuda", [False, True])
 def test_nn_cwt(
-    samples: int, scales: Union[np.ndarray, torch.Tensor, float], cuda: bool
+    samples: int, scales: Any, cuda: bool
 ) -> None:
     """Test the cwt using a differentiable continuous wavelet."""
     pywt_shannon = pywt.ContinuousWavelet("shan1-1")
