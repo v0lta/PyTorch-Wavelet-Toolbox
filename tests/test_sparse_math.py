@@ -210,7 +210,7 @@ def test_strided_conv_matrix_2d(
             (size[1] - (filter_shape[1])) // 2 + 1,
             (size[0] - (filter_shape[0])) // 2 + 1,
         ]
-    res_mm_stride = np.reshape(res_flat_stride, output_shape).T
+    res_mm_stride = torch.reshape(res_flat_stride, output_shape).T
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
@@ -245,7 +245,7 @@ def test_strided_conv_matrix_2d_same(
         strided_matrix, face.transpose(-2, -1).flatten().unsqueeze(-1)
     )
     output_shape = torch_res.shape
-    res_mm_stride = np.reshape(res_flat_stride, (output_shape[1], output_shape[0])).T
+    res_mm_stride = torch.reshape(res_flat_stride, (output_shape[1], output_shape[0])).T
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 
@@ -314,7 +314,7 @@ def test_strided_conv_matrix_2d_sameshift(size: Tuple[int, int]) -> None:
         strided_matrix, face.transpose(-2, -1).flatten().unsqueeze(-1)
     )
     output_shape = torch_res.shape
-    res_mm_stride = np.reshape(coefficients, (output_shape[1], output_shape[0])).T
+    res_mm_stride = torch.reshape(coefficients, (output_shape[1], output_shape[0])).T
     assert np.allclose(torch_res.numpy(), res_mm_stride.numpy())
 
 

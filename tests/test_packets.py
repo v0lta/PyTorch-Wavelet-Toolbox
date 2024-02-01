@@ -185,7 +185,8 @@ def test_boundary_matrix_packets2(
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
 def test_1d_packets(
-    max_lev, wavelet_str, boundary, batch_size, transform_mode, multiple_transforms
+    max_lev: int, wavelet_str: str, boundary: str, batch_size: int,
+    transform_mode: bool, multiple_transforms: bool
 ) -> None:
     """Ensure pywt and ptwt produce equivalent wavelet 1d packet trees."""
     _compare_trees1(
@@ -204,7 +205,7 @@ def test_1d_packets(
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
 def test_boundary_matrix_packets1(
-    max_lev: Optional[str], transform_mode: bool, multiple_transforms: bool
+    max_lev: Optional[int], transform_mode: bool, multiple_transforms: bool
 ) -> None:
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
     _compare_trees1(
@@ -220,7 +221,7 @@ def test_boundary_matrix_packets1(
 @pytest.mark.parametrize("level", [1, 2, 3, 4])
 @pytest.mark.parametrize("wavelet_str", ["db2"])
 @pytest.mark.parametrize("pywt_boundary", ["zero"])
-def test_freq_order(level, wavelet_str, pywt_boundary) -> None:
+def test_freq_order(level: int, wavelet_str: str, pywt_boundary: str) -> None:
     """Test the packets in frequency order."""
     face = datasets.face()
     wavelet = pywt.Wavelet(wavelet_str)
