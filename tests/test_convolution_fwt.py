@@ -314,15 +314,17 @@ def _compare_coeffs(
     Returns:
         A list with bools from allclose.
     """
-    test_list = []
+    test_list: List[bool] = []
     for ptwtcs, pywtcs in zip(ptwt_res, pywt_res):
         if isinstance(ptwtcs, tuple) and isinstance(pywtcs, tuple):
             test_list.extend(
                 np.allclose(ptwtc.numpy(), pywtc)
                 for ptwtc, pywtc in zip(ptwtcs, pywtcs)
             )
-        else:
+        elif isinstance(ptwtcs, torch.Tensor):
             test_list.append(np.allclose(ptwtcs.numpy(), pywtcs))
+        else:
+            raise TypeError("Invalid coefficient typing.")
     return test_list
 
 
