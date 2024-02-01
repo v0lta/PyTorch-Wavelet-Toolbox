@@ -58,7 +58,7 @@ class MatrixWavedec3(object):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         axes: Tuple[int, int, int] = (-3, -2, -1),
-        boundary: Optional[str] = "qr",
+        boundary: OrthogonalizeMethod = "qr",
     ):
         """Create a *separable* three-dimensional fast boundary wavelet transform.
 
