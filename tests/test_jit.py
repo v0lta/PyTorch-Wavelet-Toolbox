@@ -1,6 +1,6 @@
 """Ensure pytorch's torch.jit.trace feature works properly."""
 
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import pytest

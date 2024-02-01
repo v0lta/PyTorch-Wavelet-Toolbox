@@ -1,6 +1,6 @@
 """Test the continuous transformation code."""
 
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import pytest

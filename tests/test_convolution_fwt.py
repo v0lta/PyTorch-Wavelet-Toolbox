@@ -313,6 +313,9 @@ def _compare_coeffs(
 
     Returns:
         A list with bools from allclose.
+
+    Raises:
+        TypeError: In case of a problem with the list structures.
     """
     test_list: List[bool] = []
     for ptwtcs, pywtcs in zip(ptwt_res, pywt_res):
