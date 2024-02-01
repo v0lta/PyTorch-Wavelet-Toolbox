@@ -69,7 +69,7 @@ class MatrixWavedec3(object):
             wavelet (Union[Wavelet, str]): The wavelet to use.
             level (Optional[int]): The desired decomposition level.
                 Defaults to None.
-            boundary (Optional[str]): The matrix orthogonalization method.
+            boundary: The matrix orthogonalization method.
                 Defaults to "qr".
 
         Raises:
