@@ -1,6 +1,6 @@
 """Test the continuous transformation code."""
 
-from typing import Union, Any
+from typing import Any, Union
 
 import numpy as np
 import pytest
@@ -35,9 +35,7 @@ continuous_wavelets = [
 @pytest.mark.parametrize("scales", [np.arange(1, 16), 5.0, torch.arange(1, 15)])
 @pytest.mark.parametrize("samples", [31, 32])
 @pytest.mark.parametrize("wavelet", continuous_wavelets)
-def test_cwt(
-    wavelet: str, samples: int, scales: Any
-) -> None:
+def test_cwt(wavelet: str, samples: int, scales: Any) -> None:
     """Test the cwt implementation for various wavelets."""
     t = np.linspace(-1, 1, samples, endpoint=False)
     sig = signal.chirp(t, f0=1, f1=50, t1=10, method="linear")
@@ -96,9 +94,7 @@ def test_nn_schannon_wavefun(type: str, grid_size: int) -> None:
 @pytest.mark.parametrize("scales", [np.arange(1, 16), 5.0, torch.arange(1, 15)])
 @pytest.mark.parametrize("samples", [31, 32])
 @pytest.mark.parametrize("cuda", [False, True])
-def test_nn_cwt(
-    samples: int, scales: Any, cuda: bool
-) -> None:
+def test_nn_cwt(samples: int, scales: Any, cuda: bool) -> None:
     """Test the cwt using a differentiable continuous wavelet."""
     pywt_shannon = pywt.ContinuousWavelet("shan1-1")
     ptwt_shannon = _ShannonWavelet("shan1-1")

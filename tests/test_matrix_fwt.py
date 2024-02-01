@@ -2,10 +2,10 @@
 
 # Written by moritz ( @ wolter.tech ) in 2021
 
-from typing import List, Any
-import numpy.typing as npt
+from typing import Any, List
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 import pywt
 import torch

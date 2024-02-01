@@ -185,8 +185,12 @@ def test_boundary_matrix_packets2(
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
 def test_1d_packets(
-    max_lev: int, wavelet_str: str, boundary: str, batch_size: int,
-    transform_mode: bool, multiple_transforms: bool
+    max_lev: int,
+    wavelet_str: str,
+    boundary: str,
+    batch_size: int,
+    transform_mode: bool,
+    multiple_transforms: bool,
 ) -> None:
     """Ensure pywt and ptwt produce equivalent wavelet 1d packet trees."""
     _compare_trees1(

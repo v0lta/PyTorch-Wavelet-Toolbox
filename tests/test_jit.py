@@ -1,6 +1,6 @@
 """Ensure pytorch's torch.jit.trace feature works properly."""
 
-from typing import List, NamedTuple, Optional, Union, Any, Tuple, Dict
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import pytest
@@ -121,9 +121,7 @@ def test_conv_fwt_jit_2d() -> None:
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy(), atol=1e-7)
 
 
-def _to_jit_wavedec_3(
-        data: torch.Tensor, wavelet: str
-) -> List[torch.Tensor]:
+def _to_jit_wavedec_3(data: torch.Tensor, wavelet: str) -> List[torch.Tensor]:
     """Ensure uniform datatypes in lists for the tracer.
 
     Going from List[Union[torch.Tensor, Dict[str, torch.Tensor]]] to List[torch.Tensor]
@@ -141,8 +139,7 @@ def _to_jit_wavedec_3(
     return coeff2
 
 
-def _to_jit_waverec_3(data: List[torch.Tensor],
-                      wavelet: pywt.Wavelet) -> torch.Tensor:
+def _to_jit_waverec_3(data: List[torch.Tensor], wavelet: pywt.Wavelet) -> torch.Tensor:
     """Undo the stacking from the jit wavedec3 wrapper."""
     d_unstack: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = [data[0]]
     keys = ("aad", "ada", "add", "daa", "dad", "dda", "ddd")

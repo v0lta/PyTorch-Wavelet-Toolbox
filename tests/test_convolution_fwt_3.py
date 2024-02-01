@@ -1,10 +1,10 @@
 """Test our 3d for loop-convolution based fwt code."""
 
 import typing
-from typing import List, Union, Any, Dict
-import numpy.typing as npt
+from typing import Any, Dict, List, Union
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 import pywt
 import torch
@@ -13,8 +13,9 @@ import ptwt
 from ptwt.constants import BoundaryMode
 
 
-def _expand_dims(batch_list: List[Union[npt.NDArray[Any], Dict[Any, Any]]]
-                 ) -> List[Any]:
+def _expand_dims(
+    batch_list: List[Union[npt.NDArray[Any], Dict[Any, Any]]]
+) -> List[Any]:
     for pos, bel in enumerate(batch_list):
         if isinstance(bel, np.ndarray):
             batch_list[pos] = np.expand_dims(bel, 0)
@@ -22,8 +23,10 @@ def _expand_dims(batch_list: List[Union[npt.NDArray[Any], Dict[Any, Any]]]
             for key, item in bel.items():
                 batch_list[pos][key] = np.expand_dims(item, 0)
         else:
-            raise TypeError("Argument type not supported,\
-                             batch_list element should have been a dict.")
+            raise TypeError(
+                "Argument type not supported,\
+                             batch_list element should have been a dict."
+            )
     return batch_list
 
 
