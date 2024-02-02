@@ -99,16 +99,12 @@ def _conv_transpose_dedilate(
         for fl in range(length)
     ]
     to_conv_t = torch.cat(to_conv_t_list, 0)
-    padding =  rec_filt.shape[-1] - 1
+    padding = rec_filt.shape[-1] - 1
     rec = torch.nn.functional.conv_transpose1d(
-        to_conv_t,
-        rec_filt,
-        stride=1,
-        padding=padding,
-        output_padding=0
+        to_conv_t, rec_filt, stride=1, padding=padding, output_padding=0
     )
     rec = rec / 2.0
-    splits = torch.split(rec, rec.shape[0]//len(to_conv_t_list))
+    splits = torch.split(rec, rec.shape[0] // len(to_conv_t_list))
     return torch.cat(splits, -1)
 
 
