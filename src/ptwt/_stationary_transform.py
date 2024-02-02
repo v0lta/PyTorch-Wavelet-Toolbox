@@ -107,7 +107,9 @@ def _conv_transpose_dedilate(
 
 
 def _iswt(
-    coeffs: List[torch.Tensor], wavelet: Union[pywt.Wavelet, str], axis: int = -1
+    coeffs: List[torch.Tensor],
+    wavelet: Union[pywt.Wavelet, str],
+    axis: Optional[int] = -1,
 ) -> torch.Tensor:
     """Inverts a 1d stationary wavelet transform.
 
