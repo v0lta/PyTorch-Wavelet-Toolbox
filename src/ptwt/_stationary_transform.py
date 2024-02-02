@@ -7,8 +7,13 @@ from typing import List, Optional, Union
 import pywt
 import torch
 
-from src.ptwt._util import Wavelet, _as_wavelet
-from src.ptwt.conv_transform import _get_filter_tensors, _preprocess_result_list_rec1d
+from ._util import Wavelet, _as_wavelet, _unfold_axes
+from .conv_transform import (
+    _get_filter_tensors,
+    _postprocess_result_list_dec1d,
+    _preprocess_result_list_rec1d,
+    _preprocess_tensor_dec1d,
+)
 
 
 def _swt(
@@ -37,15 +42,7 @@ def _swt(
         else:
             raise ValueError("swt transforms a single axis only.")
 
-    if data.dim() == 1:
-        # assume time series
-        data = data.unsqueeze(0).unsqueeze(0)
-    elif data.dim() == 2:
-        # assume batched time series
-        data = data.unsqueeze(1)
-    else:
-        # TODO: Take care of n-dimensional input support.
-        raise Exception(f"{data.dim()}-dimensional inputs not supported.")
+    data, ds = _preprocess_tensor_dec1d(data)
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -68,6 +65,9 @@ def _swt(
         # result_list.append((res_lo.squeeze(1), res_hi.squeeze(1)))
         result_list.append(res_hi.squeeze(1))
     result_list.append(res_lo.squeeze(1))
+
+    if ds:
+        result_list = _postprocess_result_list_dec1d(result_list, ds)
 
     if axis != -1:
         result_list = [coeff.swapaxes(axis, -1) for coeff in result_list]
@@ -142,5 +142,11 @@ def _iswt(
             res_lo, rec_filt, dilation=dilation, length=length
         )
         res_lo = res_lo.squeeze(1)
+
+    if ds:
+        res_lo = _unfold_axes(res_lo, ds, 1)
+
+    if axis != -1:
+        res_lo = res_lo.swapaxes(axis, -1)
 
     return res_lo
