@@ -116,7 +116,8 @@ def _iswt(
     Args:
         coeffs (List[torch.Tensor]): The coefficients as computed by the swt function.
         wavelet (Union[pywt.Wavelet, str]): The wavelet used for the forward transform.
-        axis (int, optional): The axis the forward trasform was computed over. Defaults to -1.
+        axis (int, optional): The axis the forward trasform was computed over.
+            Defaults to -1.
 
     Raises:
         ValueError: If the axis argument is not an integer.
