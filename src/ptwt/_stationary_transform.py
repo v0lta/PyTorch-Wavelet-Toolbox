@@ -43,6 +43,9 @@ def _swt(
     elif data.dim() == 2:
         # assume batched time series
         data = data.unsqueeze(1)
+    else:
+        # TODO: Take care of n-dimensional input support.
+        raise Exception(f"{data.dim()}-dimensional inputs not supported.")
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -96,12 +99,17 @@ def _conv_transpose_dedilate(
         for fl in range(length)
     ]
     to_conv_t = torch.cat(to_conv_t_list, 0)
-    rec = torch.nn.functional.conv1d(
+    padding =  rec_filt.shape[-1] - 1
+    rec = torch.nn.functional.conv_transpose1d(
         to_conv_t,
-        rec_filt.swapaxes(0, 1),
+        rec_filt,
         stride=1,
+        padding=padding,
+        output_padding=0
     )
-    return rec.swapaxes(0, -1) / 2.0
+    rec = rec / 2.0
+    splits = torch.split(rec, rec.shape[0]//len(to_conv_t_list))
+    return torch.cat(splits, -1)
 
 
 def _iswt(
@@ -123,7 +131,7 @@ def _iswt(
 
     wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
-        wavelet, flip=True, dtype=coeffs[0].dtype, device=coeffs[0].device
+        wavelet, flip=False, dtype=coeffs[0].dtype, device=coeffs[0].device
     )
     filt_len = rec_lo.shape[-1]
     rec_filt = torch.stack([rec_lo, rec_hi], 0)
