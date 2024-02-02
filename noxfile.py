@@ -34,6 +34,9 @@ def lint(session):
     )
     session.run("flake8", "src", "tests", "noxfile.py")
 
+    session.install("sphinx", "doc8")
+    session.run("doc8", "docs/")
+
 
 @nox.session(name="typing")
 def mypy(session):
