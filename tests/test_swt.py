@@ -36,7 +36,7 @@ def test_iswt_1d(level, size, wavelet):
 
 
 # TODO: test beyond 2d.
-@pytest.mark.parametrize("size", [[1, 64], [2, 128], [3, 256]])
+@pytest.mark.parametrize("size", [[32, 64], [32, 128], [3, 32, 256]])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym5"])
 @pytest.mark.parametrize("level", [1, 2, 3])  # TODO: None
 @pytest.mark.parametrize("axis", [1, -1])
