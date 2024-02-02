@@ -3,7 +3,6 @@
 This module treats boundaries with edge-padding.
 """
 
-# Created by moritz wolter, 14.04.20
 from typing import List, Optional, Sequence, Tuple, Union, cast
 
 import pywt

@@ -3,7 +3,6 @@
 This module uses boundary filters to minimize padding.
 """
 
-# Written by moritz ( @ wolter.tech ) in 2021
 import sys
 from functools import partial
 from typing import List, Optional, Tuple, Union, cast

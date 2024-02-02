@@ -7,8 +7,7 @@ import pytest
 import pywt
 import torch
 
-# from ptwt._stationary_transform import _iswt, _swt
-from src.ptwt._stationary_transform import _iswt, _swt
+from ptwt._stationary_transform import _iswt, _swt
 
 
 @pytest.mark.parametrize("level", [1, 2, None])
@@ -37,10 +36,9 @@ def test_iswt_1d(level: Optional[int], size: int, wavelet: str) -> None:
     assert np.allclose(rec.numpy(), signal)
 
 
-# TODO: test beyond 2d.
 @pytest.mark.parametrize("size", [[32, 64], [32, 128], [3, 32, 256]])
-@pytest.mark.parametrize("wavelet", ["db1", "db2", "sym5"])
-@pytest.mark.parametrize("level", [1, 2, 3])  # TODO: None
+@pytest.mark.parametrize("wavelet", ["db1", "db2", "sym3"])
+@pytest.mark.parametrize("level", [1, 2, 3])  # None needs more work.
 @pytest.mark.parametrize("axis", [1, -1])
 def test_swt_1d_slow(level: Optional[int], size: int, wavelet: str, axis: int) -> None:
     """Test the 1d swt."""
