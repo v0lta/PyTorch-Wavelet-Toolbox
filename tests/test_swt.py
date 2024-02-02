@@ -1,5 +1,7 @@
 """Test the stationary wavelet transformation code."""
 
+from typing import Optional
+
 import numpy as np
 import pytest
 import pywt
@@ -12,7 +14,7 @@ from src.ptwt._stationary_transform import _iswt, _swt
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("size", [[1, 32], [3, 64], [5, 64]])
 @pytest.mark.parametrize("wavelet", ["db1", "db2"])
-def test_swt_1d(level, size, wavelet):
+def test_swt_1d(level: Optional[int], size: int, wavelet: str) -> None:
     """Test the 1d swt."""
     signal = np.random.normal(size=size).astype(np.float64)
     ptwt_coeff = _swt(torch.from_numpy(signal), wavelet, level=level)
@@ -26,7 +28,7 @@ def test_swt_1d(level, size, wavelet):
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("size", [[1, 32], [5, 64]])
 @pytest.mark.parametrize("wavelet", ["db1", "db2"])
-def test_iswt_1d(level, size, wavelet):
+def test_iswt_1d(level: Optional[int], size: int, wavelet: str) -> None:
     """Ensure iswt inverts swt."""
     signal = np.random.normal(size=size).astype(np.float64)
     # signal = np.stack([np.arange(32)] * 3).astype(np.float64)
@@ -40,7 +42,7 @@ def test_iswt_1d(level, size, wavelet):
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym5"])
 @pytest.mark.parametrize("level", [1, 2, 3])  # TODO: None
 @pytest.mark.parametrize("axis", [1, -1])
-def test_swt_1d_slow(level, size, wavelet, axis):
+def test_swt_1d_slow(level: Optional[int], size: int, wavelet: str, axis: int) -> None:
     """Test the 1d swt."""
     signal = np.random.normal(size=size).astype(np.float64)
     ptwt_coeff = _swt(torch.from_numpy(signal), wavelet, level=level, axis=axis)

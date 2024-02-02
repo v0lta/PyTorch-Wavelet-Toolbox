@@ -1,5 +1,7 @@
 """Test the conv-fwt code."""
 
+from typing import Iterable, List, Optional, Sequence, Tuple, Union
+
 # Written by moritz ( @ wolter.tech ) in 2021
 import numpy as np
 import pytest
@@ -8,6 +10,7 @@ import torch
 from scipy import datasets
 
 from ptwt._util import _outer
+from ptwt.constants import BoundaryMode
 from ptwt.conv_transform import (
     _flatten_2d_coeff_lst,
     _translate_boundary_strings,
@@ -15,7 +18,7 @@ from ptwt.conv_transform import (
     waverec,
 )
 from ptwt.conv_transform_2 import wavedec2, waverec2
-from src.ptwt.wavelets_learnable import SoftOrthogonalWavelet
+from ptwt.wavelets_learnable import SoftOrthogonalWavelet
 from tests._mackey_glass import MackeyGenerator
 
 
@@ -28,7 +31,14 @@ from tests._mackey_glass import MackeyGenerator
     "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
 )
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
-def test_conv_fwt1d(wavelet_string, level, mode, length, batch_size, dtype):
+def test_conv_fwt1d(
+    wavelet_string: str,
+    level: Optional[int],
+    mode: BoundaryMode,
+    length: int,
+    batch_size: int,
+    dtype: torch.dtype,
+) -> None:
     """Test multiple convolution fwt, for various levels and padding options."""
     generator = MackeyGenerator(
         batch_size=batch_size, tmax=length, delta_t=1, device="cpu"
@@ -49,7 +59,7 @@ def test_conv_fwt1d(wavelet_string, level, mode, length, batch_size, dtype):
         )
     py_coeff = np.stack(py_list)
     assert np.allclose(
-        cptcoeff.numpy(), py_coeff, atol=np.finfo(py_coeff.dtype).resolution
+        cptcoeff.numpy(), py_coeff, atol=float(np.finfo(py_coeff.dtype).resolution)
     )
     res = waverec(ptcoeff, wavelet)
     assert np.allclose(mackey_data_1.numpy(), res.numpy()[:, : mackey_data_1.shape[-1]])
@@ -57,7 +67,7 @@ def test_conv_fwt1d(wavelet_string, level, mode, length, batch_size, dtype):
 
 @pytest.mark.parametrize("size", [[5, 10, 64], [1, 1, 32]])
 @pytest.mark.parametrize("wavelet", ["haar", "db2"])
-def test_conv_fwt1d_channel(size, wavelet):
+def test_conv_fwt1d_channel(size: List[int], wavelet: str) -> None:
     """Test channel dimension support."""
     data = torch.randn(*size).type(torch.float64)
     ptwt_coeff = wavedec(data, wavelet)
@@ -72,12 +82,12 @@ def test_conv_fwt1d_channel(size, wavelet):
     assert np.allclose(data.numpy(), rec.numpy())
 
 
-def test_ripples_haar_lvl3():
+def test_ripples_haar_lvl3() -> None:
     """Compute example from page 7 of Ripples in Mathematics, Jensen, la Cour-Harbo."""
 
-    class _MyHaarFilterBank(object):
+    class _MyHaarFilterBank:
         @property
-        def filter_bank(self):
+        def filter_bank(self) -> Tuple[List[float], ...]:
             """Unscaled Haar wavelet filters."""
             return (
                 [1 / 2, 1 / 2.0],
@@ -95,7 +105,7 @@ def test_ripples_haar_lvl3():
     assert (torch.squeeze(coeffs[3]).numpy() == [8.0, -8.0, 0.0, 12.0]).all()
 
 
-def test_orth_wavelet():
+def test_orth_wavelet() -> None:
     """Test an orthogonal wavelet fwt."""
     generator = MackeyGenerator(batch_size=2, tmax=64, delta_t=1, device="cpu")
 
@@ -114,7 +124,7 @@ def test_orth_wavelet():
 
 @pytest.mark.parametrize("level", [1, 2, 3, None])
 @pytest.mark.parametrize("shape", [(64,), (1, 64), (3, 2, 64), (4, 3, 2, 64)])
-def test_1d_multibatch(level, shape):
+def test_1d_multibatch(level: Optional[int], shape: Sequence[int]) -> None:
     """Test 1D conv support for multiple inert batch dimensions."""
     data = torch.randn(*shape, dtype=torch.float64)
     ptwt_coeff = wavedec(data, "haar", level=level)
@@ -130,7 +140,7 @@ def test_1d_multibatch(level, shape):
 
 
 @pytest.mark.parametrize("axis", [-1, 0, 1, 2])
-def test_1d_axis_arg(axis):
+def test_1d_axis_arg(axis: int) -> None:
     """Ensure the axis argument works as expected."""
     data = torch.randn([16, 16, 16], dtype=torch.float64)
 
@@ -144,7 +154,7 @@ def test_1d_axis_arg(axis):
     assert torch.allclose(rec, data)
 
 
-def test_2d_haar_lvl1():
+def test_2d_haar_lvl1() -> None:
     """Test a 2d-Haar wavelet conv-fwt."""
     # ------------------------- 2d haar wavelet tests -----------------------
     face = np.transpose(
@@ -161,7 +171,7 @@ def test_2d_haar_lvl1():
     assert np.allclose(rec, face)
 
 
-def test_2d_db2_lvl1():
+def test_2d_db2_lvl1() -> None:
     """Test a 2d-db2 wavelet conv-fwt."""
     # single level db2 - 2d
     face = np.transpose(
@@ -178,7 +188,7 @@ def test_2d_db2_lvl1():
     assert np.allclose(rec.numpy().squeeze(), face)
 
 
-def test_2d_haar_multi():
+def test_2d_haar_multi() -> None:
     """Test a 2d-db2 wavelet level 5 conv-fwt."""
     # multi level haar - 2d
     face = np.transpose(
@@ -195,7 +205,7 @@ def test_2d_haar_multi():
     assert np.allclose(rec, face)
 
 
-def test_outer():
+def test_outer() -> None:
     """Test the outer-product implementation."""
     a = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
     b = torch.tensor([6.0, 7.0, 8.0, 9.0, 10.0])
@@ -213,7 +223,9 @@ def test_outer():
 @pytest.mark.parametrize(
     "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
 )
-def test_2d_wavedec_rec(wavelet_str, level, size, mode):
+def test_2d_wavedec_rec(
+    wavelet_str: str, level: Optional[int], size: Tuple[int, int], mode: BoundaryMode
+) -> None:
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
 
     wavedec2 and waverec2 must invert each other.
@@ -247,7 +259,9 @@ def test_2d_wavedec_rec(wavelet_str, level, size, mode):
 )
 @pytest.mark.parametrize("level", [1, None])
 @pytest.mark.parametrize("wavelet", ["haar", "sym3"])
-def test_input_4d(size, level, wavelet):
+def test_input_4d(
+    size: Tuple[int, int, int, int], level: Optional[str], wavelet: str
+) -> None:
     """Test the error for 4d inputs to wavedec2."""
     data = torch.randn(*size).type(torch.float64)
 
@@ -274,20 +288,23 @@ def test_input_4d(size, level, wavelet):
 
 
 @pytest.mark.parametrize("padding_str", ["invalid_padding_name"])
-def test_incorrect_padding(padding_str):
+def test_incorrect_padding(padding_str: BoundaryMode) -> None:
     """Test expected errors for an invalid padding name."""
     with pytest.raises(ValueError):
         _ = _translate_boundary_strings(padding_str)
 
 
-def test_input_1d_dimension_error():
+def test_input_1d_dimension_error() -> None:
     """Test the error for 1d inputs to wavedec2."""
     with pytest.raises(ValueError):
         data = torch.randn(50)
         wavedec2(data, "haar", level=4)
 
 
-def _compare_coeffs(ptwt_res, pywt_res):
+def _compare_coeffs(
+    ptwt_res: Iterable[Union[torch.Tensor, Tuple[torch.Tensor, ...]]],
+    pywt_res: Iterable[Union[torch.Tensor, Tuple[torch.Tensor, ...]]],
+) -> List[bool]:
     """Compare coefficient lists.
 
     Args:
@@ -296,18 +313,21 @@ def _compare_coeffs(ptwt_res, pywt_res):
 
     Returns:
         A list with bools from allclose.
+
+    Raises:
+        TypeError: In case of a problem with the list structures.
     """
-    test_list = []
+    test_list: List[bool] = []
     for ptwtcs, pywtcs in zip(ptwt_res, pywt_res):
-        if isinstance(ptwtcs, tuple):
+        if isinstance(ptwtcs, tuple) and isinstance(pywtcs, tuple):
             test_list.extend(
-                tuple(
-                    np.allclose(ptwtc.numpy(), pywtc)
-                    for ptwtc, pywtc in zip(ptwtcs, pywtcs)
-                )
+                np.allclose(ptwtc.numpy(), pywtc)
+                for ptwtc, pywtc in zip(ptwtcs, pywtcs)
             )
-        else:
+        elif isinstance(ptwtcs, torch.Tensor):
             test_list.append(np.allclose(ptwtcs.numpy(), pywtcs))
+        else:
+            raise TypeError("Invalid coefficient typing.")
     return test_list
 
 
@@ -315,7 +335,7 @@ def _compare_coeffs(ptwt_res, pywt_res):
 @pytest.mark.parametrize(
     "size", [(50, 20, 128, 128), (8, 49, 21, 128, 128), (6, 4, 4, 5, 64, 64)]
 )
-def test_2d_multidim_input(size):
+def test_2d_multidim_input(size: Tuple[int, ...]) -> None:
     """Test the error for multi-dimensional inputs to wavedec2."""
     data = torch.randn(*size, dtype=torch.float64)
     wavelet = "db2"
@@ -337,7 +357,7 @@ def test_2d_multidim_input(size):
 
 @pytest.mark.slow
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (-3, -2), (0, 1), (1, 0)])
-def test_2d_axis_argument(axes):
+def test_2d_axis_argument(axes: Tuple[int, int]) -> None:
     """Ensure the axes argument works as expected."""
     data = torch.randn([32, 32, 32, 32], dtype=torch.float64)
 
@@ -355,14 +375,14 @@ def test_2d_axis_argument(axes):
     )
 
 
-def test_2d_axis_error_axes_count():
+def test_2d_axis_error_axes_count() -> None:
     """Check the error for too many axes."""
     with pytest.raises(ValueError):
         data = torch.randn([32, 32, 32, 32], dtype=torch.float64)
         wavedec2(data, "haar", level=1, axes=(1, 2, 3))
 
 
-def test_2d_axis_error_axes_repetition():
+def test_2d_axis_error_axes_repetition() -> None:
     """Check the error for axes repetition."""
     with pytest.raises(ValueError):
         data = torch.randn([32, 32, 32, 32], dtype=torch.float64)

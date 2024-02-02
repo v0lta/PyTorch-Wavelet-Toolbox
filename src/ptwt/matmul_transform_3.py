@@ -58,7 +58,7 @@ class MatrixWavedec3(object):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         axes: Tuple[int, int, int] = (-3, -2, -1),
-        boundary: Optional[str] = "qr",
+        boundary: OrthogonalizeMethod = "qr",
     ):
         """Create a *separable* three-dimensional fast boundary wavelet transform.
 
@@ -69,7 +69,7 @@ class MatrixWavedec3(object):
             wavelet (Union[Wavelet, str]): The wavelet to use.
             level (Optional[int]): The desired decomposition level.
                 Defaults to None.
-            boundary (Optional[str]): The matrix orthogonalization method.
+            boundary: The matrix orthogonalization method.
                 Defaults to "qr".
 
         Raises:

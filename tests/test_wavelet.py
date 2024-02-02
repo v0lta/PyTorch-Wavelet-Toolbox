@@ -1,5 +1,7 @@
 """Test the adaptive wavelet cost functions."""
 
+from typing import List
+
 import pytest
 import pywt
 import torch
@@ -17,7 +19,7 @@ from ptwt.wavelets_learnable import SoftOrthogonalWavelet
         (pywt.wavelist(family="rbio"), False),
     ],
 )
-def test_wavelet_lst(lst: list, is_orth: bool) -> None:
+def test_wavelet_lst(lst: List[str], is_orth: bool) -> None:
     """Test all wavelets in a list."""
     for ws in lst:
         wavelet = pywt.Wavelet(ws)
