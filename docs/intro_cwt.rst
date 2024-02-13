@@ -1,3 +1,5 @@
+.. _sec-cwt:
+
 Introduction to continuous wavelet transforms
 =============================================
 

@@ -279,6 +279,7 @@ def wavedec(
     the convolution filter, with :math:`k \in {A, D}`, where :math:`A` for
     approximation and :math:`D` for detail. The processes uses approximation
     coefficients as inputs for higher scales.
+    Set the `level` argument to choose the largest scale.
 
     Args:
         data (torch.Tensor): The input time series,
@@ -299,7 +300,7 @@ def wavedec(
     Returns:
         list: A list::
 
-            [cA_n, cD_n, cD_n-1, …, cD2, cD1]
+            [cA_s, cD_s, cD_s-1, …, cD2, cD1]
 
         containing the wavelet coefficients. A denotes
         approximation and D detail coefficients.

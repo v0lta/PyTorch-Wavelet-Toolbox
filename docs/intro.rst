@@ -59,6 +59,10 @@ The matrix nature of these operators explains the capital boldface notation.
 Coefficient subscripts record the path that leads to a particular coefficient.
 :py:meth:`ptwt.packets.WaveletPacket` provides this functionality for single dimensional inputs.
 
+.. _sec-fwt-2d:
+
+The two-dimensional transform
+-----------------------------
 
 This toolbox provides two dimensional input processing functionality.
 We construct filter quadruples from the original filter pairs to process two-dimensional inputs.
