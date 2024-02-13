@@ -29,7 +29,7 @@ If you use this work in a scientific context, please cite the following thesis:
 
 .. code-block::
 
-    @article{ptwt_2023, 
+    @article{ptwt_2023,
       author = {Wolter, Moritz and Blanke, Felix and Garcke, Jochen and Hoyt, Charles Tapley},
       title = {{ptwt - The PyTorch Wavelet Toolbox}},
       journal = {Journal of Machine Learning Research},

@@ -37,7 +37,7 @@ exclude =
     .eggs,
     data.
     src/ptwt/__init__.py
-max-line-length = 88
+max-line-length = 90
 max-complexity = 20
 import-order-style = pycharm
 application-import-names =

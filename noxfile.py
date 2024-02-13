@@ -35,7 +35,7 @@ def lint(session):
     session.run("flake8", "src", "tests", "noxfile.py")
 
     session.install("sphinx", "doc8")
-    session.run("doc8", "docs/")
+    session.run("doc8", "--max-line-length", "120", "docs/")
 
 
 @nox.session(name="typing")
