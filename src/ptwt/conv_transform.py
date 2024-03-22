@@ -3,7 +3,6 @@
 This module treats boundaries with edge-padding.
 """
 
-# Created by moritz wolter, 14.04.20
 from typing import List, Optional, Sequence, Tuple, Union, cast
 
 import pywt
@@ -267,7 +266,20 @@ def wavedec(
     level: Optional[int] = None,
     axis: int = -1,
 ) -> List[torch.Tensor]:
-    """Compute the analysis (forward) 1d fast wavelet transform.
+    r"""Compute the analysis (forward) 1d fast wavelet transform.
+
+    The transformation relies on convolution operations with filter
+    pairs.
+
+    .. math::
+        x_s * h_k = c_{k,s+1}
+
+    Where :math:`x_s` denotes the input at scale :math:`s`, with
+    :math:`x_0` equal to the original input. :math:`h_k` denotes
+    the convolution filter, with :math:`k \in {A, D}`, where :math:`A` for
+    approximation and :math:`D` for detail. The processes uses approximation
+    coefficients as inputs for higher scales.
+    Set the `level` argument to choose the largest scale.
 
     Args:
         data (torch.Tensor): The input time series,
@@ -288,7 +300,7 @@ def wavedec(
     Returns:
         list: A list::
 
-            [cA_n, cD_n, cD_n-1, …, cD2, cD1]
+            [cA_s, cD_s, cD_s-1, …, cD2, cD1]
 
         containing the wavelet coefficients. A denotes
         approximation and D detail coefficients.

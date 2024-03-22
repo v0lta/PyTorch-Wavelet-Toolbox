@@ -1,7 +1,5 @@
 """Compute analysis wavelet packet representations."""
 
-# Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
-
 import collections
 from functools import partial
 from itertools import product

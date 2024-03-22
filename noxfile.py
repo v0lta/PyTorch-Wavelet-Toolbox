@@ -34,6 +34,9 @@ def lint(session):
     )
     session.run("flake8", "src", "tests", "noxfile.py")
 
+    session.install("sphinx", "doc8")
+    session.run("doc8", "--max-line-length", "120", "docs/")
+
 
 @nox.session(name="typing")
 def mypy(session):
@@ -50,6 +53,26 @@ def mypy(session):
         "--explicit-package-bases",
         "src",
         "tests",
+    )
+
+
+@nox.session(name="docs")
+def docs(session):
+    """Build docs."""
+    session.install(".")
+    session.install("sphinx-book-theme")
+    session.install("sphinxcontrib-bibtex")
+    session.run(
+        "python",
+        "-m",
+        "sphinx",
+        "-W",
+        "-b",
+        "html",
+        "-d",
+        "docs/build/doctrees",
+        "docs/",
+        "docs/_build/html",
     )
 
 

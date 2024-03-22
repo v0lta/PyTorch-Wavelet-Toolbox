@@ -51,6 +51,7 @@ Welcome to the PyTorch wavelet toolbox. This package implements:
 This toolbox extends `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_. In addition to boundary wavelets, we provide GPU and gradient support via a PyTorch backend.
 Complete documentation is available at: https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/ptwt.html
 
+This toolbox is independent work. Meta or the PyTorch team have not endorsed it.
 
 **Installation**
 
@@ -58,7 +59,7 @@ Install the toolbox via pip or clone this repository. In order to use ``pip``, t
 
 .. code-block:: sh
 
-    $ pip install ptwt
+    pip install ptwt
   
 
 You can remove it later by typing ``pip uninstall ptwt``.
@@ -158,7 +159,7 @@ Reconsidering the 1d case, try:
 The process for the 2d transforms ``MatrixWavedec2``, ``MatrixWaverec2`` works similarly.
 By default, a separable transformation is used.
 To use a non-separable transformation, pass ``separable=False`` to ``MatrixWavedec2`` and ``MatrixWaverec2``.
-Separable transformations use a 1d transformation along both axes, which might be faster since fewer matrix entries
+Separable transformations use a 1D transformation along both axes, which might be faster since fewer matrix entries
 have to be orthogonalized.
 
 
@@ -181,11 +182,11 @@ After cloning the repository, moving into the main directory, and installing ``n
 
 .. code-block:: sh
 
-  $ nox --session test
+  nox --session test
 
 
 
-to run all existing tests.
+for all existing tests.
 
 Citation
 """"""""
@@ -194,25 +195,9 @@ If you use this work in a scientific context, please cite the following:
 
 .. code-block::
 
-  @phdthesis{handle:20.500.11811/9245,
-    author = {{Moritz Wolter}},
-    title = {Frequency Domain Methods in Recurrent Neural Networks for Sequential Data Processing},
-    school = {Rheinische Friedrich-Wilhelms-Universität Bonn},
-    year = 2021,
-    month = jul,
-    url = {https://hdl.handle.net/20.500.11811/9245}
-  }
-
-If you use the boundary wavelet support, please additionally cite:
-
-.. code-block::
-
-  @thesis{Blanke2021,
-    author = {Felix Blanke},
-    title = {{Randbehandlung bei Wavelets für Faltungsnetzwerke}},
-    type = {Bachelor's Thesis},
-    annote = {Gbachelor},
-    year = {2021},
-    school = {Institut f\"ur Numerische Simulation, Universit\"at Bonn}
-  }
-
+  @article{ptwt_2023, 
+    author = {Wolter, Moritz and Blanke, Felix and Garcke, Jochen and Hoyt, Charles Tapley},
+    title = {ptwt - The PyTorch Wavelet Toolbox},
+    journal = {Journal of Machine Learning Research},
+    year = {2023}
+    }

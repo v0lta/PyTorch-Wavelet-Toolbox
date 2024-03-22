@@ -132,10 +132,25 @@ def wavedec2(
     level: Optional[int] = None,
     axes: Tuple[int, int] = (-2, -1),
 ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-    """Run a two-dimensional wavelet transformation.
+    r"""Run a two-dimensional wavelet transformation.
 
     This function relies on two-dimensional convolutions.
-    We transform the last two axes by default.
+    Outer products allow the construction of 2D-filters from 1D filter arrays
+    :ref:`(see fwt-intro) <sec-fwt-2d>`.
+    It transforms the last two axes by default.
+    This function computes
+
+    .. math::
+        \mathbf{x}_s *_2 \mathbf{h}_k = \mathbf{c}_{k, s+1}
+
+    with :math:`k \in [a, h, v, d]` and
+    :math:`s \in \mathbb{N}_0` the set of natural numbers,
+    where :math:`\mathbf{x}_0` is equal to
+    the original input image :math:`\mathbf{X}`.
+    :math:`*_2` indicates two dimensional-convolution.
+    Computations at subsequent scales work exclusively with
+    approximation coefficients :math:`c_{a, s}`
+    as inputs. Setting the `level` argument allows choosing the largest scale.
 
     Args:
         data (torch.Tensor): The input data tensor with any number of dimensions.
@@ -158,7 +173,7 @@ def wavedec2(
         list: A list containing the wavelet coefficients.
         The coefficients are in pywt order. That is::
 
-            [cAn, (cHn, cVn, cDn), … (cH1, cV1, cD1)] .
+            [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .
 
         A denotes approximation, H horizontal, V vertical
         and D diagonal coefficients.
@@ -230,11 +245,14 @@ def waverec2(
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
+    This function undoes the effect of the analysis
+    or forward transform by running transposed convolutions.
+
     Args:
         coeffs (list): The wavelet coefficient list produced by wavedec2.
             The coefficients must be in pywt order. That is::
 
-            [cAn, (cHn, cVn, cDn), … (cH1, cV1, cD1)] .
+            [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .
 
             A denotes approximation, H horizontal, V vertical,
             and D diagonal coefficients.
@@ -244,7 +262,8 @@ def waverec2(
             last two. Defaults to (-2, -1).
 
     Returns:
-        torch.Tensor: The reconstructed signal of shape ``[batch, height, width]`` or
+        torch.Tensor:
+            The reconstructed signal of shape ``[batch, height, width]`` or
             ``[batch, channel, height, width]`` depending on the input to `wavedec2`.
 
     Raises:

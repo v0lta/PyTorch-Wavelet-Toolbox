@@ -1,5 +1,5 @@
-ptwt
-===============
+The ptwt package
+========================
 
 
 ptwt.conv\_transform module
