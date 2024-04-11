@@ -28,7 +28,7 @@ It should be possible to switch back and forth with relative ease.
 If you use this work in a scientific context, please cite the following thesis:
 
 .. code-block::
-   
+
    @article{JMLR:v25:23-0636,
    author  = {Moritz Wolter and Felix Blanke and Jochen Garcke and Charles Tapley Hoyt},
    title   = {ptwt - The PyTorch Wavelet Toolbox},
