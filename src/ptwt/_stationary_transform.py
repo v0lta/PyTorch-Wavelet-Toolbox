@@ -1,6 +1,6 @@
 """This module implements stationary wavelet transforms."""
 
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Sequence
 
 import pywt
 import torch
@@ -12,6 +12,18 @@ from .conv_transform import (
     _preprocess_result_list_rec1d,
     _preprocess_tensor_dec1d,
 )
+
+
+def _wrap_padding(x: torch.Tensor, pad: Sequence[int]) -> torch.Tensor:
+    """Pads a tensor in circular mode more than once if needed"""
+    s = x.shape[-1]
+    if any([p > s for p in pad]):
+        while any([p > 0 for p in pad]):
+            x = torch.nn.functional.pad(x, [min(s, p) for p in pad], mode="circular")
+            pad = [max(p - s, 0) for p in pad]
+        return x
+    else:
+        return torch.nn.functional.pad(x, pad, mode="circular")
 
 
 def _swt(
@@ -56,7 +68,7 @@ def _swt(
     for current_level in range(level):
         dilation = 2**current_level
         padl, padr = dilation * (filt_len // 2 - 1), dilation * (filt_len // 2)
-        res_lo = torch.nn.functional.pad(res_lo, [padl, padr], mode="circular")
+        res_lo = _wrap_padding(res_lo, [padl, padr])
         res = torch.nn.functional.conv1d(res_lo, filt, stride=1, dilation=dilation)
         res_lo, res_hi = torch.split(res, 1, 1)
         # Trim_approx == False

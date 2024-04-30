@@ -11,8 +11,8 @@ from ptwt._stationary_transform import _iswt, _swt
 
 
 @pytest.mark.parametrize("level", [1, 2, None])
-@pytest.mark.parametrize("size", [[1, 32], [3, 64], [5, 64]])
-@pytest.mark.parametrize("wavelet", ["db1", "db2"])
+@pytest.mark.parametrize("size", [[32], [1, 32], [3, 64], [5, 64]])
+@pytest.mark.parametrize("wavelet", ["db1", "db2", "db3", "db4"])
 def test_swt_1d(level: Optional[int], size: int, wavelet: str) -> None:
     """Test the 1d swt."""
     signal = np.random.normal(size=size).astype(np.float64)
