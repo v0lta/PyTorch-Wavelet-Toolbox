@@ -4,6 +4,7 @@ from typing import List, Optional, Union, Sequence
 
 import pywt
 import torch
+import torch.nn.functional as F
 
 from ._util import Wavelet, _as_wavelet, _unfold_axes
 from .conv_transform import (
@@ -14,16 +15,20 @@ from .conv_transform import (
 )
 
 
-def _wrap_padding(x: torch.Tensor, pad: Sequence[int]) -> torch.Tensor:
+def _wrap_padding(x: torch.Tensor, paddings: Sequence[int]) -> torch.Tensor:
     """Pads a tensor in circular mode more than once if needed"""
-    s = x.shape[-1]
-    if any([p > s for p in pad]):
-        while any([p > 0 for p in pad]):
-            x = torch.nn.functional.pad(x, [min(s, p) for p in pad], mode="circular")
-            pad = [max(p - s, 0) for p in pad]
-        return x
-    else:
-        return torch.nn.functional.pad(x, pad, mode="circular")
+    s = x.shape[-1]  # TODO rename s to something more meaningful
+
+    # TODO write what the regular case is
+    if not any(padding > s for padding in paddings):
+        return F.pad(x, paddings, mode="circular")
+
+    # TODO what is this doing
+    while any(padding > 0 for padding in paddings):
+        x = F.pad(x, [min(s, padding) for padding in paddings], mode="circular")
+        paddings = [max(padding - s, 0) for padding in paddings]
+
+    return x
 
 
 def _swt(
