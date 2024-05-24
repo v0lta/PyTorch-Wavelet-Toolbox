@@ -1,6 +1,6 @@
 """This module implements stationary wavelet transforms."""
 
-from typing import List, Optional, Union, Sequence
+from typing import List, Optional, Sequence, Union
 
 import pywt
 import torch
