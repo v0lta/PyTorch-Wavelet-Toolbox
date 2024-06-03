@@ -1,6 +1,6 @@
 """Test the stationary wavelet transformation code."""
 
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import pytest
@@ -10,11 +10,30 @@ import torch
 from ptwt._stationary_transform import _iswt, _swt, circular_pad
 
 
-def test_circular_pad() -> None:
+@pytest.mark.parametrize("shape", [(8,), (1, 8), (4, 8), (4, 6, 8), (4, 6, 8, 8)])
+def test_circular_pad(shape: Tuple[int, ...]) -> None:
     """Test patched circular padding."""
-    expected = ...
-    actual = circular_pad(None, [None, None])  # FIXME
-    assert np.allclose(expected.numpy(), actual.numpy())
+    test_data_np = np.random.rand(*shape).astype(np.float32)
+    test_data_pt = torch.from_numpy(test_data_np)
+
+    # torch.nn.functional.pad does always pad the last dimension given a 2D or 3D input
+    # however, numpy pads along all axis given pad width [10, 10]
+    # we need to explicitly set the pad width of the first N-1 dimensions to zero
+    expected = np.pad(test_data_np, [(0, 0) if i != 1 else (10, 10) for i in range(len(shape), 0, -1)], mode="wrap")
+
+    if len(shape) < 2:
+        # torch.nn.functional.pad only implemented for 2D, 3D, 4D, 5D tensors in circular mode
+        with pytest.raises(NotImplementedError):
+            circular_pad(test_data_pt, [10, 10])
+    elif len(shape) > 3:
+        # torch.nn.functional.pad tries to pad the last 2 dimensions given a 4D input
+        # the provided pad width [10, 10] misses values for the second dimension, hence the error
+        with pytest.raises(NotImplementedError):  # should be a ValueError though...
+            circular_pad(test_data_pt, [10, 10])
+    else:
+        actual = circular_pad(test_data_pt, [10, 10])
+        assert expected.shape == tuple(actual.shape)
+        assert np.allclose(expected, actual.numpy())
 
 
 @pytest.mark.parametrize("level", [1, 2, None])
