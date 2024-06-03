@@ -13,7 +13,7 @@ import torch
 
 from ._util import (
     Wavelet,
-    WaveletTransformReturn2d,
+    WaveletCoeffDetailTuple2d,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -97,7 +97,7 @@ def _fwt_pad2(
     return data_pad
 
 
-def _waverec2d_fold_channels_2d_list(coeffs: WaveletTransformReturn2d) -> tuple[WaveletTransformReturn2d, list[int]]:
+def _waverec2d_fold_channels_2d_list(coeffs: WaveletCoeffDetailTuple2d) -> tuple[WaveletCoeffDetailTuple2d, list[int]]:
     # fold the input coefficients for processing conv2d_transpose.
     ds = list(_check_if_tensor(coeffs[0]).shape)
     return _map_result(coeffs, lambda t: _fold_axes(t, 2)[0]), ds
@@ -128,7 +128,7 @@ def wavedec2(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: tuple[int, int] = (-2, -1),
-) -> WaveletTransformReturn2d:
+) -> WaveletCoeffDetailTuple2d:
     r"""Run a two-dimensional wavelet transformation.
 
     This function relies on two-dimensional convolutions.
@@ -222,7 +222,7 @@ def wavedec2(
 
     result_lst.reverse()
     res_ll = res_ll.squeeze(1)
-    result: WaveletTransformReturn2d = res_ll, *result_lst
+    result: WaveletCoeffDetailTuple2d = res_ll, *result_lst
 
     if ds:
         _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
@@ -236,7 +236,7 @@ def wavedec2(
 
 
 def waverec2(
-    coeffs: WaveletTransformReturn2d,
+    coeffs: WaveletCoeffDetailTuple2d,
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:

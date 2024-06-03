@@ -9,7 +9,7 @@ import torch
 
 from ._util import (
     Wavelet,
-    WaveletTransformReturn3d,
+    WaveletCoeffDetailDict,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -158,7 +158,7 @@ class MatrixWavedec3(object):
 
     def __call__(
         self, input_signal: torch.Tensor
-    ) -> WaveletTransformReturn3d:
+    ) -> WaveletCoeffDetailDict:
         """Compute a separable 3d-boundary wavelet transform.
 
         Args:
@@ -261,7 +261,7 @@ class MatrixWavedec3(object):
             split_list.append(coeff_dict)
 
         split_list.reverse()
-        result: WaveletTransformReturn3d = lll, *split_list
+        result: WaveletCoeffDetailDict = lll, *split_list
 
         if ds:
             _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
@@ -389,7 +389,7 @@ class MatrixWaverec3(object):
         return self._cat_coeff_recursive(done_dict)
 
     def __call__(
-        self, coefficients: WaveletTransformReturn3d
+        self, coefficients: WaveletCoeffDetailDict
     ) -> torch.Tensor:
         """Reconstruct a batched 3d-signal from its coefficients.
 

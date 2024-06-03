@@ -16,8 +16,8 @@ import torch
 
 from ._util import (
     Wavelet,
-    WaveletTransformReturn2d,
-    WaveletTransformReturn3d,
+    WaveletCoeffDetailTuple2d,
+    WaveletCoeffDetailDict,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -116,7 +116,7 @@ def _separable_conv_wavedecn(
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-) -> WaveletTransformReturn3d:
+) -> WaveletCoeffDetailDict:
     """Compute a multilevel separable padded wavelet analysis transform.
 
     Args:
@@ -150,7 +150,7 @@ def _separable_conv_wavedecn(
 
 
 def _separable_conv_waverecn(
-    coeffs: WaveletTransformReturn3d,
+    coeffs: WaveletCoeffDetailDict,
     wavelet: Union[Wavelet, str],
 ) -> torch.Tensor:
     """Separable n-dimensional wavelet synthesis transform.
@@ -187,7 +187,7 @@ def fswavedec2(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: tuple[int, int] = (-2, -1),
-) -> WaveletTransformReturn3d:
+) -> WaveletCoeffDetailDict:
     """Compute a fully separable 2D-padded analysis wavelet transform.
 
     Args:
@@ -257,7 +257,7 @@ def fswavedec3(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: tuple[int, int, int] = (-3, -2, -1),
-) -> WaveletTransformReturn3d:
+) -> WaveletCoeffDetailDict:
     """Compute a fully separable 3D-padded analysis wavelet transform.
 
     Args:
@@ -322,7 +322,7 @@ def fswavedec3(
 
 
 def fswaverec2(
-    coeffs: WaveletTransformReturn3d,
+    coeffs: WaveletCoeffDetailDict,
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
@@ -389,7 +389,7 @@ def fswaverec2(
 
 
 def fswaverec3(
-    coeffs: WaveletTransformReturn3d,
+    coeffs: WaveletCoeffDetailDict,
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:

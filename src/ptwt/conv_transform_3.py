@@ -12,7 +12,7 @@ import torch
 
 from ._util import (
     Wavelet,
-    WaveletTransformReturn3d,
+    WaveletCoeffDetailDict,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -110,7 +110,7 @@ def wavedec3(
     mode: BoundaryMode = "zero",
     level: Optional[int] = None,
     axes: tuple[int, int, int] = (-3, -2, -1),
-) -> WaveletTransformReturn3d:
+) -> WaveletCoeffDetailDict:
     """Compute a three-dimensional wavelet transform.
 
     Args:
@@ -198,7 +198,7 @@ def wavedec3(
             }
         )
     result_lst.reverse()
-    result: WaveletTransformReturn3d = res_lll, *result_lst
+    result: WaveletCoeffDetailDict = res_lll, *result_lst
 
     if ds:
         _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
@@ -212,9 +212,9 @@ def wavedec3(
 
 
 def _waverec3d_fold_channels_3d_list(
-    coeffs: WaveletTransformReturn3d,
+    coeffs: WaveletCoeffDetailDict,
 ) -> tuple[
-    WaveletTransformReturn3d,
+    WaveletCoeffDetailDict,
     list[int],
 ]:
     # fold the input coefficients for processing conv2d_transpose.
@@ -232,7 +232,7 @@ def _waverec3d_fold_channels_3d_list(
 
 
 def waverec3(
-    coeffs: WaveletTransformReturn3d,
+    coeffs: WaveletCoeffDetailDict,
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:

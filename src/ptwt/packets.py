@@ -10,7 +10,7 @@ import numpy as np
 import pywt
 import torch
 
-from ._util import Wavelet, WaveletTransformReturn2d, WaveletTransformReturn3d, _as_wavelet
+from ._util import Wavelet, WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict, _as_wavelet
 from .constants import ExtendedBoundaryMode, OrthogonalizeMethod
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
@@ -384,7 +384,7 @@ class WaveletPacket2D(BaseDict):
         return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
 
     def _get_wavedec(self, shape: tuple[int, ...]) -> Callable[
-        [torch.Tensor], WaveletTransformReturn2d,
+        [torch.Tensor], WaveletCoeffDetailTuple2d,
     ]:
         if self.mode == "boundary":
             shape = tuple(shape)
@@ -413,7 +413,7 @@ class WaveletPacket2D(BaseDict):
                 wavedec2, wavelet=self.wavelet, level=1, mode=self.mode, axes=self.axes
             )
 
-    def _get_waverec(self, shape: tuple[int, ...]) -> Callable[[WaveletTransformReturn2d], torch.Tensor]:
+    def _get_waverec(self, shape: tuple[int, ...]) -> Callable[[WaveletCoeffDetailTuple2d], torch.Tensor]:
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_waverec2_dict.keys():
@@ -433,11 +433,11 @@ class WaveletPacket2D(BaseDict):
 
     def _transform_fsdict_to_tuple_func(
         self,
-        fs_dict_func: Callable[[torch.Tensor], WaveletTransformReturn3d],
-    ) -> Callable[[torch.Tensor], WaveletTransformReturn2d]:
+        fs_dict_func: Callable[[torch.Tensor], WaveletCoeffDetailDict],
+    ) -> Callable[[torch.Tensor], WaveletCoeffDetailTuple2d]:
         def _tuple_func(
             data: torch.Tensor,
-        ) -> WaveletTransformReturn2d:
+        ) -> WaveletCoeffDetailTuple2d:
             fs_dict_data = fs_dict_func(data)
             # assert for type checking
             assert len(fs_dict_data) == 2
@@ -448,10 +448,10 @@ class WaveletPacket2D(BaseDict):
 
     def _transform_tuple_to_fsdict_func(
         self,
-        fsdict_func: Callable[[WaveletTransformReturn3d], torch.Tensor],
-    ) -> Callable[[WaveletTransformReturn2d], torch.Tensor]:
+        fsdict_func: Callable[[WaveletCoeffDetailDict], torch.Tensor],
+    ) -> Callable[[WaveletCoeffDetailTuple2d], torch.Tensor]:
         def _fsdict_func(
-            coeffs: WaveletTransformReturn2d
+            coeffs: WaveletCoeffDetailTuple2d
         ) -> torch.Tensor:
             # assert for type checking
             assert len(coeffs) == 2

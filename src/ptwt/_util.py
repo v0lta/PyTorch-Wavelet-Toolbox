@@ -30,8 +30,11 @@ class Wavelet(Protocol):
         """Return the number of filter coefficients."""
         return len(self.dec_lo)
 
-WaveletTransformReturn2d = tuple[torch.Tensor, Unpack[tuple[tuple[torch.Tensor, torch.Tensor, torch.Tensor], ...]]]
-WaveletTransformReturn3d = tuple[torch.Tensor, Unpack[tuple[dict[str, torch.Tensor], ...]]]
+WaveletDetailTuple2d = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+WaveletDetailDict = dict[str, torch.Tensor]
+
+WaveletCoeffDetailTuple2d = tuple[torch.Tensor, Unpack[tuple[WaveletDetailTuple2d, ...]]]
+WaveletCoeffDetailDict = tuple[torch.Tensor, Unpack[tuple[WaveletDetailDict, ...]]]
 
 
 def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
@@ -171,24 +174,24 @@ def _undo_swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
 
 @overload
 def _map_result(
-    data: WaveletTransformReturn2d,
+    data: WaveletCoeffDetailTuple2d,
     function: Callable[[torch.Tensor], torch.Tensor],
-) -> WaveletTransformReturn2d:
+) -> WaveletCoeffDetailTuple2d:
     ...
 
 
 @overload
 def _map_result(
-    data: WaveletTransformReturn3d,
+    data: WaveletCoeffDetailDict,
     function: Callable[[torch.Tensor], torch.Tensor],
-) -> WaveletTransformReturn3d:
+) -> WaveletCoeffDetailDict:
     ...
 
 
 def _map_result(
-    data: Union[WaveletTransformReturn2d, WaveletTransformReturn3d],
+    data: Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict],
     function: Callable[[torch.Tensor], torch.Tensor]
-) -> Union[WaveletTransformReturn2d, WaveletTransformReturn3d]:
+) -> Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict]:
     return_tuple = isinstance(data, tuple)
     approx = function(data[0])
     result_lst: list[
@@ -216,5 +219,5 @@ def _map_result(
             raise AssertionError(f"Unexpected input type {type(element)}")
 
     return_val = approx, *result_lst
-    return_val = cast(Union[WaveletTransformReturn2d, WaveletTransformReturn3d], return_val)
+    return_val = cast(Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict], return_val)
     return return_val

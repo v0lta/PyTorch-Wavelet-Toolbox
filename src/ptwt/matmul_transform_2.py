@@ -13,7 +13,7 @@ import torch
 
 from ._util import (
     Wavelet,
-    WaveletTransformReturn2d,
+    WaveletCoeffDetailTuple2d,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -418,7 +418,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
 
     def __call__(
         self, input_signal: torch.Tensor
-    ) -> WaveletTransformReturn2d:
+    ) -> WaveletCoeffDetailTuple2d:
         """Compute the fwt for the given input signal.
 
         The fwt matrix is set up during the first call
@@ -544,7 +544,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             ll = ll.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(2, 1)
 
         split_list.reverse()
-        result: WaveletTransformReturn2d = ll, *split_list
+        result: WaveletCoeffDetailTuple2d = ll, *split_list
 
         if ds:
             _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
@@ -726,7 +726,7 @@ class MatrixWaverec2(object):
 
     def __call__(
         self,
-        coefficients: WaveletTransformReturn2d,
+        coefficients: WaveletCoeffDetailTuple2d,
     ) -> torch.Tensor:
         """Compute the inverse matrix 2d fast wavelet transform.
 
