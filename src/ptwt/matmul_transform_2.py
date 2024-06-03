@@ -13,6 +13,7 @@ import torch
 
 from ._util import (
     Wavelet,
+    WaveletTransformReturn2d,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -417,7 +418,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
 
     def __call__(
         self, input_signal: torch.Tensor
-    ) -> list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+    ) -> WaveletTransformReturn2d:
         """Compute the fwt for the given input signal.
 
         The fwt matrix is set up during the first call
@@ -431,8 +432,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 This transform affects the last two dimensions.
 
         Returns:
-            (list): The resulting coefficients per level are stored in
-            a pywt style list. The list is ordered as::
+            (WaveletTransformReturn2d): The resulting coefficients per level are stored in
+            a pywt style tuple. The tuple is ordered as::
 
                 (ll, (lh, hl, hh), ...)
 
@@ -476,9 +477,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
-        split_list: list[
-            Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-        ] = []
+        split_list: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
         if self.separable:
             ll = input_signal
             for scale, fwt_mats in enumerate(self.fwt_matrix_list):
@@ -501,7 +500,6 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 hl, hh = torch.split(d_coeffs, current_width // 2, dim=-1)
 
                 split_list.append((lh, hl, hh))
-            split_list.append(ll)
         else:
             ll = input_signal.transpose(-2, -1).reshape([batch_size, -1]).T
             for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
@@ -543,19 +541,20 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 )
                 split_list.append(reshaped)
                 ll = four_split[0]
-            split_list.append(
-                ll.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(2, 1)
-            )
+            ll = ll.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(2, 1)
+
+        split_list.reverse()
+        result = ll, *split_list
 
         if ds:
             _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
-            split_list = _map_result(split_list, _unfold_axes2)
+            result = _map_result(result, _unfold_axes2)
 
         if self.axes != (-2, -1):
             undo_swap_fn = partial(_undo_swap_axes, axes=self.axes)
-            split_list = _map_result(split_list, undo_swap_fn)
+            result = _map_result(result, undo_swap_fn)
 
-        return split_list[::-1]
+        return result
 
 
 class MatrixWaverec2(object):
@@ -727,14 +726,12 @@ class MatrixWaverec2(object):
 
     def __call__(
         self,
-        coefficients: Sequence[
-            Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-        ],
+        coefficients: WaveletTransformReturn2d,
     ) -> torch.Tensor:
         """Compute the inverse matrix 2d fast wavelet transform.
 
         Args:
-            coefficients (list): The coefficient list as returned
+            coefficients (WaveletTransformReturn2d): The coefficient tuple as returned
                 by the `MatrixWavedec2`-Object.
 
         Returns:

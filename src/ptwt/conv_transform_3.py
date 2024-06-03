@@ -12,6 +12,7 @@ import torch
 
 from ._util import (
     Wavelet,
+    WaveletTransformReturn3d,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -109,7 +110,7 @@ def wavedec3(
     mode: BoundaryMode = "zero",
     level: Optional[int] = None,
     axes: tuple[int, int, int] = (-3, -2, -1),
-) -> list[Union[torch.Tensor, dict[str, torch.Tensor]]]:
+) -> WaveletTransformReturn3d:
     """Compute a three-dimensional wavelet transform.
 
     Args:
@@ -126,13 +127,13 @@ def wavedec3(
             instead of the last three. Defaults to (-3, -2, -1).
 
     Returns:
-        list: A list with the lll coefficients and dictionaries
-        with the filter order strings::
+        WaveletTransformReturn3d: A tuple with the lll coefficients and
+        dictionaries with the filter order strings::
 
             ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
 
-        as keys. With a for the low pass or approximation filter and
-        d for the high-pass or detail filter.
+        as keys. With 'a' for the low pass or approximation filter and
+        'd' for the high-pass or detail filter.
 
     Raises:
         ValueError: If the input has fewer than three dimensions or
@@ -196,22 +197,22 @@ def wavedec3(
                 "ddd": res_hhh,
             }
         )
-    result_lst.append(res_lll)
     result_lst.reverse()
+    result = res_lll, *result_lst
 
     if ds:
         _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
-        result_lst = _map_result(result_lst, _unfold_axes_fn)
+        result = _map_result(result, _unfold_axes_fn)
 
     if tuple(axes) != (-3, -2, -1):
         undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-        result_lst = _map_result(result_lst, undo_swap_fn)
+        result = _map_result(result, undo_swap_fn)
 
-    return result_lst
+    return result
 
 
 def _waverec3d_fold_channels_3d_list(
-    coeffs: Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]],
+    coeffs: WaveletTransformReturn3d,
 ) -> tuple[
     list[Union[torch.Tensor, dict[str, torch.Tensor]]],
     list[int],
@@ -231,14 +232,14 @@ def _waverec3d_fold_channels_3d_list(
 
 
 def waverec3(
-    coeffs: Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]],
+    coeffs: WaveletTransformReturn3d,
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
-        coeffs (sequence): The wavelet coefficient sequence produced by wavedec3.
+        coeffs (WaveletTransformReturn3d): The wavelet coefficient tuple produced by wavedec3.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         axes (tuple[int, int, int]): Transform these axes instead of the

@@ -2,7 +2,8 @@
 
 from collections.abc import Sequence
 import typing
-from typing import Any, Callable, Optional, Protocol, Union
+from typing import Any, Callable, Optional, Protocol, Union, overload
+from typing_extensions import Unpack
 
 import numpy as np
 import pywt
@@ -28,6 +29,9 @@ class Wavelet(Protocol):
     def __len__(self) -> int:
         """Return the number of filter coefficients."""
         return len(self.dec_lo)
+
+WaveletTransformReturn2d = tuple[torch.Tensor, Unpack[tuple[tuple[torch.Tensor, torch.Tensor, torch.Tensor], ...]]]
+WaveletTransformReturn3d = tuple[torch.Tensor, Unpack[tuple[dict[str, torch.Tensor], ...]]]
 
 
 def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:

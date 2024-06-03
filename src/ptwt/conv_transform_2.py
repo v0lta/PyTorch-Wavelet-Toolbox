@@ -13,6 +13,7 @@ import torch
 
 from ._util import (
     Wavelet,
+    WaveletTransformReturn2d,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -96,12 +97,7 @@ def _fwt_pad2(
     return data_pad
 
 
-def _waverec2d_fold_channels_2d_list(
-    coeffs: Sequence[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
-) -> tuple[
-    list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
-    list[int],
-]:
+def _waverec2d_fold_channels_2d_list(coeffs: WaveletTransformReturn2d) -> tuple[WaveletTransformReturn2d, list[int]]:
     # fold the input coefficients for processing conv2d_transpose.
     ds = list(_check_if_tensor(coeffs[0]).shape)
     return _map_result(coeffs, lambda t: _fold_axes(t, 2)[0]), ds
@@ -132,7 +128,7 @@ def wavedec2(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: tuple[int, int] = (-2, -1),
-) -> list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+) -> WaveletTransformReturn2d:
     r"""Run a two-dimensional wavelet transformation.
 
     This function relies on two-dimensional convolutions.
@@ -171,13 +167,13 @@ def wavedec2(
             last two. Defaults to (-2, -1).
 
     Returns:
-        list: A list containing the wavelet coefficients.
+        WaveletTransformReturn2d: A tuple containing the wavelet coefficients.
         The coefficients are in pywt order. That is::
 
             [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .
 
-        A denotes approximation, H horizontal, V vertical
-        and D diagonal coefficients.
+        'A' denotes approximation, 'H' horizontal, 'V' vertical
+        and 'D' diagonal coefficients.
 
     Raises:
         ValueError: If the dimensionality or the dtype of the input data tensor
@@ -215,9 +211,7 @@ def wavedec2(
     if level is None:
         level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
 
-    result_lst: list[
-        Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-    ] = []
+    result_lst: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
     res_ll = data
     for _ in range(level):
         res_ll = _fwt_pad2(res_ll, wavelet, mode=mode)
@@ -225,22 +219,24 @@ def wavedec2(
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
         to_append = (res_lh.squeeze(1), res_hl.squeeze(1), res_hh.squeeze(1))
         result_lst.append(to_append)
-    result_lst.append(res_ll.squeeze(1))
+
     result_lst.reverse()
+    res_ll = res_ll.squeeze(1)
+    result = res_ll, *result_lst
 
     if ds:
         _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
-        result_lst = _map_result(result_lst, _unfold_axes2)
+        result = _map_result(result, _unfold_axes2)
 
     if axes != (-2, -1):
         undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-        result_lst = _map_result(result_lst, undo_swap_fn)
+        result = _map_result(result, undo_swap_fn)
 
-    return result_lst
+    return result
 
 
 def waverec2(
-    coeffs: Sequence[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    coeffs: WaveletTransformReturn2d,
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
@@ -250,13 +246,13 @@ def waverec2(
     or forward transform by running transposed convolutions.
 
     Args:
-        coeffs (sequence): The wavelet coefficient sequence produced by wavedec2.
+        coeffs (WaveletTransformReturn2d): The wavelet coefficient tupl produced by wavedec2.
             The coefficients must be in pywt order. That is::
 
             [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .
 
-            A denotes approximation, H horizontal, V vertical,
-            and D diagonal coefficients.
+            'A' denotes approximation, 'H' horizontal, 'V' vertical,
+            and 'D' diagonal coefficients.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         axes (tuple[int, int]): Compute the transform over these axes instead of the

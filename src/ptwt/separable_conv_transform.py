@@ -7,7 +7,6 @@ Under the hood, code in this module transforms all dimensions
 using torch.nn.functional.conv1d and it's transpose.
 """
 
-from collections.abc import Sequence
 from functools import partial
 from typing import Optional, Union
 
@@ -16,6 +15,8 @@ import pywt
 import torch
 
 from ._util import (
+    WaveletTransformReturn2d,
+    WaveletTransformReturn3d,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -112,7 +113,7 @@ def _separable_conv_wavedecn(
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-) -> list[Union[torch.Tensor, dict[str, torch.Tensor]]]:
+) -> WaveletTransformReturn3d:
     """Compute a multilevel separable padded wavelet analysis transform.
 
     Args:
@@ -122,9 +123,10 @@ def _separable_conv_wavedecn(
         level (int): The desired decomposition level.
 
     Returns:
-        list[Union[torch.Tensor, dict[str, torch.Tensor]]]: The wavelet coeffs.
+        WaveletTransformReturn3d: A tuple with the approximation coefficients,
+            and a coefficient dict for each scale.
     """
-    result: list[Union[torch.Tensor, dict[str, torch.Tensor]]] = []
+    result: list[dict[str, torch.Tensor]] = []
     approx = input
 
     if level is None:
@@ -139,18 +141,18 @@ def _separable_conv_wavedecn(
         approx_key = "a" * (len(input.shape) - 1)
         approx = level_dict.pop(approx_key)
         result.append(level_dict)
-    result.append(approx)
-    return result[::-1]
+    result.reverse()
+    return approx, *result
 
 
 def _separable_conv_waverecn(
-    coeffs: Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]],
+    coeffs: WaveletTransformReturn3d,
     wavelet: pywt.Wavelet,
 ) -> torch.Tensor:
     """Separable n-dimensional wavelet synthesis transform.
 
     Args:
-        coeffs (Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]]):
+        coeffs (WaveletTransformReturn3d):
             The output as produced by `_separable_conv_wavedecn`.
         wavelet (pywt.Wavelet):
             The wavelet used by `_separable_conv_wavedecn`.
@@ -168,9 +170,9 @@ def _separable_conv_waverecn(
 
     approx: torch.Tensor = coeffs[0]
     for level_dict in coeffs[1:]:
-        keys = list(level_dict.keys())  # type: ignore
-        level_dict["a" * max(map(len, keys))] = approx  # type: ignore
-        approx = _separable_conv_idwtn(level_dict, wavelet)  # type: ignore
+        keys = list(level_dict.keys())
+        level_dict["a" * max(map(len, keys))] = approx
+        approx = _separable_conv_idwtn(level_dict, wavelet)
     return approx
 
 
@@ -181,7 +183,7 @@ def fswavedec2(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: tuple[int, int] = (-2, -1),
-) -> list[Union[torch.Tensor, dict[str, torch.Tensor]]]:
+) -> WaveletTransformReturn3d:
     """Compute a fully separable 2D-padded analysis wavelet transform.
 
     Args:
@@ -202,8 +204,8 @@ def fswavedec2(
         ValueError: If the data is not a batched 2D signal.
 
     Returns:
-        list[Union[torch.Tensor, dict[str, torch.Tensor]]]:
-        A list with the lll coefficients and dictionaries
+        WaveletTransformReturn3d:
+        A tuple with the lll coefficients and dictionaries
         with the filter order strings::
 
         ("ad", "da", "dd")
@@ -251,7 +253,7 @@ def fswavedec3(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: tuple[int, int, int] = (-3, -2, -1),
-) -> list[Union[torch.Tensor, dict[str, torch.Tensor]]]:
+) -> WaveletTransformReturn3d:
     """Compute a fully separable 3D-padded analysis wavelet transform.
 
     Args:
@@ -271,8 +273,8 @@ def fswavedec3(
         ValueError: If the input is not a batched 3D signal.
 
     Returns:
-        list[Union[torch.Tensor, dict[str, torch.Tensor]]]:
-        A list with the lll coefficients and dictionaries
+        WaveletTransformReturn3d:
+        A tuple with the lll coefficients and dictionaries
         with the filter order strings::
 
         ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
@@ -316,7 +318,7 @@ def fswavedec3(
 
 
 def fswaverec2(
-    coeffs: Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]],
+    coeffs: WaveletTransformReturn3d,
     wavelet: Union[str, pywt.Wavelet],
     axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
@@ -326,7 +328,7 @@ def fswaverec2(
     the hood.
 
     Args:
-        coeffs (Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]]):
+        coeffs (WaveletTransformReturn3d):
             The wavelet coefficients as computed by `fswavedec2`.
         wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
             synthesis transform.
@@ -383,14 +385,14 @@ def fswaverec2(
 
 
 def fswaverec3(
-    coeffs: Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]],
+    coeffs: WaveletTransformReturn3d,
     wavelet: Union[str, pywt.Wavelet],
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 3D-padded synthesis wavelet transform.
 
     Args:
-        coeffs (Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]]):
+        coeffs (WaveletTransformReturn3d):
             The wavelet coefficients as computed by `fswavedec3`.
         wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
             synthesis transform.

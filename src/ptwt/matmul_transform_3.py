@@ -1,7 +1,6 @@
 """Implement 3D separable boundary transforms."""
 
 import sys
-from collections.abc import Sequence
 from functools import partial
 from typing import NamedTuple, Optional, Union
 
@@ -10,6 +9,7 @@ import torch
 
 from ._util import (
     Wavelet,
+    WaveletTransformReturn3d,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -158,7 +158,7 @@ class MatrixWavedec3(object):
 
     def __call__(
         self, input_signal: torch.Tensor
-    ) -> list[Union[torch.Tensor, dict[str, torch.Tensor]]]:
+    ) -> WaveletTransformReturn3d:
         """Compute a separable 3d-boundary wavelet transform.
 
         Args:
@@ -169,8 +169,8 @@ class MatrixWavedec3(object):
             ValueError: If the input dimensions don't work.
 
         Returns:
-            list[Union[torch.Tensor, dict[str, torch.Tensor]]]:
-                A list with the approximation coefficients,
+            WaveletTransformReturn3d:
+                A tuple with the approximation coefficients,
                 and a coefficient dict for each scale.
         """
         if self.axes != (-3, -2, -1):
@@ -259,17 +259,19 @@ class MatrixWavedec3(object):
                 key: tensor for key, tensor in coeff_dict.items() if key in result_keys
             }
             split_list.append(coeff_dict)
-        split_list.append(lll)
+
+        split_list.reverse()
+        result = lll, *split_list
 
         if ds:
             _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
-            split_list = _map_result(split_list, _unfold_axes_fn)
+            result = _map_result(result, _unfold_axes_fn)
 
         if self.axes != (-3, -2, -1):
             undo_swap_fn = partial(_undo_swap_axes, axes=self.axes)
-            split_list = _map_result(split_list, undo_swap_fn)
+            result = _map_result(result, undo_swap_fn)
 
-        return split_list[::-1]
+        return result
 
 
 class MatrixWaverec3(object):
@@ -387,13 +389,15 @@ class MatrixWaverec3(object):
         return self._cat_coeff_recursive(done_dict)
 
     def __call__(
-        self, coefficients: Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]]
+        self, coefficients: WaveletTransformReturn3d
     ) -> torch.Tensor:
         """Reconstruct a batched 3d-signal from its coefficients.
 
         Args:
-            coefficients (Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]]):
-                The output from MatrixWavedec3.
+            coefficients (WaveletTransformReturn3d):
+                The output from MatrixWavedec3, consisting of a tuple
+                of the approximation coefficients and a dict with the
+                detail coefficients for each scale.
 
         Returns:
             torch.Tensor: A reconstruction of the original signal.
