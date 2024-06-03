@@ -4,7 +4,7 @@ from typing import List, Optional, Sequence, Union
 
 import pywt
 import torch
-import torch.nn.functional as F
+import torch.nn.functional as F  # noqa:N812
 
 from ._util import Wavelet, _as_wavelet, _unfold_axes
 from .conv_transform import (
@@ -15,18 +15,28 @@ from .conv_transform import (
 )
 
 
-def _wrap_padding(x: torch.Tensor, paddings: Sequence[int]) -> torch.Tensor:
-    """Pads a tensor in circular mode more than once if needed"""
-    s = x.shape[-1]  # TODO rename s to something more meaningful
+def circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Tensor:
+    """Pad a tensor in circular mode, more than once if needed."""
+    trailing_dimension = x.shape[-1]
 
     # TODO write what the regular case is
-    if not any(padding > s for padding in paddings):
-        return F.pad(x, paddings, mode="circular")
+    if not any(
+        padding_dimension > trailing_dimension
+        for padding_dimension in padding_dimensions
+    ):
+        return F.pad(x, padding_dimensions, mode="circular")
 
     # TODO what is this doing
-    while any(padding > 0 for padding in paddings):
-        x = F.pad(x, [min(s, padding) for padding in paddings], mode="circular")
-        paddings = [max(padding - s, 0) for padding in paddings]
+    while any(padding_dimension > 0 for padding_dimension in padding_dimensions):
+        reduced_padding_dimensions = [
+            min(trailing_dimension, padding_dimension)
+            for padding_dimension in padding_dimensions
+        ]
+        x = F.pad(x, reduced_padding_dimensions, mode="circular")
+        padding_dimensions = [
+            max(padding_dimension - trailing_dimension, 0)
+            for padding_dimension in padding_dimensions
+        ]
 
     return x
 
@@ -73,7 +83,7 @@ def _swt(
     for current_level in range(level):
         dilation = 2**current_level
         padl, padr = dilation * (filt_len // 2 - 1), dilation * (filt_len // 2)
-        res_lo = _wrap_padding(res_lo, [padl, padr])
+        res_lo = circular_pad(res_lo, [padl, padr])
         res = torch.nn.functional.conv1d(res_lo, filt, stride=1, dilation=dilation)
         res_lo, res_hi = torch.split(res, 1, 1)
         # Trim_approx == False
