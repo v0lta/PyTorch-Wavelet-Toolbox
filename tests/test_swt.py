@@ -7,7 +7,14 @@ import pytest
 import pywt
 import torch
 
-from ptwt._stationary_transform import _iswt, _swt
+from ptwt._stationary_transform import _iswt, _swt, circular_pad
+
+
+def test_circular_pad() -> None:
+    """Test patched circular padding."""
+    expected = ...
+    actual = circular_pad(None, [None, None])  # FIXME
+    assert np.allclose(expected.numpy(), actual.numpy())
 
 
 @pytest.mark.parametrize("level", [1, 2, None])

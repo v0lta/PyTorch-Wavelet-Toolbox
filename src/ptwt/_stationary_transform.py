@@ -16,7 +16,10 @@ from .conv_transform import (
 
 
 def circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Tensor:
-    """Pad a tensor in circular mode, more than once if needed."""
+    """Pad a tensor in circular mode, more than once if needed.
+
+    .. seealso:: Added in https://github.com/v0lta/PyTorch-Wavelet-Toolbox/pull/84/files
+    """
     trailing_dimension = x.shape[-1]
 
     # TODO write what the regular case is
