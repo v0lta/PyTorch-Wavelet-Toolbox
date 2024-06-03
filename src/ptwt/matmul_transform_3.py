@@ -3,7 +3,7 @@
 import sys
 from collections.abc import Sequence
 from functools import partial
-from typing import Dict, NamedTuple, Optional, Union
+from typing import NamedTuple, Optional, Union
 
 import numpy as np
 import torch
@@ -158,7 +158,7 @@ class MatrixWavedec3(object):
 
     def __call__(
         self, input_signal: torch.Tensor
-    ) -> list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+    ) -> list[Union[torch.Tensor, dict[str, torch.Tensor]]]:
         """Compute a separable 3d-boundary wavelet transform.
 
         Args:
@@ -169,7 +169,7 @@ class MatrixWavedec3(object):
             ValueError: If the input dimensions don't work.
 
         Returns:
-            list[Union[torch.Tensor, TypedDict[str, torch.Tensor]]]:
+            list[Union[torch.Tensor, dict[str, torch.Tensor]]]:
                 A list with the approximation coefficients,
                 and a coefficient dict for each scale.
         """
@@ -219,7 +219,7 @@ class MatrixWavedec3(object):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
-        split_list: list[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
+        split_list: list[Union[torch.Tensor, dict[str, torch.Tensor]]] = []
         lll = input_signal
         for scale, fwt_mats in enumerate(self.fwt_matrix_list):
             # fwt_depth_matrix, fwt_row_matrix, fwt_col_matrix = fwt_mats
@@ -239,7 +239,7 @@ class MatrixWavedec3(object):
                 tensor: torch.Tensor,
                 key: str,
                 depth: int,
-                dict: Dict[str, torch.Tensor],
+                dict: dict[str, torch.Tensor],
             ) -> None:
                 if key:
                     dict[key] = tensor
@@ -249,7 +249,7 @@ class MatrixWavedec3(object):
                     _split_rec(ca, "a" + key, depth, dict)
                     _split_rec(cd, "d" + key, depth, dict)
 
-            coeff_dict: Dict[str, torch.Tensor] = {}
+            coeff_dict: dict[str, torch.Tensor] = {}
             _split_rec(lll, "", 3, coeff_dict)
             lll = coeff_dict["aaa"]
             result_keys = list(
@@ -370,7 +370,7 @@ class MatrixWaverec3(object):
                 current_width // 2,
             )
 
-    def _cat_coeff_recursive(self, input_dict: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def _cat_coeff_recursive(self, input_dict: dict[str, torch.Tensor]) -> torch.Tensor:
         done_dict = {}
         a_initial_keys = list(filter(lambda x: x[0] == "a", input_dict.keys()))
         for a_key in a_initial_keys:
@@ -387,12 +387,12 @@ class MatrixWaverec3(object):
         return self._cat_coeff_recursive(done_dict)
 
     def __call__(
-        self, coefficients: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]]
+        self, coefficients: Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]]
     ) -> torch.Tensor:
         """Reconstruct a batched 3d-signal from its coefficients.
 
         Args:
-            coefficients (Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
+            coefficients (Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]]):
                 The output from MatrixWavedec3.
 
         Returns:

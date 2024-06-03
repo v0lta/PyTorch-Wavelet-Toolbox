@@ -2,8 +2,8 @@
 
 This module treats boundaries with edge-padding.
 """
-
-from typing import Optional, Sequence, Union, cast
+from collections.abc import Sequence
+from typing import Optional, Union, cast
 
 import pywt
 import torch

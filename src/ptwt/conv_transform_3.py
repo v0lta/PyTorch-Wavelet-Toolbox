@@ -3,8 +3,9 @@
 The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
 
+from collections.abc import Sequence
 from functools import partial
-from typing import Dict, Optional, Sequence, Union, cast
+from typing import Optional, Union, cast
 
 import pywt
 import torch
@@ -108,7 +109,7 @@ def wavedec3(
     mode: BoundaryMode = "zero",
     level: Optional[int] = None,
     axes: tuple[int, int, int] = (-3, -2, -1),
-) -> list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+) -> list[Union[torch.Tensor, dict[str, torch.Tensor]]]:
     """Compute a three-dimensional wavelet transform.
 
     Args:
@@ -174,7 +175,7 @@ def wavedec3(
             [data.shape[-1], data.shape[-2], data.shape[-3]], wavelet
         )
 
-    result_lst: list[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
+    result_lst: list[Union[torch.Tensor, dict[str, torch.Tensor]]] = []
     res_lll = data
     for _ in range(level):
         if len(res_lll.shape) == 4:
@@ -210,13 +211,13 @@ def wavedec3(
 
 
 def _waverec3d_fold_channels_3d_list(
-    coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]],
 ) -> tuple[
-    list[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    list[Union[torch.Tensor, dict[str, torch.Tensor]]],
     list[int],
 ]:
     # fold the input coefficients for processing conv2d_transpose.
-    fold_coeffs: list[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
+    fold_coeffs: list[Union[torch.Tensor, dict[str, torch.Tensor]]] = []
     ds = list(_check_if_tensor(coeffs[0]).shape)
     for coeff in coeffs:
         if isinstance(coeff, torch.Tensor):
@@ -230,7 +231,7 @@ def _waverec3d_fold_channels_3d_list(
 
 
 def waverec3(
-    coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, dict[str, torch.Tensor]]],
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
@@ -292,7 +293,7 @@ def waverec3(
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_3d_filt(lo=rec_lo, hi=rec_hi)
 
-    coeff_dicts = cast(Sequence[Dict[str, torch.Tensor]], coeffs[1:])
+    coeff_dicts = cast(Sequence[dict[str, torch.Tensor]], coeffs[1:])
     for c_pos, coeff_dict in enumerate(coeff_dicts):
         if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
             raise ValueError(

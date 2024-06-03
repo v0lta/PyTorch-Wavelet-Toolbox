@@ -4,7 +4,7 @@ import collections
 from collections.abc import Sequence
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Dict, Optional, Union, cast
+from typing import TYPE_CHECKING, Callable, Optional, Union, cast
 
 import numpy as np
 import pywt
@@ -97,8 +97,8 @@ class WaveletPacket(BaseDict):
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
         self.boundary = boundary_orthogonalization
-        self._matrix_wavedec_dict: Dict[int, MatrixWavedec] = {}
-        self._matrix_waverec_dict: Dict[int, MatrixWaverec] = {}
+        self._matrix_wavedec_dict: dict[int, MatrixWavedec] = {}
+        self._matrix_waverec_dict: dict[int, MatrixWaverec] = {}
         self.maxlevel: Optional[int] = None
         self.axis = axis
         if data is not None:
@@ -300,8 +300,8 @@ class WaveletPacket2D(BaseDict):
         self.mode = mode
         self.boundary = boundary_orthogonalization
         self.separable = separable
-        self.matrix_wavedec2_dict: Dict[tuple[int, ...], MatrixWavedec2] = {}
-        self.matrix_waverec2_dict: Dict[tuple[int, ...], MatrixWaverec2] = {}
+        self.matrix_wavedec2_dict: dict[tuple[int, ...], MatrixWavedec2] = {}
+        self.matrix_waverec2_dict: dict[tuple[int, ...], MatrixWaverec2] = {}
         self.axes = axes
 
         self.maxlevel: Optional[int] = None
@@ -438,7 +438,7 @@ class WaveletPacket2D(BaseDict):
     def _transform_fsdict_to_tuple_func(
         self,
         fs_dict_func: Callable[
-            [torch.Tensor], list[Union[torch.Tensor, Dict[str, torch.Tensor]]]
+            [torch.Tensor], list[Union[torch.Tensor, dict[str, torch.Tensor]]]
         ],
     ) -> Callable[
         [torch.Tensor],
@@ -448,7 +448,7 @@ class WaveletPacket2D(BaseDict):
             data: torch.Tensor,
         ) -> list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
             a_coeff, fsdict = fs_dict_func(data)
-            fsdict = cast(Dict[str, torch.Tensor], fsdict)
+            fsdict = cast(dict[str, torch.Tensor], fsdict)
             return [
                 cast(torch.Tensor, a_coeff),
                 (fsdict["ad"], fsdict["da"], fsdict["dd"]),
@@ -459,7 +459,7 @@ class WaveletPacket2D(BaseDict):
     def _transform_tuple_to_fsdict_func(
         self,
         fsdict_func: Callable[
-            [list[Union[torch.Tensor, Dict[str, torch.Tensor]]]], torch.Tensor
+            [list[Union[torch.Tensor, dict[str, torch.Tensor]]]], torch.Tensor
         ],
     ) -> Callable[
         [list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
@@ -559,7 +559,7 @@ def get_freq_order(level: int) -> list[list[tuple[str, ...]]]:
             "".join([expanded_paths[p][1] for p in path]),
         )
 
-    nodes_dict: Dict[str, Dict[str, tuple[str, ...]]] = {}
+    nodes_dict: dict[str, dict[str, tuple[str, ...]]] = {}
     for (row_path, col_path), node in [
         (_expand_2d_path(node), node) for node in wp_natural_path
     ]:
