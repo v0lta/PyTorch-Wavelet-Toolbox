@@ -15,6 +15,7 @@ import pywt
 import torch
 
 from ._util import (
+    Wavelet,
     WaveletTransformReturn2d,
     WaveletTransformReturn3d,
     _as_wavelet,
@@ -35,7 +36,7 @@ from .conv_transform_2 import _preprocess_tensor_dec2d
 def _separable_conv_dwtn_(
     rec_dict: dict[str, torch.Tensor],
     input_arg: torch.Tensor,
-    wavelet: Union[str, pywt.Wavelet],
+    wavelet: Union[Wavelet, str],
     *,
     mode: BoundaryMode = "reflect",
     key: str = "",
@@ -46,7 +47,8 @@ def _separable_conv_dwtn_(
 
     Args:
         input_arg (torch.Tensor): Tensor of shape [batch, data_1, ... data_n].
-        wavelet (Union[str, pywt.Wavelet]): The Wavelet to work with.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
         mode : The padding mode. The following methods are supported::
 
                 "reflect", "zero", "constant", "periodic".
@@ -69,14 +71,15 @@ def _separable_conv_dwtn_(
 
 
 def _separable_conv_idwtn(
-    in_dict: dict[str, torch.Tensor], wavelet: Union[str, pywt.Wavelet]
+    in_dict: dict[str, torch.Tensor], wavelet: Union[Wavelet, str]
 ) -> torch.Tensor:
     """Separable single level inverse fast wavelet transform.
 
     Args:
         in_dict (dict[str, torch.Tensor]): The dictionary produced
             by _separable_conv_dwtn_ .
-        wavelet (Union[str, pywt.Wavelet]): The wavelet used by
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet, as used by
             _separable_conv_dwtn_ .
 
     Returns:
@@ -109,7 +112,7 @@ def _separable_conv_idwtn(
 
 def _separable_conv_wavedecn(
     input: torch.Tensor,
-    wavelet: pywt.Wavelet,
+    wavelet: Union[Wavelet, str],
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
@@ -118,7 +121,8 @@ def _separable_conv_wavedecn(
 
     Args:
         input (torch.Tensor): A tensor i.e. of shape [batch,axis_1, ... axis_n].
-        wavelet (Wavelet): A pywt wavelet compatible object.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
         mode : The desired padding mode.
         level (int): The desired decomposition level.
 
@@ -147,15 +151,15 @@ def _separable_conv_wavedecn(
 
 def _separable_conv_waverecn(
     coeffs: WaveletTransformReturn3d,
-    wavelet: pywt.Wavelet,
+    wavelet: Union[Wavelet, str],
 ) -> torch.Tensor:
     """Separable n-dimensional wavelet synthesis transform.
 
     Args:
         coeffs (WaveletTransformReturn3d):
             The output as produced by `_separable_conv_wavedecn`.
-        wavelet (pywt.Wavelet):
-            The wavelet used by `_separable_conv_wavedecn`.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet, as used by `_separable_conv_wavedecn`.
 
     Returns:
         torch.Tensor: The reconstruction of the original signal.
@@ -178,7 +182,7 @@ def _separable_conv_waverecn(
 
 def fswavedec2(
     data: torch.Tensor,
-    wavelet: Union[str, pywt.Wavelet],
+    wavelet: Union[Wavelet, str],
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
@@ -248,7 +252,7 @@ def fswavedec2(
 
 def fswavedec3(
     data: torch.Tensor,
-    wavelet: Union[str, pywt.Wavelet],
+    wavelet: Union[Wavelet, str],
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
@@ -319,7 +323,7 @@ def fswavedec3(
 
 def fswaverec2(
     coeffs: WaveletTransformReturn3d,
-    wavelet: Union[str, pywt.Wavelet],
+    wavelet: Union[Wavelet, str],
     axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 2D-padded synthesis wavelet transform.
@@ -330,7 +334,7 @@ def fswaverec2(
     Args:
         coeffs (WaveletTransformReturn3d):
             The wavelet coefficients as computed by `fswavedec2`.
-        wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
+        wavelet (Wavelet or str): The wavelet to use for the
             synthesis transform.
         axes (tuple[int, int]): Compute the transform over these
             axes instead of the last two. Defaults to (-2, -1).
@@ -386,7 +390,7 @@ def fswaverec2(
 
 def fswaverec3(
     coeffs: WaveletTransformReturn3d,
-    wavelet: Union[str, pywt.Wavelet],
+    wavelet: Union[Wavelet, str],
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 3D-padded synthesis wavelet transform.
@@ -394,7 +398,7 @@ def fswaverec3(
     Args:
         coeffs (WaveletTransformReturn3d):
             The wavelet coefficients as computed by `fswavedec3`.
-        wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
+        wavelet (Wavelet or str): The wavelet to use for the
             synthesis transform.
         axes (tuple[int, int, int]): Compute the transform over these axes
             instead of the last three. Defaults to (-3, -2, -1).
