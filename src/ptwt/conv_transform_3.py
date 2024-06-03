@@ -176,7 +176,7 @@ def wavedec3(
             [data.shape[-1], data.shape[-2], data.shape[-3]], wavelet
         )
 
-    result_lst: list[Union[torch.Tensor, dict[str, torch.Tensor]]] = []
+    result_lst: list[dict[str, torch.Tensor]] = []
     res_lll = data
     for _ in range(level):
         if len(res_lll.shape) == 4:
@@ -198,7 +198,7 @@ def wavedec3(
             }
         )
     result_lst.reverse()
-    result = res_lll, *result_lst
+    result: WaveletTransformReturn3d = res_lll, *result_lst
 
     if ds:
         _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
@@ -214,21 +214,21 @@ def wavedec3(
 def _waverec3d_fold_channels_3d_list(
     coeffs: WaveletTransformReturn3d,
 ) -> tuple[
-    list[Union[torch.Tensor, dict[str, torch.Tensor]]],
+    WaveletTransformReturn3d,
     list[int],
 ]:
     # fold the input coefficients for processing conv2d_transpose.
-    fold_coeffs: list[Union[torch.Tensor, dict[str, torch.Tensor]]] = []
+    fold_approx_coeff = _fold_axes(coeffs[0], 3)[0]
+    fold_coeffs: list[dict[str, torch.Tensor]] = []
     ds = list(_check_if_tensor(coeffs[0]).shape)
-    for coeff in coeffs:
-        if isinstance(coeff, torch.Tensor):
-            fold_coeffs.append(_fold_axes(coeff, 3)[0])
-        else:
-            new_dict = {}
-            for key, value in coeff.items():
-                new_dict[key] = _fold_axes(value, 3)[0]
-            fold_coeffs.append(new_dict)
-    return fold_coeffs, ds
+    fold_coeffs = [
+        {
+            key: _fold_axes(value, 3)[0]
+            for key, value in coeff.items()
+        }
+        for coeff in coeffs[1:]
+    ]
+    return (fold_approx_coeff, *fold_coeffs), ds
 
 
 def waverec3(

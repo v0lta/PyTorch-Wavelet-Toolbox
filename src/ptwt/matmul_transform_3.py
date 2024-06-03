@@ -219,7 +219,7 @@ class MatrixWavedec3(object):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
-        split_list: list[Union[torch.Tensor, dict[str, torch.Tensor]]] = []
+        split_list: list[dict[str, torch.Tensor]] = []
         lll = input_signal
         for scale, fwt_mats in enumerate(self.fwt_matrix_list):
             # fwt_depth_matrix, fwt_row_matrix, fwt_col_matrix = fwt_mats
@@ -261,7 +261,7 @@ class MatrixWavedec3(object):
             split_list.append(coeff_dict)
 
         split_list.reverse()
-        result = lll, *split_list
+        result: WaveletTransformReturn3d = lll, *split_list
 
         if ds:
             _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)

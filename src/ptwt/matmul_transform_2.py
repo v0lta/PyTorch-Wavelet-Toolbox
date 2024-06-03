@@ -544,7 +544,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             ll = ll.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(2, 1)
 
         split_list.reverse()
-        result = ll, *split_list
+        result: WaveletTransformReturn2d = ll, *split_list
 
         if ds:
             _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)

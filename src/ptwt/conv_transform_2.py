@@ -222,7 +222,7 @@ def wavedec2(
 
     result_lst.reverse()
     res_ll = res_ll.squeeze(1)
-    result = res_ll, *result_lst
+    result: WaveletTransformReturn2d = res_ll, *result_lst
 
     if ds:
         _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)

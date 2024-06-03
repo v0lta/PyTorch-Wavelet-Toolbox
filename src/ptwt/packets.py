@@ -10,7 +10,7 @@ import numpy as np
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet
+from ._util import Wavelet, WaveletTransformReturn2d, WaveletTransformReturn3d, _as_wavelet
 from .constants import ExtendedBoundaryMode, OrthogonalizeMethod
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
@@ -356,7 +356,7 @@ class WaveletPacket2D(BaseDict):
                 data_v = self[node + "v"]
                 data_d = self[node + "d"]
                 rec = self._get_waverec(data_a.shape[-2:])(
-                    [data_a, (data_h, data_v, data_d)]
+                    (data_a, (data_h, data_v, data_d))
                 )
                 if level > 0:
                     if rec.shape[-1] != self[node].shape[-1]:
@@ -384,8 +384,7 @@ class WaveletPacket2D(BaseDict):
         return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
 
     def _get_wavedec(self, shape: tuple[int, ...]) -> Callable[
-        [torch.Tensor],
-        list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+        [torch.Tensor], WaveletTransformReturn2d,
     ]:
         if self.mode == "boundary":
             shape = tuple(shape)
@@ -414,10 +413,7 @@ class WaveletPacket2D(BaseDict):
                 wavedec2, wavelet=self.wavelet, level=1, mode=self.mode, axes=self.axes
             )
 
-    def _get_waverec(self, shape: tuple[int, ...]) -> Callable[
-        [list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
-        torch.Tensor,
-    ]:
+    def _get_waverec(self, shape: tuple[int, ...]) -> Callable[[WaveletTransformReturn2d], torch.Tensor]:
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_waverec2_dict.keys():
@@ -437,41 +433,30 @@ class WaveletPacket2D(BaseDict):
 
     def _transform_fsdict_to_tuple_func(
         self,
-        fs_dict_func: Callable[
-            [torch.Tensor], list[Union[torch.Tensor, dict[str, torch.Tensor]]]
-        ],
-    ) -> Callable[
-        [torch.Tensor],
-        list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
-    ]:
+        fs_dict_func: Callable[[torch.Tensor], WaveletTransformReturn3d],
+    ) -> Callable[[torch.Tensor], WaveletTransformReturn2d]:
         def _tuple_func(
             data: torch.Tensor,
-        ) -> list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-            a_coeff, fsdict = fs_dict_func(data)
-            fsdict = cast(dict[str, torch.Tensor], fsdict)
-            return [
-                cast(torch.Tensor, a_coeff),
-                (fsdict["ad"], fsdict["da"], fsdict["dd"]),
-            ]
+        ) -> WaveletTransformReturn2d:
+            fs_dict_data = fs_dict_func(data)
+            # assert for type checking
+            assert len(fs_dict_data) == 2
+            a_coeff, fsdict = fs_dict_data
+            return (a_coeff, (fsdict["ad"], fsdict["da"], fsdict["dd"]))
 
         return _tuple_func
 
     def _transform_tuple_to_fsdict_func(
         self,
-        fsdict_func: Callable[
-            [list[Union[torch.Tensor, dict[str, torch.Tensor]]]], torch.Tensor
-        ],
-    ) -> Callable[
-        [list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
-        torch.Tensor,
-    ]:
+        fsdict_func: Callable[[WaveletTransformReturn3d], torch.Tensor],
+    ) -> Callable[[WaveletTransformReturn2d], torch.Tensor]:
         def _fsdict_func(
-            coeffs: Sequence[
-                Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-            ]
+            coeffs: WaveletTransformReturn2d
         ) -> torch.Tensor:
+            # assert for type checking
+            assert len(coeffs) == 2
             a, (h, v, d) = coeffs
-            return fsdict_func([cast(torch.Tensor, a), {"ad": h, "da": v, "dd": d}])
+            return fsdict_func((a, {"ad": h, "da": v, "dd": d}))
 
         return _fsdict_func
 
@@ -481,11 +466,11 @@ class WaveletPacket2D(BaseDict):
 
         self.data[path] = data
         if level < self.maxlevel:
-            result_a, (result_h, result_v, result_d) = self._get_wavedec(
-                data.shape[-2:]
-            )(data)
+            result = self._get_wavedec(data.shape[-2:])(data)
+
             # assert for type checking
-            assert not isinstance(result_a, tuple)
+            assert len(result) == 2
+            result_a, (result_h, result_v, result_d) = result
             self._recursive_dwt2d(result_a, level + 1, path + "a")
             self._recursive_dwt2d(result_h, level + 1, path + "h")
             self._recursive_dwt2d(result_v, level + 1, path + "v")
