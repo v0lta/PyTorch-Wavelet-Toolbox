@@ -183,7 +183,7 @@ class WaveletPacket(BaseDict):
     def _get_waverec(
         self,
         length: int,
-    ) -> Callable[[list[torch.Tensor]], torch.Tensor]:
+    ) -> Callable[[Sequence[torch.Tensor]], torch.Tensor]:
         if self.mode == "boundary":
             if length not in self._matrix_waverec_dict.keys():
                 self._matrix_waverec_dict[length] = MatrixWaverec(
