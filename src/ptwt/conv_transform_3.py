@@ -127,7 +127,7 @@ def wavedec3(
             instead of the last three. Defaults to (-3, -2, -1).
 
     Returns:
-        WaveletTransformReturn3d: A tuple with the lll coefficients and
+        WaveletCoeffDetailDict: A tuple with the lll coefficients and
         dictionaries with the filter order strings::
 
             ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
@@ -236,7 +236,8 @@ def waverec3(
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
-        coeffs (WaveletTransformReturn3d): The wavelet coefficient tuple produced by wavedec3.
+        coeffs (WaveletCoeffDetailDict): The wavelet coefficient tuple
+            produced by wavedec3.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         axes (tuple[int, int, int]): Transform these axes instead of the

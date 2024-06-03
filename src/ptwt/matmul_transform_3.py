@@ -167,7 +167,7 @@ class MatrixWavedec3(object):
             ValueError: If the input dimensions don't work.
 
         Returns:
-            WaveletTransformReturn3d:
+            WaveletCoeffDetailDict:
                 A tuple with the approximation coefficients,
                 and a coefficient dict for each scale.
         """
@@ -390,7 +390,7 @@ class MatrixWaverec3(object):
         """Reconstruct a batched 3d-signal from its coefficients.
 
         Args:
-            coefficients (WaveletTransformReturn3d):
+            coefficients (WaveletCoeffDetailDict):
                 The output from MatrixWavedec3, consisting of a tuple
                 of the approximation coefficients and a dict with the
                 detail coefficients for each scale.

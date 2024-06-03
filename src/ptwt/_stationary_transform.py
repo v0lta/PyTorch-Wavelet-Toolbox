@@ -115,7 +115,8 @@ def _iswt(
     """Inverts a 1d stationary wavelet transform.
 
     Args:
-        coeffs (Sequence[torch.Tensor]): The coefficients as computed by the swt function.
+        coeffs (Sequence[torch.Tensor]): The coefficients as computed
+            by the swt function.
         wavelet (Union[pywt.Wavelet, str]): The wavelet used for the forward transform.
         axis (int, optional): The axis the forward trasform was computed over.
             Defaults to -1.

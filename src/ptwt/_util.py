@@ -193,7 +193,6 @@ def _map_result(
     data: Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict],
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict]:
-    return_tuple = isinstance(data, tuple)
     approx = function(data[0])
     result_lst: list[
         Union[

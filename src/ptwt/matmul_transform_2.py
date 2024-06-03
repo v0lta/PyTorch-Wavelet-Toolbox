@@ -4,7 +4,6 @@ This module uses boundary filters to minimize padding.
 """
 
 import sys
-from collections.abc import Sequence
 from functools import partial
 from typing import Optional, Union, cast
 
@@ -430,8 +429,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 This transform affects the last two dimensions.
 
         Returns:
-            (WaveletTransformReturn2d): The resulting coefficients per level are stored in
-            a pywt style tuple. The tuple is ordered as::
+            (WaveletCoeffDetailTuple2d): The resulting coefficients per level
+                are stored in a pywt style tuple. The tuple is ordered as::
 
                 (ll, (lh, hl, hh), ...)
 
@@ -729,7 +728,7 @@ class MatrixWaverec2(object):
         """Compute the inverse matrix 2d fast wavelet transform.
 
         Args:
-            coefficients (WaveletTransformReturn2d): The coefficient tuple as returned
+            coefficients (WaveletCoeffDetailTuple2d): The coefficient tuple as returned
                 by the `MatrixWavedec2`-Object.
 
         Returns:

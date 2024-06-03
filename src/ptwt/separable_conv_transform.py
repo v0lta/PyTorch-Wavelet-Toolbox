@@ -11,13 +11,11 @@ from functools import partial
 from typing import Optional, Union
 
 import numpy as np
-import pywt
 import torch
 
 from ._util import (
     Wavelet,
     WaveletCoeffDetailDict,
-    WaveletCoeffDetailTuple2d,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -127,7 +125,7 @@ def _separable_conv_wavedecn(
         level (int): The desired decomposition level.
 
     Returns:
-        WaveletTransformReturn3d: A tuple with the approximation coefficients,
+        WaveletCoeffDetailDict: A tuple with the approximation coefficients,
             and a coefficient dict for each scale.
     """
     result: list[dict[str, torch.Tensor]] = []
@@ -156,7 +154,7 @@ def _separable_conv_waverecn(
     """Separable n-dimensional wavelet synthesis transform.
 
     Args:
-        coeffs (WaveletTransformReturn3d):
+        coeffs (WaveletCoeffDetailDict):
             The output as produced by `_separable_conv_wavedecn`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet, as used by `_separable_conv_wavedecn`.
@@ -208,7 +206,7 @@ def fswavedec2(
         ValueError: If the data is not a batched 2D signal.
 
     Returns:
-        WaveletTransformReturn3d:
+        WaveletCoeffDetailDict:
         A tuple with the lll coefficients and dictionaries
         with the filter order strings::
 
@@ -277,7 +275,7 @@ def fswavedec3(
         ValueError: If the input is not a batched 3D signal.
 
     Returns:
-        WaveletTransformReturn3d:
+        WaveletCoeffDetailDict:
         A tuple with the lll coefficients and dictionaries
         with the filter order strings::
 
@@ -332,7 +330,7 @@ def fswaverec2(
     the hood.
 
     Args:
-        coeffs (WaveletTransformReturn3d):
+        coeffs (WaveletCoeffDetailDict):
             The wavelet coefficients as computed by `fswavedec2`.
         wavelet (Wavelet or str): The wavelet to use for the
             synthesis transform.
@@ -396,7 +394,7 @@ def fswaverec3(
     """Compute a fully separable 3D-padded synthesis wavelet transform.
 
     Args:
-        coeffs (WaveletTransformReturn3d):
+        coeffs (WaveletCoeffDetailDict):
             The wavelet coefficients as computed by `fswavedec3`.
         wavelet (Wavelet or str): The wavelet to use for the
             synthesis transform.

@@ -4,7 +4,6 @@ The implementation relies on torch.nn.functional.conv2d and
 torch.nn.functional.conv_transpose2d under the hood.
 """
 
-from collections.abc import Sequence
 from functools import partial
 from typing import Optional, Union, cast
 
@@ -169,7 +168,7 @@ def wavedec2(
             last two. Defaults to (-2, -1).
 
     Returns:
-        WaveletTransformReturn2d: A tuple containing the wavelet coefficients.
+        WaveletCoeffDetailTuple2d: A tuple containing the wavelet coefficients.
         The coefficients are in pywt order. That is::
 
             [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .
@@ -248,8 +247,9 @@ def waverec2(
     or forward transform by running transposed convolutions.
 
     Args:
-        coeffs (WaveletTransformReturn2d): The wavelet coefficient tupl produced by wavedec2.
-            The coefficients must be in pywt order. That is::
+        coeffs (WaveletCoeffDetailTuple2d): The wavelet coefficient tuple
+            produced by wavedec2. The coefficients must be in pywt order.
+            That is::
 
             [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .
 

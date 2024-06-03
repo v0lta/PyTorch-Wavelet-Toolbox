@@ -4,7 +4,7 @@ import collections
 from collections.abc import Sequence
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Optional, Union, cast
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 import numpy as np
 import pywt

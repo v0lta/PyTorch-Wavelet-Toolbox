@@ -8,7 +8,7 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
 
 import sys
-from collections import Sequence
+from collections.abc import Sequence
 from typing import Optional, Union
 
 import numpy as np
@@ -600,8 +600,8 @@ class MatrixWaverec(object):
         """Run the synthesis or inverse matrix fwt.
 
         Args:
-            coefficients (Sequence[torch.Tensor]): The coefficients produced by the forward
-                transform.
+            coefficients (Sequence[torch.Tensor]): The coefficients produced
+                by the forward transform.
 
         Returns:
             torch.Tensor: The input signal reconstruction.
