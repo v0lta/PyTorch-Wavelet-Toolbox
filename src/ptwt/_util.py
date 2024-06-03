@@ -169,10 +169,26 @@ def _undo_swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
     return torch.permute(data, restore_sorted)
 
 
+@overload
 def _map_result(
-    data: Sequence[Union[torch.Tensor, Any]],  # following jax tree_map typing can be Any
-    function: Callable[[Any], torch.Tensor],
-) -> list[Union[torch.Tensor, Any]]:
+    data: WaveletTransformReturn2d,
+    function: Callable[[torch.Tensor], torch.Tensor],
+) -> WaveletTransformReturn2d:
+    ...
+
+
+@overload
+def _map_result(
+    data: WaveletTransformReturn3d,
+    function: Callable[[torch.Tensor], torch.Tensor],
+) -> WaveletTransformReturn3d:
+    ...
+
+
+def _map_result(
+    data: Union[WaveletTransformReturn2d, WaveletTransformReturn3d],
+    function: Callable[[torch.Tensor], torch.Tensor]
+) -> Union[WaveletTransformReturn2d, WaveletTransformReturn3d]:
     # Apply the given function to the input list of tensor and tuples.
     result_lst: list[Union[torch.Tensor, Any]] = []
     for element in data:
