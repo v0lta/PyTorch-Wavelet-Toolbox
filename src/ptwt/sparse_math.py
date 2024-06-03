@@ -1,7 +1,6 @@
 """Efficiently construct fwt operations using sparse matrices."""
 
 from itertools import product
-from typing import List
 
 import torch
 
@@ -308,7 +307,7 @@ def _orth_by_gram_schmidt(
     Returns:
         torch.Tensor: The orthogonalized sparse matrix.
     """
-    done: List[int] = []
+    done: list[int] = []
     # loop over the rows we want to orthogonalize
     for row_no_to_ortho in to_orthogonalize:
         current_row = matrix.select(0, row_no_to_ortho).unsqueeze(0)

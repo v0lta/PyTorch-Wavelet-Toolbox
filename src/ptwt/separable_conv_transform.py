@@ -9,7 +9,7 @@ using torch.nn.functional.conv1d and it's transpose.
 
 from collections.abc import Sequence
 from functools import partial
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import pywt
@@ -112,7 +112,7 @@ def _separable_conv_wavedecn(
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+) -> list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a multilevel separable padded wavelet analysis transform.
 
     Args:
@@ -122,9 +122,9 @@ def _separable_conv_wavedecn(
         level (int): The desired decomposition level.
 
     Returns:
-        List[Union[torch.Tensor, Dict[str, torch.Tensor]]]: The wavelet coeffs.
+        list[Union[torch.Tensor, Dict[str, torch.Tensor]]]: The wavelet coeffs.
     """
-    result: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
+    result: list[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
     approx = input
 
     if level is None:
@@ -181,7 +181,7 @@ def fswavedec2(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: Tuple[int, int] = (-2, -1),
-) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+) -> list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a fully separable 2D-padded analysis wavelet transform.
 
     Args:
@@ -202,7 +202,7 @@ def fswavedec2(
         ValueError: If the data is not a batched 2D signal.
 
     Returns:
-        List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+        list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
         A list with the lll coefficients and dictionaries
         with the filter order strings::
 
@@ -251,7 +251,7 @@ def fswavedec3(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: Tuple[int, int, int] = (-3, -2, -1),
-) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+) -> list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a fully separable 3D-padded analysis wavelet transform.
 
     Args:
@@ -271,7 +271,7 @@ def fswavedec3(
         ValueError: If the input is not a batched 3D signal.
 
     Returns:
-        List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+        list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
         A list with the lll coefficients and dictionaries
         with the filter order strings::
 

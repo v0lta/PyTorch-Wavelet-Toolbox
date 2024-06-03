@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 import typing
-from typing import Any, Callable, List, Optional, Protocol, Tuple, Union
+from typing import Any, Callable, Optional, Protocol, Tuple, Union
 
 import numpy as np
 import pywt
@@ -107,7 +107,7 @@ def _pad_symmetric(
     return signal
 
 
-def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, List[int]]:
+def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, list[int]]:
     """Fold unchanged leading dimensions into a single batch dimension.
 
     Args:
@@ -115,7 +115,7 @@ def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, List[int
         keep_no (int): The number of dimensions to keep.
 
     Returns:
-        Tuple[ torch.Tensor, List[int]]:
+        Tuple[torch.Tensor, list[int]]:
             The folded result array, and the shape of the original input.
     """
     dshape = list(data.shape)
@@ -125,7 +125,7 @@ def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, List[int
     )
 
 
-def _unfold_axes(data: torch.Tensor, ds: List[int], keep_no: int) -> torch.Tensor:
+def _unfold_axes(data: torch.Tensor, ds: list[int], keep_no: int) -> torch.Tensor:
     """Unfold i.e. [batch*channel,height,widht] to [batch,channel,height,width]."""
     return torch.reshape(data, ds[:-keep_no] + list(data.shape[-keep_no:]))
 
@@ -145,7 +145,7 @@ def _check_axes_argument(axes: Sequence[int]) -> None:
 
 def _get_transpose_order(
     axes: Sequence[int], data_shape: Sequence[int]
-) -> Tuple[List[int], List[int]]:
+) -> Tuple[list[int], list[int]]:
     axes = list(map(lambda a: a + len(data_shape) if a < 0 else a, axes))
     all_axes = list(range(len(data_shape)))
     remove_transformed = list(filter(lambda a: a not in axes, all_axes))
@@ -168,9 +168,9 @@ def _undo_swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
 def _map_result(
     data: Sequence[Union[torch.Tensor, Any]],  # following jax tree_map typing can be Any
     function: Callable[[Any], torch.Tensor],
-) -> List[Union[torch.Tensor, Any]]:
+) -> list[Union[torch.Tensor, Any]]:
     # Apply the given function to the input list of tensor and tuples.
-    result_lst: List[Union[torch.Tensor, Any]] = []
+    result_lst: list[Union[torch.Tensor, Any]] = []
     for element in data:
         if isinstance(element, torch.Tensor):
             result_lst.append(function(element))

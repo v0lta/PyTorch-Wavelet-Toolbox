@@ -3,7 +3,7 @@
 This module treats boundaries with edge-padding.
 """
 
-from typing import List, Optional, Sequence, Tuple, Union, cast
+from typing import Optional, Sequence, Tuple, Union, cast
 
 import pywt
 import torch
@@ -174,7 +174,7 @@ def _flatten_2d_coeff_lst(
         Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
     ],
     flatten_tensors: bool = True,
-) -> List[torch.Tensor]:
+) -> list[torch.Tensor]:
     """Flattens a sequence of tensor tuples into a single list.
 
     Args:
@@ -218,14 +218,14 @@ def _adjust_padding_at_reconstruction(
 
 def _preprocess_tensor_dec1d(
     data: torch.Tensor,
-) -> Tuple[torch.Tensor, Union[List[int], None]]:
+) -> Tuple[torch.Tensor, Union[list[int], None]]:
     """Preprocess input tensor dimensions.
 
     Args:
         data (torch.Tensor): An input tensor of any shape.
 
     Returns:
-        Tuple[torch.Tensor, Union[List[int], None]]:
+        Tuple[torch.Tensor, Union[list[int], None]]:
             A data tensor of shape [new_batch, 1, to_process]
             and the original shape, if the shape has changed.
     """
@@ -243,15 +243,15 @@ def _preprocess_tensor_dec1d(
 
 
 def _postprocess_result_list_dec1d(
-    result_lst: Sequence[torch.Tensor], ds: List[int]
-) -> List[torch.Tensor]:
+    result_lst: Sequence[torch.Tensor], ds: list[int]
+) -> list[torch.Tensor]:
     # Unfold axes for the wavelets
     return [_unfold_axes(fres, ds, 1) for fres in result_lst]
 
 
 def _preprocess_result_list_rec1d(
     result_lst: Sequence[torch.Tensor],
-) -> Tuple[List[torch.Tensor], List[int]]:
+) -> Tuple[list[torch.Tensor], list[int]]:
     # Fold axes for the wavelets
     ds = list(result_lst[0].shape)
     fold_coeffs = [_fold_axes(uf_coeff, 1)[0] for uf_coeff in result_lst]
@@ -265,7 +265,7 @@ def wavedec(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axis: int = -1,
-) -> List[torch.Tensor]:
+) -> list[torch.Tensor]:
     r"""Compute the analysis (forward) 1d fast wavelet transform.
 
     The transformation relies on convolution operations with filter

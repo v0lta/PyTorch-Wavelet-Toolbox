@@ -4,7 +4,7 @@ The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
 
 from functools import partial
-from typing import Dict, List, Optional, Sequence, Tuple, Union, cast
+from typing import Dict, Optional, Sequence, Tuple, Union, cast
 
 import pywt
 import torch
@@ -108,7 +108,7 @@ def wavedec3(
     mode: BoundaryMode = "zero",
     level: Optional[int] = None,
     axes: Tuple[int, int, int] = (-3, -2, -1),
-) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+) -> list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a three-dimensional wavelet transform.
 
     Args:
@@ -174,7 +174,7 @@ def wavedec3(
             [data.shape[-1], data.shape[-2], data.shape[-3]], wavelet
         )
 
-    result_lst: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
+    result_lst: list[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
     res_lll = data
     for _ in range(level):
         if len(res_lll.shape) == 4:
@@ -212,11 +212,11 @@ def wavedec3(
 def _waverec3d_fold_channels_3d_list(
     coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
 ) -> Tuple[
-    List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
-    List[int],
+    list[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    list[int],
 ]:
     # fold the input coefficients for processing conv2d_transpose.
-    fold_coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
+    fold_coeffs: list[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
     ds = list(_check_if_tensor(coeffs[0]).shape)
     for coeff in coeffs:
         if isinstance(coeff, torch.Tensor):

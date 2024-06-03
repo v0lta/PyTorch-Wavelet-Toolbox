@@ -6,7 +6,7 @@ This module uses boundary filters to minimize padding.
 import sys
 from collections.abc import Sequence
 from functools import partial
-from typing import List, Optional, Tuple, Union, cast
+from typing import Optional, Tuple, Union, cast
 
 import numpy as np
 import torch
@@ -298,10 +298,10 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         self.boundary = boundary
         self.separable = separable
         self.input_signal_shape: Optional[Tuple[int, int]] = None
-        self.fwt_matrix_list: List[
+        self.fwt_matrix_list: list[
             Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]
         ] = []
-        self.pad_list: List[Tuple[bool, bool]] = []
+        self.pad_list: list[Tuple[bool, bool]] = []
         self.padded = False
 
         if not _is_boundary_mode_supported(self.boundary):
@@ -330,7 +330,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             raise NotImplementedError
 
         # in the non-separable case the list entries are tensors
-        fwt_matrix_list = cast(List[torch.Tensor], self.fwt_matrix_list)
+        fwt_matrix_list = cast(list[torch.Tensor], self.fwt_matrix_list)
 
         if len(fwt_matrix_list) == 1:
             return fwt_matrix_list[0]
@@ -417,7 +417,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
 
     def __call__(
         self, input_signal: torch.Tensor
-    ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+    ) -> list[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
         """Compute the fwt for the given input signal.
 
         The fwt matrix is set up during the first call
@@ -476,7 +476,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
-        split_list: List[
+        split_list: list[
             Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
         ] = []
         if self.separable:
@@ -613,7 +613,7 @@ class MatrixWaverec2(object):
             _check_axes_argument(list(axes))
             self.axes = axes
 
-        self.ifwt_matrix_list: List[
+        self.ifwt_matrix_list: list[
             Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]
         ] = []
         self.level: Optional[int] = None
@@ -644,7 +644,7 @@ class MatrixWaverec2(object):
             raise NotImplementedError
 
         # in the non-separable case the list entries are tensors
-        ifwt_matrix_list = cast(List[torch.Tensor], self.ifwt_matrix_list)
+        ifwt_matrix_list = cast(list[torch.Tensor], self.ifwt_matrix_list)
 
         if len(ifwt_matrix_list) == 1:
             return ifwt_matrix_list[0]

@@ -6,7 +6,7 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 from collections.abc import Sequence
 from functools import partial
-from typing import List, Optional, Tuple, Union, cast
+from typing import Optional, Tuple, Union, cast
 
 import pywt
 import torch
@@ -99,8 +99,8 @@ def _fwt_pad2(
 def _waverec2d_fold_channels_2d_list(
     coeffs: Sequence[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
 ) -> Tuple[
-    List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
-    List[int],
+    list[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    list[int],
 ]:
     # fold the input coefficients for processing conv2d_transpose.
     ds = list(_check_if_tensor(coeffs[0]).shape)
@@ -109,7 +109,7 @@ def _waverec2d_fold_channels_2d_list(
 
 def _preprocess_tensor_dec2d(
     data: torch.Tensor,
-) -> Tuple[torch.Tensor, Union[List[int], None]]:
+) -> Tuple[torch.Tensor, Union[list[int], None]]:
     # Preprocess multidimensional input.
     ds = None
     if len(data.shape) == 2:
@@ -132,7 +132,7 @@ def wavedec2(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: Tuple[int, int] = (-2, -1),
-) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+) -> list[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
     r"""Run a two-dimensional wavelet transformation.
 
     This function relies on two-dimensional convolutions.
@@ -215,7 +215,7 @@ def wavedec2(
     if level is None:
         level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
 
-    result_lst: List[
+    result_lst: list[
         Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
     ] = []
     res_ll = data

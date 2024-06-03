@@ -3,7 +3,7 @@
 import sys
 from collections.abc import Sequence
 from functools import partial
-from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import Dict, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -88,7 +88,7 @@ class MatrixWavedec3(object):
             _check_axes_argument(list(axes))
             self.axes = axes
         self.input_signal_shape: Optional[Tuple[int, int, int]] = None
-        self.fwt_matrix_list: List[List[torch.Tensor]] = []
+        self.fwt_matrix_list: list[list[torch.Tensor]] = []
 
         if not _is_boundary_mode_supported(self.boundary):
             raise NotImplementedError
@@ -158,7 +158,7 @@ class MatrixWavedec3(object):
 
     def __call__(
         self, input_signal: torch.Tensor
-    ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+    ) -> list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
         """Compute a separable 3d-boundary wavelet transform.
 
         Args:
@@ -169,7 +169,7 @@ class MatrixWavedec3(object):
             ValueError: If the input dimensions don't work.
 
         Returns:
-            List[Union[torch.Tensor, TypedDict[str, torch.Tensor]]]:
+            list[Union[torch.Tensor, TypedDict[str, torch.Tensor]]]:
                 A list with the approximation coefficients,
                 and a coefficient dict for each scale.
         """
@@ -219,7 +219,7 @@ class MatrixWavedec3(object):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
-        split_list: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
+        split_list: list[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
         lll = input_signal
         for scale, fwt_mats in enumerate(self.fwt_matrix_list):
             # fwt_depth_matrix, fwt_row_matrix, fwt_col_matrix = fwt_mats
@@ -305,7 +305,7 @@ class MatrixWaverec3(object):
             _check_axes_argument(list(axes))
             self.axes = axes
         self.boundary = boundary
-        self.ifwt_matrix_list: List[List[torch.Tensor]] = []
+        self.ifwt_matrix_list: list[list[torch.Tensor]] = []
         self.input_signal_shape: Optional[Tuple[int, int, int]] = None
         self.level: Optional[int] = None
 

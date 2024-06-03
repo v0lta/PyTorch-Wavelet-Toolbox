@@ -1,7 +1,7 @@
 """This module implements stationary wavelet transforms."""
 
 from collections.abc import Sequence
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import pywt
 import torch
@@ -20,7 +20,7 @@ def _swt(
     wavelet: Union[Wavelet, str],
     level: Optional[int] = None,
     axis: Optional[int] = -1,
-) -> List[torch.Tensor]:
+) -> list[torch.Tensor]:
     """Compute a multilevel 1d stationary wavelet transform.
 
     Args:
@@ -29,7 +29,7 @@ def _swt(
         level (Optional[int], optional): The number of levels to compute
 
     Returns:
-        List[torch.Tensor]: Same as wavedec.
+        list[torch.Tensor]: Same as wavedec.
         Equivalent to pywt.swt with trim_approx=True.
 
     Raises:

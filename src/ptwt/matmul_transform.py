@@ -9,7 +9,7 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 
 import sys
 from collections import Sequence
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -219,10 +219,10 @@ class MatrixWavedec(BaseMatrixWaveDec):
             raise ValueError("MatrixWavedec transforms a single axis only.")
 
         self.input_length: Optional[int] = None
-        self.fwt_matrix_list: List[torch.Tensor] = []
-        self.pad_list: List[bool] = []
+        self.fwt_matrix_list: list[torch.Tensor] = []
+        self.pad_list: list[bool] = []
         self.padded = False
-        self.size_list: List[int] = []
+        self.size_list: list[int] = []
 
         if not _is_boundary_mode_supported(self.boundary):
             raise NotImplementedError
@@ -316,7 +316,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
 
         self.size_list.append(curr_length)
 
-    def __call__(self, input_signal: torch.Tensor) -> List[torch.Tensor]:
+    def __call__(self, input_signal: torch.Tensor) -> list[torch.Tensor]:
         """Compute the matrix fwt for the given input signal.
 
         Matrix FWTs are used to avoid padding.
@@ -330,7 +330,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
                 another axis.
 
         Returns:
-            List[torch.Tensor]: A list with the coefficients for each scale.
+            list[torch.Tensor]: A list with the coefficients for each scale.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer
@@ -501,7 +501,7 @@ class MatrixWaverec(object):
         else:
             raise ValueError("MatrixWaverec transforms a single axis only.")
 
-        self.ifwt_matrix_list: List[torch.Tensor] = []
+        self.ifwt_matrix_list: list[torch.Tensor] = []
         self.level: Optional[int] = None
         self.input_length: Optional[int] = None
         self.padded = False
