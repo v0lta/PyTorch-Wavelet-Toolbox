@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 import typing
-from typing import Any, Callable, Optional, Protocol, Union, overload
+from typing import Any, Callable, Optional, Protocol, Union, cast, overload
 from typing_extensions import Unpack
 
 import numpy as np
@@ -189,20 +189,32 @@ def _map_result(
     data: Union[WaveletTransformReturn2d, WaveletTransformReturn3d],
     function: Callable[[torch.Tensor], torch.Tensor]
 ) -> Union[WaveletTransformReturn2d, WaveletTransformReturn3d]:
-    # Apply the given function to the input list of tensor and tuples.
-    result_lst = []
     return_tuple = isinstance(data, tuple)
-    for element in data:
-        if isinstance(element, torch.Tensor):
-            result_lst.append(function(element))
-        elif isinstance(element, tuple):
-            result_lst.append(tuple(map(function, element)))
+    approx = function(data[0])
+    result_lst: list[
+        Union[
+            tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+            dict[str, torch.Tensor],
+        ]
+    ] = []
+    for element in data[1:]:
+        if isinstance(element, tuple):
+            result_lst.append(
+                (
+                    function(element[0]),
+                    function(element[1]),
+                    function(element[2]),
+                )
+            )
         elif isinstance(element, dict):
             new_dict = {
                 key: function(value)
                 for key, value in element.items()
             }
             result_lst.append(new_dict)
-    if return_tuple:
-        return tuple(result_lst)
-    return result_lst
+        else:
+            raise AssertionError(f"Unexpected input type {type(element)}")
+
+    return_val = approx, *result_lst
+    return_val = cast(Union[WaveletTransformReturn2d, WaveletTransformReturn3d], return_val)
+    return return_val
