@@ -1,13 +1,13 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
 
-from collections.abc import Sequence
 import typing
+from collections.abc import Sequence
 from typing import Any, Callable, Optional, Protocol, Union, cast, overload
-from typing_extensions import Unpack
 
 import numpy as np
 import pywt
 import torch
+from typing_extensions import Unpack
 
 from .constants import OrthogonalizeMethod
 
@@ -30,10 +30,13 @@ class Wavelet(Protocol):
         """Return the number of filter coefficients."""
         return len(self.dec_lo)
 
+
 WaveletDetailTuple2d = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
 WaveletDetailDict = dict[str, torch.Tensor]
 
-WaveletCoeffDetailTuple2d = tuple[torch.Tensor, Unpack[tuple[WaveletDetailTuple2d, ...]]]
+WaveletCoeffDetailTuple2d = tuple[
+    torch.Tensor, Unpack[tuple[WaveletDetailTuple2d, ...]]
+]
 WaveletCoeffDetailDict = tuple[torch.Tensor, Unpack[tuple[WaveletDetailDict, ...]]]
 
 
@@ -96,7 +99,7 @@ def _pad_symmetric_1d(signal: torch.Tensor, pad_list: tuple[int, int]) -> torch.
             cat_list.insert(0, signal[:padl].flip(0))
         if padr > 0:
             cat_list.append(signal[-padr::].flip(0))
-        return torch.cat(cat_list, axis=0)  # type: ignore
+        return torch.cat(cat_list, dim=0)
 
 
 def _pad_symmetric(
@@ -118,7 +121,7 @@ def _fold_axes(data: torch.Tensor, keep_no: int) -> tuple[torch.Tensor, list[int
     """Fold unchanged leading dimensions into a single batch dimension.
 
     Args:
-        data ( torch.Tensor): The input data array.
+        data (torch.Tensor): The input data array.
         keep_no (int): The number of dimensions to keep.
 
     Returns:
@@ -176,21 +179,19 @@ def _undo_swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
 def _map_result(
     data: WaveletCoeffDetailTuple2d,
     function: Callable[[torch.Tensor], torch.Tensor],
-) -> WaveletCoeffDetailTuple2d:
-    ...
+) -> WaveletCoeffDetailTuple2d: ...
 
 
 @overload
 def _map_result(
     data: WaveletCoeffDetailDict,
     function: Callable[[torch.Tensor], torch.Tensor],
-) -> WaveletCoeffDetailDict:
-    ...
+) -> WaveletCoeffDetailDict: ...
 
 
 def _map_result(
     data: Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict],
-    function: Callable[[torch.Tensor], torch.Tensor]
+    function: Callable[[torch.Tensor], torch.Tensor],
 ) -> Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict]:
     return_tuple = isinstance(data, tuple)
     approx = function(data[0])
@@ -210,14 +211,13 @@ def _map_result(
                 )
             )
         elif isinstance(element, dict):
-            new_dict = {
-                key: function(value)
-                for key, value in element.items()
-            }
+            new_dict = {key: function(value) for key, value in element.items()}
             result_lst.append(new_dict)
         else:
             raise AssertionError(f"Unexpected input type {type(element)}")
 
     return_val = approx, *result_lst
-    return_val = cast(Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict], return_val)
+    return_val = cast(
+        Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict], return_val
+    )
     return return_val

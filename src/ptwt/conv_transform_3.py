@@ -222,10 +222,7 @@ def _waverec3d_fold_channels_3d_list(
     fold_coeffs: list[dict[str, torch.Tensor]] = []
     ds = list(_check_if_tensor(coeffs[0]).shape)
     fold_coeffs = [
-        {
-            key: _fold_axes(value, 3)[0]
-            for key, value in coeff.items()
-        }
+        {key: _fold_axes(value, 3)[0] for key, value in coeff.items()}
         for coeff in coeffs[1:]
     ]
     return (fold_approx_coeff, *fold_coeffs), ds

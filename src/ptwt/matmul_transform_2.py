@@ -416,9 +416,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             current_width = current_width // 2
         self.size_list.append((current_height, current_width))
 
-    def __call__(
-        self, input_signal: torch.Tensor
-    ) -> WaveletCoeffDetailTuple2d:
+    def __call__(self, input_signal: torch.Tensor) -> WaveletCoeffDetailTuple2d:
         """Compute the fwt for the given input signal.
 
         The fwt matrix is set up during the first call

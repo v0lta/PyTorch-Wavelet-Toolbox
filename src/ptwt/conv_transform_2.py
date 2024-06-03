@@ -97,7 +97,9 @@ def _fwt_pad2(
     return data_pad
 
 
-def _waverec2d_fold_channels_2d_list(coeffs: WaveletCoeffDetailTuple2d) -> tuple[WaveletCoeffDetailTuple2d, list[int]]:
+def _waverec2d_fold_channels_2d_list(
+    coeffs: WaveletCoeffDetailTuple2d,
+) -> tuple[WaveletCoeffDetailTuple2d, list[int]]:
     # fold the input coefficients for processing conv2d_transpose.
     ds = list(_check_if_tensor(coeffs[0]).shape)
     return _map_result(coeffs, lambda t: _fold_axes(t, 2)[0]), ds

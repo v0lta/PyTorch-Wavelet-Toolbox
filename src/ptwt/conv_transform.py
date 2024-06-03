@@ -2,6 +2,7 @@
 
 This module treats boundaries with edge-padding.
 """
+
 from collections.abc import Sequence
 from typing import Optional, Union, cast
 

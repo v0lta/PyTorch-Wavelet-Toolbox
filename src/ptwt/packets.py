@@ -10,7 +10,12 @@ import numpy as np
 import pywt
 import torch
 
-from ._util import Wavelet, WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict, _as_wavelet
+from ._util import (
+    Wavelet,
+    WaveletCoeffDetailDict,
+    WaveletCoeffDetailTuple2d,
+    _as_wavelet,
+)
 from .constants import ExtendedBoundaryMode, OrthogonalizeMethod
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
@@ -384,7 +389,8 @@ class WaveletPacket2D(BaseDict):
         return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
 
     def _get_wavedec(self, shape: tuple[int, ...]) -> Callable[
-        [torch.Tensor], WaveletCoeffDetailTuple2d,
+        [torch.Tensor],
+        WaveletCoeffDetailTuple2d,
     ]:
         if self.mode == "boundary":
             shape = tuple(shape)
@@ -413,7 +419,9 @@ class WaveletPacket2D(BaseDict):
                 wavedec2, wavelet=self.wavelet, level=1, mode=self.mode, axes=self.axes
             )
 
-    def _get_waverec(self, shape: tuple[int, ...]) -> Callable[[WaveletCoeffDetailTuple2d], torch.Tensor]:
+    def _get_waverec(
+        self, shape: tuple[int, ...]
+    ) -> Callable[[WaveletCoeffDetailTuple2d], torch.Tensor]:
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_waverec2_dict.keys():
@@ -450,9 +458,7 @@ class WaveletPacket2D(BaseDict):
         self,
         fsdict_func: Callable[[WaveletCoeffDetailDict], torch.Tensor],
     ) -> Callable[[WaveletCoeffDetailTuple2d], torch.Tensor]:
-        def _fsdict_func(
-            coeffs: WaveletCoeffDetailTuple2d
-        ) -> torch.Tensor:
+        def _fsdict_func(coeffs: WaveletCoeffDetailTuple2d) -> torch.Tensor:
             # assert for type checking
             assert len(coeffs) == 2
             a, (h, v, d) = coeffs

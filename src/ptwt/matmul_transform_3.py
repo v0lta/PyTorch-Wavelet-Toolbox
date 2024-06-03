@@ -156,9 +156,7 @@ class MatrixWavedec3(object):
             )
         self.size_list.append((current_depth, current_height, current_width))
 
-    def __call__(
-        self, input_signal: torch.Tensor
-    ) -> WaveletCoeffDetailDict:
+    def __call__(self, input_signal: torch.Tensor) -> WaveletCoeffDetailDict:
         """Compute a separable 3d-boundary wavelet transform.
 
         Args:
@@ -388,9 +386,7 @@ class MatrixWaverec3(object):
                 return cat_tensor
         return self._cat_coeff_recursive(done_dict)
 
-    def __call__(
-        self, coefficients: WaveletCoeffDetailDict
-    ) -> torch.Tensor:
+    def __call__(self, coefficients: WaveletCoeffDetailDict) -> torch.Tensor:
         """Reconstruct a batched 3d-signal from its coefficients.
 
         Args:

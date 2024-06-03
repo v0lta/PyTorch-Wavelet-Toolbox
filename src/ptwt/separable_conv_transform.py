@@ -16,8 +16,8 @@ import torch
 
 from ._util import (
     Wavelet,
-    WaveletCoeffDetailTuple2d,
     WaveletCoeffDetailDict,
+    WaveletCoeffDetailTuple2d,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
