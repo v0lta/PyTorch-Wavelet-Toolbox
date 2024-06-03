@@ -4,7 +4,7 @@ The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
 
 from functools import partial
-from typing import Dict, Optional, Sequence, Tuple, Union, cast
+from typing import Dict, Optional, Sequence, Union, cast
 
 import pywt
 import torch
@@ -107,7 +107,7 @@ def wavedec3(
     *,
     mode: BoundaryMode = "zero",
     level: Optional[int] = None,
-    axes: Tuple[int, int, int] = (-3, -2, -1),
+    axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a three-dimensional wavelet transform.
 
@@ -121,7 +121,7 @@ def wavedec3(
             Defaults to "zero". See :data:`ptwt.constants.BoundaryMode`.
         level (Optional[int]): The maximum decomposition level.
             This argument defaults to None.
-        axes (Tuple[int, int, int]): Compute the transform over these axes
+        axes (tuple[int, int, int]): Compute the transform over these axes
             instead of the last three. Defaults to (-3, -2, -1).
 
     Returns:
@@ -211,7 +211,7 @@ def wavedec3(
 
 def _waverec3d_fold_channels_3d_list(
     coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
-) -> Tuple[
+) -> tuple[
     list[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     list[int],
 ]:
@@ -232,7 +232,7 @@ def _waverec3d_fold_channels_3d_list(
 def waverec3(
     coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[Wavelet, str],
-    axes: Tuple[int, int, int] = (-3, -2, -1),
+    axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
@@ -240,7 +240,7 @@ def waverec3(
         coeffs (sequence): The wavelet coefficient sequence produced by wavedec3.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        axes (Tuple[int, int, int]): Transform these axes instead of the
+        axes (tuple[int, int, int]): Transform these axes instead of the
             last three. Defaults to (-3, -2, -1).
 
     Returns:

@@ -6,7 +6,7 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 from collections.abc import Sequence
 from functools import partial
-from typing import Optional, Tuple, Union, cast
+from typing import Optional, Union, cast
 
 import pywt
 import torch
@@ -97,9 +97,9 @@ def _fwt_pad2(
 
 
 def _waverec2d_fold_channels_2d_list(
-    coeffs: Sequence[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
-) -> Tuple[
-    list[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+) -> tuple[
+    list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
     list[int],
 ]:
     # fold the input coefficients for processing conv2d_transpose.
@@ -109,7 +109,7 @@ def _waverec2d_fold_channels_2d_list(
 
 def _preprocess_tensor_dec2d(
     data: torch.Tensor,
-) -> Tuple[torch.Tensor, Union[list[int], None]]:
+) -> tuple[torch.Tensor, Union[list[int], None]]:
     # Preprocess multidimensional input.
     ds = None
     if len(data.shape) == 2:
@@ -131,8 +131,8 @@ def wavedec2(
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-    axes: Tuple[int, int] = (-2, -1),
-) -> list[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+    axes: tuple[int, int] = (-2, -1),
+) -> list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
     r"""Run a two-dimensional wavelet transformation.
 
     This function relies on two-dimensional convolutions.
@@ -167,7 +167,7 @@ def wavedec2(
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The number of desired scales.
             Defaults to None.
-        axes (Tuple[int, int]): Compute the transform over these axes instead of the
+        axes (tuple[int, int]): Compute the transform over these axes instead of the
             last two. Defaults to (-2, -1).
 
     Returns:
@@ -216,7 +216,7 @@ def wavedec2(
         level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
 
     result_lst: list[
-        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+        Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
     ] = []
     res_ll = data
     for _ in range(level):
@@ -240,9 +240,9 @@ def wavedec2(
 
 
 def waverec2(
-    coeffs: Sequence[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
     wavelet: Union[Wavelet, str],
-    axes: Tuple[int, int] = (-2, -1),
+    axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
@@ -259,7 +259,7 @@ def waverec2(
             and D diagonal coefficients.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        axes (Tuple[int, int]): Compute the transform over these axes instead of the
+        axes (tuple[int, int]): Compute the transform over these axes instead of the
             last two. Defaults to (-2, -1).
 
     Returns:

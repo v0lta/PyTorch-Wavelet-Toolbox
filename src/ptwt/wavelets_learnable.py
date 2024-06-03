@@ -5,7 +5,6 @@ See https://arxiv.org/pdf/2004.09569.pdf for more information.
 
 # Inspired by Ripples in Mathematics, Jensen and La Cour-Harbo, Chapter 7.7
 from abc import ABC, abstractmethod
-from typing import Tuple
 
 import torch
 
@@ -22,7 +21,7 @@ class WaveletFilter(ABC):
     @abstractmethod
     def filter_bank(
         self,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return dec_lo, dec_hi, rec_lo, rec_hi."""
         raise NotImplementedError
 
@@ -42,7 +41,7 @@ class WaveletFilter(ABC):
 
     def pf_alias_cancellation_loss(
         self,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the product filter-alias cancellation loss.
 
         See: Strang+Nguyen 105: F0(z) = H1(-z); F1(z) = -H0(-z)
@@ -77,7 +76,7 @@ class WaveletFilter(ABC):
 
     def alias_cancellation_loss(
         self,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the alias cancellation loss.
 
         Implementation of the ac-loss as described
@@ -119,7 +118,7 @@ class WaveletFilter(ABC):
 
     def perfect_reconstruction_loss(
         self,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the perfect reconstruction loss.
 
         Returns:
@@ -196,7 +195,7 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
     @property
     def filter_bank(
         self,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return all filters a a tuple."""
         return self.dec_lo, self.dec_hi, self.rec_lo, self.rec_hi
 

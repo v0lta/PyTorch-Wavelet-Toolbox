@@ -4,7 +4,7 @@ import collections
 from collections.abc import Sequence
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Dict, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Callable, Dict, Optional, Union, cast
 
 import numpy as np
 import pywt
@@ -266,7 +266,7 @@ class WaveletPacket2D(BaseDict):
         wavelet: Union[Wavelet, str],
         mode: ExtendedBoundaryMode = "reflect",
         maxlevel: Optional[int] = None,
-        axes: Tuple[int, int] = (-2, -1),
+        axes: tuple[int, int] = (-2, -1),
         boundary_orthogonalization: OrthogonalizeMethod = "qr",
         separable: bool = False,
     ) -> None:
@@ -300,8 +300,8 @@ class WaveletPacket2D(BaseDict):
         self.mode = mode
         self.boundary = boundary_orthogonalization
         self.separable = separable
-        self.matrix_wavedec2_dict: Dict[Tuple[int, ...], MatrixWavedec2] = {}
-        self.matrix_waverec2_dict: Dict[Tuple[int, ...], MatrixWaverec2] = {}
+        self.matrix_wavedec2_dict: Dict[tuple[int, ...], MatrixWavedec2] = {}
+        self.matrix_waverec2_dict: Dict[tuple[int, ...], MatrixWaverec2] = {}
         self.axes = axes
 
         self.maxlevel: Optional[int] = None
@@ -383,9 +383,9 @@ class WaveletPacket2D(BaseDict):
         """
         return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
 
-    def _get_wavedec(self, shape: Tuple[int, ...]) -> Callable[
+    def _get_wavedec(self, shape: tuple[int, ...]) -> Callable[
         [torch.Tensor],
-        list[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+        list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
     ]:
         if self.mode == "boundary":
             shape = tuple(shape)
@@ -414,8 +414,8 @@ class WaveletPacket2D(BaseDict):
                 wavedec2, wavelet=self.wavelet, level=1, mode=self.mode, axes=self.axes
             )
 
-    def _get_waverec(self, shape: Tuple[int, ...]) -> Callable[
-        [list[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
+    def _get_waverec(self, shape: tuple[int, ...]) -> Callable[
+        [list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
         torch.Tensor,
     ]:
         if self.mode == "boundary":
@@ -442,11 +442,11 @@ class WaveletPacket2D(BaseDict):
         ],
     ) -> Callable[
         [torch.Tensor],
-        list[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+        list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
     ]:
         def _tuple_func(
             data: torch.Tensor,
-        ) -> list[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+        ) -> list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
             a_coeff, fsdict = fs_dict_func(data)
             fsdict = cast(Dict[str, torch.Tensor], fsdict)
             return [
@@ -462,12 +462,12 @@ class WaveletPacket2D(BaseDict):
             [list[Union[torch.Tensor, Dict[str, torch.Tensor]]]], torch.Tensor
         ],
     ) -> Callable[
-        [list[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
+        [list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
         torch.Tensor,
     ]:
         def _fsdict_func(
             coeffs: Sequence[
-                Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+                Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
             ]
         ) -> torch.Tensor:
             a, (h, v, d) = coeffs
@@ -520,7 +520,7 @@ class WaveletPacket2D(BaseDict):
         return super().__getitem__(key)
 
 
-def get_freq_order(level: int) -> list[list[Tuple[str, ...]]]:
+def get_freq_order(level: int) -> list[list[tuple[str, ...]]]:
     """Get the frequency order for a given packet decomposition level.
 
     Use this code to create two-dimensional frequency orderings.
@@ -552,14 +552,14 @@ def get_freq_order(level: int) -> list[list[Tuple[str, ...]]]:
             ]
         return graycode_order
 
-    def _expand_2d_path(path: Tuple[str, ...]) -> Tuple[str, str]:
+    def _expand_2d_path(path: tuple[str, ...]) -> tuple[str, str]:
         expanded_paths = {"d": "hh", "h": "hl", "v": "lh", "a": "ll"}
         return (
             "".join([expanded_paths[p][0] for p in path]),
             "".join([expanded_paths[p][1] for p in path]),
         )
 
-    nodes_dict: Dict[str, Dict[str, Tuple[str, ...]]] = {}
+    nodes_dict: Dict[str, Dict[str, tuple[str, ...]]] = {}
     for (row_path, col_path), node in [
         (_expand_2d_path(node), node) for node in wp_natural_path
     ]:

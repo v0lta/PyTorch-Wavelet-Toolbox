@@ -9,7 +9,7 @@ using torch.nn.functional.conv1d and it's transpose.
 
 from collections.abc import Sequence
 from functools import partial
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Union
 
 import numpy as np
 import pywt
@@ -180,7 +180,7 @@ def fswavedec2(
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-    axes: Tuple[int, int] = (-2, -1),
+    axes: tuple[int, int] = (-2, -1),
 ) -> list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a fully separable 2D-padded analysis wavelet transform.
 
@@ -250,7 +250,7 @@ def fswavedec3(
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-    axes: Tuple[int, int, int] = (-3, -2, -1),
+    axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> list[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
     """Compute a fully separable 3D-padded analysis wavelet transform.
 
@@ -264,7 +264,7 @@ def fswavedec3(
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The number of desired scales.
             Defaults to None.
-        axes (Tuple[int, int, int]): Compute the transform over these axes
+        axes (tuple[int, int, int]): Compute the transform over these axes
             instead of the last three. Defaults to (-3, -2, -1).
 
     Raises:
@@ -318,7 +318,7 @@ def fswavedec3(
 def fswaverec2(
     coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[str, pywt.Wavelet],
-    axes: Tuple[int, int] = (-2, -1),
+    axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 2D-padded synthesis wavelet transform.
 
@@ -330,7 +330,7 @@ def fswaverec2(
             The wavelet coefficients as computed by `fswavedec2`.
         wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
             synthesis transform.
-        axes (Tuple[int, int]): Compute the transform over these
+        axes (tuple[int, int]): Compute the transform over these
             axes instead of the last two. Defaults to (-2, -1).
 
     Returns:
@@ -385,7 +385,7 @@ def fswaverec2(
 def fswaverec3(
     coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[str, pywt.Wavelet],
-    axes: Tuple[int, int, int] = (-3, -2, -1),
+    axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 3D-padded synthesis wavelet transform.
 
@@ -394,7 +394,7 @@ def fswaverec3(
             The wavelet coefficients as computed by `fswavedec3`.
         wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
             synthesis transform.
-        axes (Tuple[int, int, int]): Compute the transform over these axes
+        axes (tuple[int, int, int]): Compute the transform over these axes
             instead of the last three. Defaults to (-3, -2, -1).
 
     Returns:

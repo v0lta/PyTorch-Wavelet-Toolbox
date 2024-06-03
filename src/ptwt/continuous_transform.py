@@ -3,7 +3,7 @@
 This module is based on pywt's cwt implementation.
 """
 
-from typing import Any, Tuple, Union
+from typing import Any, Union
 
 import numpy as np
 import torch
@@ -27,7 +27,7 @@ def cwt(
     scales: Union[np.ndarray, torch.Tensor],  # type: ignore
     wavelet: Union[ContinuousWavelet, str],
     sampling_period: float = 1.0,
-) -> Tuple[torch.Tensor, np.ndarray]:  # type: ignore
+) -> tuple[torch.Tensor, np.ndarray]:  # type: ignore
     """Compute the single-dimensional continuous wavelet transform.
 
     This function is a PyTorch port of pywt.cwt as found at:
@@ -50,7 +50,7 @@ def cwt(
         ValueError: If a scale is too small for the input signal.
 
     Returns:
-        Tuple[torch.Tensor, np.ndarray]: The first tuple-element contains
+        tuple[torch.Tensor, np.ndarray]: The first tuple-element contains
             the transformation matrix of shape [scales, batch, time].
             The second element contains an array with frequency information.
 
@@ -267,7 +267,7 @@ class _DifferentiableContinuousWavelet(
 
     def wavefun(
         self, precision: int, dtype: torch.dtype = torch.float64
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Define a grid and evaluate the wavelet on it."""
         length = 2**precision
         # load the bounds from untyped pywt code.

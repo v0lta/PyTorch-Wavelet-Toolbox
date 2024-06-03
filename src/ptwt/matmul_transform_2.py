@@ -6,7 +6,7 @@ This module uses boundary filters to minimize padding.
 import sys
 from collections.abc import Sequence
 from functools import partial
-from typing import Optional, Tuple, Union, cast
+from typing import Optional, Union, cast
 
 import numpy as np
 import torch
@@ -211,7 +211,7 @@ def construct_boundary_s2(
     return orth_s
 
 
-def _matrix_pad_2(height: int, width: int) -> Tuple[int, int, Tuple[bool, bool]]:
+def _matrix_pad_2(height: int, width: int) -> tuple[int, int, tuple[bool, bool]]:
     pad_tuple = (False, False)
     if height % 2 != 0:
         height += 1
@@ -257,7 +257,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
-        axes: Tuple[int, int] = (-2, -1),
+        axes: tuple[int, int] = (-2, -1),
         boundary: OrthogonalizeMethod = "qr",
         separable: bool = True,
     ):
@@ -297,11 +297,11 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         self.level = level
         self.boundary = boundary
         self.separable = separable
-        self.input_signal_shape: Optional[Tuple[int, int]] = None
+        self.input_signal_shape: Optional[tuple[int, int]] = None
         self.fwt_matrix_list: list[
-            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]
+            Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]
         ] = []
-        self.pad_list: list[Tuple[bool, bool]] = []
+        self.pad_list: list[tuple[bool, bool]] = []
         self.padded = False
 
         if not _is_boundary_mode_supported(self.boundary):
@@ -417,7 +417,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
 
     def __call__(
         self, input_signal: torch.Tensor
-    ) -> list[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+    ) -> list[Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
         """Compute the fwt for the given input signal.
 
         The fwt matrix is set up during the first call
@@ -477,7 +477,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             )
 
         split_list: list[
-            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+            Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
         ] = []
         if self.separable:
             ll = input_signal
@@ -531,7 +531,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                     coefficients, int(np.prod((size[0] // 2, size[1] // 2)))
                 )
                 reshaped = cast(
-                    Tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+                    tuple[torch.Tensor, torch.Tensor, torch.Tensor],
                     tuple(
                         (
                             el.T.reshape(
@@ -576,7 +576,7 @@ class MatrixWaverec2(object):
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
-        axes: Tuple[int, int] = (-2, -1),
+        axes: tuple[int, int] = (-2, -1),
         boundary: OrthogonalizeMethod = "qr",
         separable: bool = True,
     ):
@@ -614,10 +614,10 @@ class MatrixWaverec2(object):
             self.axes = axes
 
         self.ifwt_matrix_list: list[
-            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]
+            Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]
         ] = []
         self.level: Optional[int] = None
-        self.input_signal_shape: Optional[Tuple[int, int]] = None
+        self.input_signal_shape: Optional[tuple[int, int]] = None
 
         self.padded = False
 
@@ -728,7 +728,7 @@ class MatrixWaverec2(object):
     def __call__(
         self,
         coefficients: Sequence[
-            Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+            Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
         ],
     ) -> torch.Tensor:
         """Compute the inverse matrix 2d fast wavelet transform.

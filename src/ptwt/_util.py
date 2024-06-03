@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 import typing
-from typing import Any, Callable, Optional, Protocol, Tuple, Union
+from typing import Any, Callable, Optional, Protocol, Union
 
 import numpy as np
 import pywt
@@ -21,7 +21,7 @@ class Wavelet(Protocol):
     rec_hi: Sequence[float]
     dec_len: int
     rec_len: int
-    filter_bank: Tuple[
+    filter_bank: tuple[
         Sequence[float], Sequence[float], Sequence[float], Sequence[float]
     ]
 
@@ -64,7 +64,7 @@ def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return a_mul * b_mul
 
 
-def _get_len(wavelet: Union[Tuple[torch.Tensor, ...], str, Wavelet]) -> int:
+def _get_len(wavelet: Union[tuple[torch.Tensor, ...], str, Wavelet]) -> int:
     """Get number of filter coefficients for various wavelet data types."""
     if isinstance(wavelet, tuple):
         return wavelet[0].shape[0]
@@ -72,7 +72,7 @@ def _get_len(wavelet: Union[Tuple[torch.Tensor, ...], str, Wavelet]) -> int:
         return len(_as_wavelet(wavelet))
 
 
-def _pad_symmetric_1d(signal: torch.Tensor, pad_list: Tuple[int, int]) -> torch.Tensor:
+def _pad_symmetric_1d(signal: torch.Tensor, pad_list: tuple[int, int]) -> torch.Tensor:
     padl, padr = pad_list
     dimlen = signal.shape[0]
     if padl > dimlen or padr > dimlen:
@@ -93,7 +93,7 @@ def _pad_symmetric_1d(signal: torch.Tensor, pad_list: Tuple[int, int]) -> torch.
 
 
 def _pad_symmetric(
-    signal: torch.Tensor, pad_lists: Sequence[Tuple[int, int]]
+    signal: torch.Tensor, pad_lists: Sequence[tuple[int, int]]
 ) -> torch.Tensor:
     if len(signal.shape) < len(pad_lists):
         raise ValueError("not enough dimensions to pad.")
@@ -107,7 +107,7 @@ def _pad_symmetric(
     return signal
 
 
-def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, list[int]]:
+def _fold_axes(data: torch.Tensor, keep_no: int) -> tuple[torch.Tensor, list[int]]:
     """Fold unchanged leading dimensions into a single batch dimension.
 
     Args:
@@ -115,7 +115,7 @@ def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, list[int
         keep_no (int): The number of dimensions to keep.
 
     Returns:
-        Tuple[torch.Tensor, list[int]]:
+        tuple[torch.Tensor, list[int]]:
             The folded result array, and the shape of the original input.
     """
     dshape = list(data.shape)
@@ -145,7 +145,7 @@ def _check_axes_argument(axes: Sequence[int]) -> None:
 
 def _get_transpose_order(
     axes: Sequence[int], data_shape: Sequence[int]
-) -> Tuple[list[int], list[int]]:
+) -> tuple[list[int], list[int]]:
     axes = list(map(lambda a: a + len(data_shape) if a < 0 else a, axes))
     all_axes = list(range(len(data_shape)))
     remove_transformed = list(filter(lambda a: a not in axes, all_axes))

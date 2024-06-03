@@ -3,7 +3,7 @@
 import sys
 from collections.abc import Sequence
 from functools import partial
-from typing import Dict, NamedTuple, Optional, Tuple, Union
+from typing import Dict, NamedTuple, Optional, Union
 
 import numpy as np
 import torch
@@ -37,7 +37,7 @@ class _PadTuple(NamedTuple):
 
 def _matrix_pad_3(
     depth: int, height: int, width: int
-) -> Tuple[int, int, int, _PadTuple]:
+) -> tuple[int, int, int, _PadTuple]:
     pad_depth, pad_height, pad_width = (False, False, False)
     if height % 2 != 0:
         height += 1
@@ -58,7 +58,7 @@ class MatrixWavedec3(object):
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
-        axes: Tuple[int, int, int] = (-3, -2, -1),
+        axes: tuple[int, int, int] = (-3, -2, -1),
         boundary: OrthogonalizeMethod = "qr",
     ):
         """Create a *separable* three-dimensional fast boundary wavelet transform.
@@ -87,7 +87,7 @@ class MatrixWavedec3(object):
         else:
             _check_axes_argument(list(axes))
             self.axes = axes
-        self.input_signal_shape: Optional[Tuple[int, int, int]] = None
+        self.input_signal_shape: Optional[tuple[int, int, int]] = None
         self.fwt_matrix_list: list[list[torch.Tensor]] = []
 
         if not _is_boundary_mode_supported(self.boundary):
@@ -278,7 +278,7 @@ class MatrixWaverec3(object):
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
-        axes: Tuple[int, int, int] = (-3, -2, -1),
+        axes: tuple[int, int, int] = (-3, -2, -1),
         boundary: OrthogonalizeMethod = "qr",
     ):
         """Compute a three-dimensional separable boundary wavelet synthesis transform.
@@ -286,7 +286,7 @@ class MatrixWaverec3(object):
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
-            axes (Tuple[int, int, int]): Transform these axes instead of the
+            axes (tuple[int, int, int]): Transform these axes instead of the
                 last three. Defaults to (-3, -2, -1).
             boundary : The method used for boundary filter treatment.
                 Choose 'qr' or 'gramschmidt'. 'qr' relies on Pytorch's dense qr
@@ -306,7 +306,7 @@ class MatrixWaverec3(object):
             self.axes = axes
         self.boundary = boundary
         self.ifwt_matrix_list: list[list[torch.Tensor]] = []
-        self.input_signal_shape: Optional[Tuple[int, int, int]] = None
+        self.input_signal_shape: Optional[tuple[int, int, int]] = None
         self.level: Optional[int] = None
 
         if not _is_boundary_mode_supported(self.boundary):

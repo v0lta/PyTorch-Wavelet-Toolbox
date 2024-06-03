@@ -3,7 +3,7 @@
 This module treats boundaries with edge-padding.
 """
 
-from typing import Optional, Sequence, Tuple, Union, cast
+from typing import Optional, Sequence, Union, cast
 
 import pywt
 import torch
@@ -40,7 +40,7 @@ def _get_filter_tensors(
     flip: bool,
     device: Union[torch.device, str],
     dtype: torch.dtype = torch.float32,
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Convert input wavelet to filter tensors.
 
     Args:
@@ -70,7 +70,7 @@ def _get_filter_tensors(
     return dec_lo_tensor, dec_hi_tensor, rec_lo_tensor, rec_hi_tensor
 
 
-def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
+def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
     """Compute the required padding.
 
     Args:
@@ -171,7 +171,7 @@ def _fwt_pad(
 
 def _flatten_2d_coeff_lst(
     coeff_lst_2d: Sequence[
-        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
+        Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
     ],
     flatten_tensors: bool = True,
 ) -> list[torch.Tensor]:
@@ -202,7 +202,7 @@ def _flatten_2d_coeff_lst(
 
 def _adjust_padding_at_reconstruction(
     res_ll_size: int, coeff_size: int, pad_end: int, pad_start: int
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     pred_size = res_ll_size - (pad_start + pad_end)
     next_size = coeff_size
     if next_size == pred_size:
@@ -218,14 +218,14 @@ def _adjust_padding_at_reconstruction(
 
 def _preprocess_tensor_dec1d(
     data: torch.Tensor,
-) -> Tuple[torch.Tensor, Union[list[int], None]]:
+) -> tuple[torch.Tensor, Union[list[int], None]]:
     """Preprocess input tensor dimensions.
 
     Args:
         data (torch.Tensor): An input tensor of any shape.
 
     Returns:
-        Tuple[torch.Tensor, Union[list[int], None]]:
+        tuple[torch.Tensor, Union[list[int], None]]:
             A data tensor of shape [new_batch, 1, to_process]
             and the original shape, if the shape has changed.
     """
@@ -251,7 +251,7 @@ def _postprocess_result_list_dec1d(
 
 def _preprocess_result_list_rec1d(
     result_lst: Sequence[torch.Tensor],
-) -> Tuple[list[torch.Tensor], list[int]]:
+) -> tuple[list[torch.Tensor], list[int]]:
     # Fold axes for the wavelets
     ds = list(result_lst[0].shape)
     fold_coeffs = [_fold_axes(uf_coeff, 1)[0] for uf_coeff in result_lst]
