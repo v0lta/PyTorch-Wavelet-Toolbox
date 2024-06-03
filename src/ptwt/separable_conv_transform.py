@@ -7,6 +7,7 @@ Under the hood, code in this module transforms all dimensions
 using torch.nn.functional.conv1d and it's transpose.
 """
 
+from collections.abc import Sequence
 from functools import partial
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -143,13 +144,13 @@ def _separable_conv_wavedecn(
 
 
 def _separable_conv_waverecn(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: pywt.Wavelet,
 ) -> torch.Tensor:
     """Separable n-dimensional wavelet synthesis transform.
 
     Args:
-        coeffs (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
+        coeffs (Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
             The output as produced by `_separable_conv_wavedecn`.
         wavelet (pywt.Wavelet):
             The wavelet used by `_separable_conv_wavedecn`.
@@ -315,7 +316,7 @@ def fswavedec3(
 
 
 def fswaverec2(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[str, pywt.Wavelet],
     axes: Tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
@@ -325,7 +326,7 @@ def fswaverec2(
     the hood.
 
     Args:
-        coeffs (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
+        coeffs (Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
             The wavelet coefficients as computed by `fswavedec2`.
         wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
             synthesis transform.
@@ -382,14 +383,14 @@ def fswaverec2(
 
 
 def fswaverec3(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[str, pywt.Wavelet],
     axes: Tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 3D-padded synthesis wavelet transform.
 
     Args:
-        coeffs (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
+        coeffs (Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
             The wavelet coefficients as computed by `fswavedec3`.
         wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
             synthesis transform.

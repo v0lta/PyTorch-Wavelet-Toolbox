@@ -8,6 +8,7 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
 
 import sys
+from collections import Sequence
 from typing import List, Optional, Union
 
 import numpy as np
@@ -595,11 +596,11 @@ class MatrixWaverec(object):
             self.ifwt_matrix_list.append(sn)
             curr_length = curr_length // 2
 
-    def __call__(self, coefficients: List[torch.Tensor]) -> torch.Tensor:
+    def __call__(self, coefficients: Sequence[torch.Tensor]) -> torch.Tensor:
         """Run the synthesis or inverse matrix fwt.
 
         Args:
-            coefficients (List[torch.Tensor]): The coefficients produced by the forward
+            coefficients (Sequence[torch.Tensor]): The coefficients produced by the forward
                 transform.
 
         Returns:

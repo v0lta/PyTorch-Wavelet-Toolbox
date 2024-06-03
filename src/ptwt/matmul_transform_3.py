@@ -1,6 +1,7 @@
 """Implement 3D separable boundary transforms."""
 
 import sys
+from collections.abc import Sequence
 from functools import partial
 from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
@@ -386,12 +387,12 @@ class MatrixWaverec3(object):
         return self._cat_coeff_recursive(done_dict)
 
     def __call__(
-        self, coefficients: List[Union[torch.Tensor, Dict[str, torch.Tensor]]]
+        self, coefficients: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]]
     ) -> torch.Tensor:
         """Reconstruct a batched 3d-signal from its coefficients.
 
         Args:
-            coefficients (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
+            coefficients (Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
                 The output from MatrixWavedec3.
 
         Returns:

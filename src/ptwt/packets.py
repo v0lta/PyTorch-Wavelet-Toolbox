@@ -1,6 +1,7 @@
 """Compute analysis wavelet packet representations."""
 
 import collections
+from collections.abc import Sequence
 from functools import partial
 from itertools import product
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union, cast
@@ -465,7 +466,7 @@ class WaveletPacket2D(BaseDict):
         torch.Tensor,
     ]:
         def _fsdict_func(
-            coeffs: List[
+            coeffs: Sequence[
                 Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
             ]
         ) -> torch.Tensor:

@@ -1,5 +1,6 @@
 """This module implements stationary wavelet transforms."""
 
+from collections.abc import Sequence
 from typing import List, Optional, Union
 
 import pywt
@@ -107,14 +108,14 @@ def _conv_transpose_dedilate(
 
 
 def _iswt(
-    coeffs: List[torch.Tensor],
+    coeffs: Sequence[torch.Tensor],
     wavelet: Union[pywt.Wavelet, str],
     axis: Optional[int] = -1,
 ) -> torch.Tensor:
     """Inverts a 1d stationary wavelet transform.
 
     Args:
-        coeffs (List[torch.Tensor]): The coefficients as computed by the swt function.
+        coeffs (Sequence[torch.Tensor]): The coefficients as computed by the swt function.
         wavelet (Union[pywt.Wavelet, str]): The wavelet used for the forward transform.
         axis (int, optional): The axis the forward trasform was computed over.
             Defaults to -1.

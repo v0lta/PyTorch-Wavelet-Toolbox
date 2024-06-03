@@ -1,7 +1,8 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
 
+from collections.abc import Sequence
 import typing
-from typing import Any, Callable, List, Optional, Protocol, Sequence, Tuple, Union
+from typing import Any, Callable, List, Optional, Protocol, Tuple, Union
 
 import numpy as np
 import pywt
@@ -92,7 +93,7 @@ def _pad_symmetric_1d(signal: torch.Tensor, pad_list: Tuple[int, int]) -> torch.
 
 
 def _pad_symmetric(
-    signal: torch.Tensor, pad_lists: List[Tuple[int, int]]
+    signal: torch.Tensor, pad_lists: Sequence[Tuple[int, int]]
 ) -> torch.Tensor:
     if len(signal.shape) < len(pad_lists):
         raise ValueError("not enough dimensions to pad.")
@@ -137,13 +138,13 @@ def _check_if_tensor(array: Any) -> torch.Tensor:
     return array
 
 
-def _check_axes_argument(axes: List[int]) -> None:
+def _check_axes_argument(axes: Sequence[int]) -> None:
     if len(set(axes)) != len(axes):
         raise ValueError("Cant transform the same axis twice.")
 
 
 def _get_transpose_order(
-    axes: List[int], data_shape: List[int]
+    axes: Sequence[int], data_shape: Sequence[int]
 ) -> Tuple[List[int], List[int]]:
     axes = list(map(lambda a: a + len(data_shape) if a < 0 else a, axes))
     all_axes = list(range(len(data_shape)))
@@ -151,13 +152,13 @@ def _get_transpose_order(
     return remove_transformed, axes
 
 
-def _swap_axes(data: torch.Tensor, axes: List[int]) -> torch.Tensor:
+def _swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
     _check_axes_argument(axes)
     front, back = _get_transpose_order(axes, list(data.shape))
     return torch.permute(data, front + back)
 
 
-def _undo_swap_axes(data: torch.Tensor, axes: List[int]) -> torch.Tensor:
+def _undo_swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
     _check_axes_argument(axes)
     front, back = _get_transpose_order(axes, list(data.shape))
     restore_sorted = torch.argsort(torch.tensor(front + back)).tolist()
@@ -165,7 +166,7 @@ def _undo_swap_axes(data: torch.Tensor, axes: List[int]) -> torch.Tensor:
 
 
 def _map_result(
-    data: List[Union[torch.Tensor, Any]],  # following jax tree_map typing can be Any
+    data: Sequence[Union[torch.Tensor, Any]],  # following jax tree_map typing can be Any
     function: Callable[[Any], torch.Tensor],
 ) -> List[Union[torch.Tensor, Any]]:
     # Apply the given function to the input list of tensor and tuples.

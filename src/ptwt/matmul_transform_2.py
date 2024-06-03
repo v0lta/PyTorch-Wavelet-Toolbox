@@ -4,6 +4,7 @@ This module uses boundary filters to minimize padding.
 """
 
 import sys
+from collections.abc import Sequence
 from functools import partial
 from typing import List, Optional, Tuple, Union, cast
 
@@ -726,7 +727,7 @@ class MatrixWaverec2(object):
 
     def __call__(
         self,
-        coefficients: List[
+        coefficients: Sequence[
             Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
         ],
     ) -> torch.Tensor:

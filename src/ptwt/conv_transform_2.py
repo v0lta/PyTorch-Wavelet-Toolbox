@@ -4,6 +4,7 @@ The implementation relies on torch.nn.functional.conv2d and
 torch.nn.functional.conv_transpose2d under the hood.
 """
 
+from collections.abc import Sequence
 from functools import partial
 from typing import List, Optional, Tuple, Union, cast
 
@@ -96,7 +97,7 @@ def _fwt_pad2(
 
 
 def _waverec2d_fold_channels_2d_list(
-    coeffs: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
 ) -> Tuple[
     List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
     List[int],
@@ -239,7 +240,7 @@ def wavedec2(
 
 
 def waverec2(
-    coeffs: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
     wavelet: Union[Wavelet, str],
     axes: Tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
@@ -249,7 +250,7 @@ def waverec2(
     or forward transform by running transposed convolutions.
 
     Args:
-        coeffs (list): The wavelet coefficient list produced by wavedec2.
+        coeffs (sequence): The wavelet coefficient sequence produced by wavedec2.
             The coefficients must be in pywt order. That is::
 
             [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .

@@ -210,7 +210,7 @@ def wavedec3(
 
 
 def _waverec3d_fold_channels_3d_list(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
 ) -> Tuple[
     List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     List[int],
@@ -230,14 +230,14 @@ def _waverec3d_fold_channels_3d_list(
 
 
 def waverec3(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    coeffs: Sequence[Union[torch.Tensor, Dict[str, torch.Tensor]]],
     wavelet: Union[Wavelet, str],
     axes: Tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
-        coeffs (list): The wavelet coefficient list produced by wavedec3.
+        coeffs (sequence): The wavelet coefficient sequence produced by wavedec3.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         axes (Tuple[int, int, int]): Transform these axes instead of the

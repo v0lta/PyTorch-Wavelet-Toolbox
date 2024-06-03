@@ -170,15 +170,15 @@ def _fwt_pad(
 
 
 def _flatten_2d_coeff_lst(
-    coeff_lst_2d: List[
+    coeff_lst_2d: Sequence[
         Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
     ],
     flatten_tensors: bool = True,
 ) -> List[torch.Tensor]:
-    """Flattens a list of tensor tuples into a single list.
+    """Flattens a sequence of tensor tuples into a single list.
 
     Args:
-        coeff_lst_2d (list): A pywt-style coefficient list of torch tensors.
+        coeff_lst_2d (Sequence): A pywt-style coefficient sequence of torch tensors.
         flatten_tensors (bool): If true, 2d tensors are flattened. Defaults to True.
 
     Returns:
@@ -243,14 +243,14 @@ def _preprocess_tensor_dec1d(
 
 
 def _postprocess_result_list_dec1d(
-    result_lst: List[torch.Tensor], ds: List[int]
+    result_lst: Sequence[torch.Tensor], ds: List[int]
 ) -> List[torch.Tensor]:
     # Unfold axes for the wavelets
     return [_unfold_axes(fres, ds, 1) for fres in result_lst]
 
 
 def _preprocess_result_list_rec1d(
-    result_lst: List[torch.Tensor],
+    result_lst: Sequence[torch.Tensor],
 ) -> Tuple[List[torch.Tensor], List[int]]:
     # Fold axes for the wavelets
     ds = list(result_lst[0].shape)
@@ -360,12 +360,12 @@ def wavedec(
 
 
 def waverec(
-    coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str], axis: int = -1
+    coeffs: Sequence[torch.Tensor], wavelet: Union[Wavelet, str], axis: int = -1
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
-        coeffs (list): The wavelet coefficient list produced by wavedec.
+        coeffs (Sequence): The wavelet coefficient sequence produced by wavedec.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         axis (int): Transform this axis instead of the last one. Defaults to -1.
