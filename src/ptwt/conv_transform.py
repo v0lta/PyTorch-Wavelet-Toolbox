@@ -4,13 +4,14 @@ This module treats boundaries with edge-padding.
 """
 
 from collections.abc import Sequence
-from typing import Optional, Union, cast
+from typing import Optional, Union
 
 import pywt
 import torch
 
 from ._util import (
     Wavelet,
+    WaveletCoeffDetailTuple2d,
     _as_wavelet,
     _fold_axes,
     _get_len,
@@ -159,7 +160,7 @@ def _fwt_pad(
 
     # convert pywt to pytorch convention.
     if mode is None:
-        mode = cast(BoundaryMode, "reflect")
+        mode = "reflect"
     pytorch_mode = _translate_boundary_strings(mode)
 
     padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
@@ -171,33 +172,26 @@ def _fwt_pad(
 
 
 def _flatten_2d_coeff_lst(
-    coeff_lst_2d: Sequence[
-        Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-    ],
+    coeff_lst_2d: WaveletCoeffDetailTuple2d,
     flatten_tensors: bool = True,
 ) -> list[torch.Tensor]:
     """Flattens a sequence of tensor tuples into a single list.
 
     Args:
-        coeff_lst_2d (Sequence): A pywt-style coefficient sequence of torch tensors.
+        coeff_lst_2d (WaveletCoeffDetailTuple2d): A pywt-style
+            coefficient tuple of torch tensors.
         flatten_tensors (bool): If true, 2d tensors are flattened. Defaults to True.
 
     Returns:
         list: A single 1-d list with all original elements.
     """
-    flat_coeff_lst = []
-    for coeff in coeff_lst_2d:
-        if isinstance(coeff, tuple):
-            for c in coeff:
-                if flatten_tensors:
-                    flat_coeff_lst.append(c.flatten())
-                else:
-                    flat_coeff_lst.append(c)
-        else:
-            if flatten_tensors:
-                flat_coeff_lst.append(coeff.flatten())
-            else:
-                flat_coeff_lst.append(coeff)
+
+    def _process_tensor(coeff: torch.Tensor) -> torch.Tensor:
+        return coeff.flatten() if flatten_tensors else coeff
+
+    flat_coeff_lst = [_process_tensor(coeff_lst_2d[0])]
+    for coeff_tuple in coeff_lst_2d[1:]:
+        flat_coeff_lst.extend(map(_process_tensor, coeff_tuple))
     return flat_coeff_lst
 
 

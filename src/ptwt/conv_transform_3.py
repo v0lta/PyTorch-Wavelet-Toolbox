@@ -3,9 +3,8 @@
 The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
 
-from collections.abc import Sequence
 from functools import partial
-from typing import Optional, Union, cast
+from typing import Optional, Union
 
 import pywt
 import torch
@@ -292,7 +291,7 @@ def waverec3(
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_3d_filt(lo=rec_lo, hi=rec_hi)
 
-    coeff_dicts = cast(Sequence[dict[str, torch.Tensor]], coeffs[1:])
+    coeff_dicts = coeffs[1:]
     for c_pos, coeff_dict in enumerate(coeff_dicts):
         if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
             raise ValueError(

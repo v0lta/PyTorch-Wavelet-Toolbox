@@ -5,7 +5,7 @@ torch.nn.functional.conv_transpose2d under the hood.
 """
 
 from functools import partial
-from typing import Optional, Union, cast
+from typing import Optional, Union
 
 import pywt
 import torch
@@ -82,7 +82,7 @@ def _fwt_pad2(
 
     """
     if mode is None:
-        mode = cast(BoundaryMode, "reflect")
+        mode = "reflect"
     pytorch_mode = _translate_boundary_strings(mode)
     wavelet = _as_wavelet(wavelet)
     padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
