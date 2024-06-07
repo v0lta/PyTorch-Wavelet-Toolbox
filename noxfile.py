@@ -39,8 +39,7 @@ def lint(session):
 @nox.session(name="typing")
 def mypy(session):
     """Check type hints."""
-    session.install(".")
-    session.install("mypy")
+    session.install(".[typing]")
     session.run(
         "mypy",
         "--install-types",
