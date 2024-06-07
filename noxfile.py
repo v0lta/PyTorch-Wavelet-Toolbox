@@ -8,6 +8,7 @@ def run_test(session):
     """Run pytest."""
     session.install(".")
     session.install("pytest")
+    session.install("scipy")
     session.run("pytest")
 
 
@@ -16,6 +17,7 @@ def run_test_fast(session):
     """Run pytest."""
     session.install(".")
     session.install("pytest")
+    session.install("scipy")
     session.run("pytest", "-m", "not slow")
 
 
