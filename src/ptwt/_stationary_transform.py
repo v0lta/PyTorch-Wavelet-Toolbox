@@ -22,7 +22,8 @@ def circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Te
     """
     trailing_dimension = x.shape[-1]
 
-    # if every padding dimension is smaller than or equal the trailing dimension, we do not need to manually wrap
+    # if every padding dimension is smaller than or equal the trailing dimension,
+    # we do not need to manually wrap
     if not any(
         padding_dimension > trailing_dimension
         for padding_dimension in padding_dimensions
@@ -38,7 +39,8 @@ def circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Te
         ]
         # pad using reduced dimensions, which will never throw the circular wrap error
         x = F.pad(x, reduced_padding_dimensions, mode="circular")
-        # remove the pad width that was just padded, and repeat if any pad width is greater than zero
+        # remove the pad width that was just padded, and repeat
+        # if any pad width is greater than zero
         padding_dimensions = [
             max(padding_dimension - trailing_dimension, 0)
             for padding_dimension in padding_dimensions
