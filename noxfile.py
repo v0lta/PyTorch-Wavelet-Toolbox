@@ -6,18 +6,14 @@ import nox
 @nox.session(name="test")
 def run_test(session):
     """Run pytest."""
-    session.install(".")
-    session.install("pytest")
-    session.install("scipy")
+    session.install(".[tests]")
     session.run("pytest")
 
 
 @nox.session(name="fast-test")
 def run_test_fast(session):
     """Run pytest."""
-    session.install(".")
-    session.install("pytest")
-    session.install("scipy")
+    session.install(".[tests]")
     session.run("pytest", "-m", "not slow")
 
 
