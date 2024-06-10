@@ -6,16 +6,14 @@ import nox
 @nox.session(name="test")
 def run_test(session):
     """Run pytest."""
-    session.install(".")
-    session.install("pytest")
+    session.install(".[tests]")
     session.run("pytest")
 
 
 @nox.session(name="fast-test")
 def run_test_fast(session):
     """Run pytest."""
-    session.install(".")
-    session.install("pytest")
+    session.install(".[tests]")
     session.run("pytest", "-m", "not slow")
 
 
@@ -41,8 +39,7 @@ def lint(session):
 @nox.session(name="typing")
 def mypy(session):
     """Check type hints."""
-    session.install(".")
-    session.install("mypy")
+    session.install(".[typing]")
     session.run(
         "mypy",
         "--install-types",
