@@ -58,7 +58,7 @@ def test_swt_1d(level: Optional[int], size: int, wavelet: str) -> None:
 
 
 @pytest.mark.parametrize("level", [1, 2, None])
-@pytest.mark.parametrize("size", [[1, 32], [5, 64]])
+@pytest.mark.parametrize("size", [[32], [1, 32], [5, 64]])
 @pytest.mark.parametrize("wavelet", ["db1", "db2"])
 def test_iswt_1d(level: Optional[int], size: int, wavelet: str) -> None:
     """Ensure iswt inverts swt."""
@@ -69,7 +69,7 @@ def test_iswt_1d(level: Optional[int], size: int, wavelet: str) -> None:
     assert torch.allclose(rec, signal)
 
 
-@pytest.mark.parametrize("size", [[32, 64], [32, 128], [3, 32, 256]])
+@pytest.mark.parametrize("size", [[32], [32, 64], [32, 128], [3, 32, 256]])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym3"])
 @pytest.mark.parametrize("level", [1, 2, 3])  # None needs more work.
 @pytest.mark.parametrize("axis", [1, -1])
