@@ -7,7 +7,7 @@ import pytest
 import pywt
 import torch
 
-from ptwt._stationary_transform import _iswt, _swt, circular_pad
+from src.ptwt._stationary_transform import _iswt, _swt, circular_pad
 
 
 @pytest.mark.parametrize("shape", [(8,), (1, 8), (4, 8), (4, 6, 8), (4, 6, 8, 8)])
@@ -41,9 +41,9 @@ def test_circular_pad(shape: Tuple[int, ...]) -> None:
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "db3", "db4"])
 def test_swt_1d(level: Optional[int], size: int, wavelet: str) -> None:
     """Test the 1d swt."""
-    signal = np.random.normal(size=size).astype(np.float64)
-    ptwt_coeff = _swt(torch.from_numpy(signal), wavelet, level=level)
-    pywt_coeff = pywt.swt(signal, wavelet, level, trim_approx=True, norm=False)
+    signal = torch.from_numpy(np.random.normal(size=size).astype(np.float64))
+    ptwt_coeff = _swt(signal, wavelet, level=level)
+    pywt_coeff = pywt.swt(signal.numpy(), wavelet, level, trim_approx=True, norm=False)
     test_list = []
     for a, b in zip(ptwt_coeff, pywt_coeff):
         test_list.extend([np.allclose(ael.numpy(), bel) for ael, bel in zip(a, b)])
@@ -55,11 +55,11 @@ def test_swt_1d(level: Optional[int], size: int, wavelet: str) -> None:
 @pytest.mark.parametrize("wavelet", ["db1", "db2"])
 def test_iswt_1d(level: Optional[int], size: int, wavelet: str) -> None:
     """Ensure iswt inverts swt."""
-    signal = np.random.normal(size=size).astype(np.float64)
+    signal = torch.from_numpy(np.random.normal(size=size).astype(np.float64))
     # signal = np.stack([np.arange(32)] * 3).astype(np.float64)
-    ptwt_coeff = _swt(torch.from_numpy(signal), wavelet, level=level)
+    ptwt_coeff = _swt(signal, wavelet, level=level)
     rec = _iswt(ptwt_coeff, wavelet)
-    assert np.allclose(rec.numpy(), signal)
+    assert torch.allclose(rec, signal)
 
 
 @pytest.mark.parametrize("size", [[32, 64], [32, 128], [3, 32, 256]])
@@ -68,14 +68,14 @@ def test_iswt_1d(level: Optional[int], size: int, wavelet: str) -> None:
 @pytest.mark.parametrize("axis", [1, -1])
 def test_swt_1d_slow(level: Optional[int], size: int, wavelet: str, axis: int) -> None:
     """Test the 1d swt."""
-    signal = np.random.normal(size=size).astype(np.float64)
-    ptwt_coeff = _swt(torch.from_numpy(signal), wavelet, level=level, axis=axis)
+    signal = torch.from_numpy(np.random.normal(size=size).astype(np.float64))
+    ptwt_coeff = _swt(signal, wavelet, level=level, axis=axis)
     pywt_coeff = pywt.swt(
-        signal, wavelet, level, trim_approx=True, norm=False, axis=axis
+        signal.numpy(), wavelet, level, trim_approx=True, norm=False, axis=axis
     )
     test_list = []
     for a, b in zip(ptwt_coeff, pywt_coeff):
         test_list.extend([np.allclose(ael.numpy(), bel) for ael, bel in zip(a, b)])
     assert all(test_list)
     rec = _iswt(ptwt_coeff, wavelet, axis=axis)
-    assert np.allclose(rec.numpy(), signal)
+    assert torch.allclose(rec, signal)

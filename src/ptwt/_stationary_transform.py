@@ -73,7 +73,14 @@ def _swt(
         else:
             raise ValueError("swt transforms a single axis only.")
 
+    # TODO: This should happen during the preprocessing.
+    if len(data.shape) == 1:
+        squeeze = True
+    else:
+        squeeze = None
+
     data, ds = _preprocess_tensor_dec1d(data)
+    
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -99,6 +106,10 @@ def _swt(
 
     if ds:
         result_list = _postprocess_result_list_dec1d(result_list, ds)
+
+    # TODO: this should be part of _postprocess_result_list
+    if squeeze:
+        result_list = [r_el.squeeze(0) for r_el in result_list]
 
     if axis != -1:
         result_list = [coeff.swapaxes(axis, -1) for coeff in result_list]
