@@ -19,7 +19,7 @@ def _swt(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
     level: Optional[int] = None,
-    axis: Optional[int] = -1,
+    axis: int = -1,
 ) -> list[torch.Tensor]:
     """Compute a multilevel 1d stationary wavelet transform.
 
@@ -27,6 +27,7 @@ def _swt(
         data (torch.Tensor): The input data of shape ``[batch_size, time]``.
         wavelet (Union[Wavelet, str]): The wavelet to use.
         level (int, optional): The number of levels to compute.
+        axis (int): The axis to transform along. Defaults to the last axis.
 
     Returns:
         Same as wavedec. Equivalent to pywt.swt with trim_approx=True.
