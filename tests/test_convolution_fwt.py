@@ -13,7 +13,7 @@ from ptwt._util import _outer
 from ptwt.constants import BoundaryMode
 from ptwt.conv_transform_2 import wavedec2, waverec2
 from ptwt.wavelets_learnable import SoftOrthogonalWavelet
-from src.ptwt.conv_transform import (
+from ptwt.conv_transform import (
     _flatten_2d_coeff_lst,
     _translate_boundary_strings,
     wavedec,

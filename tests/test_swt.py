@@ -7,7 +7,7 @@ import pytest
 import pywt
 import torch
 
-from src.ptwt._stationary_transform import _iswt, _swt, circular_pad
+from ptwt._stationary_transform import _iswt, _swt, circular_pad
 
 
 @pytest.mark.parametrize("shape", [(8,), (1, 8), (4, 8), (4, 6, 8), (4, 6, 8, 8)])
