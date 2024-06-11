@@ -213,7 +213,7 @@ def _map_result(
             new_dict = {key: function(value) for key, value in element.items()}
             result_lst.append(new_dict)
         else:
-            raise AssertionError(f"Unexpected input type {type(element)}")
+            raise ValueError(f"Unexpected input type {type(element)}")
 
     return_val = approx, *result_lst
     return_val = cast(
