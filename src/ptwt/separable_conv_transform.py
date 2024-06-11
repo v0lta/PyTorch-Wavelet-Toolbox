@@ -44,7 +44,7 @@ def _separable_conv_dwtn_(
     All but the first axes are transformed.
 
     Args:
-        input_arg (torch.Tensor): Tensor of shape [batch, data_1, ... data_n].
+        input_arg (torch.Tensor): Tensor of shape ``[batch, data_1, ... data_n]``.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         mode : The padding mode. The following methods are supported::
@@ -81,7 +81,7 @@ def _separable_conv_idwtn(
             _separable_conv_dwtn_ .
 
     Returns:
-        torch.Tensor: A reconstruction of the original signal.
+        A reconstruction of the original signal.
     """
     done_dict = {}
     a_initial_keys = list(filter(lambda x: x[0] == "a", in_dict.keys()))
@@ -118,15 +118,18 @@ def _separable_conv_wavedecn(
     """Compute a multilevel separable padded wavelet analysis transform.
 
     Args:
-        input (torch.Tensor): A tensor i.e. of shape [batch,axis_1, ... axis_n].
+        input (torch.Tensor): A tensor i.e. of shape ``[batch,axis_1, ... axis_n]``.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         mode : The desired padding mode.
         level (int): The desired decomposition level.
 
     Returns:
-        WaveletCoeffDetailDict: A tuple with the approximation coefficients,
-            and a coefficient dict for each scale.
+        A tuple with the approximation coefficients and
+        for each scale a dictionary containing the detail coefficients.
+        The dictionaries use a string of length n as keys with
+        'a' denoting the low pass or approximation filter and
+        'd' the high-pass or detail filter.
     """
     result: list[dict[str, torch.Tensor]] = []
     approx = input
@@ -160,7 +163,7 @@ def _separable_conv_waverecn(
             the name of a pywt wavelet, as used by `_separable_conv_wavedecn`.
 
     Returns:
-        torch.Tensor: The reconstruction of the original signal.
+        The reconstruction of the original signal.
 
     Raises:
         ValueError: If the coeffs is not structured as expected.
@@ -202,26 +205,24 @@ def fswavedec2(
         axes ([int, int]): The axes we want to transform,
             defaults to (-2, -1).
 
-    Raises:
-        ValueError: If the data is not a batched 2D signal.
-
     Returns:
-        WaveletCoeffDetailDict:
-        A tuple with the lll coefficients and dictionaries
-        with the filter order strings::
+        A tuple with the ll coefficients and for each scale a dictionary
+        containing the detail coefficients. The dictionaries use
+        the filter order strings::
 
         ("ad", "da", "dd")
 
-        as keys. With a for the low pass or approximation filter and
-        d for the high-pass or detail filter.
+        as keys. 'a' denotes the low pass or approximation filter and
+        'd' the high-pass or detail filter.
 
+    Raises:
+        ValueError: If the data is not a batched 2D signal.
 
     Example:
         >>> import torch
         >>> import ptwt
         >>> data = torch.randn(5, 10, 10)
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
-
     """
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
@@ -259,7 +260,7 @@ def fswavedec3(
     """Compute a fully separable 3D-padded analysis wavelet transform.
 
     Args:
-        data (torch.Tensor): An input signal of shape [batch, depth, height, width].
+        data (torch.Tensor): An input signal of shape ``[batch, depth, height, width]``.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
@@ -271,18 +272,19 @@ def fswavedec3(
         axes (tuple[int, int, int]): Compute the transform over these axes
             instead of the last three. Defaults to (-3, -2, -1).
 
-    Raises:
-        ValueError: If the input is not a batched 3D signal.
-
     Returns:
-        WaveletCoeffDetailDict:
-        A tuple with the lll coefficients and dictionaries
-        with the filter order strings::
+        A tuple with the lll coefficients and for each scale a dictionary
+        containing the detail coefficients. The dictionaries use
+        the filter order strings::
 
         ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
 
-        as keys. With a for the low pass or approximation filter and
-        d for the high-pass or detail filter.
+        as keys. 'a' denotes the low pass or approximation filter and
+        'd' the high-pass or detail filter.
+
+    Raises:
+        ValueError: If the input is not a batched 3D signal.
+
 
     Example:
         >>> import torch
@@ -338,8 +340,7 @@ def fswaverec2(
             axes instead of the last two. Defaults to (-2, -1).
 
     Returns:
-        torch.Tensor: A reconstruction of the signal encoded in the
-            wavelet coefficients.
+        A reconstruction of the signal encoded in the wavelet coefficients.
 
     Raises:
         ValueError: If the axes argument is not a tuple of two integers.
@@ -350,7 +351,6 @@ def fswaverec2(
         >>> data = torch.randn(5, 10, 10)
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
         >>> rec = ptwt.fswaverec2(coeff, "haar")
-
     """
     if tuple(axes) != (-2, -1):
         if len(axes) != 2:
@@ -402,8 +402,7 @@ def fswaverec3(
             instead of the last three. Defaults to (-3, -2, -1).
 
     Returns:
-        torch.Tensor: A reconstruction of the signal encoded in the
-            wavelet coefficients.
+        A reconstruction of the signal encoded in the wavelet coefficients.
 
     Raises:
         ValueError: If the axes argument is not a tuple with
@@ -415,7 +414,6 @@ def fswaverec3(
         >>> data = torch.randn(5, 10, 10, 10)
         >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
         >>> rec = ptwt.fswaverec3(coeff, "haar")
-
     """
     if tuple(axes) != (-3, -2, -1):
         if len(axes) != 3:

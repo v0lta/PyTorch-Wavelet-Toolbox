@@ -48,8 +48,7 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
             pywt wavelet compatible object or a valid pywt wavelet name string.
 
     Returns:
-        Wavelet: the input wavelet object or the pywt wavelet object described by the
-            input str.
+        The input wavelet object or the pywt wavelet object described by the input str.
     """
     if isinstance(wavelet, str):
         return pywt.Wavelet(wavelet)
@@ -125,8 +124,8 @@ def _fold_axes(data: torch.Tensor, keep_no: int) -> tuple[torch.Tensor, list[int
         keep_no (int): The number of dimensions to keep.
 
     Returns:
-        tuple[torch.Tensor, list[int]]:
-            The folded result array, and the shape of the original input.
+        A tuple (result_tensor, input_shape) where result_tensor is the
+        folded result array, and input_shape the shape of the original input.
     """
     dshape = list(data.shape)
     return (

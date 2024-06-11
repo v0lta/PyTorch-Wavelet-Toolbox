@@ -43,7 +43,7 @@ def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
         hi (torch.Tensor): High-pass input filter
 
     Returns:
-        torch.Tensor: Stacked 2d-filters of dimension
+        Stacked 2d-filters of dimension
 
         [filt_no, 1, height, width].
 
@@ -168,8 +168,8 @@ def wavedec2(
             last two. Defaults to (-2, -1).
 
     Returns:
-        WaveletCoeffDetailTuple2d: A tuple containing the wavelet coefficients.
-        The coefficients are in pywt order. That is::
+        A tuple containing the wavelet coefficients. The coefficients are in pywt order.
+        That is::
 
             [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .
 
@@ -261,9 +261,8 @@ def waverec2(
             last two. Defaults to (-2, -1).
 
     Returns:
-        torch.Tensor:
-            The reconstructed signal of shape ``[batch, height, width]`` or
-            ``[batch, channel, height, width]`` depending on the input to `wavedec2`.
+        The reconstructed signal tensor of shape ``[batch, height, width]`` or
+        ``[batch, channel, height, width]`` depending on the input to `wavedec2`.
 
     Raises:
         ValueError: If coeffs is not in a shape as returned from wavedec2 or

@@ -16,11 +16,11 @@ def _dense_kron(
     by memory on my machine.
 
     Args:
-        sparse_tensor_a (torch.Tensor): Sparse 2d-Tensor a of shape [m, n].
-        sparse_tensor_b (torch.Tensor): Sparse 2d-Tensor b of shape [p, q].
+        sparse_tensor_a (torch.Tensor): Sparse 2d-Tensor a of shape ``[m, n]``.
+        sparse_tensor_b (torch.Tensor): Sparse 2d-Tensor b of shape ``[p, q]``.
 
     Returns:
-        torch.Tensor: The resulting [mp, nq] tensor.
+        The resulting ``[mp, nq]`` tensor.
 
     """
     return torch.kron(
@@ -39,11 +39,11 @@ def sparse_kron(
     https://github.com/scipy/scipy/blob/v1.7.1/scipy/sparse/construct.py#L274-L357
 
     Args:
-        sparse_tensor_a (torch.Tensor): Sparse 2d-Tensor a of shape [m, n].
-        sparse_tensor_b (torch.Tensor): Sparse 2d-Tensor b of shape [p, q].
+        sparse_tensor_a (torch.Tensor): Sparse 2d-Tensor a of shape ``[m, n]``.
+        sparse_tensor_b (torch.Tensor): Sparse 2d-Tensor b of shape ``[p, q]``.
 
     Returns:
-        torch.Tensor: The resulting [mp, nq] tensor.
+        The resulting tensor of shape ``[mp, nq]``.
     """
     assert sparse_tensor_a.device == sparse_tensor_b.device
 
@@ -102,8 +102,7 @@ def cat_sparse_identity_matrix(
             The length up to which the diagonal should be elongated.
 
     Returns:
-        torch.Tensor: Square [input, eye] matrix
-            of size [new_length, new_length]
+        Square ``[input, eye]`` matrix of size ``[new_length, new_length]``
     """
     # assert square matrix.
     assert (
@@ -153,7 +152,7 @@ def sparse_diag(
         cols (int): The number of columns in the final matrix.
 
     Returns:
-        torch.Tensor: A sparse matrix with a shifted diagonal.
+        A sparse matrix with a shifted diagonal.
 
     """
     diag_indices = torch.stack(
@@ -200,8 +199,7 @@ def sparse_replace_row(
         row (torch.Tensor): The row to insert into the sparse matrix.
 
     Returns:
-        torch.Tensor: A sparse matrix, with the new row inserted at
-        row_index.
+        A sparse matrix, with the new row inserted at row_index.
     """
     matrix = matrix.coalesce()
     assert (
@@ -246,7 +244,7 @@ def _orth_by_qr(
         rows_to_orthogonalize (torch.Tensor): The matrix rows, which need work.
 
     Returns:
-        torch.Tensor: The corrected sparse matrix.
+        The corrected sparse matrix.
     """
     selection_indices = torch.stack(
         [
@@ -305,7 +303,7 @@ def _orth_by_gram_schmidt(
         to_orthogonalize (torch.Tensor): The matrix rows, which need work.
 
     Returns:
-        torch.Tensor: The orthogonalized sparse matrix.
+        The orthogonalized sparse matrix.
     """
     done: list[int] = []
     # loop over the rows we want to orthogonalize
@@ -347,11 +345,10 @@ def construct_conv_matrix(
             Defaults to valid.
 
     Returns:
-        torch.Tensor: The sparse convolution tensor.
+        The sparse convolution tensor.
 
     Raises:
         ValueError: If the padding is not 'full', 'same' or 'valid'.
-
     """
     filter_length = len(filter)
 
@@ -400,7 +397,7 @@ def construct_conv2d_matrix(
     a call to scipy.signal.convolve2d and a reshape.
 
     Args:
-        filter (torch.tensor): A filter of shape [height, width]
+        filter (torch.tensor): A filter of shape ``[height, width]``
             to convolve with.
         input_rows (int): The number of rows in the input matrix.
         input_columns (int): The number of columns in the input matrix.
@@ -410,7 +407,7 @@ def construct_conv2d_matrix(
             to save memory. Defaults to True.
 
     Returns:
-        torch.Tensor: A sparse convolution matrix.
+        A sparse convolution matrix.
 
     Raises:
         ValueError: If the padding mode is neither full, same or valid.
@@ -476,7 +473,7 @@ def construct_strided_conv_matrix(
             Defaults to 'valid'.
 
     Returns:
-        torch.Tensor: The strided sparse convolution matrix.
+        The strided sparse convolution matrix.
     """
     conv_matrix = construct_conv_matrix(filter, input_rows, mode=mode)
     if mode == "sameshift":
@@ -513,12 +510,11 @@ def construct_strided_conv2d_matrix(
         mode : The convolution type.
             Defaults to 'full'. Sameshift starts at 1 instead of 0.
 
-    Raises:
-        ValueError: Raised if an unknown convolution string is
-            provided.
-
     Returns:
-        torch.Tensor: The sparse convolution tensor.
+        The sparse convolution tensor.
+
+    Raises:
+        ValueError: Raised if an unknown convolution string is provided.
     """
     filter_shape = filter.shape
 
@@ -573,11 +569,11 @@ def batch_mm(matrix: torch.Tensor, matrix_batch: torch.Tensor) -> torch.Tensor:
     The former can be dense or sparse.
 
     Args:
-        matrix (torch.Tensor): Sparse or dense matrix, size (m, n).
-        matrix_batch (torch.Tensor): Batched dense matrices, size (b, n, k).
+        matrix (torch.Tensor): Sparse or dense matrix, of shape ``[m, n]``.
+        matrix_batch (torch.Tensor): Batched dense matrices, of shape ``[b, n, k]``.
 
-    Returns
-        torch.Tensor: The batched matrix-matrix product, size (b, m, k).
+    Returns:
+        The batched matrix-matrix product of shape ``[b, m, k]``.
 
     Raises:
         ValueError: If the matrices cannot be multiplied due to incompatible matrix
@@ -598,12 +594,12 @@ def _batch_dim_mm(
     """Multiply batch_tensor with matrix along the dimensions specified in dim.
 
     Args:
-        matrix (torch.Tensor): A matrix of shape [m, n]
+        matrix (torch.Tensor): A matrix of shape ``[m, n]``
         batch_tensor (torch.Tensor): A tensor with a selected dim of length n.
         dim (int): The position of the desired dimension.
 
     Returns:
-        torch.Tensor: The multiplication result.
+        The multiplication result.
     """
     dim_length = batch_tensor.shape[dim]
     permuted_tensor = batch_tensor.transpose(dim, -1)

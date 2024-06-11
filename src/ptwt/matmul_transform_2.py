@@ -66,14 +66,12 @@ def _construct_a_2(
             Defaults to 'sameshift'.
 
     Returns:
-        torch.Tensor: A sparse fwt analysis matrix.
-            The matrices are ordered a,h,v,d or
-            ll, lh, hl, hh.
+        A sparse fwt analysis matrix.
+        The matrices are ordered a, h, v, d or ll, lh, hl, hh.
 
     Note:
         The constructed matrix is NOT necessarily orthogonal.
         In most cases, construct_boundary_a2d should be used instead.
-
     """
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype
@@ -118,7 +116,7 @@ def _construct_s_2(
             Defaults to 'sameshift'.
 
     Returns:
-        [torch.Tensor]: The generated fast wavelet synthesis matrix.
+        The generated fast wavelet synthesis matrix.
     """
     wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
@@ -167,8 +165,7 @@ def construct_boundary_a2(
             Defaults to torch.float64.
 
     Returns:
-        torch.Tensor: A sparse fwt matrix, with orthogonalized boundary
-            wavelets.
+        A sparse fwt matrix, with orthogonalized boundary wavelets.
     """
     wavelet = _as_wavelet(wavelet)
     a = _construct_a_2(wavelet, height, width, device, dtype=dtype, mode="sameshift")
@@ -200,8 +197,7 @@ def construct_boundary_s2(
             Defaults to torch.float64.
 
     Returns:
-        torch.Tensor: The synthesis matrix, used to compute the
-            inverse fast wavelet transform.
+        The synthesis matrix, used to compute the inverse fast wavelet transform.
     """
     wavelet = _as_wavelet(wavelet)
     s = _construct_s_2(wavelet, height, width, device, dtype=dtype)
@@ -225,14 +221,14 @@ def _matrix_pad_2(height: int, width: int) -> tuple[int, int, tuple[bool, bool]]
 class MatrixWavedec2(BaseMatrixWaveDec):
     """Experimental sparse matrix 2d wavelet transform.
 
-        For a completely pad-free transform,
-        input images are expected to be divisible by two.
-        For multiscale transforms all intermediate
-        scale dimensions should be divisible
-        by two, i.e. 128, 128 -> 64, 64 -> 32, 32 would work
-        well for a level three transform.
-        In this case multiplication with the `sparse_fwt_operator`
-        property is equivalent.
+    For a completely pad-free transform,
+    input images are expected to be divisible by two.
+    For multiscale transforms all intermediate
+    scale dimensions should be divisible
+    by two, i.e. ``128, 128 -> 64, 64 -> 32, 32`` would work
+    well for a level three transform.
+    In this case multiplication with the `sparse_fwt_operator`
+    property is equivalent.
 
     Note:
         Constructing the sparse fwt-matrix is expensive.
@@ -250,7 +246,6 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         >>> pt_face = torch.tensor(face).permute([2, 0, 1])
         >>> matrixfwt = ptwt.MatrixWavedec2(pywt.Wavelet("haar"), level=2)
         >>> mat_coeff = matrixfwt(pt_face)
-
     """
 
     def __init__(
@@ -314,11 +309,11 @@ class MatrixWavedec2(BaseMatrixWaveDec):
     def sparse_fwt_operator(self) -> torch.Tensor:
         """Compute the operator matrix for padding-free cases.
 
-            This property exists to make the transformation matrix available.
-            To benefit from code handling odd-length levels call the object.
+        This property exists to make the transformation matrix available.
+        To benefit from code handling odd-length levels call the object.
 
         Returns:
-            torch.Tensor: The sparse 2d-fwt operator matrix.
+            The sparse 2d-fwt operator matrix.
 
         Raises:
             NotImplementedError: if a separable transformation was used or if padding
@@ -429,8 +424,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 This transform affects the last two dimensions.
 
         Returns:
-            (WaveletCoeffDetailTuple2d): The resulting coefficients per level
-                are stored in a pywt style tuple. The tuple is ordered as::
+            The resulting coefficients per level are stored in a pywt style tuple.
+            The tuple is ordered as::
 
                 (ll, (lh, hl, hh), ...)
 
@@ -628,7 +623,7 @@ class MatrixWaverec2(object):
         """Compute the ifwt operator matrix for pad-free cases.
 
         Returns:
-            torch.Tensor: The sparse 2d ifwt operator matrix.
+            The sparse 2d ifwt operator matrix.
 
         Raises:
             NotImplementedError: if a separable transformation was used or if padding
@@ -732,12 +727,10 @@ class MatrixWaverec2(object):
                 by the `MatrixWavedec2`-Object.
 
         Returns:
-            torch.Tensor: The original signal reconstruction.
-                For example of shape
-                ``[batch_size, height, width]`` or
-                ``[batch_size, channels, height, width]``
-                depending on the input to the forward transform.
-                and the value of the `axis` argument.
+            The original signal reconstruction. For example of shape
+            ``[batch_size, height, width]`` or ``[batch_size, channels, height, width]``
+            depending on the input to the forward transform and the value
+            of the `axis` argument.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the

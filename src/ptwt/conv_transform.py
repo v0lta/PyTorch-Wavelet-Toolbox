@@ -54,9 +54,8 @@ def _get_filter_tensors(
                computation. Default: torch.float32.
 
     Returns:
-        tuple: Tuple containing the four filter tensors
-        dec_lo, dec_hi, rec_lo, rec_hi
-
+        A tuple (dec_lo, dec_hi, rec_lo, rec_hi) containing
+        the four filter tensors
     """
     wavelet = _as_wavelet(wavelet)
     device = torch.device(device)
@@ -80,10 +79,8 @@ def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
         filt_len (int): The size of the used filter.
 
     Returns:
-        Tuple: The first entry specifies how many numbers
-            to attach on the right. The second
-            entry covers the left side.
-
+        A tuple (padr, padl). The first entry specifies how many numbers
+        to attach on the right. The second entry covers the left side.
     """
     # pad to ensure we see all filter positions and
     # for pywt compatability.
@@ -117,7 +114,6 @@ def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
 
     Raises:
         ValueError: If the padding mode is not supported.
-
     """
     if pywt_mode == "constant":
         return "replicate"
@@ -153,8 +149,7 @@ def _fwt_pad(
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
 
     Returns:
-        torch.Tensor: A PyTorch tensor with the padded input data
-
+        A PyTorch tensor with the padded input data
     """
     wavelet = _as_wavelet(wavelet)
 
@@ -183,7 +178,7 @@ def _flatten_2d_coeff_lst(
         flatten_tensors (bool): If true, 2d tensors are flattened. Defaults to True.
 
     Returns:
-        list: A single 1-d list with all original elements.
+        A single 1-d list with all original elements.
     """
 
     def _process_tensor(coeff: torch.Tensor) -> torch.Tensor:
@@ -220,9 +215,9 @@ def _preprocess_tensor_dec1d(
         data (torch.Tensor): An input tensor of any shape.
 
     Returns:
-        tuple[torch.Tensor, Union[list[int], None]]:
-            A data tensor of shape [new_batch, 1, to_process]
-            and the original shape, if the shape has changed.
+        A tuple (data, ds) where data is a data tensor of shape
+        [new_batch, 1, to_process]. `ds` contains the original shape
+        if the shape has changed. Otherwise, ds is None.
     """
     ds = None
     if len(data.shape) == 1:
@@ -293,7 +288,7 @@ def wavedec(
 
 
     Returns:
-        list: A list::
+        A list::
 
             [cA_s, cD_s, cD_s-1, …, cD2, cD1]
 
@@ -366,7 +361,7 @@ def waverec(
         axis (int): Transform this axis instead of the last one. Defaults to -1.
 
     Returns:
-        torch.Tensor: The reconstructed signal.
+        The reconstructed signal tensor.
 
     Raises:
         ValueError: If the dtype of the coeffs tensor is unsupported or if the

@@ -161,15 +161,20 @@ class MatrixWavedec3(object):
 
         Args:
             input_signal (torch.Tensor): An input signal. For example
-                of shape [batch_size, depth, height, width].
+                of shape ``[batch_size, depth, height, width]``.
+
+        Returns:
+            A tuple with the lll coefficients and for each scale a dictionary
+            containing the detail coefficients. The dictionaries use
+            the filter order strings::
+
+            ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
+
+            as keys. 'a' denotes the low pass or approximation filter and
+            'd' the high-pass or detail filter.
 
         Raises:
             ValueError: If the input dimensions don't work.
-
-        Returns:
-            WaveletCoeffDetailDict:
-                A tuple with the approximation coefficients,
-                and a coefficient dict for each scale.
         """
         if self.axes != (-3, -2, -1):
             input_signal = _swap_axes(input_signal, list(self.axes))

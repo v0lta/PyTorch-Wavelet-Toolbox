@@ -42,12 +42,11 @@ def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
         hi (torch.Tensor): High-pass input filter
 
     Returns:
-        torch.Tensor: Stacked 3d filters of dimension::
+        Stacked 3d filters of dimension::
 
         [8, 1, length, height, width].
 
         The four filters are ordered ll, lh, hl, hh.
-
     """
     dim_size = lo.shape[-1]
     size = [dim_size] * 3
@@ -81,7 +80,6 @@ def _fwt_pad3(
 
     Returns:
         The padded output tensor.
-
     """
     pytorch_mode = _translate_boundary_strings(mode)
 
@@ -126,13 +124,14 @@ def wavedec3(
             instead of the last three. Defaults to (-3, -2, -1).
 
     Returns:
-        WaveletCoeffDetailDict: A tuple with the lll coefficients and
-        dictionaries with the filter order strings::
+        A tuple with the lll coefficients and for each scale a dictionary
+        containing the detail coefficients. The dictionaries use
+        the filter order strings::
 
-            ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
+        ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
 
-        as keys. With 'a' for the low pass or approximation filter and
-        'd' for the high-pass or detail filter.
+        as keys. 'a' denotes the low pass or approximation filter and
+        'd' the high-pass or detail filter.
 
     Raises:
         ValueError: If the input has fewer than three dimensions or
@@ -143,7 +142,6 @@ def wavedec3(
         >>> import ptwt, torch
         >>> data = torch.randn(5, 16, 16, 16)
         >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
-
     """
     if tuple(axes) != (-3, -2, -1):
         if len(axes) != 3:
@@ -243,8 +241,8 @@ def waverec3(
             last three. Defaults to (-3, -2, -1).
 
     Returns:
-        torch.Tensor: The reconstructed four-dimensional signal of shape
-        [batch, depth, height, width].
+        The reconstructed four-dimensional signal tensor of shape
+        ``[batch, depth, height, width]``.
 
     Raises:
         ValueError: If coeffs is not in a shape as returned from wavedec3 or
@@ -256,7 +254,6 @@ def waverec3(
         >>> data = torch.randn(5, 16, 16, 16)
         >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
         >>> reconstruction = ptwt.waverec3(transformed, "haar")
-
     """
     if tuple(axes) != (-3, -2, -1):
         if len(axes) != 3:

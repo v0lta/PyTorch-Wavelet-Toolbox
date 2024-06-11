@@ -24,13 +24,12 @@ def _swt(
     """Compute a multilevel 1d stationary wavelet transform.
 
     Args:
-        data (torch.Tensor): The input data of shape [batch_size, time].
+        data (torch.Tensor): The input data of shape ``[batch_size, time]``.
         wavelet (Union[Wavelet, str]): The wavelet to use.
-        level (Optional[int], optional): The number of levels to compute
+        level (int, optional): The number of levels to compute.
 
     Returns:
-        list[torch.Tensor]: Same as wavedec.
-        Equivalent to pywt.swt with trim_approx=True.
+        Same as wavedec. Equivalent to pywt.swt with trim_approx=True.
 
     Raises:
         ValueError: Is the axis argument is not an integer.
@@ -84,14 +83,14 @@ def _conv_transpose_dedilate(
 
     Args:
         conv_res (torch.Tensor): The dilated coeffcients
-            of shape [batch, 2, length].
+            of shape ``[batch, 2, length]``.
         rec_filt (torch.Tensor): The reconstruction filter pair
-            of shape [1, 2, filter_length].
+            of shape ``[1, 2, filter_length]``.
         dilation (int): The dilation factor.
         length (int): The signal length.
 
     Returns:
-        torch.Tensor: The deconvolution result.
+        The deconvolution result.
     """
     to_conv_t_list = [
         conv_res[..., fl : (fl + dilation * rec_filt.shape[-1]) : dilation]
@@ -121,11 +120,11 @@ def _iswt(
         axis (int, optional): The axis the forward trasform was computed over.
             Defaults to -1.
 
+    Returns:
+        A reconstruction of the original swt input.
+
     Raises:
         ValueError: If the axis argument is not an integer.
-
-    Returns:
-        torch.Tensor: A reconstruction of the original swt input.
     """
     if axis != -1:
         swap = []

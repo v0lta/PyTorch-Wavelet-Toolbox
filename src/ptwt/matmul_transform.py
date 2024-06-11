@@ -57,7 +57,7 @@ def _construct_a(
             or torch.float64. Defaults to torch.float64.
 
     Returns:
-        torch.Tensor: The sparse raw analysis matrix.
+        The sparse raw analysis matrix.
     """
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
@@ -94,7 +94,7 @@ def _construct_s(
             or torch.float64. Defaults to torch.float64.
 
     Returns:
-        torch.Tensor: The raw sparse synthesis matrix.
+        The raw sparse synthesis matrix.
     """
     wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
@@ -120,7 +120,7 @@ def _get_to_orthogonalize(matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
         filt_len (int): The number of entries we would expect per row.
 
     Returns:
-        torch.Tensor: The row indices with too few entries.
+        The row indices with too few entries.
     """
     unique, count = torch.unique_consecutive(
         matrix.coalesce().indices()[0, :], return_counts=True
@@ -142,7 +142,7 @@ def orthogonalize(
             Defaults to qr.
 
     Returns:
-        torch.Tensor: Orthogonal sparse transformation matrix.
+        Orthogonal sparse transformation matrix.
 
     Raises:
         ValueError: If an invalid orthogonalization method is given
@@ -232,20 +232,17 @@ class MatrixWavedec(BaseMatrixWaveDec):
 
     @property
     def sparse_fwt_operator(self) -> torch.Tensor:
-        """Return the sparse transformation operator.
+        """The sparse transformation operator.
 
         If the input signal at all levels is divisible by two,
         the whole operation is padding-free and can be expressed
         as a single matrix multiply.
 
-        The operation torch.sparse.mm(sparse_fwt_operator, data.T)
+        The operation ``torch.sparse.mm(sparse_fwt_operator, data.T)``
         computes a batched fwt.
 
         This property exists to make the operator matrix transparent.
         Calling the object will handle odd-length inputs properly.
-
-        Returns:
-            torch.Tensor: The sparse operator matrix.
 
         Raises:
             NotImplementedError: if padding had to be used in the creation of the
@@ -330,7 +327,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
                 another axis.
 
         Returns:
-            list[torch.Tensor]: A list with the coefficients for each scale.
+            A list with the coefficient tensor for each scale.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer
@@ -416,7 +413,7 @@ def construct_boundary_a(
         dtype: Choose float32 or float64.
 
     Returns:
-        torch.Tensor: The sparse analysis matrix.
+        The sparse analysis matrix.
     """
     wavelet = _as_wavelet(wavelet)
     a_full = _construct_a(wavelet, length, dtype=dtype, device=device)
@@ -445,7 +442,7 @@ def construct_boundary_s(
             Defaults to torch.float64.
 
     Returns:
-        torch.Tensor: The sparse synthesis matrix.
+        The sparse synthesis matrix.
     """
     wavelet = _as_wavelet(wavelet)
     s_full = _construct_s(wavelet, length, dtype=dtype, device=device)
@@ -514,7 +511,7 @@ class MatrixWaverec(object):
 
     @property
     def sparse_ifwt_operator(self) -> torch.Tensor:
-        """Return the sparse transformation operator.
+        """The sparse transformation operator.
 
         If the input signal at all levels is divisible by two,
         the whole operation is padding-free and can be expressed
@@ -526,9 +523,6 @@ class MatrixWaverec(object):
 
         This functionality is mainly here to make the operator-matrix
         transparent. Calling the object handles padding for odd inputs.
-
-        Returns:
-            torch.Tensor: The sparse operator matrix.
 
         Raises:
             NotImplementedError: if padding had to be used in the creation of the
@@ -604,7 +598,7 @@ class MatrixWaverec(object):
                 by the forward transform.
 
         Returns:
-            torch.Tensor: The input signal reconstruction.
+            The input signal reconstruction.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the

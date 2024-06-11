@@ -40,7 +40,7 @@ def _wpfreq(fs: float, level: int) -> list[float]:
         level (int): The decomposition level.
 
     Returns:
-        list[float]: The frequency bins of the packets in frequency order.
+        The frequency bins of the packets in frequency order.
     """
     n = np.array(range(int(np.power(2.0, level))))
     freqs = (fs / 2.0) * (n / (np.power(2.0, level)))
@@ -205,7 +205,7 @@ class WaveletPacket(BaseDict):
             level (int): The depth of the tree.
 
         Returns:
-            list: A list with the paths to each node.
+            A list with the paths to each node.
         """
         return self._get_graycode_order(level)
 
@@ -238,7 +238,7 @@ class WaveletPacket(BaseDict):
                 of the following chars: 'a', 'd'.
 
         Returns:
-            torch.Tensor: The accessed wavelet packet coefficients.
+            The accessed wavelet packet coefficients.
 
         Raises:
             ValueError: If the wavelet packet tree is not initialized.
@@ -324,7 +324,7 @@ class WaveletPacket2D(BaseDict):
 
         Args:
             data (torch.tensor): The input data tensor
-                of shape [batch_size, height, width]
+                of shape ``[batch_size, height, width]``.
             maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
@@ -384,7 +384,7 @@ class WaveletPacket2D(BaseDict):
             level (int): The decomposition level.
 
         Returns:
-            list: A list with the filter order strings.
+            A list with the filter order strings.
         """
         return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
 
@@ -491,7 +491,7 @@ class WaveletPacket2D(BaseDict):
                 of the following chars: 'a', 'h', 'v', 'd'.
 
         Returns:
-            torch.Tensor: The accessed wavelet packet coefficients.
+            The accessed wavelet packet coefficients.
 
         Raises:
             ValueError: If the wavelet packet tree is not initialized.
@@ -520,7 +520,7 @@ def get_freq_order(level: int) -> list[list[tuple[str, ...]]]:
         level (int): The number of decomposition scales.
 
     Returns:
-        list: A list with the tree nodes in frequency order.
+        A list with the tree nodes in frequency order.
 
     Note:
         Adapted from:
