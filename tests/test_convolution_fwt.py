@@ -11,14 +11,14 @@ from scipy import datasets
 
 from ptwt._util import _outer
 from ptwt.constants import BoundaryMode
-from ptwt.conv_transform import (
+from ptwt.conv_transform_2 import wavedec2, waverec2
+from ptwt.wavelets_learnable import SoftOrthogonalWavelet
+from src.ptwt.conv_transform import (
     _flatten_2d_coeff_lst,
     _translate_boundary_strings,
     wavedec,
     waverec,
 )
-from ptwt.conv_transform_2 import wavedec2, waverec2
-from ptwt.wavelets_learnable import SoftOrthogonalWavelet
 from tests._mackey_glass import MackeyGenerator
 
 
@@ -69,6 +69,23 @@ def test_conv_fwt1d(
 @pytest.mark.parametrize("wavelet", ["haar", "db2"])
 def test_conv_fwt1d_channel(size: List[int], wavelet: str) -> None:
     """Test channel dimension support."""
+    data = torch.randn(*size).type(torch.float64)
+    ptwt_coeff = wavedec(data, wavelet)
+    pywt_coeff = pywt.wavedec(data.numpy(), wavelet, mode="reflect")
+    assert all(
+        [
+            np.allclose(ptwtc.numpy(), pywtc)
+            for ptwtc, pywtc in zip(ptwt_coeff, pywt_coeff)
+        ]
+    )
+    rec = waverec(ptwt_coeff, wavelet)
+    assert np.allclose(data.numpy(), rec.numpy())
+
+
+@pytest.mark.parametrize("size", [[32], [64]])
+@pytest.mark.parametrize("wavelet", ["haar", "db2"])
+def test_conv_fwt1d_nobatch(size: List[int], wavelet: str) -> None:
+    """1d conv for inputs without batch dim."""
     data = torch.randn(*size).type(torch.float64)
     ptwt_coeff = wavedec(data, wavelet)
     pywt_coeff = pywt.wavedec(data.numpy(), wavelet, mode="reflect")

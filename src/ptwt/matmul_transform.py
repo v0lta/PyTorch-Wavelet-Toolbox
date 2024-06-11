@@ -382,15 +382,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         result_list = [s.T for s in split_list[::-1]]
 
         # unfold if necessary
-        if ds:
-            result_list = _postprocess_result_list_dec1d(result_list, ds)
-
-        if self.axis != -1:
-            swap = []
-            for coeff in result_list:
-                swap.append(coeff.swapaxes(self.axis, -1))
-            result_list = swap
-
+        result_list = _postprocess_result_list_dec1d(result_list, ds, self.axis)
         return result_list
 
 

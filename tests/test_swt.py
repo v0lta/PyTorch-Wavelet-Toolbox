@@ -69,9 +69,9 @@ def test_iswt_1d(level: Optional[int], size: int, wavelet: str) -> None:
     assert torch.allclose(rec, signal)
 
 
-@pytest.mark.parametrize("size", [[32], [32, 64], [32, 128], [3, 32, 256]])
+@pytest.mark.parametrize("size", [[32, 64], [32, 128], [3, 32, 256]])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym3"])
-@pytest.mark.parametrize("level", [1, 2, 3])  # None needs more work.
+@pytest.mark.parametrize("level", [1, 2, 3, None])
 @pytest.mark.parametrize("axis", [1, -1])
 def test_swt_1d_slow(level: Optional[int], size: int, wavelet: str, axis: int) -> None:
     """Test the 1d swt."""
@@ -85,4 +85,20 @@ def test_swt_1d_slow(level: Optional[int], size: int, wavelet: str, axis: int) -
         test_list.extend([np.allclose(ael.numpy(), bel) for ael, bel in zip(a, b)])
     assert all(test_list)
     rec = _iswt(ptwt_coeff, wavelet, axis=axis)
+    assert torch.allclose(rec, signal)
+
+
+@pytest.mark.parametrize("size", [[32], [64]])
+@pytest.mark.parametrize("wavelet", ["db1", "db2", "sym3"])
+@pytest.mark.parametrize("level", [1, 2, 3, None])
+def test_swt_1d_nobatch_axis(level: Optional[int], size: int, wavelet: str) -> None:
+    """Test the 1d swt."""
+    signal = torch.from_numpy(np.random.normal(size=size).astype(np.float64))
+    ptwt_coeff = _swt(signal, wavelet, level=level)
+    pywt_coeff = pywt.swt(signal.numpy(), wavelet, level, trim_approx=True, norm=False)
+    test_list = []
+    for a, b in zip(ptwt_coeff, pywt_coeff):
+        test_list.extend([np.allclose(ael.numpy(), bel) for ael, bel in zip(a, b)])
+    assert all(test_list)
+    rec = _iswt(ptwt_coeff, wavelet)
     assert torch.allclose(rec, signal)

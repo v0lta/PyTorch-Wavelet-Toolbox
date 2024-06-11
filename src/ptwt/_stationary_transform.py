@@ -76,12 +76,6 @@ def _swt(
         else:
             raise ValueError("swt transforms a single axis only.")
 
-    # TODO: This should happen during the preprocessing.
-    if len(data.shape) == 1:
-        squeeze = True
-    else:
-        squeeze = None
-
     data, ds = _preprocess_tensor_dec1d(data)
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
@@ -106,15 +100,7 @@ def _swt(
         result_list.append(res_hi.squeeze(1))
     result_list.append(res_lo.squeeze(1))
 
-    if ds:
-        result_list = _postprocess_result_list_dec1d(result_list, ds)
-
-    # TODO: this should be part of _postprocess_result_list
-    if squeeze:
-        result_list = [r_el.squeeze(0) for r_el in result_list]
-
-    if axis != -1:
-        result_list = [coeff.swapaxes(axis, -1) for coeff in result_list]
+    result_list = _postprocess_result_list_dec1d(result_list, ds, axis)
 
     return result_list[::-1]
 
@@ -180,10 +166,8 @@ def _iswt(
         else:
             raise ValueError("iswt transforms a single axis only.")
 
-    ds = None
     length = coeffs[0].shape[-1]
-    if coeffs[0].ndim > 2:
-        coeffs, ds = _preprocess_result_list_rec1d(coeffs)
+    coeffs, ds = _preprocess_result_list_rec1d(coeffs)
 
     wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
@@ -197,13 +181,16 @@ def _iswt(
         dilation = 2 ** (len(coeffs[1:]) - c_pos - 1)
         res_lo = torch.stack([res_lo, res_hi], 1)
         padl, padr = dilation * (filt_len // 2), dilation * (filt_len // 2 - 1)
-        res_lo = torch.nn.functional.pad(res_lo, (padl, padr), mode="circular")
+        # res_lo = torch.nn.functional.pad(res_lo, (padl, padr), mode="circular")
+        res_lo = circular_pad(res_lo, (padl, padr))
         res_lo = _conv_transpose_dedilate(
             res_lo, rec_filt, dilation=dilation, length=length
         )
         res_lo = res_lo.squeeze(1)
 
-    if ds:
+    if len(ds) == 1:
+        res_lo = res_lo.squeeze(0)
+    elif len(ds) > 2:
         res_lo = _unfold_axes(res_lo, ds, 1)
 
     if axis != -1:
