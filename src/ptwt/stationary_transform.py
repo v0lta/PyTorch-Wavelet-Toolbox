@@ -15,11 +15,8 @@ from .conv_transform import (
 )
 
 
-def circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Tensor:
-    """Pad a tensor in circular mode, more than once if needed.
-
-    .. seealso:: Added in https://github.com/v0lta/PyTorch-Wavelet-Toolbox/pull/84/files
-    """
+def _circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Tensor:
+    """Pad a tensor in circular mode, more than once if needed."""
     trailing_dimension = x.shape[-1]
 
     # if every padding dimension is smaller than or equal the trailing dimension,
@@ -58,6 +55,8 @@ def swt(
 ) -> List[torch.Tensor]:
     """Compute a multilevel 1d stationary wavelet transform.
 
+    This fuctions is equivalent to pywt's swt with `trim_approx=True` and `norm=False`.
+
     Args:
         data (torch.Tensor): The input data of shape [batch_size, time].
         wavelet (Union[Wavelet, str]): The wavelet to use.
@@ -92,7 +91,7 @@ def swt(
     for current_level in range(level):
         dilation = 2**current_level
         padl, padr = dilation * (filt_len // 2 - 1), dilation * (filt_len // 2)
-        res_lo = circular_pad(res_lo, [padl, padr])
+        res_lo = _circular_pad(res_lo, [padl, padr])
         res = torch.nn.functional.conv1d(res_lo, filt, stride=1, dilation=dilation)
         res_lo, res_hi = torch.split(res, 1, 1)
         # Trim_approx == False
@@ -148,7 +147,7 @@ def iswt(
         res_lo = torch.stack([res_lo, res_hi], 1)
         padl, padr = dilation * (filt_len // 2), dilation * (filt_len // 2 - 1)
         # res_lo = torch.nn.functional.pad(res_lo, (padl, padr), mode="circular")
-        res_lo_pad = circular_pad(res_lo, (padl, padr))
+        res_lo_pad = _circular_pad(res_lo, (padl, padr))
         res_lo = torch.mean(
             torch.nn.functional.conv_transpose1d(
                 res_lo_pad, rec_filt, dilation=dilation, groups=2, padding=(padl + padr)

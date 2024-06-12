@@ -7,7 +7,7 @@ import pytest
 import pywt
 import torch
 
-from ptwt.stationary_transform import circular_pad, iswt, swt
+from ptwt.stationary_transform import _circular_pad, iswt, swt
 
 
 @pytest.mark.parametrize("shape", [(8,), (1, 8), (4, 8), (4, 6, 8), (4, 6, 8, 8)])
@@ -30,15 +30,15 @@ def test_circular_pad(shape: Tuple[int, ...]) -> None:
         # torch.nn.functional.pad only implemented for
         # 2D,3D, 4D, 5Dtensors in circular mode
         with pytest.raises(NotImplementedError):
-            circular_pad(test_data_pt, [10, 10])
+            _circular_pad(test_data_pt, [10, 10])
     elif len(shape) > 3:
         # torch.nn.functional.pad tries to pad the last 2 dimensions
         # given a 4D input the provided pad width [10, 10] misses values
         # for the second dimension, hence the error
         with pytest.raises(NotImplementedError):  # should be a ValueError though...
-            circular_pad(test_data_pt, [10, 10])
+            _circular_pad(test_data_pt, [10, 10])
     else:
-        actual = circular_pad(test_data_pt, [10, 10])
+        actual = _circular_pad(test_data_pt, [10, 10])
         assert expected.shape == tuple(actual.shape)
         assert np.allclose(expected, actual.numpy())
 
