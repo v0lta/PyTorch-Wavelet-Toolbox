@@ -50,7 +50,7 @@ def circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Te
     return x
 
 
-def _swt(
+def swt(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
     level: Optional[int] = None,
@@ -105,40 +105,7 @@ def _swt(
     return result_list[::-1]
 
 
-def _conv_transpose_dedilate(
-    conv_res: torch.Tensor,
-    rec_filt: torch.Tensor,
-    dilation: int,
-    length: int,
-) -> torch.Tensor:
-    """Undo the forward dilated convolution from the analysis transform.
-
-    Args:
-        conv_res (torch.Tensor): The dilated coeffcients
-            of shape [batch, 2, length].
-        rec_filt (torch.Tensor): The reconstruction filter pair
-            of shape [1, 2, filter_length].
-        dilation (int): The dilation factor.
-        length (int): The signal length.
-
-    Returns:
-        torch.Tensor: The deconvolution result.
-    """
-    to_conv_t_list = [
-        conv_res[..., fl : (fl + dilation * rec_filt.shape[-1]) : dilation]
-        for fl in range(length)
-    ]
-    to_conv_t = torch.cat(to_conv_t_list, 0)
-    padding = rec_filt.shape[-1] - 1
-    rec = torch.nn.functional.conv_transpose1d(
-        to_conv_t, rec_filt, stride=1, padding=padding, output_padding=0
-    )
-    rec = rec / 2.0
-    splits = torch.split(rec, rec.shape[0] // len(to_conv_t_list))
-    return torch.cat(splits, -1)
-
-
-def _iswt(
+def iswt(
     coeffs: List[torch.Tensor],
     wavelet: Union[pywt.Wavelet, str],
     axis: Optional[int] = -1,
@@ -166,7 +133,6 @@ def _iswt(
         else:
             raise ValueError("iswt transforms a single axis only.")
 
-    length = coeffs[0].shape[-1]
     coeffs, ds = _preprocess_result_list_rec1d(coeffs)
 
     wavelet = _as_wavelet(wavelet)
@@ -182,11 +148,13 @@ def _iswt(
         res_lo = torch.stack([res_lo, res_hi], 1)
         padl, padr = dilation * (filt_len // 2), dilation * (filt_len // 2 - 1)
         # res_lo = torch.nn.functional.pad(res_lo, (padl, padr), mode="circular")
-        res_lo = circular_pad(res_lo, (padl, padr))
-        res_lo = _conv_transpose_dedilate(
-            res_lo, rec_filt, dilation=dilation, length=length
+        res_lo_pad = circular_pad(res_lo, (padl, padr))
+        res_lo = torch.mean(
+            torch.nn.functional.conv_transpose1d(
+                res_lo_pad, rec_filt, dilation=dilation, groups=2, padding=(padl + padr)
+            ),
+            1,
         )
-        res_lo = res_lo.squeeze(1)
 
     if len(ds) == 1:
         res_lo = res_lo.squeeze(0)
