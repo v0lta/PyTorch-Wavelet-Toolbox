@@ -218,7 +218,7 @@ def _adjust_padding_at_reconstruction(
 
 def _preprocess_tensor_dec1d(
     data: torch.Tensor,
-) -> Tuple[torch.Tensor, Union[List[int], None]]:
+) -> Tuple[torch.Tensor, List[int]]:
     """Preprocess input tensor dimensions.
 
     Args:
@@ -227,13 +227,13 @@ def _preprocess_tensor_dec1d(
     Returns:
         Tuple[torch.Tensor, Union[List[int], None]]:
             A data tensor of shape [new_batch, 1, to_process]
-            and the original shape, if the shape has changed.
+            and the original shape.
     """
-    ds = None
-    if len(data.shape) == 1:
+    ds = list(data.shape)
+    if len(ds) == 1:
         # assume time series
         data = data.unsqueeze(0).unsqueeze(0)
-    elif len(data.shape) == 2:
+    elif len(ds) == 2:
         # assume batched time series
         data = data.unsqueeze(1)
     else:
@@ -243,10 +243,20 @@ def _preprocess_tensor_dec1d(
 
 
 def _postprocess_result_list_dec1d(
-    result_lst: List[torch.Tensor], ds: List[int]
+    result_list: List[torch.Tensor], ds: List[int], axis: int
 ) -> List[torch.Tensor]:
-    # Unfold axes for the wavelets
-    return [_unfold_axes(fres, ds, 1) for fres in result_lst]
+    if len(ds) == 1:
+        result_list = [r_el.squeeze(0) for r_el in result_list]
+    elif len(ds) > 2:
+        # Unfold axes for the wavelets
+        result_list = [_unfold_axes(fres, ds, 1) for fres in result_list]
+    else:
+        result_list = result_list
+
+    if axis != -1:
+        result_list = [coeff.swapaxes(axis, -1) for coeff in result_list]
+
+    return result_list
 
 
 def _preprocess_result_list_rec1d(
@@ -254,7 +264,12 @@ def _preprocess_result_list_rec1d(
 ) -> Tuple[List[torch.Tensor], List[int]]:
     # Fold axes for the wavelets
     ds = list(result_lst[0].shape)
-    fold_coeffs = [_fold_axes(uf_coeff, 1)[0] for uf_coeff in result_lst]
+    if len(ds) == 1:
+        fold_coeffs = [uf_coeff.unsqueeze(0) for uf_coeff in result_lst]
+    elif len(ds) > 2:
+        fold_coeffs = [_fold_axes(uf_coeff, 1)[0] for uf_coeff in result_lst]
+    else:
+        fold_coeffs = result_lst
     return fold_coeffs, ds
 
 
@@ -350,11 +365,7 @@ def wavedec(
     result_list.append(res_lo.squeeze(1))
     result_list.reverse()
 
-    if ds:
-        result_list = _postprocess_result_list_dec1d(result_list, ds)
-
-    if axis != -1:
-        result_list = [coeff.swapaxes(axis, -1) for coeff in result_list]
+    result_list = _postprocess_result_list_dec1d(result_list, ds, axis)
 
     return result_list
 
@@ -412,9 +423,8 @@ def waverec(
             raise ValueError("waverec transforms a single axis only.")
 
     # fold channels, if necessary.
-    ds = None
-    if coeffs[0].dim() >= 3:
-        coeffs, ds = _preprocess_result_list_rec1d(coeffs)
+    ds = list(coeffs[0].shape)
+    coeffs, ds = _preprocess_result_list_rec1d(coeffs)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
@@ -439,7 +449,9 @@ def waverec(
         if padr > 0:
             res_lo = res_lo[..., :-padr]
 
-    if ds:
+    if len(ds) == 1:
+        res_lo = res_lo.squeeze(0)
+    elif len(ds) > 2:
         res_lo = _unfold_axes(res_lo, ds, 1)
 
     if axis != -1:

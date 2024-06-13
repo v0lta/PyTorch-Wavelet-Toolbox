@@ -82,6 +82,23 @@ def test_conv_fwt1d_channel(size: List[int], wavelet: str) -> None:
     assert np.allclose(data.numpy(), rec.numpy())
 
 
+@pytest.mark.parametrize("size", [[32], [64]])
+@pytest.mark.parametrize("wavelet", ["haar", "db2"])
+def test_conv_fwt1d_nobatch(size: List[int], wavelet: str) -> None:
+    """1d conv for inputs without batch dim."""
+    data = torch.randn(*size).type(torch.float64)
+    ptwt_coeff = wavedec(data, wavelet)
+    pywt_coeff = pywt.wavedec(data.numpy(), wavelet, mode="reflect")
+    assert all(
+        [
+            np.allclose(ptwtc.numpy(), pywtc)
+            for ptwtc, pywtc in zip(ptwt_coeff, pywt_coeff)
+        ]
+    )
+    rec = waverec(ptwt_coeff, wavelet)
+    assert np.allclose(data.numpy(), rec.numpy())
+
+
 def test_ripples_haar_lvl3() -> None:
     """Compute example from page 7 of Ripples in Mathematics, Jensen, la Cour-Harbo."""
 

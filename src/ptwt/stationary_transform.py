@@ -1,9 +1,10 @@
 """This module implements stationary wavelet transforms."""
 
-from typing import List, Optional, Union
+from typing import List, Optional, Sequence, Union
 
 import pywt
 import torch
+import torch.nn.functional as F  # noqa:N812
 
 from ._util import Wavelet, _as_wavelet, _unfold_axes
 from .conv_transform import (
@@ -14,13 +15,47 @@ from .conv_transform import (
 )
 
 
-def _swt(
+def _circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Tensor:
+    """Pad a tensor in circular mode, more than once if needed."""
+    trailing_dimension = x.shape[-1]
+
+    # if every padding dimension is smaller than or equal the trailing dimension,
+    # we do not need to manually wrap
+    if not any(
+        padding_dimension > trailing_dimension
+        for padding_dimension in padding_dimensions
+    ):
+        return F.pad(x, padding_dimensions, mode="circular")
+
+    # repeat to pad at maximum trailing dimensions until all padding dimensions are zero
+    while any(padding_dimension > 0 for padding_dimension in padding_dimensions):
+        # reduce every padding dimension to at maximum trailing dimension width
+        reduced_padding_dimensions = [
+            min(trailing_dimension, padding_dimension)
+            for padding_dimension in padding_dimensions
+        ]
+        # pad using reduced dimensions,
+        # which will never throw the circular wrap error
+        x = F.pad(x, reduced_padding_dimensions, mode="circular")
+        # remove the pad width that was just padded, and repeat
+        # if any pad width is greater than zero
+        padding_dimensions = [
+            max(padding_dimension - trailing_dimension, 0)
+            for padding_dimension in padding_dimensions
+        ]
+
+    return x
+
+
+def swt(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
     level: Optional[int] = None,
     axis: Optional[int] = -1,
 ) -> List[torch.Tensor]:
     """Compute a multilevel 1d stationary wavelet transform.
+
+    This fuctions is equivalent to pywt's swt with `trim_approx=True` and `norm=False`.
 
     Args:
         data (torch.Tensor): The input data of shape [batch_size, time].
@@ -56,7 +91,7 @@ def _swt(
     for current_level in range(level):
         dilation = 2**current_level
         padl, padr = dilation * (filt_len // 2 - 1), dilation * (filt_len // 2)
-        res_lo = torch.nn.functional.pad(res_lo, [padl, padr], mode="circular")
+        res_lo = _circular_pad(res_lo, [padl, padr])
         res = torch.nn.functional.conv1d(res_lo, filt, stride=1, dilation=dilation)
         res_lo, res_hi = torch.split(res, 1, 1)
         # Trim_approx == False
@@ -64,49 +99,12 @@ def _swt(
         result_list.append(res_hi.squeeze(1))
     result_list.append(res_lo.squeeze(1))
 
-    if ds:
-        result_list = _postprocess_result_list_dec1d(result_list, ds)
-
-    if axis != -1:
-        result_list = [coeff.swapaxes(axis, -1) for coeff in result_list]
+    result_list = _postprocess_result_list_dec1d(result_list, ds, axis)
 
     return result_list[::-1]
 
 
-def _conv_transpose_dedilate(
-    conv_res: torch.Tensor,
-    rec_filt: torch.Tensor,
-    dilation: int,
-    length: int,
-) -> torch.Tensor:
-    """Undo the forward dilated convolution from the analysis transform.
-
-    Args:
-        conv_res (torch.Tensor): The dilated coeffcients
-            of shape [batch, 2, length].
-        rec_filt (torch.Tensor): The reconstruction filter pair
-            of shape [1, 2, filter_length].
-        dilation (int): The dilation factor.
-        length (int): The signal length.
-
-    Returns:
-        torch.Tensor: The deconvolution result.
-    """
-    to_conv_t_list = [
-        conv_res[..., fl : (fl + dilation * rec_filt.shape[-1]) : dilation]
-        for fl in range(length)
-    ]
-    to_conv_t = torch.cat(to_conv_t_list, 0)
-    padding = rec_filt.shape[-1] - 1
-    rec = torch.nn.functional.conv_transpose1d(
-        to_conv_t, rec_filt, stride=1, padding=padding, output_padding=0
-    )
-    rec = rec / 2.0
-    splits = torch.split(rec, rec.shape[0] // len(to_conv_t_list))
-    return torch.cat(splits, -1)
-
-
-def _iswt(
+def iswt(
     coeffs: List[torch.Tensor],
     wavelet: Union[pywt.Wavelet, str],
     axis: Optional[int] = -1,
@@ -134,10 +132,7 @@ def _iswt(
         else:
             raise ValueError("iswt transforms a single axis only.")
 
-    ds = None
-    length = coeffs[0].shape[-1]
-    if coeffs[0].ndim > 2:
-        coeffs, ds = _preprocess_result_list_rec1d(coeffs)
+    coeffs, ds = _preprocess_result_list_rec1d(coeffs)
 
     wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
@@ -151,13 +146,18 @@ def _iswt(
         dilation = 2 ** (len(coeffs[1:]) - c_pos - 1)
         res_lo = torch.stack([res_lo, res_hi], 1)
         padl, padr = dilation * (filt_len // 2), dilation * (filt_len // 2 - 1)
-        res_lo = torch.nn.functional.pad(res_lo, (padl, padr), mode="circular")
-        res_lo = _conv_transpose_dedilate(
-            res_lo, rec_filt, dilation=dilation, length=length
+        # res_lo = torch.nn.functional.pad(res_lo, (padl, padr), mode="circular")
+        res_lo_pad = _circular_pad(res_lo, (padl, padr))
+        res_lo = torch.mean(
+            torch.nn.functional.conv_transpose1d(
+                res_lo_pad, rec_filt, dilation=dilation, groups=2, padding=(padl + padr)
+            ),
+            1,
         )
-        res_lo = res_lo.squeeze(1)
 
-    if ds:
+    if len(ds) == 1:
+        res_lo = res_lo.squeeze(0)
+    elif len(ds) > 2:
         res_lo = _unfold_axes(res_lo, ds, 1)
 
     if axis != -1:
