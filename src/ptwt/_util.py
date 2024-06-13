@@ -7,9 +7,12 @@ from typing import Any, Callable, Optional, Protocol, Union, cast, overload
 import numpy as np
 import pywt
 import torch
-from typing_extensions import Unpack
 
-from .constants import OrthogonalizeMethod
+from .constants import (
+    OrthogonalizeMethod,
+    WaveletCoeffDetailDict,
+    WaveletCoeffDetailTuple2d,
+)
 
 
 class Wavelet(Protocol):
@@ -29,15 +32,6 @@ class Wavelet(Protocol):
     def __len__(self) -> int:
         """Return the number of filter coefficients."""
         return len(self.dec_lo)
-
-
-WaveletDetailTuple2d = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-WaveletDetailDict = dict[str, torch.Tensor]
-
-WaveletCoeffDetailTuple2d = tuple[
-    torch.Tensor, Unpack[tuple[WaveletDetailTuple2d, ...]]
-]
-WaveletCoeffDetailDict = tuple[torch.Tensor, Unpack[tuple[WaveletDetailDict, ...]]]
 
 
 def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:

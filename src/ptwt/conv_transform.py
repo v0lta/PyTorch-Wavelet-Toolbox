@@ -11,7 +11,6 @@ import torch
 
 from ._util import (
     Wavelet,
-    WaveletCoeffDetailTuple2d,
     _as_wavelet,
     _fold_axes,
     _get_len,
@@ -19,7 +18,7 @@ from ._util import (
     _pad_symmetric,
     _unfold_axes,
 )
-from .constants import BoundaryMode
+from .constants import BoundaryMode, WaveletCoeffDetailTuple2d
 
 
 def _create_tensor(

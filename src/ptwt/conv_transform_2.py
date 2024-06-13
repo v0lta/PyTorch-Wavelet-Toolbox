@@ -12,7 +12,6 @@ import torch
 
 from ._util import (
     Wavelet,
-    WaveletCoeffDetailTuple2d,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -26,7 +25,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import BoundaryMode
+from .constants import BoundaryMode, WaveletCoeffDetailTuple2d
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_filter_tensors,

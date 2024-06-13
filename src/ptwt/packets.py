@@ -10,13 +10,13 @@ import numpy as np
 import pywt
 import torch
 
-from ._util import (
-    Wavelet,
+from ._util import Wavelet, _as_wavelet
+from .constants import (
+    ExtendedBoundaryMode,
+    OrthogonalizeMethod,
     WaveletCoeffDetailDict,
     WaveletCoeffDetailTuple2d,
-    _as_wavelet,
 )
-from .constants import ExtendedBoundaryMode, OrthogonalizeMethod
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
 from .matmul_transform import MatrixWavedec, MatrixWaverec

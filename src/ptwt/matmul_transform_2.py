@@ -12,7 +12,6 @@ import torch
 
 from ._util import (
     Wavelet,
-    WaveletCoeffDetailTuple2d,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -23,7 +22,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod, PaddingMode
+from .constants import OrthogonalizeMethod, PaddingMode, WaveletCoeffDetailTuple2d
 from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import (
     _construct_2d_filt,

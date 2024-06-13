@@ -9,7 +9,6 @@ import torch
 
 from ._util import (
     Wavelet,
-    WaveletCoeffDetailDict,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -21,7 +20,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod
+from .constants import OrthogonalizeMethod, WaveletCoeffDetailDict
 from .conv_transform_3 import _waverec3d_fold_channels_3d_list
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm

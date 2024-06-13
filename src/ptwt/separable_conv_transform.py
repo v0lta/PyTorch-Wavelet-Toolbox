@@ -15,7 +15,6 @@ import torch
 
 from ._util import (
     Wavelet,
-    WaveletCoeffDetailDict,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -26,7 +25,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import BoundaryMode
+from .constants import BoundaryMode, WaveletCoeffDetailDict
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import _preprocess_tensor_dec2d
 
