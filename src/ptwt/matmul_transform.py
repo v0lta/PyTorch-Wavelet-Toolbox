@@ -188,11 +188,13 @@ class MatrixWavedec(BaseMatrixWaveDec):
         axis: Optional[int] = -1,
         boundary: OrthogonalizeMethod = "qr",
     ) -> None:
-        """Create a matrix-fwt object.
+        """A sparse matrix fast wavelet transform object.
 
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
@@ -478,6 +480,8 @@ class MatrixWaverec(object):
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
             axis (int): The axis transformed by the original decomposition
                 defaults to -1 or the last axis.
             boundary : The method used for boundary filter treatment.

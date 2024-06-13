@@ -74,6 +74,8 @@ def _fwt_pad2(
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         mode :
             The desired padding mode for extending the signal along the edges.
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
@@ -156,10 +158,11 @@ def wavedec2(
             By default 2d inputs are interpreted as ``[height, width]``,
             3d inputs are interpreted as ``[batch_size, height, width]``.
             4d inputs are interpreted as ``[batch_size, channels, height, width]``.
-            the ``axis`` argument allows other interpretations.
+            The ``axes`` argument allows other interpretations.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet. Refer to the output of
-            ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         mode :
             The desired padding mode for extending the signal along the edges.
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
@@ -258,6 +261,8 @@ def waverec2(
             and 'D' diagonal coefficients.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         axes (tuple[int, int]): Compute the transform over these axes instead of the
             last two. Defaults to (-2, -1).
 

@@ -75,6 +75,8 @@ def _fwt_pad3(
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         mode :
             The desired padding mode for extending the signal along the edges.
             See :data:`ptwt.constants.BoundaryMode`.
@@ -113,9 +115,11 @@ def wavedec3(
 
     Args:
         data (torch.Tensor): The input data. For example of shape
-            [batch_size, length, height, width]
-        wavelet (Union[Wavelet, str]): The wavelet to transform with.
-            ``pywt.wavelist(kind='discrete')`` lists possible choices.
+            ``[batch_size, length, height, width]``
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         mode :
             The desired padding mode for extending the signal along the edges.
             Defaults to "zero". See :data:`ptwt.constants.BoundaryMode`.
@@ -238,6 +242,8 @@ def waverec3(
             produced by wavedec3.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         axes (tuple[int, int, int]): Transform these axes instead of the
             last three. Defaults to (-3, -2, -1).
 

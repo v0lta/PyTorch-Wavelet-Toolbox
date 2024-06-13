@@ -359,6 +359,8 @@ def waverec(
         coeffs (Sequence): The wavelet coefficient sequence produced by wavedec.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         axis (int): Transform this axis instead of the last one. Defaults to -1.
 
     Returns:

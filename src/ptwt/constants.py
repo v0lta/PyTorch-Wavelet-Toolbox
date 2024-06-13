@@ -18,16 +18,22 @@ __all__ = [
 
 BoundaryMode = Literal["constant", "zero", "reflect", "periodic", "symmetric"]
 """
-This is a type literal for the way of padding.
+This is a type literal for the way of padding used at boundaries.
 
-- Refection padding mirrors samples along the border.
-- Zero padding pads zeros.
-- Constant padding replicates border values.
-- Periodic padding cyclically repeats samples.
-- Symmetric padding mirrors samples along the border
+- Refection padding mirrors samples along the border (``reflect``)
+- Zero padding pads zeros (``zero``)
+- Constant padding replicates border values (``constant``)
+- Periodic padding cyclically repeats samples (``periodic``)
+- Symmetric padding mirrors samples along the border (``symmetric``)
 """
 
 ExtendedBoundaryMode = Union[Literal["boundary"], BoundaryMode]
+"""
+This is a type literal for the way of handling signal boundaries.
+
+This is either a form of padding (see :data:`ptwt.constants.BoundaryMode`
+for padding options) or ``boundary`` to use boundary wavelets.
+"""
 
 PaddingMode = Literal["full", "valid", "same", "sameshift"]
 """
@@ -38,10 +44,10 @@ OrthogonalizeMethod = Literal["qr", "gramschmidt"]
 """
 The method for orthogonalizing a matrix.
 
-1. 'qr' relies on pytorch's dense qr implementation, it is fast but memory hungry.
-2. 'gramschmidt' option is sparse, memory efficient, and slow.
+1. ``qr`` relies on pytorch's dense QR implementation, it is fast but memory hungry.
+2. ``gramschmidt`` option is sparse, memory efficient, and slow.
 
-Choose 'gramschmidt' if 'qr' runs out of memory.
+Choose ``gramschmidt`` if ``qr`` runs out of memory.
 """
 
 

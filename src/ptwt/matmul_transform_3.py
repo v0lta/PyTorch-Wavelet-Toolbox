@@ -68,8 +68,11 @@ class MatrixWavedec3(object):
         this object transforms the last three dimensions.
 
         Args:
-            wavelet (Union[Wavelet, str]): The wavelet to use.
-            level (Optional[int]): The desired decomposition level.
+            wavelet (Wavelet or str): A pywt wavelet compatible object or
+                the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
+            level (int, optional): The desired decomposition level.
                 Defaults to None.
             boundary: The matrix orthogonalization method.
                 Defaults to "qr".
@@ -292,6 +295,8 @@ class MatrixWaverec3(object):
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
             axes (tuple[int, int, int]): Transform these axes instead of the
                 last three. Defaults to (-3, -2, -1).
             boundary : The method used for boundary filter treatment.

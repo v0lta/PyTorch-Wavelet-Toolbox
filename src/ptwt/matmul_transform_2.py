@@ -262,6 +262,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
@@ -577,6 +579,8 @@ class MatrixWaverec2(object):
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
             axes (int, int): The axes transformed by waverec2.
                 Defaults to (-2, -1).
             boundary : The method used for boundary filter treatment.

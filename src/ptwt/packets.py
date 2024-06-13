@@ -74,6 +74,8 @@ class WaveletPacket(BaseDict):
                 Use the ``axis`` argument to choose another dimension.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
             mode : The desired padding method. If you select 'boundary',
                 the sparse matrix backend will be used. Defaults to 'reflect'.
             maxlevel (int, optional): Value is passed on to `transform`.
@@ -237,7 +239,8 @@ class WaveletPacket(BaseDict):
 
         Args:
             key (str): The key of the accessed coefficients. The string may only consist
-                of the following chars: 'a', 'd'.
+                of the chars 'a' and 'd' where 'a' denotes the low pass or
+                approximation filter and 'd' the high-pass or detail filter.
 
         Returns:
             The accessed wavelet packet coefficients.
@@ -287,6 +290,8 @@ class WaveletPacket2D(BaseDict):
                 a decomposition.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
             mode : A string indicating the desired padding mode.
                 If you select 'boundary', the sparse matrix backend is used.
                 Defaults to 'reflect'
@@ -490,7 +495,10 @@ class WaveletPacket2D(BaseDict):
         Args:
             key (str): The key of the accessed coefficients.
                 The string may only consist
-                of the following chars: 'a', 'h', 'v', 'd'.
+                of the following chars: 'a', 'h', 'v', 'd'
+                The chars correspond to the selected coefficients for a level
+                where 'a' denotes the approximation coefficients and
+                'h' horizontal, 'v' vertical  and 'd' diagonal details coefficients.
 
         Returns:
             The accessed wavelet packet coefficients.

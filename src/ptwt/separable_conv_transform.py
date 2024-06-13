@@ -78,8 +78,7 @@ def _separable_conv_idwtn(
         in_dict (dict[str, torch.Tensor]): The dictionary produced
             by _separable_conv_dwtn_ .
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet, as used by
-            _separable_conv_dwtn_ .
+            the name of a pywt wavelet, as used by ``_separable_conv_dwtn_``.
 
     Returns:
         A reconstruction of the original signal.
@@ -161,7 +160,7 @@ def _separable_conv_waverecn(
         coeffs (WaveletCoeffDetailDict):
             The output as produced by `_separable_conv_wavedecn`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet, as used by `_separable_conv_wavedecn`.
+            the name of a pywt wavelet, as used by ``_separable_conv_wavedecn``.
 
     Returns:
         The reconstruction of the original signal.
@@ -264,7 +263,7 @@ def fswavedec3(
         data (torch.Tensor): An input signal of shape ``[batch, depth, height, width]``.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
-            ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
+            ``pywt.wavelist(kind="discrete")`` for possible choices.
         mode :
             The desired padding mode for extending the signal along the edges.
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
@@ -335,8 +334,10 @@ def fswaverec2(
     Args:
         coeffs (WaveletCoeffDetailDict):
             The wavelet coefficients as computed by `fswavedec2`.
-        wavelet (Wavelet or str): The wavelet to use for the
-            synthesis transform.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         axes (tuple[int, int]): Compute the transform over these
             axes instead of the last two. Defaults to (-2, -1).
 
@@ -397,8 +398,10 @@ def fswaverec3(
     Args:
         coeffs (WaveletCoeffDetailDict):
             The wavelet coefficients as computed by `fswavedec3`.
-        wavelet (Wavelet or str): The wavelet to use for the
-            synthesis transform.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         axes (tuple[int, int, int]): Compute the transform over these axes
             instead of the last three. Defaults to (-3, -2, -1).
 
