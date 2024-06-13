@@ -3,6 +3,8 @@
 This module treats boundaries with edge-padding.
 """
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 from typing import Optional, Union
 

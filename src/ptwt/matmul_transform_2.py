@@ -3,6 +3,8 @@
 This module uses boundary filters to minimize padding.
 """
 
+from __future__ import annotations
+
 import sys
 from functools import partial
 from typing import Optional, Union, cast

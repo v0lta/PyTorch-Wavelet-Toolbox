@@ -4,6 +4,8 @@ The implementation relies on torch.nn.functional.conv2d and
 torch.nn.functional.conv_transpose2d under the hood.
 """
 
+from __future__ import annotations
+
 from functools import partial
 from typing import Optional, Union
 

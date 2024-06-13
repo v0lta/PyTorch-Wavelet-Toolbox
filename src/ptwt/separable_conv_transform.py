@@ -7,6 +7,8 @@ Under the hood, code in this module transforms all dimensions
 using torch.nn.functional.conv1d and it's transpose.
 """
 
+from __future__ import annotations
+
 from functools import partial
 from typing import Optional, Union
 

@@ -82,3 +82,9 @@ bibtex_bibfiles = ["literature.bib"]
 
 # numbered figures
 numfig = True
+
+autodoc_type_aliases = {
+    "WaveletCoeffDetailTuple2d": "ptwt.constants.WaveletCoeffDetailTuple2d",
+    "WaveletCoeffDetailDict": "ptwt.constants.WaveletCoeffDetailDict",
+    "BaseMatrixWaveDec": "ptwt.matmul_transform.BaseMatrixWaveDec",
+}

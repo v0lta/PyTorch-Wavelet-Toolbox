@@ -3,6 +3,8 @@
 The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
 
+from __future__ import annotations
+
 from functools import partial
 from typing import Optional, Union
 

@@ -1,5 +1,7 @@
 """Compute analysis wavelet packet representations."""
 
+from __future__ import annotations
+
 import collections
 from collections.abc import Sequence
 from functools import partial

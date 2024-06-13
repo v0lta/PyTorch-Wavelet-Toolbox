@@ -1,5 +1,7 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
 
+from __future__ import annotations
+
 import typing
 from collections.abc import Sequence
 from typing import Any, Callable, Optional, Protocol, Union, cast, overload

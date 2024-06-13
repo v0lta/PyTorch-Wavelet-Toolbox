@@ -1,5 +1,7 @@
 """Implement 3D separable boundary transforms."""
 
+from __future__ import annotations
+
 import sys
 from functools import partial
 from typing import NamedTuple, Optional, Union
