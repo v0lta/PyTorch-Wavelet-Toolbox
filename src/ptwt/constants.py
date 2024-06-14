@@ -12,6 +12,7 @@ __all__ = [
     "OrthogonalizeMethod",
     "WaveletDetailTuple2d",
     "WaveletCoeff2d",
+    "WaveletCoeff2dSeparable",
     "WaveletCoeffNd",
     "WaveletDetailDict",
 ]
@@ -111,4 +112,16 @@ Note that this type always contains an approximation coefficient tensor but does
 necesseraily contain any detail coefficients.
 
 Alias of ``tuple[torch.Tensor, *tuple[WaveletDetailDict, ...]]``
+"""
+
+WaveletCoeff2dSeparable: TypeAlias = WaveletCoeffNd
+"""Type alias for separable 2d wavelet transform results.
+
+This is an alias of :data:`ptwt.constants.WaveletCoeffNd`.
+It is used to emphasize the use of :data:`ptwt.constants.WaveletDetailDict`
+for detail coefficients in a 2d setting -- in contrast to
+:data:`ptwt.constants.WaveletCoeff2d`.
+
+Alias of :data:`ptwt.constants.WaveletCoeffNd`, i.e. of
+``tuple[torch.Tensor, *tuple[WaveletDetailDict, ...]]``.
 """

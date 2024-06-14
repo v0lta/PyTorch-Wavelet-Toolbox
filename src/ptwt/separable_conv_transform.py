@@ -27,7 +27,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import BoundaryMode, WaveletCoeffNd
+from .constants import BoundaryMode, WaveletCoeff2dSeparable, WaveletCoeffNd
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import _preprocess_tensor_dec2d
 
@@ -188,7 +188,7 @@ def fswavedec2(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: tuple[int, int] = (-2, -1),
-) -> WaveletCoeffNd:
+) -> WaveletCoeff2dSeparable:
     """Compute a fully separable 2D-padded analysis wavelet transform.
 
     Args:
@@ -208,7 +208,7 @@ def fswavedec2(
     Returns:
         A tuple with the ll coefficients and for each scale a dictionary
         containing the detail coefficients,
-        see :data:`ptwt.constants.WaveletCoeffNd`.
+        see :data:`ptwt.constants.WaveletCoeff2dSeparable`.
         The dictionaries use the filter order strings::
 
         ("ad", "da", "dd")
@@ -324,7 +324,7 @@ def fswavedec3(
 
 
 def fswaverec2(
-    coeffs: WaveletCoeffNd,
+    coeffs: WaveletCoeff2dSeparable,
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
@@ -334,9 +334,9 @@ def fswaverec2(
     the hood.
 
     Args:
-        coeffs (WaveletCoeffNd):
+        coeffs (WaveletCoeff2dSeparable):
             The wavelet coefficients as computed by `fswavedec2`,
-            see :data:`ptwt.constants.WaveletCoeffNd`.
+            see :data:`ptwt.constants.WaveletCoeff2dSeparable`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
