@@ -2,7 +2,7 @@
 
 from typing import Literal, Union
 
-import torch.Tensor
+import torch
 from typing_extensions import TypeAlias, Unpack
 
 __all__ = [
