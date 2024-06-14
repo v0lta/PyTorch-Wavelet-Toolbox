@@ -1,6 +1,6 @@
 """Constants and types used throughout the PyTorch Wavelet Toolbox."""
 
-from typing import Literal, Union
+from typing import Literal, NamedTuple, Union
 
 import torch
 from typing_extensions import TypeAlias, Unpack
@@ -51,14 +51,16 @@ Choose ``gramschmidt`` if ``qr`` runs out of memory.
 """
 
 
-WaveletDetailTuple2d: TypeAlias = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-"""Detail coefficients of a 2d wavelet transform for a given level.
+class WaveletDetailTuple2d(NamedTuple):
+    """Detail coefficients of a 2d wavelet transform for a given level.
 
-This is a type alias for a tuple ``(H, V, D)`` of detail coefficient tensors
-where ``H`` denotes horizontal, ``V`` vertical and ``D`` diagonal coefficients.
+    This is a type alias for a named tuple ``(H, V, D)`` of detail coefficient tensors
+    where ``H`` denotes horizontal, ``V`` vertical and ``D`` diagonal coefficients.
+    """
 
-Alias of ``tuple[torch.Tensor, torch.Tensor, torch.Tensor]``
-"""
+    horizontal: torch.Tensor
+    vertical: torch.Tensor
+    diagonal: torch.Tensor
 
 
 WaveletDetailDict: TypeAlias = dict[str, torch.Tensor]

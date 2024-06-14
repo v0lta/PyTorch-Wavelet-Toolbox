@@ -18,6 +18,7 @@ from .constants import (
     OrthogonalizeMethod,
     WaveletCoeffDetailDict,
     WaveletCoeffDetailTuple2d,
+    WaveletDetailTuple2d,
 )
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
@@ -369,7 +370,7 @@ class WaveletPacket2D(BaseDict):
                 data_v = self[node + "v"]
                 data_d = self[node + "d"]
                 rec = self._get_waverec(data_a.shape[-2:])(
-                    (data_a, (data_h, data_v, data_d))
+                    (data_a, WaveletDetailTuple2d(data_h, data_v, data_d))
                 )
                 if level > 0:
                     if rec.shape[-1] != self[node].shape[-1]:
@@ -458,7 +459,10 @@ class WaveletPacket2D(BaseDict):
             # assert for type checking
             assert len(fs_dict_data) == 2
             a_coeff, fsdict = fs_dict_data
-            return (a_coeff, (fsdict["ad"], fsdict["da"], fsdict["dd"]))
+            return (
+                a_coeff,
+                WaveletDetailTuple2d(fsdict["ad"], fsdict["da"], fsdict["dd"]),
+            )
 
         return _tuple_func
 

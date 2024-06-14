@@ -24,7 +24,12 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod, PaddingMode, WaveletCoeffDetailTuple2d
+from .constants import (
+    OrthogonalizeMethod,
+    PaddingMode,
+    WaveletCoeffDetailTuple2d,
+    WaveletDetailTuple2d,
+)
 from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import (
     _construct_2d_filt,
@@ -463,7 +468,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
-        split_list: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
+        split_list: list[WaveletDetailTuple2d] = []
         if self.separable:
             ll = input_signal
             for scale, fwt_mats in enumerate(self.fwt_matrix_list):
@@ -485,7 +490,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 ll, lh = torch.split(a_coeffs, current_width // 2, dim=-1)
                 hl, hh = torch.split(d_coeffs, current_width // 2, dim=-1)
 
-                split_list.append((lh, hl, hh))
+                split_list.append(WaveletDetailTuple2d(lh, hl, hh))
         else:
             ll = input_signal.transpose(-2, -1).reshape([batch_size, -1]).T
             for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
@@ -525,7 +530,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                         for el in four_split[1:]
                     ),
                 )
-                split_list.append(reshaped)
+                split_list.append(WaveletDetailTuple2d(*reshaped))
                 ll = four_split[0]
             ll = ll.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(2, 1)
 

@@ -27,7 +27,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import BoundaryMode, WaveletCoeffDetailTuple2d
+from .constants import BoundaryMode, WaveletCoeffDetailTuple2d, WaveletDetailTuple2d
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_filter_tensors,
@@ -211,13 +211,15 @@ def wavedec2(
     if level is None:
         level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
 
-    result_lst: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
+    result_lst: list[WaveletDetailTuple2d] = []
     res_ll = data
     for _ in range(level):
         res_ll = _fwt_pad2(res_ll, wavelet, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
-        to_append = (res_lh.squeeze(1), res_hl.squeeze(1), res_hh.squeeze(1))
+        to_append = WaveletDetailTuple2d(
+            res_lh.squeeze(1), res_hl.squeeze(1), res_hh.squeeze(1)
+        )
         result_lst.append(to_append)
 
     result_lst.reverse()
