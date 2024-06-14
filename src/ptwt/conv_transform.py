@@ -100,8 +100,7 @@ def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
     padl = (2 * filt_len - 3) // 2
 
     # pad to even singal length.
-    if data_len % 2 != 0:
-        padr += 1
+    padr += data_len % 2
 
     return padr, padl
 
