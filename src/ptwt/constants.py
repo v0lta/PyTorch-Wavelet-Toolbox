@@ -79,6 +79,7 @@ Alias of ``dict[str, torch.Tensor]``
 """
 
 
+# Note: This data structure was chosen to follow pywt's conventions
 WaveletCoeffDetailTuple2d: TypeAlias = tuple[
     torch.Tensor, Unpack[tuple[WaveletDetailTuple2d, ...]]
 ]
@@ -96,6 +97,7 @@ necesseraily contain any detail coefficients.
 Alias of ``tuple[torch.Tensor, *tuple[WaveletDetailTuple2d, ...]]``
 """
 
+# Note: This data structure was chosen to follow pywt's conventions
 WaveletCoeffDetailDict: TypeAlias = tuple[
     torch.Tensor, Unpack[tuple[WaveletDetailDict, ...]]
 ]
