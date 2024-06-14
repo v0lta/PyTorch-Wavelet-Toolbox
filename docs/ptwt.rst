@@ -54,6 +54,16 @@ ptwt.separable\_conv\_transform module
    :undoc-members:
    :show-inheritance:
 
+
+ptwt.stationary\_transform module
+---------------------------------
+
+.. automodule:: ptwt.stationary_transform
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 ptwt.matmul\_transform module
 -----------------------------
 

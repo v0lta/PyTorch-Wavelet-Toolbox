@@ -379,15 +379,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         result_list = [s.T for s in split_list[::-1]]
 
         # unfold if necessary
-        if ds:
-            result_list = _postprocess_result_list_dec1d(result_list, ds)
-
-        if self.axis != -1:
-            swap = []
-            for coeff in result_list:
-                swap.append(coeff.swapaxes(self.axis, -1))
-            result_list = swap
-
+        result_list = _postprocess_result_list_dec1d(result_list, ds, self.axis)
         return result_list
 
 
@@ -608,9 +600,7 @@ class MatrixWaverec(object):
                 swap.append(coeff.swapaxes(self.axis, -1))
             coefficients = swap
 
-        ds = None
-        if coefficients[0].ndim > 2:
-            coefficients, ds = _preprocess_result_list_rec1d(coefficients)
+        coefficients, ds = _preprocess_result_list_rec1d(coefficients)
 
         level = len(coefficients) - 1
         input_length = coefficients[-1].shape[-1] * 2
@@ -662,8 +652,10 @@ class MatrixWaverec(object):
 
         res_lo = lo.T
 
-        if ds:
-            res_lo = _unfold_axes(res_lo.unsqueeze(-2), list(ds), 1).squeeze(-2)
+        if len(ds) == 1:
+            res_lo = res_lo.squeeze(0)
+        elif len(ds) > 2:
+            res_lo = _unfold_axes(res_lo, ds, 1)
 
         if self.axis != -1:
             res_lo = res_lo.swapaxes(self.axis, -1)
