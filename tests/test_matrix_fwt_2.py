@@ -1,6 +1,6 @@
 """Test code for the 2d boundary wavelets."""
 
-from typing import List, Tuple, Type
+from typing import Type
 
 import numpy as np
 import pytest
@@ -23,7 +23,7 @@ from tests.test_convolution_fwt import _compare_coeffs
 
 @pytest.mark.parametrize("size", [(16, 16), (16, 8), (8, 16)])
 @pytest.mark.parametrize("wavelet_str", ["db1", "db2", "db3", "db4", "db5"])
-def test_analysis_synthesis_matrices2(size: Tuple[int, int], wavelet_str: str) -> None:
+def test_analysis_synthesis_matrices2(size: tuple[int, int], wavelet_str: str) -> None:
     """Test the 2d analysis and synthesis matrices for various wavelets."""
     wavelet = pywt.Wavelet(wavelet_str)
     a = construct_boundary_a2(
@@ -49,7 +49,7 @@ def test_analysis_synthesis_matrices2(size: Tuple[int, int], wavelet_str: str) -
 @pytest.mark.slow
 @pytest.mark.parametrize("size", [(8, 16), (16, 8), (15, 16), (16, 15), (16, 16)])
 @pytest.mark.parametrize("level", [1, 2, 3])
-def test_matrix_analysis_fwt_2d_haar(size: Tuple[int, int], level: int) -> None:
+def test_matrix_analysis_fwt_2d_haar(size: tuple[int, int], level: int) -> None:
     """Test the fwt-2d matrix-haar transform, should be equal to the pywt."""
     face = np.mean(
         scipy.datasets.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
@@ -87,7 +87,7 @@ def test_matrix_analysis_fwt_2d_haar(size: Tuple[int, int], level: int) -> None:
 @pytest.mark.parametrize("level", [1, 2, 3, None])
 @pytest.mark.parametrize("separable", [False, True])
 def test_boundary_matrix_fwt_2d(
-    wavelet_str: str, size: Tuple[int, int], level: int, separable: bool
+    wavelet_str: str, size: tuple[int, int], level: int, separable: bool
 ) -> None:
     """Ensure the boundary matrix fwt is invertable."""
     face = np.mean(
@@ -119,7 +119,7 @@ def test_boundary_matrix_fwt_2d(
 @pytest.mark.parametrize("size", [(16, 16), (32, 16), (16, 32)])
 @pytest.mark.parametrize("separable", [False, True])
 def test_batched_2d_matrix_fwt_ifwt(
-    wavelet_str: str, level: int, size: Tuple[int, int], separable: bool
+    wavelet_str: str, level: int, size: tuple[int, int], separable: bool
 ) -> None:
     """Ensure the batched matrix fwt works properly."""
     face = scipy.datasets.face()[256 : (256 + size[0]), 256 : (256 + size[1])].astype(
@@ -192,7 +192,7 @@ def test_separable_haar_2d() -> None:
 
 
 @pytest.mark.parametrize("size", [[3, 2, 32, 32], [4, 32, 32], [1, 1, 32, 32]])
-def test_batch_channel_2d_haar(size: List[int]) -> None:
+def test_batch_channel_2d_haar(size: list[int]) -> None:
     """Test matrix fwt-2d leading channel and batch dimension code."""
     signal = torch.randn(*size).type(torch.float64)
     ptwt_coeff = MatrixWavedec2("haar", 2, separable=False)(signal)
@@ -235,7 +235,7 @@ def test_empty_inverse_operators(operator: Type[BaseMatrixWaveDec]) -> None:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("axes", ((-2, -1), (-1, -2), (-3, -2), (0, 1), (1, 0)))
-def test_axes_2d(axes: Tuple[int, int]) -> None:
+def test_axes_2d(axes: tuple[int, int]) -> None:
     """Ensure the axes argument is supported correctly."""
     # TODO: write me.
     data = torch.randn(24, 24, 24, 24, 24).type(torch.float64)

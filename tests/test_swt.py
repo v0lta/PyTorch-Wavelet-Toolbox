@@ -1,6 +1,6 @@
 """Test the stationary wavelet transformation code."""
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import pytest
@@ -11,7 +11,7 @@ from ptwt.stationary_transform import _circular_pad, iswt, swt
 
 
 @pytest.mark.parametrize("shape", [(8,), (1, 8), (4, 8), (4, 6, 8), (4, 6, 8, 8)])
-def test_circular_pad(shape: Tuple[int, ...]) -> None:
+def test_circular_pad(shape: tuple[int, ...]) -> None:
     """Test patched circular padding."""
     test_data_np = np.random.rand(*shape).astype(np.float32)
     test_data_pt = torch.from_numpy(test_data_np)

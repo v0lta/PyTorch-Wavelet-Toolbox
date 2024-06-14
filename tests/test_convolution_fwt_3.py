@@ -1,7 +1,7 @@
 """Test our 3d for loop-convolution based fwt code."""
 
 import typing
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -14,8 +14,8 @@ from ptwt.constants import BoundaryMode
 
 
 def _expand_dims(
-    batch_list: List[Union[npt.NDArray[Any], Dict[Any, Any]]]
-) -> List[Any]:
+    batch_list: list[Union[npt.NDArray[Any], dict[Any, Any]]]
+) -> list[Any]:
     for pos, bel in enumerate(batch_list):
         if isinstance(bel, np.ndarray):
             batch_list[pos] = np.expand_dims(bel, 0)
@@ -66,7 +66,7 @@ def _cat_batch_list(batch_lists: Any) -> Any:
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("mode", typing.get_args(BoundaryMode))
 def test_waverec3(
-    shape: List[int], wavelet: str, level: int, mode: BoundaryMode
+    shape: list[int], wavelet: str, level: int, mode: BoundaryMode
 ) -> None:
     """Ensure the 3d analysis transform is invertible."""
     data = np.random.randn(*shape)
@@ -102,7 +102,7 @@ def test_waverec3(
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("wavelet", ["haar", "sym3", "db3"])
 @pytest.mark.parametrize("mode", ["zero", "symmetric", "reflect"])
-def test_multidim_input(size: List[int], level: int, wavelet: str, mode: str) -> None:
+def test_multidim_input(size: list[int], level: int, wavelet: str, mode: str) -> None:
     """Ensure correct folding of multidimensional inputs."""
     data = torch.randn(size, dtype=torch.float64)
     ptwc = ptwt.wavedec3(data, wavelet, level=level, mode=mode)

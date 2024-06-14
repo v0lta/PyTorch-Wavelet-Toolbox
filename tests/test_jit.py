@@ -1,6 +1,6 @@
 """Ensure pytorch's torch.jit.trace feature works properly."""
 
-from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import NamedTuple, Optional, Union
 
 import numpy as np
 import pytest
@@ -33,7 +33,7 @@ def _set_up_wavelet_tuple(wavelet: WaveletTuple, dtype: torch.dtype) -> WaveletT
 
 def _to_jit_wavedec_fun(
     data: torch.Tensor, wavelet: Union[ptwt.Wavelet, str], level: Optional[int]
-) -> List[torch.Tensor]:
+) -> list[torch.Tensor]:
     return ptwt.wavedec(data, wavelet, mode="reflect", level=level)
 
 
@@ -69,10 +69,10 @@ def test_conv_fwt_jit(
 
 def _to_jit_wavedec_2(
     data: torch.Tensor, wavelet: Union[str, ptwt.Wavelet]
-) -> List[torch.Tensor]:
+) -> list[torch.Tensor]:
     """Ensure uniform datatypes in lists for the tracer.
 
-    Going from List[Union[torch.Tensor, Tuple[torch.Tensor]]] to List[torch.Tensor]
+    Going from list[Union[torch.Tensor, tuple[torch.Tensor]]] to list[torch.Tensor]
     means we have to stack the lists in the output.
     """
     assert data.shape == (10, 20, 20), "Changing the chape requires re-tracing."
@@ -87,10 +87,10 @@ def _to_jit_wavedec_2(
 
 
 def _to_jit_waverec_2(
-    data: List[torch.Tensor], wavelet: Union[str, ptwt.Wavelet]
+    data: list[torch.Tensor], wavelet: Union[str, ptwt.Wavelet]
 ) -> torch.Tensor:
     """Undo the stacking from the jit wavedec2 wrapper."""
-    d_unstack: List[Union[torch.Tensor, Tuple[torch.Tensor, ...]]] = [data[0]]
+    d_unstack: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]] = [data[0]]
     for c in data[1:]:
         d_unstack.append(tuple(sc.squeeze(0) for sc in torch.split(c, 1, dim=0)))
     rec = ptwt.waverec2(d_unstack, wavelet)
@@ -121,10 +121,10 @@ def test_conv_fwt_jit_2d() -> None:
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy(), atol=1e-7)
 
 
-def _to_jit_wavedec_3(data: torch.Tensor, wavelet: str) -> List[torch.Tensor]:
+def _to_jit_wavedec_3(data: torch.Tensor, wavelet: str) -> list[torch.Tensor]:
     """Ensure uniform datatypes in lists for the tracer.
 
-    Going from List[Union[torch.Tensor, Dict[str, torch.Tensor]]] to List[torch.Tensor]
+    Going from list[Union[torch.Tensor, dict[str, torch.Tensor]]] to list[torch.Tensor]
     means we have to stack the lists in the output.
     """
     assert data.shape == (10, 20, 20, 20), "Changing the shape requires re-tracing."
@@ -139,9 +139,9 @@ def _to_jit_wavedec_3(data: torch.Tensor, wavelet: str) -> List[torch.Tensor]:
     return coeff2
 
 
-def _to_jit_waverec_3(data: List[torch.Tensor], wavelet: pywt.Wavelet) -> torch.Tensor:
+def _to_jit_waverec_3(data: list[torch.Tensor], wavelet: pywt.Wavelet) -> torch.Tensor:
     """Undo the stacking from the jit wavedec3 wrapper."""
-    d_unstack: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = [data[0]]
+    d_unstack: list[Union[torch.Tensor, dict[str, torch.Tensor]]] = [data[0]]
     keys = ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
     for c in data[1:]:
         d_unstack.append(
