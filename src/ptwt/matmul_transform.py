@@ -188,7 +188,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         axis: Optional[int] = -1,
         boundary: OrthogonalizeMethod = "qr",
     ) -> None:
-        """A sparse matrix fast wavelet transform object.
+        """Create a sparse matrix fast wavelet transform object.
 
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
