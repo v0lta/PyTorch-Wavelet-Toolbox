@@ -12,7 +12,7 @@ import torch
 from scipy import datasets
 
 from ptwt.constants import ExtendedBoundaryMode
-from ptwt.packets import WaveletPacket, WaveletPacket2D, get_freq_order
+from ptwt.packets import WaveletPacket, WaveletPacket2D
 
 
 def _compare_trees1(
@@ -236,7 +236,7 @@ def test_freq_order(level: int, wavelet_str: str, pywt_boundary: str) -> None:
     )
     # Get the full decomposition
     freq_tree = wp_tree.get_level(level, "freq")
-    freq_order = get_freq_order(level)
+    freq_order = WaveletPacket2D.get_freq_order(level)
 
     for order_list, tree_list in zip(freq_tree, freq_order):
         for order_el, tree_el in zip(order_list, tree_list):

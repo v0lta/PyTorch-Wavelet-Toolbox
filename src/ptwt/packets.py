@@ -122,7 +122,7 @@ class WaveletPacket(BaseDict):
 
     def transform(
         self, data: torch.Tensor, maxlevel: Optional[int] = None
-    ) -> "WaveletPacket":
+    ) -> WaveletPacket:
         """Calculate the 1d wavelet packet transform for the input data.
 
         Args:
@@ -139,7 +139,7 @@ class WaveletPacket(BaseDict):
         self._recursive_dwt(data, level=0, path="")
         return self
 
-    def reconstruct(self) -> "WaveletPacket":
+    def reconstruct(self) -> WaveletPacket:
         """Recursively reconstruct the input starting from the leaf nodes.
 
         Reconstruction replaces the input data originally assigned to this object.
@@ -326,7 +326,7 @@ class WaveletPacket2D(BaseDict):
 
     def transform(
         self, data: torch.Tensor, maxlevel: Optional[int] = None
-    ) -> "WaveletPacket2D":
+    ) -> WaveletPacket2D:
         """Calculate the 2d wavelet packet transform for the input data.
 
            The transform function allows reusing the same object.
@@ -350,7 +350,7 @@ class WaveletPacket2D(BaseDict):
         self._recursive_dwt2d(data, level=0, path="")
         return self
 
-    def reconstruct(self) -> "WaveletPacket2D":
+    def reconstruct(self) -> WaveletPacket2D:
         """Recursively reconstruct the input starting from the leaf nodes.
 
         Note:
@@ -364,7 +364,7 @@ class WaveletPacket2D(BaseDict):
             )
 
         for level in reversed(range(self.maxlevel)):
-            for node in self.get_natural_order(level):
+            for node in WaveletPacket2D.get_natural_order(level):
                 data_a = self[node + "a"]
                 data_h = self[node + "h"]
                 data_v = self[node + "v"]
@@ -385,17 +385,6 @@ class WaveletPacket2D(BaseDict):
                         rec = rec[..., :-1, :]
                 self[node] = rec
         return self
-
-    def get_natural_order(self, level: int) -> list[str]:
-        """Get the natural ordering for a given decomposition level.
-
-        Args:
-            level (int): The decomposition level.
-
-        Returns:
-            A list with the filter order strings.
-        """
-        return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
 
     def _get_wavedec(self, shape: tuple[int, ...]) -> Callable[
         [torch.Tensor],
@@ -525,54 +514,68 @@ class WaveletPacket2D(BaseDict):
             )
         return super().__getitem__(key)
 
+    @staticmethod
+    def get_natural_order(level: int) -> list[str]:
+        """Get the natural ordering for a given decomposition level.
 
-def get_freq_order(level: int) -> list[list[tuple[str, ...]]]:
-    """Get the frequency order for a given packet decomposition level.
+        Args:
+            level (int): The decomposition level.
 
-    Use this code to create two-dimensional frequency orderings.
+        Returns:
+            A list with the filter order strings.
+        """
+        return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
 
-    Args:
-        level (int): The number of decomposition scales.
+    @staticmethod
+    def get_freq_order(level: int) -> list[list[str]]:
+        """Get the frequency order for a given packet decomposition level.
 
-    Returns:
-        A list with the tree nodes in frequency order.
+        Use this code to create two-dimensional frequency orderings.
 
-    Note:
-        Adapted from:
-        https://github.com/PyWavelets/pywt/blob/master/pywt/_wavelet_packets.py
+        Args:
+            level (int): The number of decomposition scales.
 
-        The code elements denote the filter application order. The filters
-        are named following the pywt convention as:
-        a - LL, low-low coefficients
-        h - LH, low-high coefficients
-        v - HL, high-low coefficients
-        d - HH, high-high coefficients
-    """
-    wp_natural_path = product(["a", "h", "v", "d"], repeat=level)
+        Returns:
+            A list with the tree nodes in frequency order.
 
-    def _get_graycode_order(level: int, x: str = "a", y: str = "d") -> list[str]:
-        graycode_order = [x, y]
-        for _ in range(level - 1):
-            graycode_order = [x + path for path in graycode_order] + [
-                y + path for path in graycode_order[::-1]
-            ]
-        return graycode_order
+        Note:
+            Adapted from:
+            https://github.com/PyWavelets/pywt/blob/master/pywt/_wavelet_packets.py
 
-    def _expand_2d_path(path: tuple[str, ...]) -> tuple[str, str]:
-        expanded_paths = {"d": "hh", "h": "hl", "v": "lh", "a": "ll"}
-        return (
-            "".join([expanded_paths[p][0] for p in path]),
-            "".join([expanded_paths[p][1] for p in path]),
-        )
+            The code elements denote the filter application order. The filters
+            are named following the pywt convention as:
+            a - LL, low-low coefficients
+            h - LH, low-high coefficients
+            v - HL, high-low coefficients
+            d - HH, high-high coefficients
+        """
+        wp_natural_path = product(["a", "h", "v", "d"], repeat=level)
 
-    nodes_dict: dict[str, dict[str, tuple[str, ...]]] = {}
-    for (row_path, col_path), node in [
-        (_expand_2d_path(node), node) for node in wp_natural_path
-    ]:
-        nodes_dict.setdefault(row_path, {})[col_path] = node
-    graycode_order = _get_graycode_order(level, x="l", y="h")
-    nodes = [nodes_dict[path] for path in graycode_order if path in nodes_dict]
-    result = []
-    for row in nodes:
-        result.append([row[path] for path in graycode_order if path in row])
-    return result
+        def _get_graycode_order(level: int, x: str = "a", y: str = "d") -> list[str]:
+            graycode_order = [x, y]
+            for _ in range(level - 1):
+                graycode_order = [x + path for path in graycode_order] + [
+                    y + path for path in graycode_order[::-1]
+                ]
+            return graycode_order
+
+        def _expand_2d_path(path: tuple[str, ...]) -> tuple[str, str]:
+            expanded_paths = {"d": "hh", "h": "hl", "v": "lh", "a": "ll"}
+            return (
+                "".join([expanded_paths[p][0] for p in path]),
+                "".join([expanded_paths[p][1] for p in path]),
+            )
+
+        nodes_dict: dict[str, dict[str, tuple[str, ...]]] = {}
+        for (row_path, col_path), node in [
+            (_expand_2d_path(node), node) for node in wp_natural_path
+        ]:
+            nodes_dict.setdefault(row_path, {})[col_path] = node
+        graycode_order = _get_graycode_order(level, x="l", y="h")
+        nodes = [nodes_dict[path] for path in graycode_order if path in nodes_dict]
+        result = []
+        for row in nodes:
+            result.append(
+                ["".join(row[path]) for path in graycode_order if path in row]
+            )
+        return result

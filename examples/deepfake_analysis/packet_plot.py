@@ -11,47 +11,6 @@ from tqdm import tqdm
 import ptwt
 
 
-def get_freq_order(level: int):
-    """Get the frequency order for a given packet decomposition level.
-    Adapted from:
-    https://github.com/PyWavelets/pywt/blob/master/pywt/_wavelet_packets.py
-    The code elements denote the filter application order. The filters
-    are named following the pywt convention as:
-    a - LL, low-low coefficients
-    h - LH, low-high coefficients
-    v - HL, high-low coefficients
-    d - HH, high-high coefficients
-    """
-    wp_natural_path = list(product(["a", "h", "v", "d"], repeat=level))
-
-    def _get_graycode_order(level, x="a", y="d"):
-        graycode_order = [x, y]
-        for _ in range(level - 1):
-            graycode_order = [x + path for path in graycode_order] + [
-                y + path for path in graycode_order[::-1]
-            ]
-        return graycode_order
-
-    def _expand_2d_path(path):
-        expanded_paths = {"d": "hh", "h": "hl", "v": "lh", "a": "ll"}
-        return (
-            "".join([expanded_paths[p][0] for p in path]),
-            "".join([expanded_paths[p][1] for p in path]),
-        )
-
-    nodes: dict = {}
-    for (row_path, col_path), node in [
-        (_expand_2d_path(node), node) for node in wp_natural_path
-    ]:
-        nodes.setdefault(row_path, {})[col_path] = node
-    graycode_order = _get_graycode_order(level, x="l", y="h")
-    nodes_list: list = [nodes[path] for path in graycode_order if path in nodes]
-    wp_frequency_path = []
-    for row in nodes_list:
-        wp_frequency_path.append([row[path] for path in graycode_order if path in row])
-    return wp_frequency_path, wp_natural_path
-
-
 def generate_frequency_packet_image(packet_array: np.ndarray, degree: int):
     """Create a ready-to-polt image with frequency-order packages.
        Given a packet array in natural order, creat an image which is
@@ -63,7 +22,8 @@ def generate_frequency_packet_image(packet_array: np.ndarray, degree: int):
     Returns:
         [np.ndarray]: The image of shape [original_height, original_width]
     """
-    wp_freq_path, wp_natural_path = get_freq_order(degree)
+    wp_freq_path = ptwt.WaveletPacket2D.get_freq_order(degree)
+    wp_natural_path = ptwt.WaveletPacket2D.get_natural_order(degree)
 
     image = []
     # go through the rows.
@@ -107,7 +67,8 @@ def load_images(path: str) -> list:
 
 
 if __name__ == "__main__":
-    frequency_path, natural_path = get_freq_order(level=3)
+    freq_path = ptwt.WaveletPacket2D.get_freq_order(level=3)
+    frequency_path = ptwt.WaveletPacket2D.get_natural_order(level=3)
     print("Loading ffhq images:")
     ffhq_images = load_images("./ffhq_style_gan/source_data/A_ffhq")
     print("processing ffhq")
