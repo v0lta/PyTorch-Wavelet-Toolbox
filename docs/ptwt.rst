@@ -32,6 +32,7 @@ ptwt.packets module
 
 .. automodule:: ptwt.packets
    :members:
+   :special-members: __getitem__
    :undoc-members:
    :show-inheritance:
 
@@ -58,6 +59,7 @@ ptwt.matmul\_transform module
 
 .. automodule:: ptwt.matmul_transform
    :members:
+   :special-members: __call__
    :undoc-members:
    :show-inheritance:
 
@@ -66,6 +68,7 @@ ptwt.matmul\_transform\_2 module
 
 .. automodule:: ptwt.matmul_transform_2
    :members:
+   :special-members: __call__
    :undoc-members:
    :show-inheritance:
 
@@ -74,6 +77,7 @@ ptwt.matmul\_transform\_3 module
 
 .. automodule:: ptwt.matmul_transform_3
    :members:
+   :special-members: __call__
    :undoc-members:
    :show-inheritance:
 
