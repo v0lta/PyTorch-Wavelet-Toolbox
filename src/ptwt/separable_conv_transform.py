@@ -207,8 +207,9 @@ def fswavedec2(
 
     Returns:
         A tuple with the ll coefficients and for each scale a dictionary
-        containing the detail coefficients. The dictionaries use
-        the filter order strings::
+        containing the detail coefficients,
+        see :data:`ptwt.constants.WaveletCoeffDetailDict`.
+        The dictionaries use the filter order strings::
 
         ("ad", "da", "dd")
 
@@ -274,8 +275,9 @@ def fswavedec3(
 
     Returns:
         A tuple with the lll coefficients and for each scale a dictionary
-        containing the detail coefficients. The dictionaries use
-        the filter order strings::
+        containing the detail coefficients,
+        see :data:`ptwt.constants.WaveletCoeffDetailDict`.
+        The dictionaries use the filter order strings::
 
         ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
 
@@ -333,7 +335,8 @@ def fswaverec2(
 
     Args:
         coeffs (WaveletCoeffDetailDict):
-            The wavelet coefficients as computed by `fswavedec2`.
+            The wavelet coefficients as computed by `fswavedec2`,
+            see :data:`ptwt.constants.WaveletCoeffDetailDict`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
@@ -397,7 +400,8 @@ def fswaverec3(
 
     Args:
         coeffs (WaveletCoeffDetailDict):
-            The wavelet coefficients as computed by `fswavedec3`.
+            The wavelet coefficients as computed by `fswavedec3`,
+            see :data:`ptwt.constants.WaveletCoeffDetailDict`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``

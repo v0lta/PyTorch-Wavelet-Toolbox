@@ -83,8 +83,9 @@ class WaveletPacket(BaseDict):
                 is determined from the input data shape. Defaults to None.
             axis (int): The axis to transform. Defaults to -1.
             boundary_orthogonalization : The orthogonalization method
-                to use. Only used if `mode` equals 'boundary'. Choose from
-                'qr' or 'gramschmidt'. Defaults to 'qr'.
+                to use in the sparse matrix backend,
+                see :data:`ptwt.constants.OrthogonalizeMethod`.
+                Only used if `mode` equals 'boundary'. Defaults to 'qr'.
 
         Example:
             >>> import torch, pywt, ptwt
@@ -301,9 +302,9 @@ class WaveletPacket2D(BaseDict):
             axes ([int, int], optional): The tensor axes that should be transformed.
                 Defaults to (-2, -1).
             boundary_orthogonalization : The orthogonalization method
-                to use in the sparse matrix backend. Only used if `mode`
-                equals 'boundary'. Choose from 'qr' or 'gramschmidt'.
-                Defaults to 'qr'.
+                to use in the sparse matrix backend,
+                see :data:`ptwt.constants.OrthogonalizeMethod`.
+                Only used if `mode` equals 'boundary'. Defaults to 'qr'.
             separable (bool): If true, a separable transform is performed,
                 i.e. each image axis is transformed separately. Defaults to False.
 

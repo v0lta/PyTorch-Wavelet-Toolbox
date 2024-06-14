@@ -200,11 +200,8 @@ class MatrixWavedec(BaseMatrixWaveDec):
                 None.
             axis (int, optional): The axis we would like to transform.
                 Defaults to -1.
-            boundary : The method used for boundary filter treatment.
-                Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
-                implementation, it is fast but memory hungry. The 'gramschmidt'
-                option is sparse, memory efficient, and slow. Choose 'gramschmidt' if
-                'qr' runs out of memory. Defaults to 'qr'.
+            boundary : The method used for boundary filter treatment,
+                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -407,9 +404,8 @@ def construct_boundary_a(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         length (int): The number of entries in the input signal.
-        boundary : A string indicating the desired boundary treatment.
-            Possible options are qr and gramschmidt. Defaults to
-            qr.
+        boundary : The method used for boundary filter treatment,
+            see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
         device: Where to place the matrix. Choose cpu or cuda.
             Defaults to cpu.
         dtype: Choose float32 or float64.
@@ -438,8 +434,8 @@ def construct_boundary_s(
         length (int): The number of entries in the input signal.
         device (torch.device): Where to place the matrix.
             Choose cpu or cuda. Defaults to cpu.
-        boundary : A string indicating the desired boundary treatment.
-            Possible options are qr and gramschmidt. Defaults to qr.
+        boundary : The method used for boundary filter treatment,
+            see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
         dtype: Choose torch.float32 or torch.float64.
             Defaults to torch.float64.
 
@@ -484,11 +480,8 @@ class MatrixWaverec(object):
                 for possible choices.
             axis (int): The axis transformed by the original decomposition
                 defaults to -1 or the last axis.
-            boundary : The method used for boundary filter treatment.
-                Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
-                implementation, it is fast but memory hungry. The 'gramschmidt' option
-                is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs
-                out of memory. Defaults to 'qr'.
+            boundary : The method used for boundary filter treatment,
+                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.

@@ -129,14 +129,8 @@ def wavedec3(
             instead of the last three. Defaults to (-3, -2, -1).
 
     Returns:
-        A tuple with the lll coefficients and for each scale a dictionary
-        containing the detail coefficients. The dictionaries use
-        the filter order strings::
-
-        ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
-
-        as keys. 'a' denotes the low pass or approximation filter and
-        'd' the high-pass or detail filter.
+        A tuple containing the wavelet coefficients,
+        see :data:`ptwt.constants.WaveletCoeffDetailDict`.
 
     Raises:
         ValueError: If the input has fewer than three dimensions or
@@ -239,7 +233,7 @@ def waverec3(
 
     Args:
         coeffs (WaveletCoeffDetailDict): The wavelet coefficient tuple
-            produced by wavedec3.
+            produced by wavedec3, see :data:`ptwt.constants.WaveletCoeffDetailDict`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``

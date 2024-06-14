@@ -74,8 +74,8 @@ class MatrixWavedec3(object):
                 for possible choices.
             level (int, optional): The desired decomposition level.
                 Defaults to None.
-            boundary: The matrix orthogonalization method.
-                Defaults to "qr".
+            boundary : The method used for boundary filter treatment,
+                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
 
         Raises:
             NotImplementedError: If the chosen orthogonalization method
@@ -168,14 +168,8 @@ class MatrixWavedec3(object):
                 of shape ``[batch_size, depth, height, width]``.
 
         Returns:
-            A tuple with the lll coefficients and for each scale a dictionary
-            containing the detail coefficients. The dictionaries use
-            the filter order strings::
-
-            ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
-
-            as keys. 'a' denotes the low pass or approximation filter and
-            'd' the high-pass or detail filter.
+            The resulting coefficients for each level are stored in a tuple,
+            see :data:`ptwt.constants.WaveletCoeffDetailDict`.
 
         Raises:
             ValueError: If the input dimensions don't work.
@@ -299,11 +293,8 @@ class MatrixWaverec3(object):
                 for possible choices.
             axes (tuple[int, int, int]): Transform these axes instead of the
                 last three. Defaults to (-3, -2, -1).
-            boundary : The method used for boundary filter treatment.
-                Choose 'qr' or 'gramschmidt'. 'qr' relies on Pytorch's dense qr
-                implementation, it is fast but memory hungry. The 'gramschmidt' option
-                is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs
-                out of memory. Defaults to 'qr'.
+            boundary : The method used for boundary filter treatment,
+                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -402,9 +393,8 @@ class MatrixWaverec3(object):
 
         Args:
             coefficients (WaveletCoeffDetailDict):
-                The output from MatrixWavedec3, consisting of a tuple
-                of the approximation coefficients and a dict with the
-                detail coefficients for each scale.
+                The output from the `MatrixWavedec3` object,
+                see :data:`ptwt.constants.WaveletCoeffDetailDict`.
 
         Returns:
             torch.Tensor: A reconstruction of the original signal.

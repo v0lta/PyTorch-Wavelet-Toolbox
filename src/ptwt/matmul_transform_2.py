@@ -160,8 +160,8 @@ def construct_boundary_a2(
             Should be divisible by two.
         device (torch.device): Where to place the matrix. Either on
             the CPU or GPU.
-        boundary : The method to use for matrix orthogonalization.
-            Choose "qr" or "gramschmidt". Defaults to "qr".
+        boundary : The method used for boundary filter treatment,
+            see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
         dtype (torch.dtype, optional): The desired data type for the matrix.
             Defaults to torch.float64.
 
@@ -191,8 +191,8 @@ def construct_boundary_s2(
         height (int): The original height of the input matrix.
         width (int): The width of the original input matrix.
         device (torch.device): Choose CPU or GPU.
-        boundary : The method to use for matrix orthogonalization.
-            Choose qr or gramschmidt. Defaults to qr.
+        boundary : The method used for boundary filter treatment,
+            see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
         dtype (torch.dtype, optional): The data type of the
             sparse matrix, choose float32 or 64.
             Defaults to torch.float64.
@@ -269,13 +269,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 None.
             axes (int, int): A tuple with the axes to transform.
                 Defaults to (-2, -1).
-            boundary : The method used for boundary filter treatment.
-                Choose 'qr' or 'gramschmidt'. 'qr' relies on Pytorch's
-                dense qr implementation, it is fast but memory hungry.
-                The 'gramschmidt' option is sparse, memory efficient,
-                and slow.
-                Choose 'gramschmidt' if 'qr' runs out of memory.
-                Defaults to 'qr'.
+            boundary : The method used for boundary filter treatment,
+                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
             separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis.
                 Matrix construction is significantly faster for separable
@@ -427,12 +422,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 This transform affects the last two dimensions.
 
         Returns:
-            The resulting coefficients per level are stored in a pywt style tuple.
-            The tuple is ordered as::
-
-                (ll, (lh, hl, hh), ...)
-
-            with 'l' for low-pass and 'h' for high-pass filters.
+            The resulting coefficients per level are stored in a pywt style tuple,
+            see :data:`ptwt.constants.WaveletCoeffDetailTuple2d`.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer
@@ -583,11 +574,8 @@ class MatrixWaverec2(object):
                 for possible choices.
             axes (int, int): The axes transformed by waverec2.
                 Defaults to (-2, -1).
-            boundary : The method used for boundary filter treatment.
-                Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
-                implementation, it is fast but memory hungry. The 'gramschmidt' option
-                is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs
-                out of memory. Defaults to 'qr'.
+            boundary : The method used for boundary filter treatment,
+                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
             separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis. This is significantly
                 faster than a non-separable transformation since only a small constant-
@@ -729,7 +717,8 @@ class MatrixWaverec2(object):
 
         Args:
             coefficients (WaveletCoeffDetailTuple2d): The coefficient tuple as returned
-                by the `MatrixWavedec2`-Object.
+                by the `MatrixWavedec2` object,
+                see :data:`ptwt.constants.WaveletCoeffDetailTuple2d`.
 
         Returns:
             The original signal reconstruction. For example of shape

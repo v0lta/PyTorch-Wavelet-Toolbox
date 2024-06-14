@@ -172,13 +172,8 @@ def wavedec2(
             last two. Defaults to (-2, -1).
 
     Returns:
-        A tuple containing the wavelet coefficients. The coefficients are in pywt order.
-        That is::
-
-            [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .
-
-        'A' denotes approximation, 'H' horizontal, 'V' vertical
-        and 'D' diagonal coefficients.
+        A tuple containing the wavelet coefficients in pywt order,
+        see :data:`ptwt.constants.WaveletCoeffDetailTuple2d`.
 
     Raises:
         ValueError: If the dimensionality or the dtype of the input data tensor
@@ -252,13 +247,7 @@ def waverec2(
 
     Args:
         coeffs (WaveletCoeffDetailTuple2d): The wavelet coefficient tuple
-            produced by wavedec2. The coefficients must be in pywt order.
-            That is::
-
-            [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .
-
-            'A' denotes approximation, 'H' horizontal, 'V' vertical,
-            and 'D' diagonal coefficients.
+            produced by wavedec2. See :data:`ptwt.constants.WaveletCoeffDetailTuple2d`
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
