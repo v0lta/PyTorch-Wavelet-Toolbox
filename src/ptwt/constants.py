@@ -67,11 +67,12 @@ class WaveletDetailTuple2d(NamedTuple):
 WaveletDetailDict: TypeAlias = dict[str, torch.Tensor]
 """Type alias for a dict containing detail coefficient for a given level.
 
-Thus type alias represents the detail coefficient tensors of a given level for
+This type alias represents the detail coefficient tensors of a given level for
 a wavelet transform in :math:`N` dimensions as the values of a dictionary.
 Its keys are a string of length :math:`N` describing the detail coefficient
-by the applied filter for each axis where 'a' denotes the low pass
-or approximation filter and 'd' the high-pass or detail filter.
+by the applied filter for each axis. The string consists only of chars 'a' and 'd'
+where 'a' denotes the low pass or approximation filter and 'd' the high-pass
+or detail filter.
 For a 3d transform, the dictionary thus uses the keys::
 
 ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
@@ -87,9 +88,9 @@ WaveletCoeff2d: TypeAlias = tuple[
 """Type alias for 2d wavelet transform results.
 
 This type alias represents the result of a 2d wavelet transform
-with :math:`L` levels as a tuple ``(A, T1, T2, ...)`` of length :math:`L + 1`
-where ``A`` denotes a tensor of approximation coefficients and
-``Tl`` is a tuple of detail coefficients for level ``l``,
+with :math:`n` levels as a tuple ``(A, Tn, ..., T1)`` of length :math:`n + 1`.
+``A`` denotes a tensor of approximation coefficients for the `n`-th level
+of decomposition. ``Tl`` is a tuple of detail coefficients for level ``l``,
 see :data:`ptwt.constants.WaveletDetailTuple2d`.
 
 Note that this type always contains an approximation coefficient tensor but does not
@@ -103,9 +104,9 @@ WaveletCoeffNd: TypeAlias = tuple[torch.Tensor, Unpack[tuple[WaveletDetailDict, 
 """Type alias for wavelet transform results in any dimension.
 
 This type alias represents the result of a Nd wavelet transform
-with :math:`L` levels as a tuple ``(A, D1, D2, ...)`` of length :math:`L + 1`
-where ``A`` denotes a tensor of approximation coefficients and
-``Dl`` is a dictionary of detail coefficients for level ``l``,
+with :math:`n` levels as a tuple ``(A, Dn, ..., D1)`` of length :math:`n + 1`.
+``A`` denotes a tensor of approximation coefficients for the `n`-th level
+of decomposition. ``Dl`` is a dictionary of detail coefficients for level ``l``,
 see :data:`ptwt.constants.WaveletDetailDict`.
 
 Note that this type always contains an approximation coefficient tensor but does not
