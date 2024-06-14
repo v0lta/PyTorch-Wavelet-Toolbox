@@ -10,7 +10,13 @@ import numpy as np
 import pywt
 import torch
 
-from .constants import OrthogonalizeMethod, WaveletCoeff2d, WaveletCoeffNd
+from .constants import (
+    OrthogonalizeMethod,
+    WaveletCoeff2d,
+    WaveletCoeffNd,
+    WaveletDetailDict,
+    WaveletDetailTuple2d,
+)
 
 
 class Wavelet(Protocol):
@@ -187,14 +193,14 @@ def _map_result(
     approx = function(data[0])
     result_lst: list[
         Union[
-            tuple[torch.Tensor, torch.Tensor, torch.Tensor],
-            dict[str, torch.Tensor],
+            WaveletDetailDict,
+            WaveletDetailTuple2d,
         ]
     ] = []
     for element in data[1:]:
         if isinstance(element, tuple):
             result_lst.append(
-                (
+                WaveletDetailTuple2d(
                     function(element[0]),
                     function(element[1]),
                     function(element[2]),
@@ -206,6 +212,8 @@ def _map_result(
         else:
             raise ValueError(f"Unexpected input type {type(element)}")
 
-    return_val = approx, *result_lst
-    return_val = cast(Union[WaveletCoeff2d, WaveletCoeffNd], return_val)
-    return return_val
+    # cast since we assume that the full list is of the same type
+    cast_result_lst = cast(
+        Union[list[WaveletDetailDict], list[WaveletDetailTuple2d]], result_lst
+    )
+    return approx, *cast_result_lst
