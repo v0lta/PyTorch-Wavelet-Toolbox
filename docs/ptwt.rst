@@ -90,14 +90,6 @@ ptwt.sparse\_math module
    :undoc-members:
    :show-inheritance:
 
-ptwt.version module
--------------------
-
-.. automodule:: ptwt.version
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 ptwt.wavelets\_learnable module
 -------------------------------
 
@@ -109,6 +101,14 @@ ptwt.wavelets\_learnable module
 ptwt.constants
 -------------------------------
 .. automodule:: ptwt.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ptwt.version module
+-------------------
+
+.. automodule:: ptwt.version
    :members:
    :undoc-members:
    :show-inheritance:
