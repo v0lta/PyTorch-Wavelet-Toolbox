@@ -27,7 +27,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import BoundaryMode, WaveletCoeffDetailDict
+from .constants import BoundaryMode, WaveletCoeffNd
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import _preprocess_tensor_dec2d
 
@@ -114,7 +114,7 @@ def _separable_conv_wavedecn(
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-) -> WaveletCoeffDetailDict:
+) -> WaveletCoeffNd:
     """Compute a multilevel separable padded wavelet analysis transform.
 
     Args:
@@ -151,13 +151,13 @@ def _separable_conv_wavedecn(
 
 
 def _separable_conv_waverecn(
-    coeffs: WaveletCoeffDetailDict,
+    coeffs: WaveletCoeffNd,
     wavelet: Union[Wavelet, str],
 ) -> torch.Tensor:
     """Separable n-dimensional wavelet synthesis transform.
 
     Args:
-        coeffs (WaveletCoeffDetailDict):
+        coeffs (WaveletCoeffNd):
             The output as produced by `_separable_conv_wavedecn`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet, as used by ``_separable_conv_wavedecn``.
@@ -188,7 +188,7 @@ def fswavedec2(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: tuple[int, int] = (-2, -1),
-) -> WaveletCoeffDetailDict:
+) -> WaveletCoeffNd:
     """Compute a fully separable 2D-padded analysis wavelet transform.
 
     Args:
@@ -208,7 +208,7 @@ def fswavedec2(
     Returns:
         A tuple with the ll coefficients and for each scale a dictionary
         containing the detail coefficients,
-        see :data:`ptwt.constants.WaveletCoeffDetailDict`.
+        see :data:`ptwt.constants.WaveletCoeffNd`.
         The dictionaries use the filter order strings::
 
         ("ad", "da", "dd")
@@ -257,7 +257,7 @@ def fswavedec3(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: tuple[int, int, int] = (-3, -2, -1),
-) -> WaveletCoeffDetailDict:
+) -> WaveletCoeffNd:
     """Compute a fully separable 3D-padded analysis wavelet transform.
 
     Args:
@@ -276,7 +276,7 @@ def fswavedec3(
     Returns:
         A tuple with the lll coefficients and for each scale a dictionary
         containing the detail coefficients,
-        see :data:`ptwt.constants.WaveletCoeffDetailDict`.
+        see :data:`ptwt.constants.WaveletCoeffNd`.
         The dictionaries use the filter order strings::
 
         ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
@@ -324,7 +324,7 @@ def fswavedec3(
 
 
 def fswaverec2(
-    coeffs: WaveletCoeffDetailDict,
+    coeffs: WaveletCoeffNd,
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
@@ -334,9 +334,9 @@ def fswaverec2(
     the hood.
 
     Args:
-        coeffs (WaveletCoeffDetailDict):
+        coeffs (WaveletCoeffNd):
             The wavelet coefficients as computed by `fswavedec2`,
-            see :data:`ptwt.constants.WaveletCoeffDetailDict`.
+            see :data:`ptwt.constants.WaveletCoeffNd`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
@@ -392,16 +392,16 @@ def fswaverec2(
 
 
 def fswaverec3(
-    coeffs: WaveletCoeffDetailDict,
+    coeffs: WaveletCoeffNd,
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 3D-padded synthesis wavelet transform.
 
     Args:
-        coeffs (WaveletCoeffDetailDict):
+        coeffs (WaveletCoeffNd):
             The wavelet coefficients as computed by `fswavedec3`,
-            see :data:`ptwt.constants.WaveletCoeffDetailDict`.
+            see :data:`ptwt.constants.WaveletCoeffNd`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``

@@ -10,11 +10,7 @@ import numpy as np
 import pywt
 import torch
 
-from .constants import (
-    OrthogonalizeMethod,
-    WaveletCoeffDetailDict,
-    WaveletCoeffDetailTuple2d,
-)
+from .constants import OrthogonalizeMethod, WaveletCoeff2d, WaveletCoeffNd
 
 
 class Wavelet(Protocol):
@@ -172,22 +168,22 @@ def _undo_swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
 
 @overload
 def _map_result(
-    data: WaveletCoeffDetailTuple2d,
+    data: WaveletCoeff2d,
     function: Callable[[torch.Tensor], torch.Tensor],
-) -> WaveletCoeffDetailTuple2d: ...
+) -> WaveletCoeff2d: ...
 
 
 @overload
 def _map_result(
-    data: WaveletCoeffDetailDict,
+    data: WaveletCoeffNd,
     function: Callable[[torch.Tensor], torch.Tensor],
-) -> WaveletCoeffDetailDict: ...
+) -> WaveletCoeffNd: ...
 
 
 def _map_result(
-    data: Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict],
+    data: Union[WaveletCoeff2d, WaveletCoeffNd],
     function: Callable[[torch.Tensor], torch.Tensor],
-) -> Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict]:
+) -> Union[WaveletCoeff2d, WaveletCoeffNd]:
     approx = function(data[0])
     result_lst: list[
         Union[
@@ -211,7 +207,5 @@ def _map_result(
             raise ValueError(f"Unexpected input type {type(element)}")
 
     return_val = approx, *result_lst
-    return_val = cast(
-        Union[WaveletCoeffDetailTuple2d, WaveletCoeffDetailDict], return_val
-    )
+    return_val = cast(Union[WaveletCoeff2d, WaveletCoeffNd], return_val)
     return return_val

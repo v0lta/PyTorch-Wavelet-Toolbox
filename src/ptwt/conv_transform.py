@@ -20,7 +20,7 @@ from ._util import (
     _pad_symmetric,
     _unfold_axes,
 )
-from .constants import BoundaryMode, WaveletCoeffDetailTuple2d
+from .constants import BoundaryMode, WaveletCoeff2d
 
 
 def _create_tensor(
@@ -168,13 +168,13 @@ def _fwt_pad(
 
 
 def _flatten_2d_coeff_lst(
-    coeff_lst_2d: WaveletCoeffDetailTuple2d,
+    coeff_lst_2d: WaveletCoeff2d,
     flatten_tensors: bool = True,
 ) -> list[torch.Tensor]:
     """Flattens a sequence of tensor tuples into a single list.
 
     Args:
-        coeff_lst_2d (WaveletCoeffDetailTuple2d): A pywt-style
+        coeff_lst_2d (WaveletCoeff2d): A pywt-style
             coefficient tuple of torch tensors.
         flatten_tensors (bool): If true, 2d tensors are flattened. Defaults to True.
 

@@ -27,7 +27,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import BoundaryMode, WaveletCoeffDetailTuple2d, WaveletDetailTuple2d
+from .constants import BoundaryMode, WaveletCoeff2d, WaveletDetailTuple2d
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_filter_tensors,
@@ -100,8 +100,8 @@ def _fwt_pad2(
 
 
 def _waverec2d_fold_channels_2d_list(
-    coeffs: WaveletCoeffDetailTuple2d,
-) -> tuple[WaveletCoeffDetailTuple2d, list[int]]:
+    coeffs: WaveletCoeff2d,
+) -> tuple[WaveletCoeff2d, list[int]]:
     # fold the input coefficients for processing conv2d_transpose.
     ds = list(_check_if_tensor(coeffs[0]).shape)
     return _map_result(coeffs, lambda t: _fold_axes(t, 2)[0]), ds
@@ -132,7 +132,7 @@ def wavedec2(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axes: tuple[int, int] = (-2, -1),
-) -> WaveletCoeffDetailTuple2d:
+) -> WaveletCoeff2d:
     r"""Run a two-dimensional wavelet transformation.
 
     This function relies on two-dimensional convolutions.
@@ -173,7 +173,7 @@ def wavedec2(
 
     Returns:
         A tuple containing the wavelet coefficients in pywt order,
-        see :data:`ptwt.constants.WaveletCoeffDetailTuple2d`.
+        see :data:`ptwt.constants.WaveletCoeff2d`.
 
     Raises:
         ValueError: If the dimensionality or the dtype of the input data tensor
@@ -224,7 +224,7 @@ def wavedec2(
 
     result_lst.reverse()
     res_ll = res_ll.squeeze(1)
-    result: WaveletCoeffDetailTuple2d = res_ll, *result_lst
+    result: WaveletCoeff2d = res_ll, *result_lst
 
     if ds:
         _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
@@ -238,7 +238,7 @@ def wavedec2(
 
 
 def waverec2(
-    coeffs: WaveletCoeffDetailTuple2d,
+    coeffs: WaveletCoeff2d,
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
@@ -248,8 +248,8 @@ def waverec2(
     or forward transform by running transposed convolutions.
 
     Args:
-        coeffs (WaveletCoeffDetailTuple2d): The wavelet coefficient tuple
-            produced by wavedec2. See :data:`ptwt.constants.WaveletCoeffDetailTuple2d`
+        coeffs (WaveletCoeff2d): The wavelet coefficient tuple
+            produced by wavedec2. See :data:`ptwt.constants.WaveletCoeff2d`
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``

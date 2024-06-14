@@ -82,7 +82,7 @@ bibtex_bibfiles = ["literature.bib"]
 numfig = True
 
 autodoc_type_aliases = {
-    "WaveletCoeffDetailTuple2d": "ptwt.constants.WaveletCoeffDetailTuple2d",
-    "WaveletCoeffDetailDict": "ptwt.constants.WaveletCoeffDetailDict",
+    "WaveletCoeff2d": "ptwt.constants.WaveletCoeff2d",
+    "WaveletCoeffNd": "ptwt.constants.WaveletCoeffNd",
     "BaseMatrixWaveDec": "ptwt.matmul_transform.BaseMatrixWaveDec",
 }

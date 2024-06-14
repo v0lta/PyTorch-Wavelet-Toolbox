@@ -27,7 +27,7 @@ from ._util import (
 from .constants import (
     OrthogonalizeMethod,
     PaddingMode,
-    WaveletCoeffDetailTuple2d,
+    WaveletCoeff2d,
     WaveletDetailTuple2d,
 )
 from .conv_transform import _get_filter_tensors
@@ -413,7 +413,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             current_width = current_width // 2
         self.size_list.append((current_height, current_width))
 
-    def __call__(self, input_signal: torch.Tensor) -> WaveletCoeffDetailTuple2d:
+    def __call__(self, input_signal: torch.Tensor) -> WaveletCoeff2d:
         """Compute the fwt for the given input signal.
 
         The fwt matrix is set up during the first call
@@ -428,7 +428,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
 
         Returns:
             The resulting coefficients per level are stored in a pywt style tuple,
-            see :data:`ptwt.constants.WaveletCoeffDetailTuple2d`.
+            see :data:`ptwt.constants.WaveletCoeff2d`.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer
@@ -535,7 +535,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             ll = ll.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(2, 1)
 
         split_list.reverse()
-        result: WaveletCoeffDetailTuple2d = ll, *split_list
+        result: WaveletCoeff2d = ll, *split_list
 
         if ds:
             _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
@@ -716,14 +716,14 @@ class MatrixWaverec2(object):
 
     def __call__(
         self,
-        coefficients: WaveletCoeffDetailTuple2d,
+        coefficients: WaveletCoeff2d,
     ) -> torch.Tensor:
         """Compute the inverse matrix 2d fast wavelet transform.
 
         Args:
-            coefficients (WaveletCoeffDetailTuple2d): The coefficient tuple as returned
+            coefficients (WaveletCoeff2d): The coefficient tuple as returned
                 by the `MatrixWavedec2` object,
-                see :data:`ptwt.constants.WaveletCoeffDetailTuple2d`.
+                see :data:`ptwt.constants.WaveletCoeff2d`.
 
         Returns:
             The original signal reconstruction. For example of shape

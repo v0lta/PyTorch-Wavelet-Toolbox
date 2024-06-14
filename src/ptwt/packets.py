@@ -16,8 +16,8 @@ from ._util import Wavelet, _as_wavelet
 from .constants import (
     ExtendedBoundaryMode,
     OrthogonalizeMethod,
-    WaveletCoeffDetailDict,
-    WaveletCoeffDetailTuple2d,
+    WaveletCoeff2d,
+    WaveletCoeffNd,
     WaveletDetailTuple2d,
 )
 from .conv_transform import wavedec, waverec
@@ -399,7 +399,7 @@ class WaveletPacket2D(BaseDict):
 
     def _get_wavedec(self, shape: tuple[int, ...]) -> Callable[
         [torch.Tensor],
-        WaveletCoeffDetailTuple2d,
+        WaveletCoeff2d,
     ]:
         if self.mode == "boundary":
             shape = tuple(shape)
@@ -430,7 +430,7 @@ class WaveletPacket2D(BaseDict):
 
     def _get_waverec(
         self, shape: tuple[int, ...]
-    ) -> Callable[[WaveletCoeffDetailTuple2d], torch.Tensor]:
+    ) -> Callable[[WaveletCoeff2d], torch.Tensor]:
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_waverec2_dict.keys():
@@ -450,11 +450,11 @@ class WaveletPacket2D(BaseDict):
 
     def _transform_fsdict_to_tuple_func(
         self,
-        fs_dict_func: Callable[[torch.Tensor], WaveletCoeffDetailDict],
-    ) -> Callable[[torch.Tensor], WaveletCoeffDetailTuple2d]:
+        fs_dict_func: Callable[[torch.Tensor], WaveletCoeffNd],
+    ) -> Callable[[torch.Tensor], WaveletCoeff2d]:
         def _tuple_func(
             data: torch.Tensor,
-        ) -> WaveletCoeffDetailTuple2d:
+        ) -> WaveletCoeff2d:
             fs_dict_data = fs_dict_func(data)
             # assert for type checking
             assert len(fs_dict_data) == 2
@@ -468,9 +468,9 @@ class WaveletPacket2D(BaseDict):
 
     def _transform_tuple_to_fsdict_func(
         self,
-        fsdict_func: Callable[[WaveletCoeffDetailDict], torch.Tensor],
-    ) -> Callable[[WaveletCoeffDetailTuple2d], torch.Tensor]:
-        def _fsdict_func(coeffs: WaveletCoeffDetailTuple2d) -> torch.Tensor:
+        fsdict_func: Callable[[WaveletCoeffNd], torch.Tensor],
+    ) -> Callable[[WaveletCoeff2d], torch.Tensor]:
+        def _fsdict_func(coeffs: WaveletCoeff2d) -> torch.Tensor:
             # assert for type checking
             assert len(coeffs) == 2
             a, (h, v, d) = coeffs

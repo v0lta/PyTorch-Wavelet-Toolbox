@@ -11,8 +11,8 @@ __all__ = [
     "PaddingMode",
     "OrthogonalizeMethod",
     "WaveletDetailTuple2d",
-    "WaveletCoeffDetailTuple2d",
-    "WaveletCoeffDetailDict",
+    "WaveletCoeff2d",
+    "WaveletCoeffNd",
     "WaveletDetailDict",
 ]
 
@@ -80,7 +80,7 @@ Alias of ``dict[str, torch.Tensor]``
 
 
 # Note: This data structure was chosen to follow pywt's conventions
-WaveletCoeffDetailTuple2d: TypeAlias = tuple[
+WaveletCoeff2d: TypeAlias = tuple[
     torch.Tensor, Unpack[tuple[WaveletDetailTuple2d, ...]]
 ]
 """Type alias for 2d wavelet transform results.
@@ -98,9 +98,7 @@ Alias of ``tuple[torch.Tensor, *tuple[WaveletDetailTuple2d, ...]]``
 """
 
 # Note: This data structure was chosen to follow pywt's conventions
-WaveletCoeffDetailDict: TypeAlias = tuple[
-    torch.Tensor, Unpack[tuple[WaveletDetailDict, ...]]
-]
+WaveletCoeffNd: TypeAlias = tuple[torch.Tensor, Unpack[tuple[WaveletDetailDict, ...]]]
 """Type alias for wavelet transform results in any dimension.
 
 This type alias represents the result of a Nd wavelet transform

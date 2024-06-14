@@ -22,7 +22,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod, WaveletCoeffDetailDict
+from .constants import OrthogonalizeMethod, WaveletCoeffNd
 from .conv_transform_3 import _waverec3d_fold_channels_3d_list
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
@@ -160,7 +160,7 @@ class MatrixWavedec3(object):
             )
         self.size_list.append((current_depth, current_height, current_width))
 
-    def __call__(self, input_signal: torch.Tensor) -> WaveletCoeffDetailDict:
+    def __call__(self, input_signal: torch.Tensor) -> WaveletCoeffNd:
         """Compute a separable 3d-boundary wavelet transform.
 
         Args:
@@ -169,7 +169,7 @@ class MatrixWavedec3(object):
 
         Returns:
             The resulting coefficients for each level are stored in a tuple,
-            see :data:`ptwt.constants.WaveletCoeffDetailDict`.
+            see :data:`ptwt.constants.WaveletCoeffNd`.
 
         Raises:
             ValueError: If the input dimensions don't work.
@@ -262,7 +262,7 @@ class MatrixWavedec3(object):
             split_list.append(coeff_dict)
 
         split_list.reverse()
-        result: WaveletCoeffDetailDict = lll, *split_list
+        result: WaveletCoeffNd = lll, *split_list
 
         if ds:
             _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
@@ -388,13 +388,13 @@ class MatrixWaverec3(object):
                 return cat_tensor
         return self._cat_coeff_recursive(done_dict)
 
-    def __call__(self, coefficients: WaveletCoeffDetailDict) -> torch.Tensor:
+    def __call__(self, coefficients: WaveletCoeffNd) -> torch.Tensor:
         """Reconstruct a batched 3d-signal from its coefficients.
 
         Args:
-            coefficients (WaveletCoeffDetailDict):
+            coefficients (WaveletCoeffNd):
                 The output from the `MatrixWavedec3` object,
-                see :data:`ptwt.constants.WaveletCoeffDetailDict`.
+                see :data:`ptwt.constants.WaveletCoeffNd`.
 
         Returns:
             torch.Tensor: A reconstruction of the original signal.

@@ -26,7 +26,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import BoundaryMode, WaveletCoeffDetailDict
+from .constants import BoundaryMode, WaveletCoeffNd
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_filter_tensors,
@@ -110,7 +110,7 @@ def wavedec3(
     mode: BoundaryMode = "zero",
     level: Optional[int] = None,
     axes: tuple[int, int, int] = (-3, -2, -1),
-) -> WaveletCoeffDetailDict:
+) -> WaveletCoeffNd:
     """Compute a three-dimensional wavelet transform.
 
     Args:
@@ -130,7 +130,7 @@ def wavedec3(
 
     Returns:
         A tuple containing the wavelet coefficients,
-        see :data:`ptwt.constants.WaveletCoeffDetailDict`.
+        see :data:`ptwt.constants.WaveletCoeffNd`.
 
     Raises:
         ValueError: If the input has fewer than three dimensions or
@@ -194,7 +194,7 @@ def wavedec3(
             }
         )
     result_lst.reverse()
-    result: WaveletCoeffDetailDict = res_lll, *result_lst
+    result: WaveletCoeffNd = res_lll, *result_lst
 
     if ds:
         _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
@@ -208,9 +208,9 @@ def wavedec3(
 
 
 def _waverec3d_fold_channels_3d_list(
-    coeffs: WaveletCoeffDetailDict,
+    coeffs: WaveletCoeffNd,
 ) -> tuple[
-    WaveletCoeffDetailDict,
+    WaveletCoeffNd,
     list[int],
 ]:
     # fold the input coefficients for processing conv2d_transpose.
@@ -225,15 +225,15 @@ def _waverec3d_fold_channels_3d_list(
 
 
 def waverec3(
-    coeffs: WaveletCoeffDetailDict,
+    coeffs: WaveletCoeffNd,
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
-        coeffs (WaveletCoeffDetailDict): The wavelet coefficient tuple
-            produced by wavedec3, see :data:`ptwt.constants.WaveletCoeffDetailDict`.
+        coeffs (WaveletCoeffNd): The wavelet coefficient tuple
+            produced by wavedec3, see :data:`ptwt.constants.WaveletCoeffNd`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
