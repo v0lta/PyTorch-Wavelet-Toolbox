@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 from collections.abc import Sequence
-from typing import Any, Callable, Optional, Protocol, Union, cast, overload
+from typing import Any, Callable, NamedTuple, Optional, Protocol, Union, cast, overload
 
 import numpy as np
 import pywt
@@ -36,6 +36,42 @@ class Wavelet(Protocol):
     def __len__(self) -> int:
         """Return the number of filter coefficients."""
         return len(self.dec_lo)
+
+
+class WaveletTensorTuple(NamedTuple):
+    """Named tuple containing the wavelet filter bank to use in JIT code."""
+
+    dec_lo: torch.Tensor
+    dec_hi: torch.Tensor
+    rec_lo: torch.Tensor
+    rec_hi: torch.Tensor
+
+    @property
+    def dec_len(self) -> int:
+        """Length of decomposition filters."""
+        return len(self.dec_lo)
+
+    @property
+    def rec_len(self) -> int:
+        """Length of reconstruction filters."""
+        return len(self.rec_lo)
+
+    @property
+    def filter_bank(
+        self,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Filter bank of the wavelet."""
+        return self
+
+    @classmethod
+    def from_wavelet(cls, wavelet: Wavelet, dtype: torch.dtype) -> WaveletTensorTuple:
+        """Construct Wavelet named tuple from wavelet protocol member."""
+        return cls(
+            torch.tensor(wavelet.dec_lo, dtype=dtype),
+            torch.tensor(wavelet.dec_hi, dtype=dtype),
+            torch.tensor(wavelet.rec_lo, dtype=dtype),
+            torch.tensor(wavelet.rec_hi, dtype=dtype),
+        )
 
 
 def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:

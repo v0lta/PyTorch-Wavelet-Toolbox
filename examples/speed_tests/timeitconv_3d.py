@@ -9,24 +9,6 @@ import torch
 import ptwt
 
 
-class WaveletTuple(NamedTuple):
-    """Replaces namedtuple("Wavelet", ("dec_lo", "dec_hi", "rec_lo", "rec_hi"))."""
-
-    dec_lo: torch.Tensor
-    dec_hi: torch.Tensor
-    rec_lo: torch.Tensor
-    rec_hi: torch.Tensor
-
-
-def _set_up_wavelet_tuple(wavelet, dtype):
-    return WaveletTuple(
-        torch.tensor(wavelet.dec_lo).type(dtype),
-        torch.tensor(wavelet.dec_hi).type(dtype),
-        torch.tensor(wavelet.rec_lo).type(dtype),
-        torch.tensor(wavelet.rec_hi).type(dtype),
-    )
-
-
 def _to_jit_wavedec_3(data, wavelet):
     """Ensure uniform datatypes in lists for the tracer.
 
@@ -85,7 +67,7 @@ if __name__ == "__main__":
         end = time.perf_counter()
         ptwt_time_gpu.append(end - start)
 
-    wavelet = _set_up_wavelet_tuple(pywt.Wavelet("db5"), torch.float32)
+    wavelet = ptwt.WaveletTensorTuple.from_wavelet(pywt.Wavelet("db5"), torch.float32)
     jit_wavedec = torch.jit.trace(
         _to_jit_wavedec_3,
         (data.cuda(), wavelet),

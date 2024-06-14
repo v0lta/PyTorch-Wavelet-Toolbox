@@ -1,6 +1,6 @@
 """Ensure pytorch's torch.jit.trace feature works properly."""
 
-from typing import NamedTuple, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 import pytest
@@ -11,24 +11,6 @@ from scipy import signal
 import ptwt
 from ptwt.continuous_transform import _ShannonWavelet
 from tests._mackey_glass import MackeyGenerator
-
-
-class WaveletTuple(NamedTuple):
-    """Replaces namedtuple("Wavelet", ("dec_lo", "dec_hi", "rec_lo", "rec_hi"))."""
-
-    dec_lo: torch.Tensor
-    dec_hi: torch.Tensor
-    rec_lo: torch.Tensor
-    rec_hi: torch.Tensor
-
-
-def _set_up_wavelet_tuple(wavelet: WaveletTuple, dtype: torch.dtype) -> WaveletTuple:
-    return WaveletTuple(
-        torch.tensor(wavelet.dec_lo).type(dtype),
-        torch.tensor(wavelet.dec_hi).type(dtype),
-        torch.tensor(wavelet.rec_lo).type(dtype),
-        torch.tensor(wavelet.rec_hi).type(dtype),
-    )
 
 
 def _to_jit_wavedec_fun(
@@ -53,7 +35,7 @@ def test_conv_fwt_jit(
 
     mackey_data_1 = torch.squeeze(generator(), -1).type(dtype)
     wavelet = pywt.Wavelet(wavelet_string)
-    wavelet = _set_up_wavelet_tuple(wavelet, dtype)
+    wavelet = ptwt.WaveletTensorTuple.from_wavelet(wavelet, dtype)
 
     with pytest.warns(Warning):
         jit_wavedec = torch.jit.trace(  # type: ignore
@@ -105,7 +87,7 @@ def test_conv_fwt_jit_2d() -> None:
     rec = _to_jit_waverec_2(coeff, wavelet)
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy())
 
-    wavelet = _set_up_wavelet_tuple(wavelet, dtype=torch.float64)
+    wavelet = ptwt.WaveletTensorTuple.from_wavelet(wavelet, dtype=torch.float64)
     with pytest.warns(Warning):
         jit_wavedec2 = torch.jit.trace(  # type: ignore
             _to_jit_wavedec_2,
@@ -159,7 +141,7 @@ def test_conv_fwt_jit_3d() -> None:
     rec = _to_jit_waverec_3(coeff, wavelet)
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy())
 
-    wavelet = _set_up_wavelet_tuple(wavelet, dtype=torch.float64)
+    wavelet = ptwt.WaveletTensorTuple.from_wavelet(wavelet, dtype=torch.float64)
     with pytest.warns(Warning):
         jit_wavedec3 = torch.jit.trace(  # type: ignore
             _to_jit_wavedec_3,
