@@ -1,6 +1,7 @@
 """Separable transform test code."""
 
-from typing import Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Optional
 
 import numpy as np
 import pytest
@@ -90,7 +91,7 @@ def test_example_fs3d(shape: Sequence[int], wavelet: str) -> None:
 )
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (2, 3), (3, 2)])
 def test_conv_mm_2d(
-    level: Optional[int], shape: Sequence[int], axes: Tuple[int, int]
+    level: Optional[int], shape: Sequence[int], axes: tuple[int, int]
 ) -> None:
     """Compare mm and conv fully separable results."""
     data = torch.randn(*shape).type(torch.float64)
@@ -119,7 +120,7 @@ def test_conv_mm_2d(
 @pytest.mark.parametrize("axes", [(-3, -2, -1), (-1, -2, -3), (2, 3, 1)])
 @pytest.mark.parametrize("shape", [(5, 64, 128, 256)])
 def test_conv_mm_3d(
-    level: Optional[int], axes: Tuple[int, int, int], shape: Tuple[int, ...]
+    level: Optional[int], axes: tuple[int, int, int], shape: tuple[int, ...]
 ) -> None:
     """Compare mm and conv 3d fully separable results."""
     data = torch.randn(*shape).type(torch.float64)

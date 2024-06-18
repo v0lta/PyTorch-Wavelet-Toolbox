@@ -4,8 +4,10 @@ The implementation relies on torch.nn.functional.conv2d and
 torch.nn.functional.conv_transpose2d under the hood.
 """
 
+from __future__ import annotations
+
 from functools import partial
-from typing import List, Optional, Tuple, Union, cast
+from typing import Optional, Union
 
 import pywt
 import torch
@@ -25,7 +27,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import BoundaryMode
+from .constants import BoundaryMode, WaveletCoeff2d, WaveletDetailTuple2d
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_filter_tensors,
@@ -42,7 +44,7 @@ def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
         hi (torch.Tensor): High-pass input filter
 
     Returns:
-        torch.Tensor: Stacked 2d-filters of dimension
+        Stacked 2d-filters of dimension
 
         [filt_no, 1, height, width].
 
@@ -72,6 +74,8 @@ def _fwt_pad2(
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         mode :
             The desired padding mode for extending the signal along the edges.
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
@@ -81,7 +85,7 @@ def _fwt_pad2(
 
     """
     if mode is None:
-        mode = cast(BoundaryMode, "reflect")
+        mode = "reflect"
     pytorch_mode = _translate_boundary_strings(mode)
     wavelet = _as_wavelet(wavelet)
     padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
@@ -96,11 +100,8 @@ def _fwt_pad2(
 
 
 def _waverec2d_fold_channels_2d_list(
-    coeffs: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
-) -> Tuple[
-    List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
-    List[int],
-]:
+    coeffs: WaveletCoeff2d,
+) -> tuple[WaveletCoeff2d, list[int]]:
     # fold the input coefficients for processing conv2d_transpose.
     ds = list(_check_if_tensor(coeffs[0]).shape)
     return _map_result(coeffs, lambda t: _fold_axes(t, 2)[0]), ds
@@ -108,7 +109,7 @@ def _waverec2d_fold_channels_2d_list(
 
 def _preprocess_tensor_dec2d(
     data: torch.Tensor,
-) -> Tuple[torch.Tensor, Union[List[int], None]]:
+) -> tuple[torch.Tensor, Union[list[int], None]]:
     # Preprocess multidimensional input.
     ds = None
     if len(data.shape) == 2:
@@ -130,8 +131,8 @@ def wavedec2(
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-    axes: Tuple[int, int] = (-2, -1),
-) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
+    axes: tuple[int, int] = (-2, -1),
+) -> WaveletCoeff2d:
     r"""Run a two-dimensional wavelet transformation.
 
     This function relies on two-dimensional convolutions.
@@ -157,26 +158,22 @@ def wavedec2(
             By default 2d inputs are interpreted as ``[height, width]``,
             3d inputs are interpreted as ``[batch_size, height, width]``.
             4d inputs are interpreted as ``[batch_size, channels, height, width]``.
-            the ``axis`` argument allows other interpretations.
+            The ``axes`` argument allows other interpretations.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet. Refer to the output of
-            ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         mode :
             The desired padding mode for extending the signal along the edges.
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The number of desired scales.
             Defaults to None.
-        axes (Tuple[int, int]): Compute the transform over these axes instead of the
+        axes (tuple[int, int]): Compute the transform over these axes instead of the
             last two. Defaults to (-2, -1).
 
     Returns:
-        list: A list containing the wavelet coefficients.
-        The coefficients are in pywt order. That is::
-
-            [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .
-
-        A denotes approximation, H horizontal, V vertical
-        and D diagonal coefficients.
+        A tuple containing the wavelet coefficients in pywt order,
+        see :data:`ptwt.constants.WaveletCoeff2d`.
 
     Raises:
         ValueError: If the dimensionality or the dtype of the input data tensor
@@ -214,34 +211,36 @@ def wavedec2(
     if level is None:
         level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
 
-    result_lst: List[
-        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-    ] = []
+    result_lst: list[WaveletDetailTuple2d] = []
     res_ll = data
     for _ in range(level):
         res_ll = _fwt_pad2(res_ll, wavelet, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
-        to_append = (res_lh.squeeze(1), res_hl.squeeze(1), res_hh.squeeze(1))
+        to_append = WaveletDetailTuple2d(
+            res_lh.squeeze(1), res_hl.squeeze(1), res_hh.squeeze(1)
+        )
         result_lst.append(to_append)
-    result_lst.append(res_ll.squeeze(1))
+
     result_lst.reverse()
+    res_ll = res_ll.squeeze(1)
+    result: WaveletCoeff2d = res_ll, *result_lst
 
     if ds:
         _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
-        result_lst = _map_result(result_lst, _unfold_axes2)
+        result = _map_result(result, _unfold_axes2)
 
     if axes != (-2, -1):
         undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-        result_lst = _map_result(result_lst, undo_swap_fn)
+        result = _map_result(result, undo_swap_fn)
 
-    return result_lst
+    return result
 
 
 def waverec2(
-    coeffs: List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+    coeffs: WaveletCoeff2d,
     wavelet: Union[Wavelet, str],
-    axes: Tuple[int, int] = (-2, -1),
+    axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
@@ -249,22 +248,18 @@ def waverec2(
     or forward transform by running transposed convolutions.
 
     Args:
-        coeffs (list): The wavelet coefficient list produced by wavedec2.
-            The coefficients must be in pywt order. That is::
-
-            [cAs, (cHs, cVs, cDs), … (cH1, cV1, cD1)] .
-
-            A denotes approximation, H horizontal, V vertical,
-            and D diagonal coefficients.
+        coeffs (WaveletCoeff2d): The wavelet coefficient tuple
+            produced by wavedec2. See :data:`ptwt.constants.WaveletCoeff2d`
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        axes (Tuple[int, int]): Compute the transform over these axes instead of the
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
+        axes (tuple[int, int]): Compute the transform over these axes instead of the
             last two. Defaults to (-2, -1).
 
     Returns:
-        torch.Tensor:
-            The reconstructed signal of shape ``[batch, height, width]`` or
-            ``[batch, channel, height, width]`` depending on the input to `wavedec2`.
+        The reconstructed signal tensor of shape ``[batch, height, width]`` or
+        ``[batch, channel, height, width]`` depending on the input to `wavedec2`.
 
     Raises:
         ValueError: If coeffs is not in a shape as returned from wavedec2 or

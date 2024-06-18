@@ -3,7 +3,10 @@
 This module treats boundaries with edge-padding.
 """
 
-from typing import List, Optional, Sequence, Tuple, Union, cast
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import pywt
 import torch
@@ -17,7 +20,7 @@ from ._util import (
     _pad_symmetric,
     _unfold_axes,
 )
-from .constants import BoundaryMode
+from .constants import BoundaryMode, WaveletCoeff2d
 
 
 def _create_tensor(
@@ -40,7 +43,7 @@ def _get_filter_tensors(
     flip: bool,
     device: Union[torch.device, str],
     dtype: torch.dtype = torch.float32,
-) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Convert input wavelet to filter tensors.
 
     Args:
@@ -52,9 +55,8 @@ def _get_filter_tensors(
                computation. Default: torch.float32.
 
     Returns:
-        tuple: Tuple containing the four filter tensors
-        dec_lo, dec_hi, rec_lo, rec_hi
-
+        A tuple (dec_lo, dec_hi, rec_lo, rec_hi) containing
+        the four filter tensors
     """
     wavelet = _as_wavelet(wavelet)
     device = torch.device(device)
@@ -70,7 +72,7 @@ def _get_filter_tensors(
     return dec_lo_tensor, dec_hi_tensor, rec_lo_tensor, rec_hi_tensor
 
 
-def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
+def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
     """Compute the required padding.
 
     Args:
@@ -78,10 +80,8 @@ def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
         filt_len (int): The size of the used filter.
 
     Returns:
-        Tuple: The first entry specifies how many numbers
-            to attach on the right. The second
-            entry covers the left side.
-
+        A tuple (padr, padl). The first entry specifies how many numbers
+        to attach on the right. The second entry covers the left side.
     """
     # pad to ensure we see all filter positions and
     # for pywt compatability.
@@ -100,8 +100,7 @@ def _get_pad(data_len: int, filt_len: int) -> Tuple[int, int]:
     padl = (2 * filt_len - 3) // 2
 
     # pad to even singal length.
-    if data_len % 2 != 0:
-        padr += 1
+    padr += data_len % 2
 
     return padr, padl
 
@@ -115,7 +114,6 @@ def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
 
     Raises:
         ValueError: If the padding mode is not supported.
-
     """
     if pywt_mode == "constant":
         return "replicate"
@@ -151,14 +149,13 @@ def _fwt_pad(
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
 
     Returns:
-        torch.Tensor: A PyTorch tensor with the padded input data
-
+        A PyTorch tensor with the padded input data
     """
     wavelet = _as_wavelet(wavelet)
 
     # convert pywt to pytorch convention.
     if mode is None:
-        mode = cast(BoundaryMode, "reflect")
+        mode = "reflect"
     pytorch_mode = _translate_boundary_strings(mode)
 
     padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
@@ -170,39 +167,32 @@ def _fwt_pad(
 
 
 def _flatten_2d_coeff_lst(
-    coeff_lst_2d: List[
-        Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-    ],
+    coeff_lst_2d: WaveletCoeff2d,
     flatten_tensors: bool = True,
-) -> List[torch.Tensor]:
-    """Flattens a list of tensor tuples into a single list.
+) -> list[torch.Tensor]:
+    """Flattens a sequence of tensor tuples into a single list.
 
     Args:
-        coeff_lst_2d (list): A pywt-style coefficient list of torch tensors.
+        coeff_lst_2d (WaveletCoeff2d): A pywt-style
+            coefficient tuple of torch tensors.
         flatten_tensors (bool): If true, 2d tensors are flattened. Defaults to True.
 
     Returns:
-        list: A single 1-d list with all original elements.
+        A single 1-d list with all original elements.
     """
-    flat_coeff_lst = []
-    for coeff in coeff_lst_2d:
-        if isinstance(coeff, tuple):
-            for c in coeff:
-                if flatten_tensors:
-                    flat_coeff_lst.append(c.flatten())
-                else:
-                    flat_coeff_lst.append(c)
-        else:
-            if flatten_tensors:
-                flat_coeff_lst.append(coeff.flatten())
-            else:
-                flat_coeff_lst.append(coeff)
+
+    def _process_tensor(coeff: torch.Tensor) -> torch.Tensor:
+        return coeff.flatten() if flatten_tensors else coeff
+
+    flat_coeff_lst = [_process_tensor(coeff_lst_2d[0])]
+    for coeff_tuple in coeff_lst_2d[1:]:
+        flat_coeff_lst.extend(map(_process_tensor, coeff_tuple))
     return flat_coeff_lst
 
 
 def _adjust_padding_at_reconstruction(
     res_ll_size: int, coeff_size: int, pad_end: int, pad_start: int
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     pred_size = res_ll_size - (pad_start + pad_end)
     next_size = coeff_size
     if next_size == pred_size:
@@ -218,16 +208,15 @@ def _adjust_padding_at_reconstruction(
 
 def _preprocess_tensor_dec1d(
     data: torch.Tensor,
-) -> Tuple[torch.Tensor, List[int]]:
+) -> tuple[torch.Tensor, list[int]]:
     """Preprocess input tensor dimensions.
 
     Args:
         data (torch.Tensor): An input tensor of any shape.
 
     Returns:
-        Tuple[torch.Tensor, Union[List[int], None]]:
-            A data tensor of shape [new_batch, 1, to_process]
-            and the original shape.
+        A tuple (data, ds) where data is a data tensor of shape
+        [new_batch, 1, to_process] and ds contains the original shape.
     """
     ds = list(data.shape)
     if len(ds) == 1:
@@ -243,8 +232,8 @@ def _preprocess_tensor_dec1d(
 
 
 def _postprocess_result_list_dec1d(
-    result_list: List[torch.Tensor], ds: List[int], axis: int
-) -> List[torch.Tensor]:
+    result_list: list[torch.Tensor], ds: list[int], axis: int
+) -> list[torch.Tensor]:
     if len(ds) == 1:
         result_list = [r_el.squeeze(0) for r_el in result_list]
     elif len(ds) > 2:
@@ -260,10 +249,11 @@ def _postprocess_result_list_dec1d(
 
 
 def _preprocess_result_list_rec1d(
-    result_lst: List[torch.Tensor],
-) -> Tuple[List[torch.Tensor], List[int]]:
+    result_lst: Sequence[torch.Tensor],
+) -> tuple[Sequence[torch.Tensor], list[int]]:
     # Fold axes for the wavelets
     ds = list(result_lst[0].shape)
+    fold_coeffs: Sequence[torch.Tensor]
     if len(ds) == 1:
         fold_coeffs = [uf_coeff.unsqueeze(0) for uf_coeff in result_lst]
     elif len(ds) > 2:
@@ -280,7 +270,7 @@ def wavedec(
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
     axis: int = -1,
-) -> List[torch.Tensor]:
+) -> list[torch.Tensor]:
     r"""Compute the analysis (forward) 1d fast wavelet transform.
 
     The transformation relies on convolution operations with filter
@@ -313,7 +303,7 @@ def wavedec(
 
 
     Returns:
-        list: A list::
+        A list::
 
             [cA_s, cD_s, cD_s-1, …, cD2, cD1]
 
@@ -371,18 +361,20 @@ def wavedec(
 
 
 def waverec(
-    coeffs: List[torch.Tensor], wavelet: Union[Wavelet, str], axis: int = -1
+    coeffs: Sequence[torch.Tensor], wavelet: Union[Wavelet, str], axis: int = -1
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
-        coeffs (list): The wavelet coefficient list produced by wavedec.
+        coeffs (Sequence): The wavelet coefficient sequence produced by wavedec.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         axis (int): Transform this axis instead of the last one. Defaults to -1.
 
     Returns:
-        torch.Tensor: The reconstructed signal.
+        The reconstructed signal tensor.
 
     Raises:
         ValueError: If the dtype of the coeffs tensor is unsupported or if the

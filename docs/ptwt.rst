@@ -32,6 +32,7 @@ ptwt.packets module
 
 .. automodule:: ptwt.packets
    :members:
+   :special-members: __getitem__
    :undoc-members:
    :show-inheritance:
 
@@ -68,6 +69,7 @@ ptwt.matmul\_transform module
 
 .. automodule:: ptwt.matmul_transform
    :members:
+   :special-members: __call__
    :undoc-members:
    :show-inheritance:
 
@@ -76,6 +78,7 @@ ptwt.matmul\_transform\_2 module
 
 .. automodule:: ptwt.matmul_transform_2
    :members:
+   :special-members: __call__
    :undoc-members:
    :show-inheritance:
 
@@ -84,6 +87,7 @@ ptwt.matmul\_transform\_3 module
 
 .. automodule:: ptwt.matmul_transform_3
    :members:
+   :special-members: __call__
    :undoc-members:
    :show-inheritance:
 
@@ -92,14 +96,6 @@ ptwt.sparse\_math module
 ------------------------
 
 .. automodule:: ptwt.sparse_math
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-ptwt.version module
--------------------
-
-.. automodule:: ptwt.version
    :members:
    :undoc-members:
    :show-inheritance:
@@ -115,6 +111,14 @@ ptwt.wavelets\_learnable module
 ptwt.constants
 -------------------------------
 .. automodule:: ptwt.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ptwt.version module
+-------------------
+
+.. automodule:: ptwt.version
    :members:
    :undoc-members:
    :show-inheritance:

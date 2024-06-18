@@ -1,16 +1,25 @@
 """Compute analysis wavelet packet representations."""
 
+from __future__ import annotations
+
 import collections
+from collections.abc import Sequence
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 import numpy as np
 import pywt
 import torch
 
 from ._util import Wavelet, _as_wavelet
-from .constants import ExtendedBoundaryMode, OrthogonalizeMethod
+from .constants import (
+    ExtendedBoundaryMode,
+    OrthogonalizeMethod,
+    WaveletCoeff2d,
+    WaveletCoeffNd,
+    WaveletDetailTuple2d,
+)
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
 from .matmul_transform import MatrixWavedec, MatrixWaverec
@@ -23,7 +32,7 @@ else:
     BaseDict = collections.UserDict
 
 
-def _wpfreq(fs: float, level: int) -> List[float]:
+def _wpfreq(fs: float, level: int) -> list[float]:
     """Compute the frequencies for a fully decomposed 1d packet tree.
 
        The packet transform linearly subdivides all frequencies
@@ -34,7 +43,7 @@ def _wpfreq(fs: float, level: int) -> List[float]:
         level (int): The decomposition level.
 
     Returns:
-        List[float]: The frequency bins of the packets in frequency order.
+        The frequency bins of the packets in frequency order.
     """
     n = np.array(range(int(np.power(2.0, level))))
     freqs = (fs / 2.0) * (n / (np.power(2.0, level)))
@@ -66,6 +75,8 @@ class WaveletPacket(BaseDict):
                 Use the ``axis`` argument to choose another dimension.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
             mode : The desired padding method. If you select 'boundary',
                 the sparse matrix backend will be used. Defaults to 'reflect'.
             maxlevel (int, optional): Value is passed on to `transform`.
@@ -73,8 +84,9 @@ class WaveletPacket(BaseDict):
                 is determined from the input data shape. Defaults to None.
             axis (int): The axis to transform. Defaults to -1.
             boundary_orthogonalization : The orthogonalization method
-                to use. Only used if `mode` equals 'boundary'. Choose from
-                'qr' or 'gramschmidt'. Defaults to 'qr'.
+                to use in the sparse matrix backend,
+                see :data:`ptwt.constants.OrthogonalizeMethod`.
+                Only used if `mode` equals 'boundary'. Defaults to 'qr'.
 
         Example:
             >>> import torch, pywt, ptwt
@@ -96,8 +108,8 @@ class WaveletPacket(BaseDict):
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
         self.boundary = boundary_orthogonalization
-        self._matrix_wavedec_dict: Dict[int, MatrixWavedec] = {}
-        self._matrix_waverec_dict: Dict[int, MatrixWaverec] = {}
+        self._matrix_wavedec_dict: dict[int, MatrixWavedec] = {}
+        self._matrix_waverec_dict: dict[int, MatrixWaverec] = {}
         self.maxlevel: Optional[int] = None
         self.axis = axis
         if data is not None:
@@ -110,7 +122,7 @@ class WaveletPacket(BaseDict):
 
     def transform(
         self, data: torch.Tensor, maxlevel: Optional[int] = None
-    ) -> "WaveletPacket":
+    ) -> WaveletPacket:
         """Calculate the 1d wavelet packet transform for the input data.
 
         Args:
@@ -127,7 +139,7 @@ class WaveletPacket(BaseDict):
         self._recursive_dwt(data, level=0, path="")
         return self
 
-    def reconstruct(self) -> "WaveletPacket":
+    def reconstruct(self) -> WaveletPacket:
         """Recursively reconstruct the input starting from the leaf nodes.
 
         Reconstruction replaces the input data originally assigned to this object.
@@ -167,7 +179,7 @@ class WaveletPacket(BaseDict):
     def _get_wavedec(
         self,
         length: int,
-    ) -> Callable[[torch.Tensor], List[torch.Tensor]]:
+    ) -> Callable[[torch.Tensor], list[torch.Tensor]]:
         if self.mode == "boundary":
             if length not in self._matrix_wavedec_dict.keys():
                 self._matrix_wavedec_dict[length] = MatrixWavedec(
@@ -182,7 +194,7 @@ class WaveletPacket(BaseDict):
     def _get_waverec(
         self,
         length: int,
-    ) -> Callable[[List[torch.Tensor]], torch.Tensor]:
+    ) -> Callable[[Sequence[torch.Tensor]], torch.Tensor]:
         if self.mode == "boundary":
             if length not in self._matrix_waverec_dict.keys():
                 self._matrix_waverec_dict[length] = MatrixWaverec(
@@ -192,18 +204,18 @@ class WaveletPacket(BaseDict):
         else:
             return partial(waverec, wavelet=self.wavelet, axis=self.axis)
 
-    def get_level(self, level: int) -> List[str]:
+    def get_level(self, level: int) -> list[str]:
         """Return the graycode-ordered paths to the filter tree nodes.
 
         Args:
             level (int): The depth of the tree.
 
         Returns:
-            list: A list with the paths to each node.
+            A list with the paths to each node.
         """
         return self._get_graycode_order(level)
 
-    def _get_graycode_order(self, level: int, x: str = "a", y: str = "d") -> List[str]:
+    def _get_graycode_order(self, level: int, x: str = "a", y: str = "d") -> list[str]:
         graycode_order = [x, y]
         for _ in range(level - 1):
             graycode_order = [x + path for path in graycode_order] + [
@@ -229,10 +241,11 @@ class WaveletPacket(BaseDict):
 
         Args:
             key (str): The key of the accessed coefficients. The string may only consist
-                of the following chars: 'a', 'd'.
+                of the chars 'a' and 'd' where 'a' denotes the low pass or
+                approximation filter and 'd' the high-pass or detail filter.
 
         Returns:
-            torch.Tensor: The accessed wavelet packet coefficients.
+            The accessed wavelet packet coefficients.
 
         Raises:
             ValueError: If the wavelet packet tree is not initialized.
@@ -265,7 +278,7 @@ class WaveletPacket2D(BaseDict):
         wavelet: Union[Wavelet, str],
         mode: ExtendedBoundaryMode = "reflect",
         maxlevel: Optional[int] = None,
-        axes: Tuple[int, int] = (-2, -1),
+        axes: tuple[int, int] = (-2, -1),
         boundary_orthogonalization: OrthogonalizeMethod = "qr",
         separable: bool = False,
     ) -> None:
@@ -279,6 +292,8 @@ class WaveletPacket2D(BaseDict):
                 a decomposition.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
             mode : A string indicating the desired padding mode.
                 If you select 'boundary', the sparse matrix backend is used.
                 Defaults to 'reflect'
@@ -288,9 +303,9 @@ class WaveletPacket2D(BaseDict):
             axes ([int, int], optional): The tensor axes that should be transformed.
                 Defaults to (-2, -1).
             boundary_orthogonalization : The orthogonalization method
-                to use in the sparse matrix backend. Only used if `mode`
-                equals 'boundary'. Choose from 'qr' or 'gramschmidt'.
-                Defaults to 'qr'.
+                to use in the sparse matrix backend,
+                see :data:`ptwt.constants.OrthogonalizeMethod`.
+                Only used if `mode` equals 'boundary'. Defaults to 'qr'.
             separable (bool): If true, a separable transform is performed,
                 i.e. each image axis is transformed separately. Defaults to False.
 
@@ -299,8 +314,8 @@ class WaveletPacket2D(BaseDict):
         self.mode = mode
         self.boundary = boundary_orthogonalization
         self.separable = separable
-        self.matrix_wavedec2_dict: Dict[Tuple[int, ...], MatrixWavedec2] = {}
-        self.matrix_waverec2_dict: Dict[Tuple[int, ...], MatrixWaverec2] = {}
+        self.matrix_wavedec2_dict: dict[tuple[int, ...], MatrixWavedec2] = {}
+        self.matrix_waverec2_dict: dict[tuple[int, ...], MatrixWaverec2] = {}
         self.axes = axes
 
         self.maxlevel: Optional[int] = None
@@ -311,14 +326,14 @@ class WaveletPacket2D(BaseDict):
 
     def transform(
         self, data: torch.Tensor, maxlevel: Optional[int] = None
-    ) -> "WaveletPacket2D":
+    ) -> WaveletPacket2D:
         """Calculate the 2d wavelet packet transform for the input data.
 
            The transform function allows reusing the same object.
 
         Args:
             data (torch.tensor): The input data tensor
-                of shape [batch_size, height, width]
+                of shape ``[batch_size, height, width]``.
             maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
@@ -335,7 +350,7 @@ class WaveletPacket2D(BaseDict):
         self._recursive_dwt2d(data, level=0, path="")
         return self
 
-    def reconstruct(self) -> "WaveletPacket2D":
+    def reconstruct(self) -> WaveletPacket2D:
         """Recursively reconstruct the input starting from the leaf nodes.
 
         Note:
@@ -349,13 +364,13 @@ class WaveletPacket2D(BaseDict):
             )
 
         for level in reversed(range(self.maxlevel)):
-            for node in self.get_natural_order(level):
+            for node in WaveletPacket2D.get_natural_order(level):
                 data_a = self[node + "a"]
                 data_h = self[node + "h"]
                 data_v = self[node + "v"]
                 data_d = self[node + "d"]
                 rec = self._get_waverec(data_a.shape[-2:])(
-                    [data_a, (data_h, data_v, data_d)]
+                    (data_a, WaveletDetailTuple2d(data_h, data_v, data_d))
                 )
                 if level > 0:
                     if rec.shape[-1] != self[node].shape[-1]:
@@ -371,20 +386,9 @@ class WaveletPacket2D(BaseDict):
                 self[node] = rec
         return self
 
-    def get_natural_order(self, level: int) -> List[str]:
-        """Get the natural ordering for a given decomposition level.
-
-        Args:
-            level (int): The decomposition level.
-
-        Returns:
-            list: A list with the filter order strings.
-        """
-        return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
-
-    def _get_wavedec(self, shape: Tuple[int, ...]) -> Callable[
+    def _get_wavedec(self, shape: tuple[int, ...]) -> Callable[
         [torch.Tensor],
-        List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
+        WaveletCoeff2d,
     ]:
         if self.mode == "boundary":
             shape = tuple(shape)
@@ -413,10 +417,9 @@ class WaveletPacket2D(BaseDict):
                 wavedec2, wavelet=self.wavelet, level=1, mode=self.mode, axes=self.axes
             )
 
-    def _get_waverec(self, shape: Tuple[int, ...]) -> Callable[
-        [List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
-        torch.Tensor,
-    ]:
+    def _get_waverec(
+        self, shape: tuple[int, ...]
+    ) -> Callable[[WaveletCoeff2d], torch.Tensor]:
         if self.mode == "boundary":
             shape = tuple(shape)
             if shape not in self.matrix_waverec2_dict.keys():
@@ -436,41 +439,31 @@ class WaveletPacket2D(BaseDict):
 
     def _transform_fsdict_to_tuple_func(
         self,
-        fs_dict_func: Callable[
-            [torch.Tensor], List[Union[torch.Tensor, Dict[str, torch.Tensor]]]
-        ],
-    ) -> Callable[
-        [torch.Tensor],
-        List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
-    ]:
+        fs_dict_func: Callable[[torch.Tensor], WaveletCoeffNd],
+    ) -> Callable[[torch.Tensor], WaveletCoeff2d]:
         def _tuple_func(
             data: torch.Tensor,
-        ) -> List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]:
-            a_coeff, fsdict = fs_dict_func(data)
-            fsdict = cast(Dict[str, torch.Tensor], fsdict)
-            return [
-                cast(torch.Tensor, a_coeff),
-                (fsdict["ad"], fsdict["da"], fsdict["dd"]),
-            ]
+        ) -> WaveletCoeff2d:
+            fs_dict_data = fs_dict_func(data)
+            # assert for type checking
+            assert len(fs_dict_data) == 2
+            a_coeff, fsdict = fs_dict_data
+            return (
+                a_coeff,
+                WaveletDetailTuple2d(fsdict["ad"], fsdict["da"], fsdict["dd"]),
+            )
 
         return _tuple_func
 
     def _transform_tuple_to_fsdict_func(
         self,
-        fsdict_func: Callable[
-            [List[Union[torch.Tensor, Dict[str, torch.Tensor]]]], torch.Tensor
-        ],
-    ) -> Callable[
-        [List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
-        torch.Tensor,
-    ]:
-        def _fsdict_func(
-            coeffs: List[
-                Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-            ]
-        ) -> torch.Tensor:
+        fsdict_func: Callable[[WaveletCoeffNd], torch.Tensor],
+    ) -> Callable[[WaveletCoeff2d], torch.Tensor]:
+        def _fsdict_func(coeffs: WaveletCoeff2d) -> torch.Tensor:
+            # assert for type checking
+            assert len(coeffs) == 2
             a, (h, v, d) = coeffs
-            return fsdict_func([cast(torch.Tensor, a), {"ad": h, "da": v, "dd": d}])
+            return fsdict_func((a, {"ad": h, "da": v, "dd": d}))
 
         return _fsdict_func
 
@@ -480,11 +473,11 @@ class WaveletPacket2D(BaseDict):
 
         self.data[path] = data
         if level < self.maxlevel:
-            result_a, (result_h, result_v, result_d) = self._get_wavedec(
-                data.shape[-2:]
-            )(data)
+            result = self._get_wavedec(data.shape[-2:])(data)
+
             # assert for type checking
-            assert not isinstance(result_a, tuple)
+            assert len(result) == 2
+            result_a, (result_h, result_v, result_d) = result
             self._recursive_dwt2d(result_a, level + 1, path + "a")
             self._recursive_dwt2d(result_h, level + 1, path + "h")
             self._recursive_dwt2d(result_v, level + 1, path + "v")
@@ -496,10 +489,13 @@ class WaveletPacket2D(BaseDict):
         Args:
             key (str): The key of the accessed coefficients.
                 The string may only consist
-                of the following chars: 'a', 'h', 'v', 'd'.
+                of the following chars: 'a', 'h', 'v', 'd'
+                The chars correspond to the selected coefficients for a level
+                where 'a' denotes the approximation coefficients and
+                'h' horizontal, 'v' vertical  and 'd' diagonal details coefficients.
 
         Returns:
-            torch.Tensor: The accessed wavelet packet coefficients.
+            The accessed wavelet packet coefficients.
 
         Raises:
             ValueError: If the wavelet packet tree is not initialized.
@@ -518,54 +514,68 @@ class WaveletPacket2D(BaseDict):
             )
         return super().__getitem__(key)
 
+    @staticmethod
+    def get_natural_order(level: int) -> list[str]:
+        """Get the natural ordering for a given decomposition level.
 
-def get_freq_order(level: int) -> List[List[Tuple[str, ...]]]:
-    """Get the frequency order for a given packet decomposition level.
+        Args:
+            level (int): The decomposition level.
 
-    Use this code to create two-dimensional frequency orderings.
+        Returns:
+            A list with the filter order strings.
+        """
+        return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
 
-    Args:
-        level (int): The number of decomposition scales.
+    @staticmethod
+    def get_freq_order(level: int) -> list[list[str]]:
+        """Get the frequency order for a given packet decomposition level.
 
-    Returns:
-        list: A list with the tree nodes in frequency order.
+        Use this code to create two-dimensional frequency orderings.
 
-    Note:
-        Adapted from:
-        https://github.com/PyWavelets/pywt/blob/master/pywt/_wavelet_packets.py
+        Args:
+            level (int): The number of decomposition scales.
 
-        The code elements denote the filter application order. The filters
-        are named following the pywt convention as:
-        a - LL, low-low coefficients
-        h - LH, low-high coefficients
-        v - HL, high-low coefficients
-        d - HH, high-high coefficients
-    """
-    wp_natural_path = product(["a", "h", "v", "d"], repeat=level)
+        Returns:
+            A list with the tree nodes in frequency order.
 
-    def _get_graycode_order(level: int, x: str = "a", y: str = "d") -> List[str]:
-        graycode_order = [x, y]
-        for _ in range(level - 1):
-            graycode_order = [x + path for path in graycode_order] + [
-                y + path for path in graycode_order[::-1]
-            ]
-        return graycode_order
+        Note:
+            Adapted from:
+            https://github.com/PyWavelets/pywt/blob/master/pywt/_wavelet_packets.py
 
-    def _expand_2d_path(path: Tuple[str, ...]) -> Tuple[str, str]:
-        expanded_paths = {"d": "hh", "h": "hl", "v": "lh", "a": "ll"}
-        return (
-            "".join([expanded_paths[p][0] for p in path]),
-            "".join([expanded_paths[p][1] for p in path]),
-        )
+            The code elements denote the filter application order. The filters
+            are named following the pywt convention as:
+            a - LL, low-low coefficients
+            h - LH, low-high coefficients
+            v - HL, high-low coefficients
+            d - HH, high-high coefficients
+        """
+        wp_natural_path = product(["a", "h", "v", "d"], repeat=level)
 
-    nodes_dict: Dict[str, Dict[str, Tuple[str, ...]]] = {}
-    for (row_path, col_path), node in [
-        (_expand_2d_path(node), node) for node in wp_natural_path
-    ]:
-        nodes_dict.setdefault(row_path, {})[col_path] = node
-    graycode_order = _get_graycode_order(level, x="l", y="h")
-    nodes = [nodes_dict[path] for path in graycode_order if path in nodes_dict]
-    result = []
-    for row in nodes:
-        result.append([row[path] for path in graycode_order if path in row])
-    return result
+        def _get_graycode_order(level: int, x: str = "a", y: str = "d") -> list[str]:
+            graycode_order = [x, y]
+            for _ in range(level - 1):
+                graycode_order = [x + path for path in graycode_order] + [
+                    y + path for path in graycode_order[::-1]
+                ]
+            return graycode_order
+
+        def _expand_2d_path(path: tuple[str, ...]) -> tuple[str, str]:
+            expanded_paths = {"d": "hh", "h": "hl", "v": "lh", "a": "ll"}
+            return (
+                "".join([expanded_paths[p][0] for p in path]),
+                "".join([expanded_paths[p][1] for p in path]),
+            )
+
+        nodes_dict: dict[str, dict[str, tuple[str, ...]]] = {}
+        for (row_path, col_path), node in [
+            (_expand_2d_path(node), node) for node in wp_natural_path
+        ]:
+            nodes_dict.setdefault(row_path, {})[col_path] = node
+        graycode_order = _get_graycode_order(level, x="l", y="h")
+        nodes = [nodes_dict[path] for path in graycode_order if path in nodes_dict]
+        result = []
+        for row in nodes:
+            result.append(
+                ["".join(row[path]) for path in graycode_order if path in row]
+            )
+        return result

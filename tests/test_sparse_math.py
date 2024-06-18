@@ -1,7 +1,5 @@
 """Test the sparse math code from ptwt.sparse_math."""
 
-from typing import Tuple
-
 import numpy as np
 import pytest
 import scipy.signal
@@ -131,8 +129,8 @@ def test_strided_conv_matrix(
 @pytest.mark.parametrize("mode", ["same", "full", "valid"])
 @pytest.mark.parametrize("fully_sparse", [True, False])
 def test_conv_matrix_2d(
-    filter_shape: Tuple[int, int],
-    size: Tuple[int, int],
+    filter_shape: tuple[int, int],
+    size: tuple[int, int],
     mode: PaddingMode,
     fully_sparse: bool,
 ) -> None:
@@ -175,7 +173,7 @@ def test_conv_matrix_2d(
 )
 @pytest.mark.parametrize("mode", ["full", "valid"])
 def test_strided_conv_matrix_2d(
-    filter_shape: Tuple[int, int], size: Tuple[int, int], mode: PaddingMode
+    filter_shape: tuple[int, int], size: tuple[int, int], mode: PaddingMode
 ) -> None:
     """Test strided convolution matrices with full and valid padding."""
     test_filter = torch.rand(filter_shape)
@@ -219,7 +217,7 @@ def test_strided_conv_matrix_2d(
     "size", [(7, 8), (8, 7), (7, 7), (8, 8), (16, 16), (8, 16), (16, 8)]
 )
 def test_strided_conv_matrix_2d_same(
-    filter_shape: Tuple[int, int], size: Tuple[int, int]
+    filter_shape: tuple[int, int], size: tuple[int, int]
 ) -> None:
     """Test strided conv matrix with same padding."""
     stride = 2
@@ -250,8 +248,8 @@ def test_strided_conv_matrix_2d_same(
 
 
 def _get_2d_same_padding(
-    filter_shape: Tuple[int, int], input_size: Tuple[int, int]
-) -> Tuple[int, int, int, int]:
+    filter_shape: tuple[int, int], input_size: tuple[int, int]
+) -> tuple[int, int, int, int]:
     height_offset = input_size[0] % 2
     width_offset = input_size[1] % 2
     padding = (
@@ -265,7 +263,7 @@ def _get_2d_same_padding(
 
 @pytest.mark.slow
 @pytest.mark.parametrize("size", [(256, 512), (512, 256)])
-def test_strided_conv_matrix_2d_sameshift(size: Tuple[int, int]) -> None:
+def test_strided_conv_matrix_2d_sameshift(size: tuple[int, int]) -> None:
     """Test strided conv matrix with sameshift padding."""
     stride = 2
     filter_shape = (3, 3)

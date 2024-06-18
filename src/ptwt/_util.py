@@ -1,13 +1,22 @@
 """Utility methods to compute wavelet decompositions from a dataset."""
 
+from __future__ import annotations
+
 import typing
-from typing import Any, Callable, List, Optional, Protocol, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Any, Callable, NamedTuple, Optional, Protocol, Union, cast, overload
 
 import numpy as np
 import pywt
 import torch
 
-from .constants import OrthogonalizeMethod
+from .constants import (
+    OrthogonalizeMethod,
+    WaveletCoeff2d,
+    WaveletCoeffNd,
+    WaveletDetailDict,
+    WaveletDetailTuple2d,
+)
 
 
 class Wavelet(Protocol):
@@ -20,13 +29,49 @@ class Wavelet(Protocol):
     rec_hi: Sequence[float]
     dec_len: int
     rec_len: int
-    filter_bank: Tuple[
+    filter_bank: tuple[
         Sequence[float], Sequence[float], Sequence[float], Sequence[float]
     ]
 
     def __len__(self) -> int:
         """Return the number of filter coefficients."""
         return len(self.dec_lo)
+
+
+class WaveletTensorTuple(NamedTuple):
+    """Named tuple containing the wavelet filter bank to use in JIT code."""
+
+    dec_lo: torch.Tensor
+    dec_hi: torch.Tensor
+    rec_lo: torch.Tensor
+    rec_hi: torch.Tensor
+
+    @property
+    def dec_len(self) -> int:
+        """Length of decomposition filters."""
+        return len(self.dec_lo)
+
+    @property
+    def rec_len(self) -> int:
+        """Length of reconstruction filters."""
+        return len(self.rec_lo)
+
+    @property
+    def filter_bank(
+        self,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Filter bank of the wavelet."""
+        return self
+
+    @classmethod
+    def from_wavelet(cls, wavelet: Wavelet, dtype: torch.dtype) -> WaveletTensorTuple:
+        """Construct Wavelet named tuple from wavelet protocol member."""
+        return cls(
+            torch.tensor(wavelet.dec_lo, dtype=dtype),
+            torch.tensor(wavelet.dec_hi, dtype=dtype),
+            torch.tensor(wavelet.rec_lo, dtype=dtype),
+            torch.tensor(wavelet.rec_hi, dtype=dtype),
+        )
 
 
 def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
@@ -37,8 +82,7 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
             pywt wavelet compatible object or a valid pywt wavelet name string.
 
     Returns:
-        Wavelet: the input wavelet object or the pywt wavelet object described by the
-            input str.
+        The input wavelet object or the pywt wavelet object described by the input str.
     """
     if isinstance(wavelet, str):
         return pywt.Wavelet(wavelet)
@@ -63,7 +107,7 @@ def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     return a_mul * b_mul
 
 
-def _get_len(wavelet: Union[Tuple[torch.Tensor, ...], str, Wavelet]) -> int:
+def _get_len(wavelet: Union[tuple[torch.Tensor, ...], str, Wavelet]) -> int:
     """Get number of filter coefficients for various wavelet data types."""
     if isinstance(wavelet, tuple):
         return wavelet[0].shape[0]
@@ -71,7 +115,7 @@ def _get_len(wavelet: Union[Tuple[torch.Tensor, ...], str, Wavelet]) -> int:
         return len(_as_wavelet(wavelet))
 
 
-def _pad_symmetric_1d(signal: torch.Tensor, pad_list: Tuple[int, int]) -> torch.Tensor:
+def _pad_symmetric_1d(signal: torch.Tensor, pad_list: tuple[int, int]) -> torch.Tensor:
     padl, padr = pad_list
     dimlen = signal.shape[0]
     if padl > dimlen or padr > dimlen:
@@ -88,11 +132,11 @@ def _pad_symmetric_1d(signal: torch.Tensor, pad_list: Tuple[int, int]) -> torch.
             cat_list.insert(0, signal[:padl].flip(0))
         if padr > 0:
             cat_list.append(signal[-padr::].flip(0))
-        return torch.cat(cat_list, axis=0)  # type: ignore
+        return torch.cat(cat_list, dim=0)
 
 
 def _pad_symmetric(
-    signal: torch.Tensor, pad_lists: List[Tuple[int, int]]
+    signal: torch.Tensor, pad_lists: Sequence[tuple[int, int]]
 ) -> torch.Tensor:
     if len(signal.shape) < len(pad_lists):
         raise ValueError("not enough dimensions to pad.")
@@ -106,16 +150,16 @@ def _pad_symmetric(
     return signal
 
 
-def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, List[int]]:
+def _fold_axes(data: torch.Tensor, keep_no: int) -> tuple[torch.Tensor, list[int]]:
     """Fold unchanged leading dimensions into a single batch dimension.
 
     Args:
-        data ( torch.Tensor): The input data array.
+        data (torch.Tensor): The input data array.
         keep_no (int): The number of dimensions to keep.
 
     Returns:
-        Tuple[ torch.Tensor, List[int]]:
-            The folded result array, and the shape of the original input.
+        A tuple (result_tensor, input_shape) where result_tensor is the
+        folded result array, and input_shape the shape of the original input.
     """
     dshape = list(data.shape)
     return (
@@ -124,7 +168,7 @@ def _fold_axes(data: torch.Tensor, keep_no: int) -> Tuple[torch.Tensor, List[int
     )
 
 
-def _unfold_axes(data: torch.Tensor, ds: List[int], keep_no: int) -> torch.Tensor:
+def _unfold_axes(data: torch.Tensor, ds: list[int], keep_no: int) -> torch.Tensor:
     """Unfold i.e. [batch*channel,height,widht] to [batch,channel,height,width]."""
     return torch.reshape(data, ds[:-keep_no] + list(data.shape[-keep_no:]))
 
@@ -137,49 +181,75 @@ def _check_if_tensor(array: Any) -> torch.Tensor:
     return array
 
 
-def _check_axes_argument(axes: List[int]) -> None:
+def _check_axes_argument(axes: Sequence[int]) -> None:
     if len(set(axes)) != len(axes):
         raise ValueError("Cant transform the same axis twice.")
 
 
 def _get_transpose_order(
-    axes: List[int], data_shape: List[int]
-) -> Tuple[List[int], List[int]]:
+    axes: Sequence[int], data_shape: Sequence[int]
+) -> tuple[list[int], list[int]]:
     axes = list(map(lambda a: a + len(data_shape) if a < 0 else a, axes))
     all_axes = list(range(len(data_shape)))
     remove_transformed = list(filter(lambda a: a not in axes, all_axes))
     return remove_transformed, axes
 
 
-def _swap_axes(data: torch.Tensor, axes: List[int]) -> torch.Tensor:
+def _swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
     _check_axes_argument(axes)
     front, back = _get_transpose_order(axes, list(data.shape))
     return torch.permute(data, front + back)
 
 
-def _undo_swap_axes(data: torch.Tensor, axes: List[int]) -> torch.Tensor:
+def _undo_swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
     _check_axes_argument(axes)
     front, back = _get_transpose_order(axes, list(data.shape))
     restore_sorted = torch.argsort(torch.tensor(front + back)).tolist()
     return torch.permute(data, restore_sorted)
 
 
+@overload
 def _map_result(
-    data: List[Union[torch.Tensor, Any]],  # following jax tree_map typing can be Any
-    function: Callable[[Any], torch.Tensor],
-) -> List[Union[torch.Tensor, Any]]:
-    # Apply the given function to the input list of tensor and tuples.
-    result_lst: List[Union[torch.Tensor, Any]] = []
-    for element in data:
-        if isinstance(element, torch.Tensor):
-            result_lst.append(function(element))
-        elif isinstance(element, tuple):
+    data: WaveletCoeff2d,
+    function: Callable[[torch.Tensor], torch.Tensor],
+) -> WaveletCoeff2d: ...
+
+
+@overload
+def _map_result(
+    data: WaveletCoeffNd,
+    function: Callable[[torch.Tensor], torch.Tensor],
+) -> WaveletCoeffNd: ...
+
+
+def _map_result(
+    data: Union[WaveletCoeff2d, WaveletCoeffNd],
+    function: Callable[[torch.Tensor], torch.Tensor],
+) -> Union[WaveletCoeff2d, WaveletCoeffNd]:
+    approx = function(data[0])
+    result_lst: list[
+        Union[
+            WaveletDetailDict,
+            WaveletDetailTuple2d,
+        ]
+    ] = []
+    for element in data[1:]:
+        if isinstance(element, tuple):
             result_lst.append(
-                (function(element[0]), function(element[1]), function(element[2]))
+                WaveletDetailTuple2d(
+                    function(element[0]),
+                    function(element[1]),
+                    function(element[2]),
+                )
             )
         elif isinstance(element, dict):
-            new_dict = {}
-            for key, value in element.items():
-                new_dict[key] = function(value)
+            new_dict = {key: function(value) for key, value in element.items()}
             result_lst.append(new_dict)
-    return result_lst
+        else:
+            raise ValueError(f"Unexpected input type {type(element)}")
+
+    # cast since we assume that the full list is of the same type
+    cast_result_lst = cast(
+        Union[list[WaveletDetailDict], list[WaveletDetailTuple2d]], result_lst
+    )
+    return approx, *cast_result_lst

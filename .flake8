@@ -23,6 +23,8 @@ ignore =
     # asserts are ok in test.
     S101
     C901
+extend-select = B950
+extend-ignore = E501,E701,E704
 exclude =
     .tox,
     .git,
@@ -37,7 +39,7 @@ exclude =
     .eggs,
     data.
     src/ptwt/__init__.py
-max-line-length = 90
+max-line-length = 80
 max-complexity = 20
 import-order-style = pycharm
 application-import-names =

@@ -3,7 +3,7 @@
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 
 from itertools import product
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import pytest
@@ -12,7 +12,7 @@ import torch
 from scipy import datasets
 
 from ptwt.constants import ExtendedBoundaryMode
-from ptwt.packets import WaveletPacket, WaveletPacket2D, get_freq_order
+from ptwt.packets import WaveletPacket, WaveletPacket2D
 
 
 def _compare_trees1(
@@ -236,7 +236,7 @@ def test_freq_order(level: int, wavelet_str: str, pywt_boundary: str) -> None:
     )
     # Get the full decomposition
     freq_tree = wp_tree.get_level(level, "freq")
-    freq_order = get_freq_order(level)
+    freq_order = WaveletPacket2D.get_freq_order(level)
 
     for order_list, tree_list in zip(freq_tree, freq_order):
         for order_el, tree_el in zip(order_list, tree_list):
@@ -255,7 +255,7 @@ def test_packet_harbo_lvl3() -> None:
 
     class _MyHaarFilterBank(object):
         @property
-        def filter_bank(self) -> Tuple[List[float], ...]:
+        def filter_bank(self) -> tuple[list[float], ...]:
             """Unscaled Haar wavelet filters."""
             return (
                 [1 / 2, 1 / 2.0],
@@ -315,7 +315,7 @@ def test_access_errors_2d() -> None:
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
 @pytest.mark.parametrize("axis", (1, -1))
 def test_inverse_packet_1d(
-    level: int, base_key: str, shape: List[int], wavelet: str, axis: int
+    level: int, base_key: str, shape: list[int], wavelet: str, axis: int
 ) -> None:
     """Test the 1d reconstruction code."""
     signal = np.random.randn(*shape)
@@ -340,9 +340,9 @@ def test_inverse_packet_1d(
 def test_inverse_packet_2d(
     level: int,
     base_key: str,
-    size: Tuple[int, ...],
+    size: tuple[int, ...],
     wavelet: str,
-    axes: Tuple[int, int],
+    axes: tuple[int, int],
 ) -> None:
     """Test the 2d reconstruction code."""
     signal = np.random.randn(*size)
@@ -390,7 +390,7 @@ def test_inverse_boundary_packet_2d() -> None:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("axes", ((-2, -1), (1, 2), (2, 1)))
-def test_separable_conv_packets_2d(axes: Tuple[int, int]) -> None:
+def test_separable_conv_packets_2d(axes: tuple[int, int]) -> None:
     """Ensure the 2d separable conv code is ok."""
     wavelet = "db2"
     signal = np.random.randn(1, 32, 32, 32)

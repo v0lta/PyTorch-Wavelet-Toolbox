@@ -3,8 +3,10 @@
 The functions here are based on torch.nn.functional.conv3d and it's transpose.
 """
 
+from __future__ import annotations
+
 from functools import partial
-from typing import Dict, List, Optional, Sequence, Tuple, Union, cast
+from typing import Optional, Union
 
 import pywt
 import torch
@@ -24,7 +26,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import BoundaryMode
+from .constants import BoundaryMode, WaveletCoeffNd
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_filter_tensors,
@@ -41,12 +43,11 @@ def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
         hi (torch.Tensor): High-pass input filter
 
     Returns:
-        torch.Tensor: Stacked 3d filters of dimension::
+        Stacked 3d filters of dimension::
 
         [8, 1, length, height, width].
 
         The four filters are ordered ll, lh, hl, hh.
-
     """
     dim_size = lo.shape[-1]
     size = [dim_size] * 3
@@ -74,13 +75,14 @@ def _fwt_pad3(
         data (torch.Tensor): Input data with 4 dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         mode :
             The desired padding mode for extending the signal along the edges.
             See :data:`ptwt.constants.BoundaryMode`.
 
     Returns:
         The padded output tensor.
-
     """
     pytorch_mode = _translate_boundary_strings(mode)
 
@@ -107,31 +109,28 @@ def wavedec3(
     *,
     mode: BoundaryMode = "zero",
     level: Optional[int] = None,
-    axes: Tuple[int, int, int] = (-3, -2, -1),
-) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+    axes: tuple[int, int, int] = (-3, -2, -1),
+) -> WaveletCoeffNd:
     """Compute a three-dimensional wavelet transform.
 
     Args:
         data (torch.Tensor): The input data. For example of shape
-            [batch_size, length, height, width]
-        wavelet (Union[Wavelet, str]): The wavelet to transform with.
-            ``pywt.wavelist(kind='discrete')`` lists possible choices.
+            ``[batch_size, length, height, width]``
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
         mode :
             The desired padding mode for extending the signal along the edges.
             Defaults to "zero". See :data:`ptwt.constants.BoundaryMode`.
         level (Optional[int]): The maximum decomposition level.
             This argument defaults to None.
-        axes (Tuple[int, int, int]): Compute the transform over these axes
+        axes (tuple[int, int, int]): Compute the transform over these axes
             instead of the last three. Defaults to (-3, -2, -1).
 
     Returns:
-        list: A list with the lll coefficients and dictionaries
-        with the filter order strings::
-
-            ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
-
-        as keys. With a for the low pass or approximation filter and
-        d for the high-pass or detail filter.
+        A tuple containing the wavelet coefficients,
+        see :data:`ptwt.constants.WaveletCoeffNd`.
 
     Raises:
         ValueError: If the input has fewer than three dimensions or
@@ -142,7 +141,6 @@ def wavedec3(
         >>> import ptwt, torch
         >>> data = torch.randn(5, 16, 16, 16)
         >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
-
     """
     if tuple(axes) != (-3, -2, -1):
         if len(axes) != 3:
@@ -174,7 +172,7 @@ def wavedec3(
             [data.shape[-1], data.shape[-2], data.shape[-3]], wavelet
         )
 
-    result_lst: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
+    result_lst: list[dict[str, torch.Tensor]] = []
     res_lll = data
     for _ in range(level):
         if len(res_lll.shape) == 4:
@@ -195,57 +193,57 @@ def wavedec3(
                 "ddd": res_hhh,
             }
         )
-    result_lst.append(res_lll)
     result_lst.reverse()
+    result: WaveletCoeffNd = res_lll, *result_lst
 
     if ds:
         _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
-        result_lst = _map_result(result_lst, _unfold_axes_fn)
+        result = _map_result(result, _unfold_axes_fn)
 
     if tuple(axes) != (-3, -2, -1):
         undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-        result_lst = _map_result(result_lst, undo_swap_fn)
+        result = _map_result(result, undo_swap_fn)
 
-    return result_lst
+    return result
 
 
 def _waverec3d_fold_channels_3d_list(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
-) -> Tuple[
-    List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
-    List[int],
+    coeffs: WaveletCoeffNd,
+) -> tuple[
+    WaveletCoeffNd,
+    list[int],
 ]:
     # fold the input coefficients for processing conv2d_transpose.
-    fold_coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
+    fold_approx_coeff = _fold_axes(coeffs[0], 3)[0]
+    fold_coeffs: list[dict[str, torch.Tensor]] = []
     ds = list(_check_if_tensor(coeffs[0]).shape)
-    for coeff in coeffs:
-        if isinstance(coeff, torch.Tensor):
-            fold_coeffs.append(_fold_axes(coeff, 3)[0])
-        else:
-            new_dict = {}
-            for key, value in coeff.items():
-                new_dict[key] = _fold_axes(value, 3)[0]
-            fold_coeffs.append(new_dict)
-    return fold_coeffs, ds
+    fold_coeffs = [
+        {key: _fold_axes(value, 3)[0] for key, value in coeff.items()}
+        for coeff in coeffs[1:]
+    ]
+    return (fold_approx_coeff, *fold_coeffs), ds
 
 
 def waverec3(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
+    coeffs: WaveletCoeffNd,
     wavelet: Union[Wavelet, str],
-    axes: Tuple[int, int, int] = (-3, -2, -1),
+    axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
-        coeffs (list): The wavelet coefficient list produced by wavedec3.
+        coeffs (WaveletCoeffNd): The wavelet coefficient tuple
+            produced by wavedec3, see :data:`ptwt.constants.WaveletCoeffNd`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        axes (Tuple[int, int, int]): Transform these axes instead of the
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
+        axes (tuple[int, int, int]): Transform these axes instead of the
             last three. Defaults to (-3, -2, -1).
 
     Returns:
-        torch.Tensor: The reconstructed four-dimensional signal of shape
-        [batch, depth, height, width].
+        The reconstructed four-dimensional signal tensor of shape
+        ``[batch, depth, height, width]``.
 
     Raises:
         ValueError: If coeffs is not in a shape as returned from wavedec3 or
@@ -257,7 +255,6 @@ def waverec3(
         >>> data = torch.randn(5, 16, 16, 16)
         >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
         >>> reconstruction = ptwt.waverec3(transformed, "haar")
-
     """
     if tuple(axes) != (-3, -2, -1):
         if len(axes) != 3:
@@ -292,7 +289,7 @@ def waverec3(
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_3d_filt(lo=rec_lo, hi=rec_hi)
 
-    coeff_dicts = cast(Sequence[Dict[str, torch.Tensor]], coeffs[1:])
+    coeff_dicts = coeffs[1:]
     for c_pos, coeff_dict in enumerate(coeff_dicts):
         if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
             raise ValueError(

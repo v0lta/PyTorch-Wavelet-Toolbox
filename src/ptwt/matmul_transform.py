@@ -8,7 +8,8 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
 
 import sys
-from typing import List, Optional, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -56,7 +57,7 @@ def _construct_a(
             or torch.float64. Defaults to torch.float64.
 
     Returns:
-        torch.Tensor: The sparse raw analysis matrix.
+        The sparse raw analysis matrix.
     """
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
@@ -93,7 +94,7 @@ def _construct_s(
             or torch.float64. Defaults to torch.float64.
 
     Returns:
-        torch.Tensor: The raw sparse synthesis matrix.
+        The raw sparse synthesis matrix.
     """
     wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
@@ -119,7 +120,7 @@ def _get_to_orthogonalize(matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
         filt_len (int): The number of entries we would expect per row.
 
     Returns:
-        torch.Tensor: The row indices with too few entries.
+        The row indices with too few entries.
     """
     unique, count = torch.unique_consecutive(
         matrix.coalesce().indices()[0, :], return_counts=True
@@ -141,7 +142,7 @@ def orthogonalize(
             Defaults to qr.
 
     Returns:
-        torch.Tensor: Orthogonal sparse transformation matrix.
+        Orthogonal sparse transformation matrix.
 
     Raises:
         ValueError: If an invalid orthogonalization method is given
@@ -187,21 +188,20 @@ class MatrixWavedec(BaseMatrixWaveDec):
         axis: Optional[int] = -1,
         boundary: OrthogonalizeMethod = "qr",
     ) -> None:
-        """Create a matrix-fwt object.
+        """Create a sparse matrix fast wavelet transform object.
 
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
             axis (int, optional): The axis we would like to transform.
                 Defaults to -1.
-            boundary : The method used for boundary filter treatment.
-                Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
-                implementation, it is fast but memory hungry. The 'gramschmidt'
-                option is sparse, memory efficient, and slow. Choose 'gramschmidt' if
-                'qr' runs out of memory. Defaults to 'qr'.
+            boundary : The method used for boundary filter treatment,
+                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -218,10 +218,10 @@ class MatrixWavedec(BaseMatrixWaveDec):
             raise ValueError("MatrixWavedec transforms a single axis only.")
 
         self.input_length: Optional[int] = None
-        self.fwt_matrix_list: List[torch.Tensor] = []
-        self.pad_list: List[bool] = []
+        self.fwt_matrix_list: list[torch.Tensor] = []
+        self.pad_list: list[bool] = []
         self.padded = False
-        self.size_list: List[int] = []
+        self.size_list: list[int] = []
 
         if not _is_boundary_mode_supported(self.boundary):
             raise NotImplementedError
@@ -231,20 +231,17 @@ class MatrixWavedec(BaseMatrixWaveDec):
 
     @property
     def sparse_fwt_operator(self) -> torch.Tensor:
-        """Return the sparse transformation operator.
+        """The sparse transformation operator.
 
         If the input signal at all levels is divisible by two,
         the whole operation is padding-free and can be expressed
         as a single matrix multiply.
 
-        The operation torch.sparse.mm(sparse_fwt_operator, data.T)
+        The operation ``torch.sparse.mm(sparse_fwt_operator, data.T)``
         computes a batched fwt.
 
         This property exists to make the operator matrix transparent.
         Calling the object will handle odd-length inputs properly.
-
-        Returns:
-            torch.Tensor: The sparse operator matrix.
 
         Raises:
             NotImplementedError: if padding had to be used in the creation of the
@@ -315,7 +312,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
 
         self.size_list.append(curr_length)
 
-    def __call__(self, input_signal: torch.Tensor) -> List[torch.Tensor]:
+    def __call__(self, input_signal: torch.Tensor) -> list[torch.Tensor]:
         """Compute the matrix fwt for the given input signal.
 
         Matrix FWTs are used to avoid padding.
@@ -329,7 +326,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
                 another axis.
 
         Returns:
-            List[torch.Tensor]: A list with the coefficients for each scale.
+            A list with the coefficient tensor for each scale.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer
@@ -399,15 +396,14 @@ def construct_boundary_a(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         length (int): The number of entries in the input signal.
-        boundary : A string indicating the desired boundary treatment.
-            Possible options are qr and gramschmidt. Defaults to
-            qr.
+        boundary : The method used for boundary filter treatment,
+            see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
         device: Where to place the matrix. Choose cpu or cuda.
             Defaults to cpu.
         dtype: Choose float32 or float64.
 
     Returns:
-        torch.Tensor: The sparse analysis matrix.
+        The sparse analysis matrix.
     """
     wavelet = _as_wavelet(wavelet)
     a_full = _construct_a(wavelet, length, dtype=dtype, device=device)
@@ -430,13 +426,13 @@ def construct_boundary_s(
         length (int): The number of entries in the input signal.
         device (torch.device): Where to place the matrix.
             Choose cpu or cuda. Defaults to cpu.
-        boundary : A string indicating the desired boundary treatment.
-            Possible options are qr and gramschmidt. Defaults to qr.
+        boundary : The method used for boundary filter treatment,
+            see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
         dtype: Choose torch.float32 or torch.float64.
             Defaults to torch.float64.
 
     Returns:
-        torch.Tensor: The sparse synthesis matrix.
+        The sparse synthesis matrix.
     """
     wavelet = _as_wavelet(wavelet)
     s_full = _construct_s(wavelet, length, dtype=dtype, device=device)
@@ -472,13 +468,12 @@ class MatrixWaverec(object):
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
             axis (int): The axis transformed by the original decomposition
                 defaults to -1 or the last axis.
-            boundary : The method used for boundary filter treatment.
-                Choose 'qr' or 'gramschmidt'. 'qr' relies on pytorch's dense qr
-                implementation, it is fast but memory hungry. The 'gramschmidt' option
-                is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs
-                out of memory. Defaults to 'qr'.
+            boundary : The method used for boundary filter treatment,
+                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -492,7 +487,7 @@ class MatrixWaverec(object):
         else:
             raise ValueError("MatrixWaverec transforms a single axis only.")
 
-        self.ifwt_matrix_list: List[torch.Tensor] = []
+        self.ifwt_matrix_list: list[torch.Tensor] = []
         self.level: Optional[int] = None
         self.input_length: Optional[int] = None
         self.padded = False
@@ -505,7 +500,7 @@ class MatrixWaverec(object):
 
     @property
     def sparse_ifwt_operator(self) -> torch.Tensor:
-        """Return the sparse transformation operator.
+        """The sparse transformation operator.
 
         If the input signal at all levels is divisible by two,
         the whole operation is padding-free and can be expressed
@@ -517,9 +512,6 @@ class MatrixWaverec(object):
 
         This functionality is mainly here to make the operator-matrix
         transparent. Calling the object handles padding for odd inputs.
-
-        Returns:
-            torch.Tensor: The sparse operator matrix.
 
         Raises:
             NotImplementedError: if padding had to be used in the creation of the
@@ -587,15 +579,15 @@ class MatrixWaverec(object):
             self.ifwt_matrix_list.append(sn)
             curr_length = curr_length // 2
 
-    def __call__(self, coefficients: List[torch.Tensor]) -> torch.Tensor:
+    def __call__(self, coefficients: Sequence[torch.Tensor]) -> torch.Tensor:
         """Run the synthesis or inverse matrix fwt.
 
         Args:
-            coefficients (List[torch.Tensor]): The coefficients produced by the forward
-                transform.
+            coefficients (Sequence[torch.Tensor]): The coefficients produced
+                by the forward transform.
 
         Returns:
-            torch.Tensor: The input signal reconstruction.
+            The input signal reconstruction.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the

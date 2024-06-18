@@ -1,6 +1,7 @@
 """Test the conv-fwt code."""
 
-from typing import Iterable, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 # Written by moritz ( @ wolter.tech ) in 2021
 import numpy as np
@@ -67,7 +68,7 @@ def test_conv_fwt1d(
 
 @pytest.mark.parametrize("size", [[5, 10, 64], [1, 1, 32]])
 @pytest.mark.parametrize("wavelet", ["haar", "db2"])
-def test_conv_fwt1d_channel(size: List[int], wavelet: str) -> None:
+def test_conv_fwt1d_channel(size: list[int], wavelet: str) -> None:
     """Test channel dimension support."""
     data = torch.randn(*size).type(torch.float64)
     ptwt_coeff = wavedec(data, wavelet)
@@ -84,7 +85,7 @@ def test_conv_fwt1d_channel(size: List[int], wavelet: str) -> None:
 
 @pytest.mark.parametrize("size", [[32], [64]])
 @pytest.mark.parametrize("wavelet", ["haar", "db2"])
-def test_conv_fwt1d_nobatch(size: List[int], wavelet: str) -> None:
+def test_conv_fwt1d_nobatch(size: list[int], wavelet: str) -> None:
     """1d conv for inputs without batch dim."""
     data = torch.randn(*size).type(torch.float64)
     ptwt_coeff = wavedec(data, wavelet)
@@ -104,7 +105,7 @@ def test_ripples_haar_lvl3() -> None:
 
     class _MyHaarFilterBank:
         @property
-        def filter_bank(self) -> Tuple[List[float], ...]:
+        def filter_bank(self) -> tuple[list[float], ...]:
             """Unscaled Haar wavelet filters."""
             return (
                 [1 / 2, 1 / 2.0],
@@ -241,7 +242,7 @@ def test_outer() -> None:
     "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
 )
 def test_2d_wavedec_rec(
-    wavelet_str: str, level: Optional[int], size: Tuple[int, int], mode: BoundaryMode
+    wavelet_str: str, level: Optional[int], size: tuple[int, int], mode: BoundaryMode
 ) -> None:
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
 
@@ -277,7 +278,7 @@ def test_2d_wavedec_rec(
 @pytest.mark.parametrize("level", [1, None])
 @pytest.mark.parametrize("wavelet", ["haar", "sym3"])
 def test_input_4d(
-    size: Tuple[int, int, int, int], level: Optional[str], wavelet: str
+    size: tuple[int, int, int, int], level: Optional[str], wavelet: str
 ) -> None:
     """Test the error for 4d inputs to wavedec2."""
     data = torch.randn(*size).type(torch.float64)
@@ -319,9 +320,9 @@ def test_input_1d_dimension_error() -> None:
 
 
 def _compare_coeffs(
-    ptwt_res: Iterable[Union[torch.Tensor, Tuple[torch.Tensor, ...]]],
-    pywt_res: Iterable[Union[torch.Tensor, Tuple[torch.Tensor, ...]]],
-) -> List[bool]:
+    ptwt_res: Sequence[Union[torch.Tensor, tuple[torch.Tensor, ...]]],
+    pywt_res: Sequence[Union[torch.Tensor, tuple[torch.Tensor, ...]]],
+) -> list[bool]:
     """Compare coefficient lists.
 
     Args:
@@ -334,7 +335,7 @@ def _compare_coeffs(
     Raises:
         TypeError: In case of a problem with the list structures.
     """
-    test_list: List[bool] = []
+    test_list: list[bool] = []
     for ptwtcs, pywtcs in zip(ptwt_res, pywt_res):
         if isinstance(ptwtcs, tuple) and isinstance(pywtcs, tuple):
             test_list.extend(
@@ -352,7 +353,7 @@ def _compare_coeffs(
 @pytest.mark.parametrize(
     "size", [(50, 20, 128, 128), (8, 49, 21, 128, 128), (6, 4, 4, 5, 64, 64)]
 )
-def test_2d_multidim_input(size: Tuple[int, ...]) -> None:
+def test_2d_multidim_input(size: tuple[int, ...]) -> None:
     """Test the error for multi-dimensional inputs to wavedec2."""
     data = torch.randn(*size, dtype=torch.float64)
     wavelet = "db2"
@@ -374,7 +375,7 @@ def test_2d_multidim_input(size: Tuple[int, ...]) -> None:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (-3, -2), (0, 1), (1, 0)])
-def test_2d_axis_argument(axes: Tuple[int, int]) -> None:
+def test_2d_axis_argument(axes: tuple[int, int]) -> None:
     """Ensure the axes argument works as expected."""
     data = torch.randn([32, 32, 32, 32], dtype=torch.float64)
 

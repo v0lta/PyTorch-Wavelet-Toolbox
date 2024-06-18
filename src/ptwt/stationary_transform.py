@@ -1,6 +1,7 @@
 """This module implements stationary wavelet transforms."""
 
-from typing import List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import pywt
 import torch
@@ -51,20 +52,23 @@ def swt(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
     level: Optional[int] = None,
-    axis: Optional[int] = -1,
-) -> List[torch.Tensor]:
+    axis: int = -1,
+) -> list[torch.Tensor]:
     """Compute a multilevel 1d stationary wavelet transform.
 
     This fuctions is equivalent to pywt's swt with `trim_approx=True` and `norm=False`.
 
     Args:
-        data (torch.Tensor): The input data of shape [batch_size, time].
-        wavelet (Union[Wavelet, str]): The wavelet to use.
-        level (Optional[int], optional): The number of levels to compute
+        data (torch.Tensor): The input data of shape ``[batch_size, time]``.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
+        level (int, optional): The number of levels to compute.
+        axis (int): The axis to transform along. Defaults to the last axis.
 
     Returns:
-        List[torch.Tensor]: Same as wavedec.
-        Equivalent to pywt.swt with trim_approx=True.
+        Same as wavedec. Equivalent to pywt.swt with trim_approx=True.
 
     Raises:
         ValueError: Is the axis argument is not an integer.
@@ -105,23 +109,25 @@ def swt(
 
 
 def iswt(
-    coeffs: List[torch.Tensor],
+    coeffs: Sequence[torch.Tensor],
     wavelet: Union[pywt.Wavelet, str],
     axis: Optional[int] = -1,
 ) -> torch.Tensor:
-    """Inverts a 1d stationary wavelet transform.
+    """Invert a 1d stationary wavelet transform.
 
     Args:
-        coeffs (List[torch.Tensor]): The coefficients as computed by the swt function.
-        wavelet (Union[pywt.Wavelet, str]): The wavelet used for the forward transform.
+        coeffs (Sequence[torch.Tensor]): The coefficients as computed
+            by the swt function.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet, as used in the forward transform.
         axis (int, optional): The axis the forward trasform was computed over.
             Defaults to -1.
 
+    Returns:
+        A reconstruction of the original swt input.
+
     Raises:
         ValueError: If the axis argument is not an integer.
-
-    Returns:
-        torch.Tensor: A reconstruction of the original swt input.
     """
     if axis != -1:
         swap = []

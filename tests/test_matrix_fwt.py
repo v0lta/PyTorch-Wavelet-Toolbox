@@ -2,7 +2,7 @@
 
 # Written by moritz ( @ wolter.tech ) in 2021
 
-from typing import Any, List
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -71,7 +71,7 @@ def test_fwt_ifwt_mackey_haar_cuda() -> None:
 @pytest.mark.parametrize("level", [1, 2, 3, 4, None])
 @pytest.mark.parametrize("wavelet", ["db2", "db3", "db4", "sym5"])
 @pytest.mark.parametrize("size", [[2, 256], [2, 3, 256], [1, 1, 128]])
-def test_1d_matrix_fwt_ifwt(level: int, wavelet: str, size: List[int]) -> None:
+def test_1d_matrix_fwt_ifwt(level: int, wavelet: str, size: list[int]) -> None:
     """Test multiple wavelets and levels for a long signal."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     wavelet = pywt.Wavelet(wavelet)
@@ -196,7 +196,7 @@ def test_4d_invalid_axis_error() -> None:
 
 
 @pytest.mark.parametrize("size", [[2, 3, 32], [5, 32], [32], [1, 1, 64]])
-def test_matrix1d_batch_channel(size: List[int]) -> None:
+def test_matrix1d_batch_channel(size: list[int]) -> None:
     """Test if batch and channel support works as expected."""
     data = torch.randn(*size).type(torch.float64)
     matrix_wavedec_1d = MatrixWavedec("haar", 3)

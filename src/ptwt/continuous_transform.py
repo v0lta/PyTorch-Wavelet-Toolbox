@@ -3,7 +3,7 @@
 This module is based on pywt's cwt implementation.
 """
 
-from typing import Any, Tuple, Union
+from typing import Any, Union
 
 import numpy as np
 import torch
@@ -27,14 +27,14 @@ def cwt(
     scales: Union[np.ndarray, torch.Tensor],  # type: ignore
     wavelet: Union[ContinuousWavelet, str],
     sampling_period: float = 1.0,
-) -> Tuple[torch.Tensor, np.ndarray]:  # type: ignore
+) -> tuple[torch.Tensor, np.ndarray]:  # type: ignore
     """Compute the single-dimensional continuous wavelet transform.
 
     This function is a PyTorch port of pywt.cwt as found at:
     https://github.com/PyWavelets/pywt/blob/master/pywt/_cwt.py
 
     Args:
-        data (torch.Tensor): The input tensor of shape [batch_size, time].
+        data (torch.Tensor): The input tensor of shape ``[batch_size, time]``.
         scales (torch.Tensor or np.array):
             The wavelet scales to use. One can use
             ``f = pywt.scale2frequency(wavelet, scale)/sampling_period`` to determine
@@ -50,9 +50,9 @@ def cwt(
         ValueError: If a scale is too small for the input signal.
 
     Returns:
-        Tuple[torch.Tensor, np.ndarray]: The first tuple-element contains
-            the transformation matrix of shape [scales, batch, time].
-            The second element contains an array with frequency information.
+        A tuple (out_tensor, frequencies). The first tuple-element contains
+        the transformation matrix of shape ``[scales, batch, time]``.
+        The second element contains an array with frequency information.
 
     Example:
         >>> import torch, ptwt
@@ -165,27 +165,23 @@ def _integrate_wavelet(
     https://github.com/PyWavelets/pywt/blob/cef09e7f419aaf4c39b9f778bdc2d54b32fd7337/pywt/_functions.py#L60
 
 
-    Parameters
-    ----------
-    wavelet: Wavelet instance or str
-        Wavelet to integrate.  If a string, should be the name of a wavelet.
-    precision : int, optional
-        Precision that will be used for wavelet function
-        approximation computed with the wavefun(level=precision)
-        Wavelet's method (default: 8).
-    Returns
-    -------
-    [int_psi, x] :
-        for orthogonal wavelets
-    [int_psi_d, int_psi_r, x] :
-        for other wavelets
-    Examples
-    --------
-    >>> from pywt import Wavelet, _integrate_wavelet
-    >>> wavelet1 = Wavelet('db2')
-    >>> [int_psi, x] = _integrate_wavelet(wavelet1, precision=5)
-    >>> wavelet2 = Wavelet('bior1.3')
-    >>> [int_psi_d, int_psi_r, x] = _integrate_wavelet(wavelet2, precision=5)
+    Args:
+        wavelet (Wavelet instance or str): Wavelet to integrate.
+            If a string, should be the name of a wavelet.
+        precision (int): Precision that will be used for wavelet function
+            approximation computed with the wavefun(level=precision)
+            Wavelet's method. Defaults to 8.
+
+    Returns:
+        A tuple (int_psi, x) for orthogonal wavelets;
+        for other wavelets, a tuple (int_psi_d, int_psi_r, x) is returned instead.
+
+    Example:
+        >>> from pywt import Wavelet, _integrate_wavelet
+        >>> wavelet1 = Wavelet('db2')
+        >>> [int_psi, x] = _integrate_wavelet(wavelet1, precision=5)
+        >>> wavelet2 = Wavelet('bior1.3')
+        >>> [int_psi_d, int_psi_r, x] = _integrate_wavelet(wavelet2, precision=5)
     """
 
     def _integrate(
@@ -267,7 +263,7 @@ class _DifferentiableContinuousWavelet(
 
     def wavefun(
         self, precision: int, dtype: torch.dtype = torch.float64
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Define a grid and evaluate the wavelet on it."""
         length = 2**precision
         # load the bounds from untyped pywt code.

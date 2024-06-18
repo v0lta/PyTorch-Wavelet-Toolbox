@@ -1,6 +1,6 @@
 """Test the 3d matrix-fwt code."""
 
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import pytest
@@ -16,7 +16,7 @@ from ptwt.sparse_math import _batch_dim_mm
 @pytest.mark.parametrize(
     "shape", [(32, 32, 32), (64, 32, 32), (32, 64, 32), (32, 32, 64)]
 )
-def test_single_dim_mm(axis: int, shape: Tuple[int, int, int]) -> None:
+def test_single_dim_mm(axis: int, shape: tuple[int, int, int]) -> None:
     """Test the transposed matrix multiplication approach."""
     test_tensor = torch.rand(4, shape[0], shape[1], shape[2]).type(torch.float64)
     pywt_dec_lo, pywt_dec_hi = pywt.wavedec(
@@ -32,7 +32,7 @@ def test_single_dim_mm(axis: int, shape: Tuple[int, int, int]) -> None:
 @pytest.mark.parametrize(
     "shape", [(32, 32, 32), (64, 32, 32), (32, 64, 32), (32, 32, 64)]
 )
-def test_boundary_wavedec3_level1_haar(shape: Tuple[int, int, int]) -> None:
+def test_boundary_wavedec3_level1_haar(shape: tuple[int, int, int]) -> None:
     """Test a separable boundary 3d-transform."""
     batch_size = 1
     test_data = torch.rand(batch_size, shape[0], shape[1], shape[2]).type(torch.float64)
@@ -76,7 +76,7 @@ def test_boundary_wavedec3_level1_haar(shape: Tuple[int, int, int]) -> None:
     "shape", [(31, 32, 33), (63, 35, 32), (32, 62, 31), (32, 32, 64)]
 )
 def test_boundary_wavedec3_inverse(
-    level: Optional[int], shape: Tuple[int, int, int]
+    level: Optional[int], shape: tuple[int, int, int]
 ) -> None:
     """Test the 3d matrix wavedec and the padding for odd axes."""
     batch_size = 1
@@ -91,7 +91,7 @@ def test_boundary_wavedec3_inverse(
 @pytest.mark.slow
 @pytest.mark.parametrize("axes", [[-3, -2, -1], [0, 2, 1]])
 @pytest.mark.parametrize("level", [1, 2, None])
-def test_axes_arg_matrix_3d(axes: List[int], level: int) -> None:
+def test_axes_arg_matrix_3d(axes: list[int], level: int) -> None:
     """Test axes 3d matmul argument support."""
     wavelet = "haar"
     data = torch.randn([16, 16, 16, 16, 16], dtype=torch.float64)

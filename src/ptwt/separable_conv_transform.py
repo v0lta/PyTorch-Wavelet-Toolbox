@@ -7,14 +7,16 @@ Under the hood, code in this module transforms all dimensions
 using torch.nn.functional.conv1d and it's transpose.
 """
 
+from __future__ import annotations
+
 from functools import partial
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
-import pywt
 import torch
 
 from ._util import (
+    Wavelet,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -25,15 +27,15 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import BoundaryMode
+from .constants import BoundaryMode, WaveletCoeff2dSeparable, WaveletCoeffNd
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import _preprocess_tensor_dec2d
 
 
 def _separable_conv_dwtn_(
-    rec_dict: Dict[str, torch.Tensor],
+    rec_dict: dict[str, torch.Tensor],
     input_arg: torch.Tensor,
-    wavelet: Union[str, pywt.Wavelet],
+    wavelet: Union[Wavelet, str],
     *,
     mode: BoundaryMode = "reflect",
     key: str = "",
@@ -43,15 +45,16 @@ def _separable_conv_dwtn_(
     All but the first axes are transformed.
 
     Args:
-        input_arg (torch.Tensor): Tensor of shape [batch, data_1, ... data_n].
-        wavelet (Union[str, pywt.Wavelet]): The Wavelet to work with.
+        input_arg (torch.Tensor): Tensor of shape ``[batch, data_1, ... data_n]``.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
         mode : The padding mode. The following methods are supported::
 
                 "reflect", "zero", "constant", "periodic".
 
             Defaults to "reflect".
         key (str): The filter application path. Defaults to "".
-        dict (Dict[str, torch.Tensor]): The result will be stored here
+        dict (dict[str, torch.Tensor]): The result will be stored here
             in place. Defaults to {}.
     """
     axis_total = len(input_arg.shape) - 1
@@ -67,18 +70,18 @@ def _separable_conv_dwtn_(
 
 
 def _separable_conv_idwtn(
-    in_dict: Dict[str, torch.Tensor], wavelet: Union[str, pywt.Wavelet]
+    in_dict: dict[str, torch.Tensor], wavelet: Union[Wavelet, str]
 ) -> torch.Tensor:
     """Separable single level inverse fast wavelet transform.
 
     Args:
-        in_dict (Dict[str, torch.Tensor]): The dictionary produced
+        in_dict (dict[str, torch.Tensor]): The dictionary produced
             by _separable_conv_dwtn_ .
-        wavelet (Union[str, pywt.Wavelet]): The wavelet used by
-            _separable_conv_dwtn_ .
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet, as used by ``_separable_conv_dwtn_``.
 
     Returns:
-        torch.Tensor: A reconstruction of the original signal.
+        A reconstruction of the original signal.
     """
     done_dict = {}
     a_initial_keys = list(filter(lambda x: x[0] == "a", in_dict.keys()))
@@ -107,23 +110,28 @@ def _separable_conv_idwtn(
 
 def _separable_conv_wavedecn(
     input: torch.Tensor,
-    wavelet: pywt.Wavelet,
+    wavelet: Union[Wavelet, str],
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+) -> WaveletCoeffNd:
     """Compute a multilevel separable padded wavelet analysis transform.
 
     Args:
-        input (torch.Tensor): A tensor i.e. of shape [batch,axis_1, ... axis_n].
-        wavelet (Wavelet): A pywt wavelet compatible object.
+        input (torch.Tensor): A tensor i.e. of shape ``[batch,axis_1, ... axis_n]``.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
         mode : The desired padding mode.
         level (int): The desired decomposition level.
 
     Returns:
-        List[Union[torch.Tensor, Dict[str, torch.Tensor]]]: The wavelet coeffs.
+        A tuple with the approximation coefficients and
+        for each scale a dictionary containing the detail coefficients.
+        The dictionaries use a string of length n as keys with
+        'a' denoting the low pass or approximation filter and
+        'd' the high-pass or detail filter.
     """
-    result: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
+    result: list[dict[str, torch.Tensor]] = []
     approx = input
 
     if level is None:
@@ -133,29 +141,29 @@ def _separable_conv_wavedecn(
         )
 
     for _ in range(level):
-        level_dict: Dict[str, torch.Tensor] = {}
+        level_dict: dict[str, torch.Tensor] = {}
         _separable_conv_dwtn_(level_dict, approx, wavelet, mode=mode, key="")
         approx_key = "a" * (len(input.shape) - 1)
         approx = level_dict.pop(approx_key)
         result.append(level_dict)
-    result.append(approx)
-    return result[::-1]
+    result.reverse()
+    return approx, *result
 
 
 def _separable_conv_waverecn(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
-    wavelet: pywt.Wavelet,
+    coeffs: WaveletCoeffNd,
+    wavelet: Union[Wavelet, str],
 ) -> torch.Tensor:
     """Separable n-dimensional wavelet synthesis transform.
 
     Args:
-        coeffs (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
+        coeffs (WaveletCoeffNd):
             The output as produced by `_separable_conv_wavedecn`.
-        wavelet (pywt.Wavelet):
-            The wavelet used by `_separable_conv_wavedecn`.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet, as used by ``_separable_conv_wavedecn``.
 
     Returns:
-        torch.Tensor: The reconstruction of the original signal.
+        The reconstruction of the original signal.
 
     Raises:
         ValueError: If the coeffs is not structured as expected.
@@ -167,20 +175,20 @@ def _separable_conv_waverecn(
 
     approx: torch.Tensor = coeffs[0]
     for level_dict in coeffs[1:]:
-        keys = list(level_dict.keys())  # type: ignore
-        level_dict["a" * max(map(len, keys))] = approx  # type: ignore
-        approx = _separable_conv_idwtn(level_dict, wavelet)  # type: ignore
+        keys = list(level_dict.keys())
+        level_dict["a" * max(map(len, keys))] = approx
+        approx = _separable_conv_idwtn(level_dict, wavelet)
     return approx
 
 
 def fswavedec2(
     data: torch.Tensor,
-    wavelet: Union[str, pywt.Wavelet],
+    wavelet: Union[Wavelet, str],
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-    axes: Tuple[int, int] = (-2, -1),
-) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+    axes: tuple[int, int] = (-2, -1),
+) -> WaveletCoeff2dSeparable:
     """Compute a fully separable 2D-padded analysis wavelet transform.
 
     Args:
@@ -197,26 +205,25 @@ def fswavedec2(
         axes ([int, int]): The axes we want to transform,
             defaults to (-2, -1).
 
-    Raises:
-        ValueError: If the data is not a batched 2D signal.
-
     Returns:
-        List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
-        A list with the lll coefficients and dictionaries
-        with the filter order strings::
+        A tuple with the ll coefficients and for each scale a dictionary
+        containing the detail coefficients,
+        see :data:`ptwt.constants.WaveletCoeff2dSeparable`.
+        The dictionaries use the filter order strings::
 
         ("ad", "da", "dd")
 
-        as keys. With a for the low pass or approximation filter and
-        d for the high-pass or detail filter.
+        as keys. 'a' denotes the low pass or approximation filter and
+        'd' the high-pass or detail filter.
 
+    Raises:
+        ValueError: If the data is not a batched 2D signal.
 
     Example:
         >>> import torch
         >>> import ptwt
         >>> data = torch.randn(5, 10, 10)
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
-
     """
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
@@ -245,39 +252,41 @@ def fswavedec2(
 
 def fswavedec3(
     data: torch.Tensor,
-    wavelet: Union[str, pywt.Wavelet],
+    wavelet: Union[Wavelet, str],
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-    axes: Tuple[int, int, int] = (-3, -2, -1),
-) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+    axes: tuple[int, int, int] = (-3, -2, -1),
+) -> WaveletCoeffNd:
     """Compute a fully separable 3D-padded analysis wavelet transform.
 
     Args:
-        data (torch.Tensor): An input signal of shape [batch, depth, height, width].
+        data (torch.Tensor): An input signal of shape ``[batch, depth, height, width]``.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
-            ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
+            ``pywt.wavelist(kind="discrete")`` for possible choices.
         mode :
             The desired padding mode for extending the signal along the edges.
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The number of desired scales.
             Defaults to None.
-        axes (Tuple[int, int, int]): Compute the transform over these axes
+        axes (tuple[int, int, int]): Compute the transform over these axes
             instead of the last three. Defaults to (-3, -2, -1).
+
+    Returns:
+        A tuple with the lll coefficients and for each scale a dictionary
+        containing the detail coefficients,
+        see :data:`ptwt.constants.WaveletCoeffNd`.
+        The dictionaries use the filter order strings::
+
+        ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
+
+        as keys. 'a' denotes the low pass or approximation filter and
+        'd' the high-pass or detail filter.
 
     Raises:
         ValueError: If the input is not a batched 3D signal.
 
-    Returns:
-        List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
-        A list with the lll coefficients and dictionaries
-        with the filter order strings::
-
-        ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
-
-        as keys. With a for the low pass or approximation filter and
-        d for the high-pass or detail filter.
 
     Example:
         >>> import torch
@@ -315,9 +324,9 @@ def fswavedec3(
 
 
 def fswaverec2(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
-    wavelet: Union[str, pywt.Wavelet],
-    axes: Tuple[int, int] = (-2, -1),
+    coeffs: WaveletCoeff2dSeparable,
+    wavelet: Union[Wavelet, str],
+    axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 2D-padded synthesis wavelet transform.
 
@@ -325,16 +334,18 @@ def fswaverec2(
     the hood.
 
     Args:
-        coeffs (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
-            The wavelet coefficients as computed by `fswavedec2`.
-        wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
-            synthesis transform.
-        axes (Tuple[int, int]): Compute the transform over these
+        coeffs (WaveletCoeff2dSeparable):
+            The wavelet coefficients as computed by `fswavedec2`,
+            see :data:`ptwt.constants.WaveletCoeff2dSeparable`.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
+        axes (tuple[int, int]): Compute the transform over these
             axes instead of the last two. Defaults to (-2, -1).
 
     Returns:
-        torch.Tensor: A reconstruction of the signal encoded in the
-            wavelet coefficients.
+        A reconstruction of the signal encoded in the wavelet coefficients.
 
     Raises:
         ValueError: If the axes argument is not a tuple of two integers.
@@ -345,7 +356,6 @@ def fswaverec2(
         >>> data = torch.randn(5, 10, 10)
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
         >>> rec = ptwt.fswaverec2(coeff, "haar")
-
     """
     if tuple(axes) != (-2, -1):
         if len(axes) != 2:
@@ -382,23 +392,25 @@ def fswaverec2(
 
 
 def fswaverec3(
-    coeffs: List[Union[torch.Tensor, Dict[str, torch.Tensor]]],
-    wavelet: Union[str, pywt.Wavelet],
-    axes: Tuple[int, int, int] = (-3, -2, -1),
+    coeffs: WaveletCoeffNd,
+    wavelet: Union[Wavelet, str],
+    axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
     """Compute a fully separable 3D-padded synthesis wavelet transform.
 
     Args:
-        coeffs (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
-            The wavelet coefficients as computed by `fswavedec3`.
-        wavelet (Union[str, pywt.Wavelet]): The wavelet to use for the
-            synthesis transform.
-        axes (Tuple[int, int, int]): Compute the transform over these axes
+        coeffs (WaveletCoeffNd):
+            The wavelet coefficients as computed by `fswavedec3`,
+            see :data:`ptwt.constants.WaveletCoeffNd`.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
+        axes (tuple[int, int, int]): Compute the transform over these axes
             instead of the last three. Defaults to (-3, -2, -1).
 
     Returns:
-        torch.Tensor: A reconstruction of the signal encoded in the
-            wavelet coefficients.
+        A reconstruction of the signal encoded in the wavelet coefficients.
 
     Raises:
         ValueError: If the axes argument is not a tuple with
@@ -410,7 +422,6 @@ def fswaverec3(
         >>> data = torch.randn(5, 10, 10, 10)
         >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
         >>> rec = ptwt.fswaverec3(coeff, "haar")
-
     """
     if tuple(axes) != (-3, -2, -1):
         if len(axes) != 3:

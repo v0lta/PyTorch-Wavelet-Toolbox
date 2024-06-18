@@ -1,8 +1,10 @@
 """Implement 3D separable boundary transforms."""
 
+from __future__ import annotations
+
 import sys
 from functools import partial
-from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import NamedTuple, Optional, Union
 
 import numpy as np
 import torch
@@ -20,7 +22,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod
+from .constants import OrthogonalizeMethod, WaveletCoeffNd
 from .conv_transform_3 import _waverec3d_fold_channels_3d_list
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
@@ -36,7 +38,7 @@ class _PadTuple(NamedTuple):
 
 def _matrix_pad_3(
     depth: int, height: int, width: int
-) -> Tuple[int, int, int, _PadTuple]:
+) -> tuple[int, int, int, _PadTuple]:
     pad_depth, pad_height, pad_width = (False, False, False)
     if height % 2 != 0:
         height += 1
@@ -57,7 +59,7 @@ class MatrixWavedec3(object):
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
-        axes: Tuple[int, int, int] = (-3, -2, -1),
+        axes: tuple[int, int, int] = (-3, -2, -1),
         boundary: OrthogonalizeMethod = "qr",
     ):
         """Create a *separable* three-dimensional fast boundary wavelet transform.
@@ -66,11 +68,14 @@ class MatrixWavedec3(object):
         this object transforms the last three dimensions.
 
         Args:
-            wavelet (Union[Wavelet, str]): The wavelet to use.
-            level (Optional[int]): The desired decomposition level.
+            wavelet (Wavelet or str): A pywt wavelet compatible object or
+                the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
+            level (int, optional): The desired decomposition level.
                 Defaults to None.
-            boundary: The matrix orthogonalization method.
-                Defaults to "qr".
+            boundary : The method used for boundary filter treatment,
+                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
 
         Raises:
             NotImplementedError: If the chosen orthogonalization method
@@ -86,8 +91,8 @@ class MatrixWavedec3(object):
         else:
             _check_axes_argument(list(axes))
             self.axes = axes
-        self.input_signal_shape: Optional[Tuple[int, int, int]] = None
-        self.fwt_matrix_list: List[List[torch.Tensor]] = []
+        self.input_signal_shape: Optional[tuple[int, int, int]] = None
+        self.fwt_matrix_list: list[list[torch.Tensor]] = []
 
         if not _is_boundary_mode_supported(self.boundary):
             raise NotImplementedError
@@ -155,22 +160,19 @@ class MatrixWavedec3(object):
             )
         self.size_list.append((current_depth, current_height, current_width))
 
-    def __call__(
-        self, input_signal: torch.Tensor
-    ) -> List[Union[torch.Tensor, Dict[str, torch.Tensor]]]:
+    def __call__(self, input_signal: torch.Tensor) -> WaveletCoeffNd:
         """Compute a separable 3d-boundary wavelet transform.
 
         Args:
             input_signal (torch.Tensor): An input signal. For example
-                of shape [batch_size, depth, height, width].
+                of shape ``[batch_size, depth, height, width]``.
+
+        Returns:
+            The resulting coefficients for each level are stored in a tuple,
+            see :data:`ptwt.constants.WaveletCoeffNd`.
 
         Raises:
             ValueError: If the input dimensions don't work.
-
-        Returns:
-            List[Union[torch.Tensor, TypedDict[str, torch.Tensor]]]:
-                A list with the approximation coefficients,
-                and a coefficient dict for each scale.
         """
         if self.axes != (-3, -2, -1):
             input_signal = _swap_axes(input_signal, list(self.axes))
@@ -218,7 +220,7 @@ class MatrixWavedec3(object):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
-        split_list: List[Union[torch.Tensor, Dict[str, torch.Tensor]]] = []
+        split_list: list[dict[str, torch.Tensor]] = []
         lll = input_signal
         for scale, fwt_mats in enumerate(self.fwt_matrix_list):
             # fwt_depth_matrix, fwt_row_matrix, fwt_col_matrix = fwt_mats
@@ -238,7 +240,7 @@ class MatrixWavedec3(object):
                 tensor: torch.Tensor,
                 key: str,
                 depth: int,
-                dict: Dict[str, torch.Tensor],
+                dict: dict[str, torch.Tensor],
             ) -> None:
                 if key:
                     dict[key] = tensor
@@ -248,7 +250,7 @@ class MatrixWavedec3(object):
                     _split_rec(ca, "a" + key, depth, dict)
                     _split_rec(cd, "d" + key, depth, dict)
 
-            coeff_dict: Dict[str, torch.Tensor] = {}
+            coeff_dict: dict[str, torch.Tensor] = {}
             _split_rec(lll, "", 3, coeff_dict)
             lll = coeff_dict["aaa"]
             result_keys = list(
@@ -258,17 +260,19 @@ class MatrixWavedec3(object):
                 key: tensor for key, tensor in coeff_dict.items() if key in result_keys
             }
             split_list.append(coeff_dict)
-        split_list.append(lll)
+
+        split_list.reverse()
+        result: WaveletCoeffNd = lll, *split_list
 
         if ds:
             _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
-            split_list = _map_result(split_list, _unfold_axes_fn)
+            result = _map_result(result, _unfold_axes_fn)
 
         if self.axes != (-3, -2, -1):
             undo_swap_fn = partial(_undo_swap_axes, axes=self.axes)
-            split_list = _map_result(split_list, undo_swap_fn)
+            result = _map_result(result, undo_swap_fn)
 
-        return split_list[::-1]
+        return result
 
 
 class MatrixWaverec3(object):
@@ -277,7 +281,7 @@ class MatrixWaverec3(object):
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
-        axes: Tuple[int, int, int] = (-3, -2, -1),
+        axes: tuple[int, int, int] = (-3, -2, -1),
         boundary: OrthogonalizeMethod = "qr",
     ):
         """Compute a three-dimensional separable boundary wavelet synthesis transform.
@@ -285,13 +289,12 @@ class MatrixWaverec3(object):
         Args:
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
-            axes (Tuple[int, int, int]): Transform these axes instead of the
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
+            axes (tuple[int, int, int]): Transform these axes instead of the
                 last three. Defaults to (-3, -2, -1).
-            boundary : The method used for boundary filter treatment.
-                Choose 'qr' or 'gramschmidt'. 'qr' relies on Pytorch's dense qr
-                implementation, it is fast but memory hungry. The 'gramschmidt' option
-                is sparse, memory efficient, and slow. Choose 'gramschmidt' if 'qr' runs
-                out of memory. Defaults to 'qr'.
+            boundary : The method used for boundary filter treatment,
+                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -304,8 +307,8 @@ class MatrixWaverec3(object):
             _check_axes_argument(list(axes))
             self.axes = axes
         self.boundary = boundary
-        self.ifwt_matrix_list: List[List[torch.Tensor]] = []
-        self.input_signal_shape: Optional[Tuple[int, int, int]] = None
+        self.ifwt_matrix_list: list[list[torch.Tensor]] = []
+        self.input_signal_shape: Optional[tuple[int, int, int]] = None
         self.level: Optional[int] = None
 
         if not _is_boundary_mode_supported(self.boundary):
@@ -369,7 +372,7 @@ class MatrixWaverec3(object):
                 current_width // 2,
             )
 
-    def _cat_coeff_recursive(self, input_dict: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def _cat_coeff_recursive(self, input_dict: dict[str, torch.Tensor]) -> torch.Tensor:
         done_dict = {}
         a_initial_keys = list(filter(lambda x: x[0] == "a", input_dict.keys()))
         for a_key in a_initial_keys:
@@ -385,14 +388,13 @@ class MatrixWaverec3(object):
                 return cat_tensor
         return self._cat_coeff_recursive(done_dict)
 
-    def __call__(
-        self, coefficients: List[Union[torch.Tensor, Dict[str, torch.Tensor]]]
-    ) -> torch.Tensor:
+    def __call__(self, coefficients: WaveletCoeffNd) -> torch.Tensor:
         """Reconstruct a batched 3d-signal from its coefficients.
 
         Args:
-            coefficients (List[Union[torch.Tensor, Dict[str, torch.Tensor]]]):
-                The output from MatrixWavedec3.
+            coefficients (WaveletCoeffNd):
+                The output from the `MatrixWavedec3` object,
+                see :data:`ptwt.constants.WaveletCoeffNd`.
 
         Returns:
             torch.Tensor: A reconstruction of the original signal.

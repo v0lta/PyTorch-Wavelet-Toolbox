@@ -5,7 +5,6 @@ See https://arxiv.org/pdf/2004.09569.pdf for more information.
 
 # Inspired by Ripples in Mathematics, Jensen and La Cour-Harbo, Chapter 7.7
 from abc import ABC, abstractmethod
-from typing import Tuple
 
 import torch
 
@@ -22,7 +21,7 @@ class WaveletFilter(ABC):
     @abstractmethod
     def filter_bank(
         self,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return dec_lo, dec_hi, rec_lo, rec_hi."""
         raise NotImplementedError
 
@@ -42,17 +41,16 @@ class WaveletFilter(ABC):
 
     def pf_alias_cancellation_loss(
         self,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the product filter-alias cancellation loss.
 
-        See: Strang+Nguyen 105: F0(z) = H1(-z); F1(z) = -H0(-z)
+        See: Strang+Nguyen 105: $$F_0(z) = H_1(-z); F_1(z) = -H_0(-z)$$
         Alternating sign convention from 0 to N see Strang overview
         on the back of the cover.
 
         Returns:
-            list: The numerical value of the alias cancellation loss,
-                  as well as both loss components for analysis.
-
+            The numerical value of the alias cancellation loss,
+            as well as both loss components for analysis.
         """
         dec_lo, dec_hi, rec_lo, rec_hi = self.filter_bank
         m1 = torch.tensor([-1], device=dec_lo.device, dtype=dec_lo.dtype)
@@ -77,17 +75,16 @@ class WaveletFilter(ABC):
 
     def alias_cancellation_loss(
         self,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the alias cancellation loss.
 
         Implementation of the ac-loss as described
         on page 104 of Strang+Nguyen.
-        F0(z)H0(-z) + F1(z)H1(-z) = 0
+        $$F_0(z)H_0(-z) + F_1(z)H_1(-z) = 0$$
 
         Returns:
-            list: The numerical value of the alias cancellation loss,
-                  as well as both loss components for analysis.
-
+            The numerical value of the alias cancellation loss,
+            as well as both loss components for analysis.
         """
         dec_lo, dec_hi, rec_lo, rec_hi = self.filter_bank
         m1 = torch.tensor([-1], device=dec_lo.device, dtype=dec_lo.dtype)
@@ -119,13 +116,12 @@ class WaveletFilter(ABC):
 
     def perfect_reconstruction_loss(
         self,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the perfect reconstruction loss.
 
         Returns:
-            list: The numerical value of the alias cancellation loss,
-                  as well as both intermediate values for analysis.
-
+            The numerical value of the alias cancellation loss,
+            as well as both intermediate values for analysis.
         """
         # Strang 107: Assuming alias cancellation holds:
         # P(z) = F(z)H(z)
@@ -196,8 +192,8 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
     @property
     def filter_bank(
         self,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Return all filters a a tuple."""
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """All filters a a tuple."""
         return self.dec_lo, self.dec_hi, self.rec_lo, self.rec_hi
 
     # def parameters(self):
@@ -211,7 +207,7 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
         """Get only the product filter loss.
 
         Returns:
-            torch.Tensor: The loss scalar.
+            The loss scalar.
         """
         return self.perfect_reconstruction_loss()[0] + self.alias_cancellation_loss()[0]
 
@@ -219,7 +215,7 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
         """Return the sum of all loss terms.
 
         Returns:
-            torch.Tensor: The loss scalar.
+            The loss scalar.
         """
         return self.product_filter_loss()
 
@@ -252,7 +248,7 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
         trough convolution.
 
         Returns:
-            torch.Tensor: A tensor with the orthogonality constraint value.
+            A tensor with the orthogonality constraint value.
         """
         filt_len = self.dec_lo.shape[-1]
         pad_dec_lo = torch.cat(
@@ -286,7 +282,7 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
         is presented. A measurement is implemented below.
 
         Returns:
-            torch.Tensor: A tensor with the orthogonality constraint value.
+            A tensor with the orthogonality constraint value.
         """
         eq0 = self.dec_lo - self.rec_lo.flip(-1)
         eq1 = self.dec_hi - self.rec_hi.flip(-1)
