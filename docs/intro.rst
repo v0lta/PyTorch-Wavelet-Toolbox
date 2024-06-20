@@ -6,7 +6,7 @@ See, for example, :cite:`strang1996wavelets,mallat1999wavelet`
 or :cite:`jensen2001ripples` for excellent detailed introductions to the topic.
 This text is partially based material from :cite:`wolter2022wavelet`.
 
-The fwt relies on convolution operations with filter pairs.
+The **Fast Wavelet Transform (FWT)** relies on convolution operations with filter pairs.
 
 .. _fig-fwt:
 
@@ -15,31 +15,33 @@ The fwt relies on convolution operations with filter pairs.
    :alt: fast wavelet transform computation diagram.
    :align: center
 
-   Overview of the fwt computation.
+   Overview of the FWT computation.
 
 
-:numref:`fig-fwt` illustrates the process. :math:`\mathbf{h}_\mathcal{A}` denotes the analysis low-pass filter.
-:math:`\mathbf{h}_\mathcal{D}` the analysis high pass filter.
-:math:`\mathbf{f}_\mathcal{A}` and :math:`\mathbf{f}_\mathcal{D}` the synthesis filer pair.
+:numref:`fig-fwt` illustrates the process in one dimension.
+:math:`\mathbf{x}` denotes the input signal,
+:math:`\mathbf{h}_\mathcal{A}` and :math:`\mathbf{h}_\mathcal{D}` the analysis low-pass filter and high-pass filter,
+:math:`\mathbf{f}_\mathcal{A}` and :math:`\mathbf{f}_\mathcal{D}` the synthesis filter pair.
 :math:`\downarrow_2` denotes downsampling with a factor of two, :math:`\uparrow_2` means upsampling.
 In machine learning terms, the analysis transform relies on stride two convolutions.
 The synthesis or inverse transform on the right works with stride two transposed convolutions.
 :math:`\mathbf{H}_{k}` and :math:`\mathbf{F}_{k}` with :math:`k \in [\mathcal{A}, \mathcal{D}]`
 denote the corresponding convolution operators.
 
+The FWT can be described as a multiscale approach.
+The signal is decomposed into approximation coefficients (denoted by :math:`\mathcal{A}`) and detail coefficients (:math:`\mathcal{D}`).
+This is repeated on multiple levels by decomposing the approximation coefficients of the previous level, i.e.
+
 .. math::
-  \mathbf{x}_s * \mathbf{h}_k = \mathbf{c}_{k, s+1}
+   \mathbf{c}_{k, s+1} = \downarrow_2(\mathbf{c}_{\mathcal{A}, s} * \mathbf{h}_k) \qquad \text{for}\ k \in [\mathcal{A}, \mathcal{D}]
 
-with :math:`k \in [\mathcal{A}, \mathcal{D}]` and :math:`s \in \mathbb{N}_0` the set of natural numbers,
-where :math:`\mathbf{x}_0` is equal to
-the original input signal :math:`\mathbf{x}`. At higher scales, the fwt uses the low-pass filtered result as input,
-:math:`\mathbf{x}_s = \mathbf{c}_{\mathcal{A}, s}` if :math:`s > 0`.
-The dashed arrow indicates that we could continue to expand the fwt tree here.
-:py:meth:`ptwt.conv_transform.wavedec` implements this transformation.
+where :math:`s \in \mathbb{N}_0` denotes the level and :math:`\mathbf{c}_{\mathcal{A}, 0}:= \mathbf{x}` is the original input signal.
+Each decomposition step halves the size of the coefficients as a downsampling is applied on each level.
+The 1d FWT is imlemented in :py:meth:`ptwt.conv_transform.wavedec`.
 :py:meth:`ptwt.conv_transform.waverec` provides the inverse functionality visible
-on the right side of Figure :numref:`fig-fwt`.
+on the righthand side of :numref:`fig-fwt`.
 
-The wavelet packet transform (pwt) additionally expands the high-frequency part of the tree.
+The **Wavelet Packet Transform (WPT)** additionally expands the high-frequency part of the tree.
 The figure below depicts the idea.
 
 .. _fig-wpt:
@@ -49,12 +51,13 @@ The figure below depicts the idea.
    :alt: wavelet packet transform computation diagram.
    :align: center
 
-   Scematic drawing of the full wpt in a single dimension. Compared to :numref:`fig-fwt`, the high-pass filtered side of the tree is expanded, too.
+   Scematic drawing of the full WPT in a single dimension. Compared to :numref:`fig-fwt`, the high-pass filtered side of the tree is expanded, too.
 
 Whole expansion is not the only possible way to construct a wavelet packet tree.
 See :cite:`jensen2001ripples` for a discussion of other options.
+
 In :numref:`fig-fwt` and :numref:`fig-wpt`, capital letters denote convolution operators.
-These may be expressed as Toeplitz matrices :cite:`strang1996wavelets`.
+These may also be expressed as Toeplitz matrices :cite:`strang1996wavelets`.
 The matrix nature of these operators explains the capital boldface notation.
 Coefficient subscripts record the path that leads to a particular coefficient.
 :py:meth:`ptwt.packets.WaveletPacket` provides this functionality for single dimensional inputs.
