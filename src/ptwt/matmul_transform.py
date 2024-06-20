@@ -21,7 +21,7 @@ from ._util import (
     _is_dtype_supported,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod
+from .constants import OrthogonalizeMethod, PaddingMode
 from .conv_transform import (
     _get_filter_tensors,
     _postprocess_result_list_dec1d,
@@ -41,6 +41,8 @@ def _construct_a(
     length: int,
     device: Union[torch.device, str] = "cpu",
     dtype: torch.dtype = torch.float64,
+    *,
+    mode: PaddingMode = "sameshift",
 ) -> torch.Tensor:
     """Construct a raw analysis matrix.
 
@@ -53,8 +55,10 @@ def _construct_a(
         length (int): The length of the input signal to transform.
         device (torch.device or str, optional): Where to create the matrix.
             Choose a torch device or device name. Defaults to "cpu".
-        dtype (optional): The desired torch datatype. Choose torch.float32
+        dtype (torch.dtype): The desired torch datatype. Choose torch.float32
             or torch.float64. Defaults to torch.float64.
+        mode: The padding mode to use.
+            See :data:`ptwt.constants.PaddingMode`. Defaults to 'sameshift'.
 
     Returns:
         The sparse raw analysis matrix.
@@ -63,12 +67,8 @@ def _construct_a(
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype
     )
-    analysis_lo = construct_strided_conv_matrix(
-        dec_lo.squeeze(), length, 2, mode="sameshift"
-    )
-    analysis_hi = construct_strided_conv_matrix(
-        dec_hi.squeeze(), length, 2, mode="sameshift"
-    )
+    analysis_lo = construct_strided_conv_matrix(dec_lo.squeeze(), length, 2, mode=mode)
+    analysis_hi = construct_strided_conv_matrix(dec_hi.squeeze(), length, 2, mode=mode)
     analysis = torch.cat([analysis_lo, analysis_hi])
     return analysis
 
@@ -78,6 +78,8 @@ def _construct_s(
     length: int,
     device: Union[torch.device, str] = "cpu",
     dtype: torch.dtype = torch.float64,
+    *,
+    mode: PaddingMode = "sameshift",
 ) -> torch.Tensor:
     """Create a raw synthesis matrix.
 
@@ -90,8 +92,10 @@ def _construct_s(
         length (int): The length of the originally transformed signal.
         device (torch.device, optional): Choose cuda or cpu.
             Defaults to torch.device("cpu").
-        dtype ([type], optional): The desired data type. Choose torch.float32
+        dtype (torch.dtype): The desired data type. Choose torch.float32
             or torch.float64. Defaults to torch.float64.
+        mode: The padding mode to use.
+            See :data:`ptwt.constants.PaddingMode`. Defaults to 'sameshift'.
 
     Returns:
         The raw sparse synthesis matrix.
@@ -100,12 +104,8 @@ def _construct_s(
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype
     )
-    synthesis_lo = construct_strided_conv_matrix(
-        rec_lo.squeeze(), length, 2, mode="sameshift"
-    )
-    synthesis_hi = construct_strided_conv_matrix(
-        rec_hi.squeeze(), length, 2, mode="sameshift"
-    )
+    synthesis_lo = construct_strided_conv_matrix(rec_lo.squeeze(), length, 2, mode=mode)
+    synthesis_hi = construct_strided_conv_matrix(rec_hi.squeeze(), length, 2, mode=mode)
     synthesis = torch.cat([synthesis_lo, synthesis_hi])
     return synthesis.transpose(0, 1)
 

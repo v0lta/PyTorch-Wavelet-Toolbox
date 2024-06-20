@@ -388,6 +388,7 @@ def construct_conv2d_matrix(
     filter: torch.Tensor,
     input_rows: int,
     input_columns: int,
+    *,
     mode: PaddingMode = "valid",
     fully_sparse: bool = True,
 ) -> torch.Tensor:
@@ -460,7 +461,7 @@ def construct_strided_conv_matrix(
     input_rows: int,
     stride: int = 2,
     *,
-    mode: PaddingMode = "valid"
+    mode: PaddingMode = "valid",
 ) -> torch.Tensor:
     """Construct a strided convolution matrix.
 
@@ -497,6 +498,7 @@ def construct_strided_conv2d_matrix(
     input_rows: int,
     input_columns: int,
     stride: int = 2,
+    *,
     mode: PaddingMode = "full",
 ) -> torch.Tensor:
     """Create a strided sparse two-dimensional convolution matrix.
