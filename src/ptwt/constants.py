@@ -83,7 +83,7 @@ where 'a' denotes the low pass or approximation filter and 'd' the high-pass
 or detail filter.
 For a 3d transform, the dictionary thus uses the keys::
 
-("aad", "ada", "add", "daa", "dad", "dda", "ddd")
+    ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
 
 Alias of ``dict[str, torch.Tensor]``
 """

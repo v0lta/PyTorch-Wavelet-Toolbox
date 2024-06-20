@@ -24,7 +24,11 @@ from ._util import (
 )
 from .constants import OrthogonalizeMethod, WaveletCoeffNd
 from .conv_transform_3 import _waverec3d_fold_channels_3d_list
-from .matmul_transform import construct_boundary_a, construct_boundary_s
+from .matmul_transform import (
+    BaseMatrixWaveDec,
+    construct_boundary_a,
+    construct_boundary_s,
+)
 from .sparse_math import _batch_dim_mm
 
 
@@ -52,7 +56,7 @@ def _matrix_pad_3(
     return depth, height, width, _PadTuple(pad_depth, pad_height, pad_width)
 
 
-class MatrixWavedec3(object):
+class MatrixWavedec3(BaseMatrixWaveDec):
     """Compute 3d separable transforms."""
 
     def __init__(

@@ -1,6 +1,7 @@
-"""Fast wavelet transformations based on torch.nn.functional.conv1d and its transpose.
+"""Convolutional fast wavelet transformations.
 
-This module treats boundaries with edge-padding.
+The transformations in this module are based on ``torch.nn.functional.conv1d``
+and its transpose. This module treats boundaries with edge-padding.
 """
 
 from __future__ import annotations
@@ -52,7 +53,7 @@ def _get_filter_tensors(
         flip (bool): Flip filters left-right, if true.
         device (torch.device or str): PyTorch target device.
         dtype (torch.dtype): The data type sets the precision of the
-               computation. Default: torch.float32.
+            computation. Default: torch.float32.
 
     Returns:
         A tuple (dec_lo, dec_hi, rec_lo, rec_hi) containing
@@ -297,7 +298,7 @@ def wavedec(
             The desired padding mode for extending the signal along the edges.
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
         level (int): The scale level to be computed.
-                               Defaults to None.
+            Defaults to None.
         axis (int): Compute the transform over this axis instead of the
             last one. Defaults to -1.
 
@@ -307,8 +308,8 @@ def wavedec(
 
             [cA_s, cD_s, cD_s-1, …, cD2, cD1]
 
-        containing the wavelet coefficients. A denotes
-        approximation and D detail coefficients.
+        containing the wavelet coefficients. ``A`` denotes
+        approximation and ``D`` detail coefficients.
 
     Raises:
         ValueError: If the dtype of the input data tensor is unsupported or
