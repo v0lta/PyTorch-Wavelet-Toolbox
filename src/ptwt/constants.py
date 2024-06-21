@@ -96,8 +96,12 @@ WaveletCoeff2d: TypeAlias = tuple[
 """Type alias for 2d wavelet transform results.
 
 This type alias represents the result of a 2d wavelet transform
-with :math:`n` levels as a tuple ``(A, Tn, ..., T1)`` of length :math:`n + 1`.
-``A`` denotes a tensor of approximation coefficients for the `n`-th level
+with :math:`n` levels as a tuple::
+
+    (cAn, Tn, ..., T1)
+
+of length :math:`n + 1`.
+``cAn`` denotes a tensor of approximation coefficients for the `n`-th level
 of decomposition. ``Tl`` is a tuple of detail coefficients for level ``l``,
 see :data:`ptwt.constants.WaveletDetailTuple2d`.
 
@@ -112,8 +116,12 @@ WaveletCoeffNd: TypeAlias = tuple[torch.Tensor, Unpack[tuple[WaveletDetailDict, 
 """Type alias for wavelet transform results in any dimension.
 
 This type alias represents the result of a Nd wavelet transform
-with :math:`n` levels as a tuple ``(A, Dn, ..., D1)`` of length :math:`n + 1`.
-``A`` denotes a tensor of approximation coefficients for the `n`-th level
+with :math:`n` levels as a tuple::
+
+    (cAn, Dn, ..., D1)
+
+of length :math:`n + 1`.
+``cAn`` denotes a tensor of approximation coefficients for the `n`-th level
 of decomposition. ``Dl`` is a dictionary of detail coefficients for level ``l``,
 see :data:`ptwt.constants.WaveletDetailDict`.
 
