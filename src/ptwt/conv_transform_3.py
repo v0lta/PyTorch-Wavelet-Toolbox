@@ -233,8 +233,8 @@ def waverec3(
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
-        coeffs: The wavelet coefficient tuple
-            produced by :data:`ptwt.wavedec3`, see :data:`ptwt.constants.WaveletCoeffNd`.
+        coeffs: The wavelet coefficient tuple produced by :data:`ptwt.wavedec3`,
+            see :data:`ptwt.constants.WaveletCoeffNd`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
@@ -247,9 +247,10 @@ def waverec3(
         ``[batch, depth, height, width]``.
 
     Raises:
-        ValueError: If coeffs is not in a shape as returned from :data:`ptwt.wavedec3` or
-            if the dtype is not supported or if the provided axes input has length
-            other than three or if the same axes it repeated three.
+        ValueError: If coeffs is not in a shape as returned
+            from :data:`ptwt.wavedec3` or if the dtype is not supported or
+            if the provided axes input has length other than three or
+            if the same axes it repeated three.
 
     Example:
         >>> import ptwt, torch

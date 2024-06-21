@@ -29,13 +29,15 @@ The synthesis or inverse transform on the right works with stride two transposed
 denote the corresponding convolution operators.
 
 The FWT can be described as a multiscale approach.
-The signal is decomposed into approximation coefficients (denoted by :math:`\mathcal{A}`) and detail coefficients (:math:`\mathcal{D}`).
+The signal is decomposed into approximation coefficients (denoted by :math:`\mathcal{A}`)
+and detail coefficients (:math:`\mathcal{D}`).
 This is repeated on multiple levels by decomposing the approximation coefficients of the previous level, i.e.
 
 .. math::
    \mathbf{c}_{k, s+1} = \downarrow_2(\mathbf{c}_{\mathcal{A}, s} * \mathbf{h}_k) \qquad \text{for}\ k \in [\mathcal{A}, \mathcal{D}]
 
-where :math:`s \in \mathbb{N}_0` denotes the level and :math:`\mathbf{c}_{\mathcal{A}, 0}:= \mathbf{x}` is the original input signal.
+where :math:`s \in \mathbb{N}_0` denotes the level and :math:`\mathbf{c}_{\mathcal{A}, 0}:= \mathbf{x}`
+is the original input signal.
 Each decomposition step halves the size of the coefficients as a downsampling is applied on each level.
 The 1d FWT is imlemented in :py:meth:`ptwt.conv_transform.wavedec`.
 :py:meth:`ptwt.conv_transform.waverec` provides the inverse functionality visible

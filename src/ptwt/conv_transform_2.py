@@ -247,8 +247,8 @@ def waverec2(
     or forward transform by running transposed convolutions.
 
     Args:
-        coeffs: The wavelet coefficient tuple
-            produced by :data:`ptwt.wavedec2`. See :data:`ptwt.constants.WaveletCoeff2d`
+        coeffs: The wavelet coefficient tuple produced by :data:`ptwt.wavedec2`.
+            See :data:`ptwt.constants.WaveletCoeff2d`
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
@@ -258,11 +258,13 @@ def waverec2(
 
     Returns:
         The reconstructed signal tensor of shape ``[batch, height, width]`` or
-        ``[batch, channel, height, width]`` depending on the input to :data:`ptwt.wavedec2`.
+        ``[batch, channel, height, width]`` depending on the input
+        to :data:`ptwt.wavedec2`.
 
     Raises:
-        ValueError: If coeffs is not in a shape as returned from :data:`ptwt.wavedec2` or
-            if the dtype is not supported or if the provided axes input has length other
+        ValueError: If coeffs is not in a shape as returned from
+            :data:`ptwt.wavedec2` or if the dtype is not supported or
+            if the provided axes input has length other
             than two or if the same axes it repeated twice.
 
     Example:

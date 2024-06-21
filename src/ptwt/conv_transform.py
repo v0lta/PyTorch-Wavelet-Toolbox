@@ -280,7 +280,8 @@ def wavedec(
     The coefficients on level :math:`s` are calculated iteratively as
 
     .. math::
-        \mathbf{c}_{k,s} = \mathbf{c}_{A,s - 1} * \mathbf{h}_k \quad \text{for $k\in\{A, D\}$}
+        \mathbf{c}_{k,s} = \mathbf{c}_{A,s - 1} * \mathbf{h}_k
+        \quad \text{for $k\in\{A, D\}$}
 
     with :math:`\mathbf{c}_{A, 0} = \mathbf{x}_0` the original input signal.
     The processes uses approximation coefficients as inputs for higher scales.
@@ -307,9 +308,11 @@ def wavedec(
 
             [cA_n, cD_n, cD_n-1, …, cD2, cD1]
 
-        containing the wavelet coefficient tensors where ``n`` denotes the level of decomposition.
-        The first entry of the list (``cA_n``) is the approximation coefficient tensor.
-        The following entries (``cD_n`` - ``cD1``) are the detail coefficient tensors of the respective level.
+        containing the wavelet coefficient tensors where ``n`` denotes
+        the level of decomposition. The first entry of the list (``cA_n``)
+        is the approximation coefficient tensor.
+        The following entries (``cD_n`` - ``cD1``) are the detail coefficient tensors
+        of the respective level.
 
     Raises:
         ValueError: If the dtype of the input data tensor is unsupported or
