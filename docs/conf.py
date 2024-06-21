@@ -86,4 +86,6 @@ autodoc_type_aliases = {
     "WaveletCoeff2dSeparable": "ptwt.WaveletCoeff2dSeparable",
     "WaveletCoeffNd": "ptwt.WaveletCoeffNd",
     "BaseMatrixWaveDec": "ptwt.matmul_transform.BaseMatrixWaveDec",
+    "BoundaryMode": "ptwt.constants.BoundaryMode",
+    "ExtendedBoundaryMode": "ptwt.constants.ExtendedBoundaryMode",
 }
