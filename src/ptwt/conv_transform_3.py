@@ -123,8 +123,9 @@ def wavedec3(
         mode :
             The desired padding mode for extending the signal along the edges.
             Defaults to "zero". See :data:`ptwt.constants.BoundaryMode`.
-        level (Optional[int]): The maximum decomposition level.
-            This argument defaults to None.
+        level (int, optional): The maximum decomposition level.
+            If None, the level is computed based on the signal shape.
+            Defaults to None.
         axes (tuple[int, int, int]): Compute the transform over these axes
             instead of the last three. Defaults to (-3, -2, -1).
 
@@ -232,8 +233,8 @@ def waverec3(
     """Reconstruct a signal from wavelet coefficients.
 
     Args:
-        coeffs (WaveletCoeffNd): The wavelet coefficient tuple
-            produced by wavedec3, see :data:`ptwt.constants.WaveletCoeffNd`.
+        coeffs: The wavelet coefficient tuple
+            produced by :data:`ptwt.wavedec3`, see :data:`ptwt.constants.WaveletCoeffNd`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
@@ -246,7 +247,7 @@ def waverec3(
         ``[batch, depth, height, width]``.
 
     Raises:
-        ValueError: If coeffs is not in a shape as returned from wavedec3 or
+        ValueError: If coeffs is not in a shape as returned from :data:`ptwt.wavedec3` or
             if the dtype is not supported or if the provided axes input has length
             other than three or if the same axes it repeated three.
 

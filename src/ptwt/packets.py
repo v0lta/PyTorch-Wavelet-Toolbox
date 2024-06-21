@@ -80,8 +80,10 @@ class WaveletPacket(BaseDict):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            mode : The desired padding method. If you select 'boundary',
-                the sparse matrix backend will be used. Defaults to 'reflect'.
+            mode: The desired mode to handle signal boundaries. Select either the
+                the sparse-matrix backend ('boundary') or a padding mode.
+                See :data:`ptwt.constants.ExtendedBoundaryMode`.
+                Defaults to 'reflect'.
             maxlevel (int, optional): Value is passed on to `transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
@@ -359,9 +361,10 @@ class WaveletPacket2D(BaseDict):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            mode : A string indicating the desired padding mode.
-                If you select 'boundary', the sparse matrix backend is used.
-                Defaults to 'reflect'
+            mode: The desired mode to handle signal boundaries. Select either the
+                the sparse-matrix backend ('boundary') or a padding mode.
+                See :data:`ptwt.constants.ExtendedBoundaryMode`.
+                Defaults to 'reflect'.
             maxlevel (int, optional): Value is passed on to `transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.

@@ -171,14 +171,11 @@ class MatrixWavedec(BaseMatrixWaveDec):
     of 64 and 32. All are divisible by two.
 
     Example:
-        >>> import ptwt, torch, pywt
-        >>> import numpy as np
+        >>> import ptwt, torch
         >>> # generate an input of even length.
-        >>> data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
-        >>> data_torch = torch.from_numpy(data.astype(np.float32))
-        >>> matrix_wavedec = ptwt.MatrixWavedec(
-        >>>     pywt.Wavelet('haar'), level=2)
-        >>> coefficients = matrix_wavedec(data_torch)
+        >>> data = torch.arange(8, dtype=torch.float32)
+        >>> matrix_wavedec = ptwt.MatrixWavedec('haar', level=2)
+        >>> coefficients = matrix_wavedec(data)
     """
 
     def __init__(
@@ -444,16 +441,12 @@ class MatrixWaverec(object):
     """Matrix-based inverse fast wavelet transform.
 
     Example:
-        >>> import ptwt, torch, pywt
-        >>> import numpy as np
+        >>> import ptwt, torch
         >>> # generate an input of even length.
-        >>> data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
-        >>> data_torch = torch.from_numpy(data.astype(np.float32))
-        >>> matrix_wavedec = ptwt.MatrixWavedec(
-        >>>     pywt.Wavelet('haar'), level=2)
-        >>> coefficients = matrix_wavedec(data_torch)
-        >>> matrix_waverec = ptwt.MatrixWaverec(
-        >>>     pywt.Wavelet('haar'))
+        >>> data = torch.arange(8, dtype=torch.float32)
+        >>> matrix_wavedec = ptwt.MatrixWavedec('haar', level=2)
+        >>> coefficients = matrix_wavedec(data)
+        >>> matrix_waverec = ptwt.MatrixWaverec('haar')
         >>> reconstruction = matrix_waverec(coefficients)
     """
 
@@ -478,7 +471,7 @@ class MatrixWaverec(object):
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
             ValueError: If the wavelet filters have different lengths or if
-                        axis is not an integer.
+                axis is not an integer.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.boundary = boundary

@@ -274,57 +274,53 @@ def wavedec(
 ) -> list[torch.Tensor]:
     r"""Compute the analysis (forward) 1d fast wavelet transform.
 
-    The transformation relies on convolution operations with filter
-    pairs.
+    The transformation relies on convolution operations with the filter pair
+    :math:`(\mathbf{h}_A, \mathbf{h}_D)` of the wavelet
+    where :math:`A` denotes approximation and :math:`D` detail.
+    The coefficients on level :math:`s` are calculated iteratively as
 
     .. math::
-        x_s * h_k = c_{k,s+1}
+        \mathbf{c}_{k,s} = \mathbf{c}_{A,s - 1} * \mathbf{h}_k \quad \text{for $k\in\{A, D\}$}
 
-    Where :math:`x_s` denotes the input at scale :math:`s`, with
-    :math:`x_0` equal to the original input. :math:`h_k` denotes
-    the convolution filter, with :math:`k \in {A, D}`, where :math:`A` for
-    approximation and :math:`D` for detail. The processes uses approximation
-    coefficients as inputs for higher scales.
+    with :math:`\mathbf{c}_{A, 0} = \mathbf{x}_0` the original input signal.
+    The processes uses approximation coefficients as inputs for higher scales.
     Set the `level` argument to choose the largest scale.
 
     Args:
-        data (torch.Tensor): The input time series,
-                             By default the last axis is transformed.
+        data (torch.Tensor): The input time series to transform.
+            By default the last axis is transformed.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Please consider the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        mode :
-            The desired padding mode for extending the signal along the edges.
-            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
-        level (int): The scale level to be computed.
+        mode: The desired padding mode for extending the signal along the edges.
+            See :data:`ptwt.constants.BoundaryMode`. Defaults to "reflect".
+        level (int, optional): The maximum decomposition level.
+            If None, the level is computed based on the signal shape.
             Defaults to None.
-        axis (int): Compute the transform over this axis instead of the
-            last one. Defaults to -1.
+        axis (int): Compute the transform over this axis of the `data` tensor.
+            Defaults to -1.
 
 
     Returns:
         A list::
 
-            [cA_s, cD_s, cD_s-1, …, cD2, cD1]
+            [cA_n, cD_n, cD_n-1, …, cD2, cD1]
 
-        containing the wavelet coefficients. ``A`` denotes
-        approximation and ``D`` detail coefficients.
+        containing the wavelet coefficient tensors where ``n`` denotes the level of decomposition.
+        The first entry of the list (``cA_n``) is the approximation coefficient tensor.
+        The following entries (``cD_n`` - ``cD1``) are the detail coefficient tensors of the respective level.
 
     Raises:
         ValueError: If the dtype of the input data tensor is unsupported or
             if more than one axis is provided.
 
     Example:
-        >>> import torch
-        >>> import ptwt, pywt
-        >>> import numpy as np
+        >>> import ptwt, torch
         >>> # generate an input of even length.
-        >>> data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
-        >>> data_torch = torch.from_numpy(data.astype(np.float32))
+        >>> data = torch.arange(8, dtype=torch.float32)
         >>> # compute the forward fwt coefficients
-        >>> ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
-        >>>              mode='zero', level=2)
+        >>> ptwt.wavedec(data, 'haar', mode='zero', level=2)
     """
     if axis != -1:
         if isinstance(axis, int):
@@ -383,17 +379,12 @@ def waverec(
             more than one axis is provided.
 
     Example:
-        >>> import torch
-        >>> import ptwt, pywt
-        >>> import numpy as np
+        >>> import ptwt, torch
         >>> # generate an input of even length.
-        >>> data = np.array([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0])
-        >>> data_torch = torch.from_numpy(data.astype(np.float32))
+        >>> data = torch.arange(8, dtype=torch.float32)
         >>> # invert the fast wavelet transform.
-        >>> ptwt.waverec(ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
-        >>>                           mode='zero', level=2),
-        >>>              pywt.Wavelet('haar'))
-
+        >>> coefficients = ptwt.wavedec(data, 'haar', mode='zero', level=2)
+        >>> ptwt.waverec(coefficients, "haar")
     """
     torch_device = coeffs[0].device
     torch_dtype = coeffs[0].dtype

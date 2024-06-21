@@ -133,7 +133,7 @@ def wavedec2(
     level: Optional[int] = None,
     axes: tuple[int, int] = (-2, -1),
 ) -> WaveletCoeff2d:
-    r"""Run a two-dimensional wavelet transformation.
+    r"""Run a two-dimensional fast wavelet transformation.
 
     This function relies on two-dimensional convolutions.
     Outer products allow the construction of 2D-filters from 1D filter arrays
@@ -154,7 +154,7 @@ def wavedec2(
     as inputs. Setting the `level` argument allows choosing the largest scale.
 
     Args:
-        data (torch.Tensor): The input data tensor with any number of dimensions.
+        data (torch.Tensor): The input data tensor with at least two dimensions.
             By default 2d inputs are interpreted as ``[height, width]``,
             3d inputs are interpreted as ``[batch_size, height, width]``.
             4d inputs are interpreted as ``[batch_size, channels, height, width]``.
@@ -165,11 +165,12 @@ def wavedec2(
             for possible choices.
         mode :
             The desired padding mode for extending the signal along the edges.
-            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
-        level (int): The number of desired scales.
+            See :data:`ptwt.constants.BoundaryMode`. Defaults to "reflect".
+        level (int, optional): The maximum decomposition level.
+            If None, the level is computed based on the signal shape.
             Defaults to None.
-        axes (tuple[int, int]): Compute the transform over these axes instead of the
-            last two. Defaults to (-2, -1).
+        axes (tuple[int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-2, -1).
 
     Returns:
         A tuple containing the wavelet coefficients in pywt order,
@@ -181,15 +182,13 @@ def wavedec2(
             input has a length other than two.
 
     Example:
-        >>> import torch
-        >>> import ptwt, pywt
-        >>> import numpy as np
+        >>> import ptwt, torch
         >>> from scipy import datasets
-        >>> face = np.transpose(datasets.face(),
-        >>>                     [2, 0, 1]).astype(np.float64)
-        >>> pytorch_face = torch.tensor(face) # try unsqueeze(0)
-        >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
-        >>>                              level=2, mode="zero")
+        >>> data = torch.tensor(datasets.face(), dtype=torch.float64)
+        >>> # permute [H, W, C] -> [C, H, W]
+        >>> data = data.permute(2, 0, 1)
+        >>> # compute the FWT coefficients
+        >>> coefficients = ptwt.wavedec2(data, "haar", level=2, mode="zero")
 
     """
     if not _is_dtype_supported(data.dtype):
@@ -248,8 +247,8 @@ def waverec2(
     or forward transform by running transposed convolutions.
 
     Args:
-        coeffs (WaveletCoeff2d): The wavelet coefficient tuple
-            produced by wavedec2. See :data:`ptwt.constants.WaveletCoeff2d`
+        coeffs: The wavelet coefficient tuple
+            produced by :data:`ptwt.wavedec2`. See :data:`ptwt.constants.WaveletCoeff2d`
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
@@ -259,23 +258,22 @@ def waverec2(
 
     Returns:
         The reconstructed signal tensor of shape ``[batch, height, width]`` or
-        ``[batch, channel, height, width]`` depending on the input to `wavedec2`.
+        ``[batch, channel, height, width]`` depending on the input to :data:`ptwt.wavedec2`.
 
     Raises:
-        ValueError: If coeffs is not in a shape as returned from wavedec2 or
+        ValueError: If coeffs is not in a shape as returned from :data:`ptwt.wavedec2` or
             if the dtype is not supported or if the provided axes input has length other
             than two or if the same axes it repeated twice.
 
     Example:
-        >>> import ptwt, pywt, torch
-        >>> import numpy as np
+        >>> import ptwt, torch
         >>> from scipy import datasets
-        >>> face = np.transpose(datasets.face(),
-        >>>                     [2, 0, 1]).astype(np.float64)
-        >>> pytorch_face = torch.tensor(face)
-        >>> coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
-        >>>                              level=2, mode="constant")
-        >>> reconstruction = ptwt.waverec2(coefficients, pywt.Wavelet("haar"))
+        >>> data = torch.tensor(datasets.face(), dtype=torch.float64)
+        >>> # permute [H, W, C] -> [C, H, W]
+        >>> data = data.permute(2, 0, 1)
+        >>> # compute the forward fwt coefficients and the reconstruction
+        >>> coefficients = ptwt.wavedec2(data, "haar", level=2, mode="constant")
+        >>> reconstruction = ptwt.waverec2(coefficients, "haar")
 
     """
     if tuple(axes) != (-2, -1):
