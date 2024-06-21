@@ -4,6 +4,7 @@ The ptwt package -- API reference
 .. toctree::
    :maxdepth: 2
 
+   return-types
    conv-fwt
    conv-inverse-fwt
    matrix-fwt
