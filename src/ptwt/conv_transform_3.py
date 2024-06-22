@@ -120,14 +120,14 @@ def wavedec3(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        mode :
-            The desired padding mode for extending the signal along the edges.
-            Defaults to "zero". See :data:`ptwt.constants.BoundaryMode`.
+        mode: The desired padding mode for extending the signal
+            along the edges. See :data:`ptwt.constants.BoundaryMode`.
+            Defaults to "zero".
         level (int, optional): The maximum decomposition level.
             If None, the level is computed based on the signal shape.
             Defaults to None.
-        axes (tuple[int, int, int]): Compute the transform over these axes
-            instead of the last three. Defaults to (-3, -2, -1).
+        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-3, -2, -1).
 
     Returns:
         A tuple containing the wavelet coefficients,
@@ -239,8 +239,8 @@ def waverec3(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int, int]): Transform these axes instead of the
-            last three. Defaults to (-3, -2, -1).
+        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-3, -2, -1).
 
     Returns:
         The reconstructed four-dimensional signal tensor of shape

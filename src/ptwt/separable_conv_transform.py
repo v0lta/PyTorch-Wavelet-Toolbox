@@ -198,16 +198,16 @@ def fswavedec2(
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
         mode: The desired padding mode for extending the signal along the edges.
-            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
+            See :data:`ptwt.constants.BoundaryMode`. Defaults to "reflect".
         level (int, optional): The maximum decomposition level.
             If None, the level is computed based on the signal shape.
             Defaults to None.
-        axes (tuple[int, int]): The axes we want to transform,
-            defaults to (-2, -1).
+        axes (tuple[int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-2, -1).
 
     Returns:
-        A tuple with the ll coefficients and for each scale a dictionary
-        containing the detail coefficients,
+        A tuple starting with the approximation coefficient tensor
+        followed by a dictionary of detail coefficients for each scale,
         see :data:`ptwt.constants.WaveletCoeff2dSeparable`.
         The dictionaries use the filter order strings::
 
@@ -269,12 +269,12 @@ def fswavedec3(
         level (int, optional): The maximum decomposition level.
             If None, the level is computed based on the signal shape.
             Defaults to None.
-        axes (tuple[int, int, int]): Compute the transform over these axes
-            instead of the last three. Defaults to (-3, -2, -1).
+        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-3, -2, -1).
 
     Returns:
-        A tuple with the lll coefficients and for each scale a dictionary
-        containing the detail coefficients,
+        A tuple starting with the approximation coefficient tensor
+        followed by a dictionary of detail coefficients for each scale,
         see :data:`ptwt.constants.WaveletCoeffNd`.
         The dictionaries use the filter order strings::
 
@@ -338,8 +338,8 @@ def fswaverec2(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int]): Compute the transform over these
-            axes instead of the last two. Defaults to (-2, -1).
+        axes (tuple[int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-2, -1).
 
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
@@ -401,8 +401,8 @@ def fswaverec3(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int, int]): Compute the transform over these axes
-            instead of the last three. Defaults to (-3, -2, -1).
+        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-3, -2, -1).
 
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.

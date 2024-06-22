@@ -136,22 +136,24 @@ def wavedec2(
     r"""Run a two-dimensional fast wavelet transformation.
 
     This function relies on two-dimensional convolutions.
-    Outer products allow the construction of 2D-filters from 1D filter arrays
-    :ref:`(see fwt-intro) <sec-fwt-2d>`.
-    It transforms the last two axes by default.
-    This function computes
+    Outer products allow the construction of 2d filters
+    :math:`\mathbf{h}_k` for :math:`k\in\{a, h, v, d\}`
+    from the 1d filter pair of the wavelet
+    where :math:`a` denotes approximation,
+    :math:`h` horizontal details,
+    :math:`v` vertical details, and
+    :math:`d` diagonal details.
+    See the :ref:`FWT intro <sec-fwt-2d>`.
+
+    The coefficients on level :math:`s` are calculated iteratively as
 
     .. math::
-        \mathbf{x}_s *_2 \mathbf{h}_k = \mathbf{c}_{k, s+1}
+        \mathbf{c}_{k, s} = \mathbf{c}_{a, s-1} *_2 \mathbf{h}_k
+        \quad \text{for $k \in \{a, h, v, d\}$}
 
-    with :math:`k \in [a, h, v, d]` and
-    :math:`s \in \mathbb{N}_0` the set of natural numbers,
-    where :math:`\mathbf{x}_0` is equal to
-    the original input image :math:`\mathbf{X}`.
+    with :math:`\mathbf{c}_{a, 0} = \mathbf{x}_0` the original input image.
     :math:`*_2` indicates two dimensional-convolution.
-    Computations at subsequent scales work exclusively with
-    approximation coefficients :math:`c_{a, s}`
-    as inputs. Setting the `level` argument allows choosing the largest scale.
+    Set the `level` argument to choose the largest scale.
 
     Args:
         data (torch.Tensor): The input data tensor with at least two dimensions.
@@ -253,8 +255,8 @@ def waverec2(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int]): Compute the transform over these axes instead of the
-            last two. Defaults to (-2, -1).
+        axes (tuple[int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-2, -1).
 
     Returns:
         The reconstructed signal tensor of shape ``[batch, height, width]`` or

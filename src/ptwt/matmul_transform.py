@@ -197,7 +197,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
                 None.
             axis (int, optional): The axis we would like to transform.
                 Defaults to -1.
-            boundary : The method used for boundary filter treatment,
+            boundary: The method used for boundary filter treatment,
                 see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
 
         Raises:
@@ -393,7 +393,7 @@ def construct_boundary_a(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         length (int): The number of entries in the input signal.
-        boundary : The method used for boundary filter treatment,
+        boundary: The method used for boundary filter treatment,
             see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
         device: Where to place the matrix. Choose cpu or cuda.
             Defaults to cpu.

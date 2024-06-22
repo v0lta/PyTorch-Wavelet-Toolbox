@@ -284,7 +284,7 @@ def wavedec(
         \quad \text{for $k\in\{A, D\}$}
 
     with :math:`\mathbf{c}_{A, 0} = \mathbf{x}_0` the original input signal.
-    The processes uses approximation coefficients as inputs for higher scales.
+    The process uses approximation coefficients as inputs for higher scales.
     Set the `level` argument to choose the largest scale.
 
     Args:
@@ -371,7 +371,8 @@ def waverec(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axis (int): Transform this axis instead of the last one. Defaults to -1.
+        axis (int): Compute the transform over this axis of the `data` tensor.
+            Defaults to -1.
 
     Returns:
         The reconstructed signal tensor.

@@ -245,12 +245,12 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         the sparse_fwt_operator property.
 
     Example:
-        >>> import ptwt, torch, pywt
+        >>> import ptwt, torch
         >>> import numpy as np
         >>> from scipy import datasets
         >>> face = datasets.face()[:256, :256, :].astype(np.float32)
         >>> pt_face = torch.tensor(face).permute([2, 0, 1])
-        >>> matrixfwt = ptwt.MatrixWavedec2(pywt.Wavelet("haar"), level=2)
+        >>> matrixfwt = ptwt.MatrixWavedec2("haar", level=2)
         >>> mat_coeff = matrixfwt(pt_face)
     """
 
@@ -269,12 +269,12 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            level (int, optional): The level up to which to compute the fwt. If None,
-                the maximum level based on the signal length is chosen. Defaults to
-                None.
-            axes (int, int): A tuple with the axes to transform.
-                Defaults to (-2, -1).
-            boundary : The method used for boundary filter treatment,
+            level (int, optional): The maximum decomposition level.
+                If None, the level is computed based on the signal shape.
+                Defaults to None.
+            axes (tuple[int, int]): Compute the transform over these axes of the data
+                tensor. Defaults to (-2, -1).
+            boundary: The method used to orthogonalize boundary filters,
                 see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
             separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis.
@@ -414,17 +414,17 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         self.size_list.append((current_height, current_width))
 
     def __call__(self, input_signal: torch.Tensor) -> WaveletCoeff2d:
-        """Compute the fwt for the given input signal.
+        """Compute the FWT for the given input signal.
 
-        The fwt matrix is set up during the first call
+        The FWT matrix is set up during the first call
         and stored for future use.
 
         Args:
-            input_signal (torch.Tensor): An input signal of shape
-                ``[batch_size, height, width]``.
-                2d inputs are interpreted as ``[height, width]``.
-                4d inputs as ``[batch_size, channels, height, width]``.
-                This transform affects the last two dimensions.
+            input_signal (torch.Tensor): The input data tensor with at least two dimensions.
+                By default 2d inputs are interpreted as ``[height, width]``,
+                3d inputs are interpreted as ``[batch_size, height, width]``.
+                4d inputs are interpreted as ``[batch_size, channels, height, width]``.
+                The ``axes`` class attribute allows other interpretations.
 
         Returns:
             The resulting coefficients per level are stored in a pywt style tuple,
