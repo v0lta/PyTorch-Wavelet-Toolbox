@@ -162,19 +162,30 @@ class BaseMatrixWaveDec:
 
 
 class MatrixWavedec(BaseMatrixWaveDec):
-    """Compute the sparse matrix fast wavelet transform.
+    """Compute the 1d fast wavelet transform using sparse matrices.
 
-    Intermediate scale results must be divisible
-    by two. A working third-level transform
-    could use an input length of 128.
-    This would lead to intermediate resolutions
-    of 64 and 32. All are divisible by two.
+    This transform is the sparse matrix correspondant to
+    :data:`ptwt.wavedec`. The convolution operations are
+    implemented as a matrix-vector product between a
+    sparse transformation matrix and the input signal.
+    This transform uses boundary wavelets instead of padding to
+    handle the signal boundaries, see the
+    :ref:`boundary wavelet docs <subsec-boundary-wavelet>`.
+
+    Note:
+        Constructing the sparse FWT matrix can be expensive.
+        For longer wavelets, high-level transforms, and large
+        input images this may take a while.
+        The matrix is therefore constructed only once and reused
+        in further calls.
 
     Example:
         >>> import ptwt, torch
         >>> # generate an input of even length.
         >>> data = torch.arange(8, dtype=torch.float32)
+        >>> # First, construct the transformation object
         >>> matrix_wavedec = ptwt.MatrixWavedec('haar', level=2)
+        >>> # Then, the FWT is computed by calling the object.
         >>> coefficients = matrix_wavedec(data)
     """
 
