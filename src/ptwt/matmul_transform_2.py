@@ -67,7 +67,7 @@ def _construct_a_2(
         device (torch.device or str): Where to place the matrix.
         dtype (torch.dtype, optional): Desired matrix data type.
             Defaults to torch.float64.
-        mode : The convolution type.
+        mode: The convolution type.
             Options are 'full', 'valid', 'same' and 'sameshift'.
             Defaults to 'sameshift'.
 
@@ -117,7 +117,7 @@ def _construct_s_2(
             usually CPU or GPU.
         dtype (torch.dtype, optional): The data type the matrix should have.
             Defaults to torch.float64.
-        mode : The convolution type.
+        mode: The convolution type.
             Options are 'full', 'valid', 'same' and 'sameshift'.
             Defaults to 'sameshift'.
 
@@ -420,7 +420,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         and stored for future use.
 
         Args:
-            input_signal (torch.Tensor): The input data tensor with at least two dimensions.
+            input_signal (torch.Tensor): The input data tensor with
+                at least two dimensions.
                 By default 2d inputs are interpreted as ``[height, width]``,
                 3d inputs are interpreted as ``[batch_size, height, width]``.
                 4d inputs are interpreted as ``[batch_size, channels, height, width]``.

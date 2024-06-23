@@ -44,8 +44,12 @@ def sparse_kron(
 
     Returns:
         The resulting tensor of shape ``[mp, nq]``.
+
+    Raises:
+        ValueError: if the tensors are on different devices.
     """
-    assert sparse_tensor_a.device == sparse_tensor_b.device
+    if sparse_tensor_a.device != sparse_tensor_b.device:
+        raise ValueError("Tensors must be on the same device.")
 
     sparse_tensor_a = sparse_tensor_a.coalesce()
     sparse_tensor_b = sparse_tensor_b.coalesce()
@@ -97,18 +101,30 @@ def cat_sparse_identity_matrix(
     """Concatenate a sparse input matrix and a sparse identity matrix.
 
     Args:
-        sparse_matrix (torch.Tensor): The input matrix.
+        sparse_matrix (torch.Tensor): The sparse square input matrix.
         new_length (int):
             The length up to which the diagonal should be elongated.
 
     Returns:
         Square ``[input, eye]`` matrix of size ``[new_length, new_length]``
+
+    Raises:
+        ValueError: if `sparse_matrix` is not a square 2d sparse matrix
+            of if `new_length` is smaller than the number of
+            rows of `sparse_matrix`.
     """
-    # assert square matrix.
-    assert (
-        sparse_matrix.shape[0] == sparse_matrix.shape[1]
-    ), "Matrices must be square. Odd inputs can cause non-square matrices."
-    assert new_length > sparse_matrix.shape[0], "can't add negatively many entries."
+    if sparse_matrix.dim() != 2 or not sparse_matrix.is_sparse:
+        raise ValueError("Only 2d sparse matrices are supported.")
+    if sparse_matrix.shape[0] != sparse_matrix.shape[1]:
+        raise ValueError(
+            "Matrices must be square. Odd inputs can cause non-square matrices."
+        )
+    if new_length < sparse_matrix.shape[0]:
+        raise ValueError("Cannot add negatively many rows.")
+
+    if new_length == sparse_matrix.shape[0]:
+        return sparse_matrix
+
     x = torch.arange(
         sparse_matrix.shape[0],
         new_length,
@@ -153,7 +169,6 @@ def sparse_diag(
 
     Returns:
         A sparse matrix with a shifted diagonal.
-
     """
     diag_indices = torch.stack(
         [
@@ -200,11 +215,16 @@ def sparse_replace_row(
 
     Returns:
         A sparse matrix, with the new row inserted at row_index.
+
+    Raises:
+        ValueError: if the size of the last axis of `matrix` and `row`
+            does not match.
     """
     matrix = matrix.coalesce()
-    assert (
-        matrix.shape[-1] == row.shape[-1]
-    ), "matrix and replacement row must share the same column number."
+    if matrix.shape[-1] != row.shape[-1]:
+        raise ValueError(
+            "matrix and replacement row must share the same column number."
+        )
 
     # delete existing indices we dont want
     diag_indices = torch.arange(matrix.shape[0])
@@ -348,7 +368,8 @@ def construct_conv_matrix(
         The sparse convolution tensor.
 
     Raises:
-        ValueError: If the padding is not 'full', 'same' or 'valid'.
+        ValueError: If an unsupported PaddingMode value is
+            passed as `mode`.
     """
     filter_length = len(filter)
 
@@ -364,7 +385,7 @@ def construct_conv_matrix(
         start_row = filter_length - 1
         stop_row = input_rows - 1
     else:
-        raise ValueError("unkown padding type.")
+        raise ValueError(f"Padding mode '{mode}' not supported.")
 
     product_lst = [
         (row, col)
@@ -432,7 +453,7 @@ def construct_conv2d_matrix(
         diag_index = kernel_column_number - 1
         kronecker_rows = input_columns - kernel_column_number + 1
     else:
-        raise ValueError("unknown conv mode.")
+        raise ValueError(f"Padding mode '{mode}' not supported.")
 
     block_matrix_list = []
     for i in range(matrix_block_number):
