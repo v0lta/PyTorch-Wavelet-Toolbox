@@ -36,6 +36,8 @@ This is either a form of padding (see :data:`ptwt.constants.BoundaryMode`
 for padding options) or ``boundary`` to use boundary wavelets.
 """
 
+# TODO: Add documentation on the different values of PaddingMode
+
 PaddingMode = Literal["full", "valid", "same", "sameshift"]
 """
 The padding mode is used when construction convolution matrices.
