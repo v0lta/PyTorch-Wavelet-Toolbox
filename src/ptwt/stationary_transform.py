@@ -11,9 +11,9 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _postprocess_coeffs_1d,
-    _postprocess_tensor_1d,
+    _postprocess_tensor,
     _preprocess_coeffs_1d,
-    _preprocess_tensor_1d,
+    _preprocess_tensor,
 )
 from .conv_transform import _get_filter_tensors
 
@@ -72,7 +72,7 @@ def swt(
     Returns:
         Same as wavedec. Equivalent to pywt.swt with trim_approx=True.
     """
-    data, ds = _preprocess_tensor_1d(data, axis)
+    data, ds = _preprocess_tensor(data, ndim=1, axes=axis)
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -142,6 +142,6 @@ def iswt(
             1,
         )
 
-    res_lo = _postprocess_tensor_1d(res_lo, ds=ds, axis=axis)
+    res_lo = _postprocess_tensor(res_lo, ndim=1, ds=ds, axes=axis)
 
     return res_lo

@@ -18,9 +18,9 @@ from ._util import (
     _is_dtype_supported,
     _pad_symmetric,
     _postprocess_coeffs_1d,
-    _postprocess_tensor_1d,
+    _postprocess_tensor,
     _preprocess_coeffs_1d,
-    _preprocess_tensor_1d,
+    _preprocess_tensor,
 )
 from .constants import BoundaryMode, WaveletCoeff2d
 
@@ -273,7 +273,7 @@ def wavedec(
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
-    data, ds = _preprocess_tensor_1d(data, axis=axis)
+    data, ds = _preprocess_tensor(data, ndim=1, axes=axis)
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -371,6 +371,6 @@ def waverec(
             res_lo = res_lo[..., :-padr]
 
     # undo folding and swapping
-    res_lo = _postprocess_tensor_1d(res_lo, ds=ds, axis=axis)
+    res_lo = _postprocess_tensor(res_lo, ndim=1, ds=ds, axes=axis)
 
     return res_lo

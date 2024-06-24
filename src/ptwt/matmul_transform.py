@@ -20,9 +20,9 @@ from ._util import (
     _is_boundary_mode_supported,
     _is_dtype_supported,
     _postprocess_coeffs_1d,
-    _postprocess_tensor_1d,
+    _postprocess_tensor,
     _preprocess_coeffs_1d,
-    _preprocess_tensor_1d,
+    _preprocess_tensor,
 )
 from .constants import OrthogonalizeMethod
 from .conv_transform import _get_filter_tensors
@@ -330,9 +330,10 @@ class MatrixWavedec(BaseMatrixWaveDec):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
-        input_signal, ds = _preprocess_tensor_1d(
+        input_signal, ds = _preprocess_tensor(
             input_signal,
-            axis=self.axis,
+            ndim=1,
+            axes=self.axis,
             add_channel_dim=False,
         )
 
@@ -644,6 +645,6 @@ class MatrixWaverec(object):
 
         res_lo = lo.T
 
-        res_lo = _postprocess_tensor_1d(res_lo, ds=ds, axis=self.axis)
+        res_lo = _postprocess_tensor(res_lo, ndim=1, ds=ds, axes=self.axis)
 
         return res_lo

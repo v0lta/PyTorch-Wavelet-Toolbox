@@ -23,8 +23,8 @@ from ._util import (
     _fold_axes,
     _is_dtype_supported,
     _map_result,
-    _postprocess_tensor_2d,
-    _preprocess_tensor_2d,
+    _postprocess_tensor,
+    _preprocess_tensor,
     _swap_axes,
     _undo_swap_axes,
     _unfold_axes,
@@ -229,7 +229,7 @@ def fswavedec2(
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
-    data, ds = _preprocess_tensor_2d(data, axes=axes, add_channel_dim=False)
+    data, ds = _preprocess_tensor(data, ndim=2, axes=axes, add_channel_dim=False)
     res = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
 
     if ds:
@@ -372,7 +372,7 @@ def fswaverec2(
 
     res_ll = _separable_conv_waverecn(coeffs, wavelet)
 
-    res_ll = _postprocess_tensor_2d(res_ll, ds=ds, axes=axes)
+    res_ll = _postprocess_tensor(res_ll, ndim=2, ds=ds, axes=axes)
 
     return res_ll
 
@@ -417,9 +417,8 @@ def fswaverec3(
             swap_fn = partial(_swap_axes, axes=list(axes))
             coeffs = _map_result(coeffs, swap_fn)
 
-    ds = None
-    wavelet = _as_wavelet(wavelet)
     res_ll = _check_if_tensor(coeffs[0])
+    ds = list(res_ll.shape)
     torch_dtype = res_ll.dtype
 
     if res_ll.dim() >= 5:
@@ -433,10 +432,6 @@ def fswaverec3(
 
     res_ll = _separable_conv_waverecn(coeffs, wavelet)
 
-    if ds:
-        res_ll = _unfold_axes(res_ll, list(ds), 3)
-
-    if axes != (-3, -2, -1):
-        res_ll = _undo_swap_axes(res_ll, list(axes))
+    res_ll = _postprocess_tensor(res_ll, ndim=3, ds=ds, axes=axes)
 
     return res_ll

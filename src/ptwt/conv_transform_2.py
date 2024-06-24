@@ -20,9 +20,9 @@ from ._util import (
     _outer,
     _pad_symmetric,
     _postprocess_coeffs_2d,
-    _postprocess_tensor_2d,
+    _postprocess_tensor,
     _preprocess_coeffs_2d,
-    _preprocess_tensor_2d,
+    _preprocess_tensor,
 )
 from .constants import BoundaryMode, WaveletCoeff2d, WaveletDetailTuple2d
 from .conv_transform import (
@@ -166,7 +166,7 @@ def wavedec2(
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
-    data, ds = _preprocess_tensor_2d(data, axes=axes)
+    data, ds = _preprocess_tensor(data, ndim=2, axes=axes)
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
@@ -298,6 +298,6 @@ def waverec2(
         if padr > 0:
             res_ll = res_ll[..., :-padr]
 
-    res_ll = _postprocess_tensor_2d(res_ll, ds=ds, axes=axes)
+    res_ll = _postprocess_tensor(res_ll, ndim=2, ds=ds, axes=axes)
 
     return res_ll

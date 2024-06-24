@@ -329,76 +329,53 @@ def _postprocess_coeffs_2d(
     return coeffs
 
 
-def _preprocess_tensor_1d(
-    data: torch.Tensor, axis: int, add_channel_dim: bool = True
+def _preprocess_tensor(
+    data: torch.Tensor,
+    ndim: int,
+    axes: Union[tuple[int, ...], int],
+    add_channel_dim: bool = True,
 ) -> tuple[torch.Tensor, list[int]]:
     """Preprocess input tensor dimensions.
 
     Args:
-        data (torch.Tensor): An input tensor of any shape.
-        axis (int): Compute the transform over this axis instead of the
-            last one.
+        data (torch.Tensor): An input tensor with at least `ndim` axes.
+        ndim (int): The number of axes on which the transformation is
+            applied.
+        axis (int or tuple of ints): Compute the transform over these axes
+            instead of the last ones.
         add_channel_dim (bool): If True, ensures that the return has at
             least three axes by adding a new axis at dim 1.
             Defaults to True.
 
     Returns:
-        A tuple (data, ds) where data is a data tensor of shape
-        [new_batch, 1, to_process] and ds contains the original shape.
+        A tuple (data, ds) where data is the transformed data tensor
+        and ds contains the original shape. If `add_channel_dim` is True,
+        `data` has `ndim` + 2 axes, otherwise `ndim` + 1.
 
     Raises:
-        ValueError: if ``axis`` is not a single int.
+        ValueError: if `ndim` is not positive, `axes` has not at least
+            length `ndim` or `data` has not at least `ndim` axes.
     """
-    if axis != -1:
-        if isinstance(axis, int):
-            data = data.swapaxes(axis, -1)
+    if isinstance(axes, int):
+        axes = (axes,)
+
+    if ndim <= 0:
+        raise ValueError("Number of dimensions must be positive")
+
+    if tuple(axes) != tuple(range(-ndim, 0)):
+        if len(axes) != ndim:
+            raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
         else:
-            raise ValueError("1d transforms operate on a single axis only.")
-
-    ds = list(data.shape)
-    if len(ds) == 1:
-        # assume time series
-        data = data.unsqueeze(0)
-    elif len(ds) > 2:
-        data, ds = _fold_axes(data, 1)
-
-    if add_channel_dim:
-        data = data.unsqueeze(1)
-
-    return data, ds
-
-
-def _postprocess_tensor_1d(
-    data: torch.Tensor, ds: list[int], axis: int
-) -> torch.Tensor:
-    if len(ds) == 1:
-        data = data.squeeze(0)
-    elif len(ds) > 2:
-        data = _unfold_axes(data, ds, 1)
-
-    if axis != -1:
-        data = data.swapaxes(axis, -1)
-
-    return data
-
-
-def _preprocess_tensor_2d(
-    data: torch.Tensor, axes: tuple[int, int], add_channel_dim: bool = True
-) -> tuple[torch.Tensor, list[int]]:
-    if tuple(axes) != (-2, -1):
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            data = _swap_axes(data, list(axes))
+            data = _swap_axes(data, axes)
 
     # Preprocess multidimensional input.
     ds = list(data.shape)
-    if len(ds) <= 1:
-        raise ValueError("More than one input dimension required.")
-    elif len(ds) == 2:
+    if len(ds) < ndim:
+        raise ValueError(f"More than {ndim} input dimensions required.")
+    elif len(ds) == ndim:
         data = data.unsqueeze(0)
-    elif len(ds) >= 4:
-        data, ds = _fold_axes(data, 2)
+    elif len(ds) > ndim + 1:
+        data, ds = _fold_axes(data, ndim)
 
     if add_channel_dim:
         data = data.unsqueeze(1)
@@ -406,14 +383,24 @@ def _preprocess_tensor_2d(
     return data, ds
 
 
-def _postprocess_tensor_2d(
-    data: torch.Tensor, ds: list[int], axes: tuple[int, int]
+def _postprocess_tensor(
+    data: torch.Tensor, ndim: int, ds: list[int], axes: Union[tuple[int, ...], int]
 ) -> torch.Tensor:
-    if len(ds) == 2:
-        data = data.squeeze(0)
-    elif len(ds) > 3:
-        data = _unfold_axes(data, ds, 2)
+    if isinstance(axes, int):
+        axes = (axes,)
 
-    if tuple(axes) != (-2, -1):
-        data = _undo_swap_axes(data, axes)
+    if ndim <= 0:
+        raise ValueError("Number of dimensions must be positive")
+
+    if len(ds) == ndim:
+        data = data.squeeze(0)
+    elif len(ds) > ndim + 1:
+        data = _unfold_axes(data, ds, ndim)
+
+    if tuple(axes) != tuple(range(-ndim, 0)):
+        if len(axes) != ndim:
+            raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
+        else:
+            data = _undo_swap_axes(data, axes)
+
     return data
