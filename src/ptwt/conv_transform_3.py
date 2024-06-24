@@ -230,7 +230,7 @@ def waverec3(
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
-    """Reconstruct a signal from wavelet coefficients.
+    """Reconstruct a 3d signal from wavelet coefficients.
 
     Args:
         coeffs: The wavelet coefficient tuple produced by :data:`ptwt.wavedec3`,

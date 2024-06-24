@@ -363,7 +363,7 @@ def wavedec(
 def waverec(
     coeffs: Sequence[torch.Tensor], wavelet: Union[Wavelet, str], axis: int = -1
 ) -> torch.Tensor:
-    """Reconstruct a signal from wavelet coefficients.
+    """Reconstruct a 1d signal from wavelet coefficients.
 
     Args:
         coeffs (Sequence): The wavelet coefficient sequence produced by wavedec.

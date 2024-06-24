@@ -178,6 +178,16 @@ class MatrixWavedec(BaseMatrixWaveDec):
         input images this may take a while.
         The matrix is therefore constructed only once and reused
         in further calls.
+        The sparse transformation matrix can be accessed
+        via the :data:`sparse_fwt_operator` property.
+
+    Note:
+        On each level of the transform the convolved signal
+        is required to be of even length. This transform uses
+        zero padding to transform coefficients with an odd length.
+        To avoid padding consider transforming signals
+        with a length divisable by :math:`2^L`
+        for a :math:`L`-level transform.
 
     Example:
         >>> import ptwt, torch

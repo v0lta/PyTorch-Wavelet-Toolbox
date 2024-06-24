@@ -52,7 +52,7 @@ def _wpfreq(fs: float, level: int) -> list[float]:
 
 
 class WaveletPacket(BaseDict):
-    """Implements a single-dimensional wavelet packets analysis transform."""
+    """Implements a single-dimensional wavelet packet transform."""
 
     def __init__(
         self,
@@ -70,12 +70,11 @@ class WaveletPacket(BaseDict):
         of the wavelet packet tree.
 
         Args:
-            data (torch.Tensor, optional): The input data array of shape ``[time]``,
-                ``[batch_size, time]`` or ``[batch_size, channels, time]``.
+            data (torch.Tensor, optional): The input time series to transform.
+                By default the last axis is transformed.
+                Use the `axis` argument to choose another dimension.
                 If None, the object is initialized without
                 performing a decomposition.
-                The time axis is transformed by default.
-                Use the ``axis`` argument to choose another dimension.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
@@ -84,7 +83,7 @@ class WaveletPacket(BaseDict):
                 the sparse-matrix backend ('boundary') or a padding mode.
                 See :data:`ptwt.constants.ExtendedBoundaryMode`.
                 Defaults to 'reflect'.
-            maxlevel (int, optional): Value is passed on to `transform`.
+            maxlevel (int, optional): Value is passed on to :func:`transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
             axis (int): The axis to transform. Defaults to -1.
@@ -136,8 +135,9 @@ class WaveletPacket(BaseDict):
         The transform function allows reusing the same object.
 
         Args:
-            data (torch.Tensor): The input data array of shape ``[time]``
-                or ``[batch_size, time]``.
+            data (torch.Tensor): The input time series to transform.
+                By default the last axis is transformed.
+                Use the `axis` argument to choose another dimension.
             maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.

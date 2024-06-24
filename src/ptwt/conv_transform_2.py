@@ -243,10 +243,7 @@ def waverec2(
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int] = (-2, -1),
 ) -> torch.Tensor:
-    """Reconstruct a signal from wavelet coefficients.
-
-    This function undoes the effect of the analysis
-    or forward transform by running transposed convolutions.
+    """Reconstruct a 2d signal from wavelet coefficients.
 
     Args:
         coeffs: The wavelet coefficient tuple produced by :data:`ptwt.wavedec2`.

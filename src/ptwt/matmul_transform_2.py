@@ -225,24 +225,32 @@ def _matrix_pad_2(height: int, width: int) -> tuple[int, int, tuple[bool, bool]]
 
 
 class MatrixWavedec2(BaseMatrixWaveDec):
-    """Experimental sparse matrix 2d wavelet transform.
+    """Compute the 2d fast wavelet transform using sparse matrices.
 
-    For a completely pad-free transform,
-    input images are expected to be divisible by two.
-    For multiscale transforms all intermediate
-    scale dimensions should be divisible
-    by two, i.e. ``128, 128 -> 64, 64 -> 32, 32`` would work
-    well for a level three transform.
-    In this case multiplication with the `sparse_fwt_operator`
-    property is equivalent.
+    This transform is the sparse matrix correspondant to
+    :data:`ptwt.wavedec2`. The convolution operations are
+    implemented as a matrix-vector product between a
+    sparse transformation matrix and the input signal.
+    This transform uses boundary wavelets instead of padding to
+    handle the signal boundaries, see the
+    :ref:`boundary wavelet docs <subsec-boundary-wavelet>`.
 
     Note:
-        Constructing the sparse fwt-matrix is expensive.
+        Constructing the sparse FWT matrix is expensive.
         For longer wavelets, high-level transforms, and large
         input images this may take a while.
         The matrix is therefore constructed only once.
         In the non-separable case, it can be accessed via
-        the sparse_fwt_operator property.
+        the :data:`sparse_fwt_operator` property.
+
+    Note:
+        On each level of the transform both axis of
+        the convolved signal are required to be of even length.
+        This transform uses zero padding to transform coefficients
+        with an odd length.
+        To avoid padding consider transforming signals
+        with dimensions divisable by :math:`2^L`
+        for a :math:`L`-level transform.
 
     Example:
         >>> import ptwt, torch

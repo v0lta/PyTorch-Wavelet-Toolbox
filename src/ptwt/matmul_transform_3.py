@@ -57,7 +57,17 @@ def _matrix_pad_3(
 
 
 class MatrixWavedec3(BaseMatrixWaveDec):
-    """Compute 3d separable transforms."""
+    """Compute 3d separable transforms.
+
+    Note:
+        On each level of the transform both axis of
+        the convolved signal are required to be of even length.
+        This transform uses zero padding to transform coefficients
+        with an odd length.
+        To avoid padding consider transforming signals
+        with dimensions divisable by :math:`2^L`
+        for a :math:`L`-level transform.
+    """
 
     def __init__(
         self,
