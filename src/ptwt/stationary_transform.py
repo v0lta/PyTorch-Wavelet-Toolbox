@@ -95,10 +95,9 @@ def swt(
         # result_list.append((res_lo.squeeze(1), res_hi.squeeze(1)))
         result_list.append(res_hi.squeeze(1))
     result_list.append(res_lo.squeeze(1))
+    result_list.reverse()
 
-    result_list = _postprocess_coeffs_1d(result_list, ds, axis)
-
-    return result_list[::-1]
+    return _postprocess_coeffs_1d(result_list, ds, axis)
 
 
 def iswt(

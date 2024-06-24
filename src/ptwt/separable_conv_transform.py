@@ -423,7 +423,7 @@ def fswaverec3(
 
     if res_ll.dim() >= 5:
         # avoid the channel sum, fold the channels into batches.
-        ds = _check_if_tensor(coeffs[0]).shape
+        ds = list(_check_if_tensor(coeffs[0]).shape)
         coeffs = _map_result(coeffs, lambda t: _fold_axes(t, 3)[0])
         res_ll = _check_if_tensor(coeffs[0])
 

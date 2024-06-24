@@ -378,8 +378,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         result_list = [s.T for s in split_list[::-1]]
 
         # unfold if necessary
-        result_list = _postprocess_coeffs_1d(result_list, ds, self.axis)
-        return result_list
+        return _postprocess_coeffs_1d(result_list, ds, self.axis)
 
 
 def construct_boundary_a(

@@ -294,9 +294,7 @@ def wavedec(
     result_list.append(res_lo.squeeze(1))
     result_list.reverse()
 
-    result_list = _postprocess_coeffs_1d(result_list, ds, axis)
-
-    return result_list
+    return _postprocess_coeffs_1d(result_list, ds, axis)
 
 
 def waverec(

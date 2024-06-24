@@ -256,39 +256,52 @@ def _map_result(
     return approx, *cast_result_lst
 
 
+def _map_result_1d(
+    coeffs: Sequence[torch.Tensor], function: Callable[[torch.Tensor], torch.Tensor]
+) -> list[torch.Tensor]:
+    return [function(coeff) for coeff in coeffs]
+
+
 def _preprocess_coeffs_1d(
-    result_lst: Sequence[torch.Tensor], axis: int
-) -> tuple[Sequence[torch.Tensor], list[int]]:
+    coeffs: Sequence[torch.Tensor], axis: int
+) -> tuple[list[torch.Tensor], list[int]]:
     if axis != -1:
         if isinstance(axis, int):
-            result_lst = [coeff.swapaxes(axis, -1) for coeff in result_lst]
+            swap_fn = partial(_swap_axes, axes=(axis,))
+            coeffs = _map_result_1d(coeffs, swap_fn)
         else:
             raise ValueError("1d transforms operate on a single axis only.")
 
     # Fold axes for the wavelets
-    ds = list(result_lst[0].shape)
+    ds = list(coeffs[0].shape)
     if len(ds) == 1:
-        result_lst = [uf_coeff.unsqueeze(0) for uf_coeff in result_lst]
+        coeffs = _map_result_1d(coeffs, lambda x: x.unsqueeze(0))
     elif len(ds) > 2:
-        result_lst = [_fold_axes(uf_coeff, 1)[0] for uf_coeff in result_lst]
-    return result_lst, ds
+        coeffs = _map_result_1d(coeffs, lambda t: _fold_axes(t, 1)[0])
+    elif not isinstance(coeffs, list):
+        coeffs = list(coeffs)
+
+    return coeffs, ds
 
 
 def _postprocess_coeffs_1d(
-    result_list: list[torch.Tensor], ds: list[int], axis: int
+    coeffs: Sequence[torch.Tensor], ds: list[int], axis: int
 ) -> list[torch.Tensor]:
     if len(ds) == 1:
-        result_list = [r_el.squeeze(0) for r_el in result_list]
+        coeffs = _map_result_1d(coeffs, lambda x: x.squeeze(0))
     elif len(ds) > 2:
         # Unfold axes for the wavelets
-        result_list = [_unfold_axes(fres, ds, 1) for fres in result_list]
-    else:
-        result_list = result_list
+        _unfold_axes1 = partial(_unfold_axes, ds=ds, keep_no=1)
+        coeffs = _map_result_1d(coeffs, _unfold_axes1)
 
     if axis != -1:
-        result_list = [coeff.swapaxes(axis, -1) for coeff in result_list]
+        undo_swap_fn = partial(_undo_swap_axes, axes=(axis,))
+        coeffs = _map_result_1d(coeffs, undo_swap_fn)
 
-    return result_list
+    if not isinstance(coeffs, list):
+        coeffs = list(coeffs)
+
+    return coeffs
 
 
 def _preprocess_coeffs_2d(
