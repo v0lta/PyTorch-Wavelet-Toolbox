@@ -12,7 +12,7 @@ from ._util import (
     _as_wavelet,
     _postprocess_coeffs_1d,
     _postprocess_tensor,
-    _preprocess_coeffs_1d,
+    _preprocess_coeffs,
     _preprocess_tensor,
 )
 from .conv_transform import _get_filter_tensors
@@ -118,7 +118,9 @@ def iswt(
     Returns:
         A reconstruction of the original swt input.
     """
-    coeffs, ds = _preprocess_coeffs_1d(coeffs, axis=axis)
+    if not isinstance(coeffs, list):
+        coeffs = list(coeffs)
+    coeffs, ds = _preprocess_coeffs(coeffs, ndim=1, axes=axis)
 
     wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(

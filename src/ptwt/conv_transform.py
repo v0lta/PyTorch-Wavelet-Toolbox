@@ -19,7 +19,7 @@ from ._util import (
     _pad_symmetric,
     _postprocess_coeffs_1d,
     _postprocess_tensor,
-    _preprocess_coeffs_1d,
+    _preprocess_coeffs,
     _preprocess_tensor,
 )
 from .constants import BoundaryMode, WaveletCoeff2d
@@ -343,7 +343,9 @@ def waverec(
             raise ValueError("coefficients must have the same dtype")
 
     # fold channels and swap axis, if necessary.
-    coeffs, ds = _preprocess_coeffs_1d(coeffs, axis=axis)
+    if not isinstance(coeffs, list):
+        coeffs = list(coeffs)
+    coeffs, ds = _preprocess_coeffs(coeffs, ndim=1, axes=axis)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype

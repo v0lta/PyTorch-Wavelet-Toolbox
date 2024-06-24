@@ -21,7 +21,7 @@ from ._util import (
     _pad_symmetric,
     _postprocess_coeffs_2d,
     _postprocess_tensor,
-    _preprocess_coeffs_2d,
+    _preprocess_coeffs,
     _preprocess_tensor,
 )
 from .constants import BoundaryMode, WaveletCoeff2d, WaveletDetailTuple2d
@@ -242,7 +242,7 @@ def waverec2(
     if not _is_dtype_supported(torch_dtype):
         raise ValueError(f"Input dtype {torch_dtype} not supported")
 
-    coeffs, ds = _preprocess_coeffs_2d(coeffs, axes=axes)
+    coeffs, ds = _preprocess_coeffs(coeffs, ndim=2, axes=axes)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype

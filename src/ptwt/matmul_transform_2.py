@@ -19,7 +19,7 @@ from ._util import (
     _is_dtype_supported,
     _postprocess_coeffs_2d,
     _postprocess_tensor,
-    _preprocess_coeffs_2d,
+    _preprocess_coeffs,
     _preprocess_tensor,
 )
 from .constants import (
@@ -721,7 +721,7 @@ class MatrixWaverec2(object):
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec2` object.
         """
-        coefficients, ds = _preprocess_coeffs_2d(coefficients, axes=self.axes)
+        coefficients, ds = _preprocess_coeffs(coefficients, ndim=2, axes=self.axes)
         ll = coefficients[0]
 
         level = len(coefficients) - 1

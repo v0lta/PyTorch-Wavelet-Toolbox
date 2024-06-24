@@ -21,7 +21,7 @@ from ._util import (
     _is_dtype_supported,
     _postprocess_coeffs_1d,
     _postprocess_tensor,
-    _preprocess_coeffs_1d,
+    _preprocess_coeffs,
     _preprocess_tensor,
 )
 from .constants import OrthogonalizeMethod
@@ -592,7 +592,9 @@ class MatrixWaverec(object):
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec` object.
         """
-        coefficients, ds = _preprocess_coeffs_1d(coefficients, self.axis)
+        if not isinstance(coefficients, list):
+            coefficients = list(coefficients)
+        coefficients, ds = _preprocess_coeffs(coefficients, ndim=1, axes=self.axis)
 
         level = len(coefficients) - 1
         input_length = coefficients[-1].shape[-1] * 2
