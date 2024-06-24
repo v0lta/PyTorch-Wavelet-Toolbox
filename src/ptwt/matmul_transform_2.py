@@ -16,7 +16,6 @@ from ._util import (
     _as_wavelet,
     _check_axes_argument,
     _is_boundary_mode_supported,
-    _is_dtype_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -433,9 +432,6 @@ class MatrixWavedec2(BaseMatrixWaveDec):
 
         batch_size, height, width = input_signal.shape
 
-        if not _is_dtype_supported(input_signal.dtype):
-            raise ValueError(f"Input dtype {input_signal.dtype} not supported")
-
         re_build = False
         if (
             self.input_signal_shape is None
@@ -722,7 +718,6 @@ class MatrixWaverec2(object):
                 `MatrixWavedec2` object.
         """
         coefficients, ds = _preprocess_coeffs(coefficients, ndim=2, axes=self.axes)
-        ll = coefficients[0]
 
         level = len(coefficients) - 1
         height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
@@ -740,12 +735,10 @@ class MatrixWaverec2(object):
             self.level = level
             re_build = True
 
+        ll = coefficients[0]
         batch_size = ll.shape[0]
         torch_device = ll.device
         torch_dtype = ll.dtype
-
-        if not _is_dtype_supported(torch_dtype):
-            raise ValueError(f"Input dtype {torch_dtype} not supported")
 
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(

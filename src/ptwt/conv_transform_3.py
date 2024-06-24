@@ -15,7 +15,6 @@ from ._util import (
     _as_wavelet,
     _check_if_tensor,
     _get_len,
-    _is_dtype_supported,
     _outer,
     _pad_symmetric,
     _postprocess_coeffs,
@@ -141,9 +140,6 @@ def wavedec3(
     """
     data, ds = _preprocess_tensor(data, ndim=3, axes=axes)
 
-    if not _is_dtype_supported(data.dtype):
-        raise ValueError(f"Input dtype {data.dtype} not supported")
-
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -221,9 +217,6 @@ def waverec3(
     res_lll = _check_if_tensor(coeffs[0])
     torch_device = res_lll.device
     torch_dtype = res_lll.dtype
-
-    if not _is_dtype_supported(torch_dtype):
-        raise ValueError(f"Input dtype {torch_dtype} not supported")
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype

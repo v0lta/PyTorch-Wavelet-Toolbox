@@ -18,7 +18,6 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _check_if_tensor,
-    _is_dtype_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -364,18 +363,12 @@ def fswavedecn(
         containing the detail coefficients,
         see :data:`ptwt.constants.WaveletCoeffNd`.
 
-    Raises:
-        ValueError: if the dtype of `data` is not supported.
-
     Example:
         >>> import torch
         >>> import ptwt
         >>> data = torch.randn(5, 10, 10, 10)
         >>> coeff = ptwt.fswavedecn(data, "haar", ndim=3, level=2)
     """
-    if not _is_dtype_supported(data.dtype):
-        raise ValueError(f"Input dtype {data.dtype} not supported")
-
     if axes is None:
         axes = tuple(range(-ndim, 0))
 
@@ -418,10 +411,6 @@ def fswaverecn(
         >>> coeff = ptwt.fswavedecn(data, "haar", ndim=3, level=2)
         >>> rec = ptwt.fswaverec3(coeff, "haar", ndim=3)
     """
-    torch_dtype = _check_if_tensor(coeffs[0]).dtype
-    if not _is_dtype_supported(torch_dtype):
-        raise ValueError(f"Input dtype {torch_dtype} not supported")
-
     if axes is None:
         axes = tuple(range(-ndim, 0))
 

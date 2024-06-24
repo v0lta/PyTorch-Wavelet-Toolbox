@@ -335,6 +335,10 @@ def _preprocess_coeffs(
     if isinstance(axes, int):
         axes = (axes,)
 
+    torch_dtype = _check_if_tensor(coeffs[0]).dtype
+    if not _is_dtype_supported(torch_dtype):
+        raise ValueError(f"Input dtype {torch_dtype} not supported")
+
     if ndim <= 0:
         raise ValueError("Number of dimensions must be positive")
 

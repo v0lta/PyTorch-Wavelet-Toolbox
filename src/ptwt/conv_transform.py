@@ -15,7 +15,6 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _get_len,
-    _is_dtype_supported,
     _pad_symmetric,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -270,9 +269,6 @@ def wavedec(
         >>> ptwt.wavedec(data_torch, pywt.Wavelet('haar'),
         >>>              mode='zero', level=2)
     """
-    if not _is_dtype_supported(data.dtype):
-        raise ValueError(f"Input dtype {data.dtype} not supported")
-
     data, ds = _preprocess_tensor(data, ndim=1, axes=axis)
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
@@ -333,9 +329,6 @@ def waverec(
     """
     torch_device = coeffs[0].device
     torch_dtype = coeffs[0].dtype
-    if not _is_dtype_supported(torch_dtype):
-        raise ValueError(f"Input dtype {torch_dtype} not supported")
-
     for coeff in coeffs[1:]:
         if torch_device != coeff.device:
             raise ValueError("coefficients must be on the same device")

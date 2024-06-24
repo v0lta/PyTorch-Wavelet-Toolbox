@@ -18,7 +18,6 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _is_boundary_mode_supported,
-    _is_dtype_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -337,9 +336,6 @@ class MatrixWavedec(BaseMatrixWaveDec):
             add_channel_dim=False,
         )
 
-        if not _is_dtype_supported(input_signal.dtype):
-            raise ValueError(f"Input dtype {input_signal.dtype} not supported")
-
         if input_signal.shape[-1] % 2 != 0:
             # odd length input
             # print('input length odd, padding a zero on the right')
@@ -612,9 +608,6 @@ class MatrixWaverec(object):
                 raise ValueError("coefficients must be on the same device")
             elif torch_dtype != coeff.dtype:
                 raise ValueError("coefficients must have the same dtype")
-
-        if not _is_dtype_supported(torch_dtype):
-            raise ValueError(f"Input dtype {torch_dtype} not supported")
 
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(

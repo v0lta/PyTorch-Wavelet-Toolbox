@@ -15,7 +15,6 @@ from ._util import (
     _check_axes_argument,
     _check_if_tensor,
     _is_boundary_mode_supported,
-    _is_dtype_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -176,9 +175,6 @@ class MatrixWavedec3(object):
             input_signal, ndim=3, axes=self.axes, add_channel_dim=False
         )
         _, depth, height, width = input_signal.shape
-
-        if not _is_dtype_supported(input_signal.dtype):
-            raise ValueError(f"Input dtype {input_signal.dtype} not supported")
 
         re_build = False
         if (
@@ -411,9 +407,6 @@ class MatrixWaverec3(object):
         lll = _check_if_tensor(coefficients[0])
         torch_device = lll.device
         torch_dtype = lll.dtype
-
-        if not _is_dtype_supported(torch_dtype):
-            raise ValueError(f"Input dtype {torch_dtype} not supported")
 
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
