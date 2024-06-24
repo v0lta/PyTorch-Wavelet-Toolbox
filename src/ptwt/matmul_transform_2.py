@@ -15,6 +15,7 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _check_axes_argument,
+    _check_same_device_dtype,
     _is_boundary_mode_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -718,6 +719,7 @@ class MatrixWaverec2(object):
                 `MatrixWavedec2` object.
         """
         coefficients, ds = _preprocess_coeffs(coefficients, ndim=2, axes=self.axes)
+        torch_device, torch_dtype = _check_same_device_dtype(coefficients)
 
         level = len(coefficients) - 1
         height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
@@ -735,17 +737,14 @@ class MatrixWaverec2(object):
             self.level = level
             re_build = True
 
-        ll = coefficients[0]
-        batch_size = ll.shape[0]
-        torch_device = ll.device
-        torch_dtype = ll.dtype
-
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
                 device=torch_device,
                 dtype=torch_dtype,
             )
 
+        ll = coefficients[0]
+        batch_size = ll.shape[0]
         for c_pos, coeff_tuple in enumerate(coefficients[1:]):
             if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
                 raise ValueError(
@@ -756,11 +755,7 @@ class MatrixWaverec2(object):
 
             curr_shape = ll.shape
             for coeff in coeff_tuple:
-                if torch_device != coeff.device:
-                    raise ValueError("coefficients must be on the same device")
-                elif torch_dtype != coeff.dtype:
-                    raise ValueError("coefficients must have the same dtype")
-                elif coeff.shape != curr_shape:
+                if coeff.shape != curr_shape:
                     raise ValueError(
                         "All coefficients on each level must have the same shape"
                     )

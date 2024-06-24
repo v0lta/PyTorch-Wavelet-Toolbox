@@ -17,7 +17,7 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
-    _check_if_tensor,
+    _check_same_device_dtype,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -401,9 +401,6 @@ def fswaverecn(
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
 
-    Raises:
-        ValueError: if the dtype of `data` is not supported.
-
     Example:
         >>> import torch
         >>> import ptwt
@@ -415,6 +412,7 @@ def fswaverecn(
         axes = tuple(range(-ndim, 0))
 
     coeffs, ds = _preprocess_coeffs(coeffs, ndim=ndim, axes=axes)
+    _check_same_device_dtype(coeffs)
 
     res_ll = _separable_conv_waverecn(coeffs, wavelet)
 

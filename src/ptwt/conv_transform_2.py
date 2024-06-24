@@ -14,7 +14,7 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
-    _check_if_tensor,
+    _check_same_device_dtype,
     _get_len,
     _outer,
     _pad_symmetric,
@@ -145,11 +145,6 @@ def wavedec2(
         A tuple containing the wavelet coefficients in pywt order,
         see :data:`ptwt.constants.WaveletCoeff2d`.
 
-    Raises:
-        ValueError: If the dimensionality or the dtype of the input data tensor
-            is unsupported or if the provided ``axes``
-            input has a length other than two.
-
     Example:
         >>> import torch
         >>> import ptwt, pywt
@@ -232,11 +227,8 @@ def waverec2(
         >>> reconstruction = ptwt.waverec2(coefficients, pywt.Wavelet("haar"))
 
     """
-    _check_if_tensor(coeffs[0])
-    torch_device = coeffs[0].device
-    torch_dtype = coeffs[0].dtype
-
     coeffs, ds = _preprocess_coeffs(coeffs, ndim=2, axes=axes)
+    torch_device, torch_dtype = _check_same_device_dtype(coeffs)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
@@ -244,7 +236,7 @@ def waverec2(
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_2d_filt(lo=rec_lo, hi=rec_hi)
 
-    res_ll = _check_if_tensor(coeffs[0])
+    res_ll = coeffs[0]
     for c_pos, coeff_tuple in enumerate(coeffs[1:]):
         if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
             raise ValueError(
@@ -255,11 +247,7 @@ def waverec2(
 
         curr_shape = res_ll.shape
         for coeff in coeff_tuple:
-            if torch_device != coeff.device:
-                raise ValueError("coefficients must be on the same device")
-            elif torch_dtype != coeff.dtype:
-                raise ValueError("coefficients must have the same dtype")
-            elif coeff.shape != curr_shape:
+            if coeff.shape != curr_shape:
                 raise ValueError(
                     "All coefficients on each level must have the same shape"
                 )

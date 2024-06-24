@@ -17,6 +17,7 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
+    _check_same_device_dtype,
     _is_boundary_mode_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -591,6 +592,7 @@ class MatrixWaverec(object):
         if not isinstance(coefficients, list):
             coefficients = list(coefficients)
         coefficients, ds = _preprocess_coeffs(coefficients, ndim=1, axes=self.axis)
+        torch_device, torch_dtype = _check_same_device_dtype(coefficients)
 
         level = len(coefficients) - 1
         input_length = coefficients[-1].shape[-1] * 2
@@ -600,14 +602,6 @@ class MatrixWaverec(object):
             self.level = level
             self.input_length = input_length
             re_build = True
-
-        torch_device = coefficients[0].device
-        torch_dtype = coefficients[0].dtype
-        for coeff in coefficients[1:]:
-            if torch_device != coeff.device:
-                raise ValueError("coefficients must be on the same device")
-            elif torch_dtype != coeff.dtype:
-                raise ValueError("coefficients must have the same dtype")
 
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
@@ -639,6 +633,4 @@ class MatrixWaverec(object):
 
         res_lo = lo.T
 
-        res_lo = _postprocess_tensor(res_lo, ndim=1, ds=ds, axes=self.axis)
-
-        return res_lo
+        return _postprocess_tensor(res_lo, ndim=1, ds=ds, axes=self.axis)

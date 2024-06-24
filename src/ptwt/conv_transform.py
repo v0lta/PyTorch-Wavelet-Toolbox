@@ -14,6 +14,7 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
+    _check_same_device_dtype,
     _get_len,
     _pad_symmetric,
     _postprocess_coeffs,
@@ -254,10 +255,6 @@ def wavedec(
         containing the wavelet coefficients. A denotes
         approximation and D detail coefficients.
 
-    Raises:
-        ValueError: If the dtype of the input data tensor is unsupported or
-            if more than one axis is provided.
-
     Example:
         >>> import torch
         >>> import ptwt, pywt
@@ -309,11 +306,6 @@ def waverec(
     Returns:
         The reconstructed signal tensor.
 
-    Raises:
-        ValueError: If the dtype of the coeffs tensor is unsupported or if the
-            coefficients have incompatible shapes, dtypes or devices or if
-            more than one axis is provided.
-
     Example:
         >>> import torch
         >>> import ptwt, pywt
@@ -327,18 +319,11 @@ def waverec(
         >>>              pywt.Wavelet('haar'))
 
     """
-    torch_device = coeffs[0].device
-    torch_dtype = coeffs[0].dtype
-    for coeff in coeffs[1:]:
-        if torch_device != coeff.device:
-            raise ValueError("coefficients must be on the same device")
-        elif torch_dtype != coeff.dtype:
-            raise ValueError("coefficients must have the same dtype")
-
     # fold channels and swap axis, if necessary.
     if not isinstance(coeffs, list):
         coeffs = list(coeffs)
     coeffs, ds = _preprocess_coeffs(coeffs, ndim=1, axes=axis)
+    torch_device, torch_dtype = _check_same_device_dtype(coeffs)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype

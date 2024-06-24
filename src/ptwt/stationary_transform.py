@@ -10,6 +10,7 @@ import torch.nn.functional as F  # noqa:N812
 from ._util import (
     Wavelet,
     _as_wavelet,
+    _check_same_device_dtype,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -121,10 +122,11 @@ def iswt(
     if not isinstance(coeffs, list):
         coeffs = list(coeffs)
     coeffs, ds = _preprocess_coeffs(coeffs, ndim=1, axes=axis)
+    torch_device, torch_dtype = _check_same_device_dtype(coeffs)
 
     wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
-        wavelet, flip=False, dtype=coeffs[0].dtype, device=coeffs[0].device
+        wavelet, flip=False, dtype=torch_dtype, device=torch_device
     )
     filt_len = rec_lo.shape[-1]
     rec_filt = torch.stack([rec_lo, rec_hi], 0)

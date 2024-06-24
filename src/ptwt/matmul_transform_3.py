@@ -13,7 +13,7 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _check_axes_argument,
-    _check_if_tensor,
+    _check_same_device_dtype,
     _is_boundary_mode_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -381,6 +381,7 @@ class MatrixWaverec3(object):
             ValueError: If the data structure is inconsistent.
         """
         coefficients, ds = _preprocess_coeffs(coefficients, ndim=3, axes=self.axes)
+        torch_device, torch_dtype = _check_same_device_dtype(coefficients)
 
         level = len(coefficients) - 1
         if type(coefficients[-1]) is dict:
@@ -404,16 +405,13 @@ class MatrixWaverec3(object):
             self.level = level
             re_build = True
 
-        lll = _check_if_tensor(coefficients[0])
-        torch_device = lll.device
-        torch_dtype = lll.dtype
-
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
                 device=torch_device,
                 dtype=torch_dtype,
             )
 
+        lll = coefficients[0]
         for c_pos, coeff_dict in enumerate(coefficients[1:]):
             if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
                 raise ValueError(
@@ -421,15 +419,8 @@ class MatrixWaverec3(object):
                     "coefficients must be a dict containing 7 tensors as returned by "
                     "MatrixWavedec3."
                 )
-            test_shape = None
             for coeff in coeff_dict.values():
-                if test_shape is None:
-                    test_shape = coeff.shape
-                if torch_device != coeff.device:
-                    raise ValueError("coefficients must be on the same device")
-                elif torch_dtype != coeff.dtype:
-                    raise ValueError("coefficients must have the same dtype")
-                elif test_shape != coeff.shape:
+                if lll.shape != coeff.shape:
                     raise ValueError(
                         "All coefficients on each level must have the same shape"
                     )

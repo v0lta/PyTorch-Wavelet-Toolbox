@@ -187,6 +187,32 @@ def _check_axes_argument(axes: Sequence[int]) -> None:
         raise ValueError("Cant transform the same axis twice.")
 
 
+def _check_same_device(
+    tensor: torch.Tensor, torch_device: torch.device
+) -> torch.Tensor:
+    if torch_device != tensor.device:
+        raise ValueError("coefficients must be on the same device")
+    return tensor
+
+
+def _check_same_dtype(tensor: torch.Tensor, torch_dtype: torch.dtype) -> torch.Tensor:
+    if torch_dtype != tensor.dtype:
+        raise ValueError("coefficients must have the same dtype")
+    return tensor
+
+
+def _check_same_device_dtype(
+    coeffs: Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd],
+) -> tuple[torch.device, torch.dtype]:
+    c = _check_if_tensor(coeffs[0])
+    torch_device, torch_dtype = c.device, c.dtype
+
+    _map_result(coeffs, partial(_check_same_device, torch_device=torch_device))
+    _map_result(coeffs, partial(_check_same_dtype, torch_dtype=torch_dtype))
+
+    return torch_device, torch_dtype
+
+
 def _get_transpose_order(
     axes: Sequence[int], data_shape: Sequence[int]
 ) -> tuple[list[int], list[int]]:

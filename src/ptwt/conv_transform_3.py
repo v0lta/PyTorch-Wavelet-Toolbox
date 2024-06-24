@@ -13,7 +13,7 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
-    _check_if_tensor,
+    _check_same_device_dtype,
     _get_len,
     _outer,
     _pad_symmetric,
@@ -128,11 +128,6 @@ def wavedec3(
         A tuple containing the wavelet coefficients,
         see :data:`ptwt.constants.WaveletCoeffNd`.
 
-    Raises:
-        ValueError: If the input has fewer than three dimensions or
-            if the dtype is not supported or
-            if the provided axes input has length other than three.
-
     Example:
         >>> import ptwt, torch
         >>> data = torch.randn(5, 16, 16, 16)
@@ -211,12 +206,7 @@ def waverec3(
         >>> reconstruction = ptwt.waverec3(transformed, "haar")
     """
     coeffs, ds = _preprocess_coeffs(coeffs, ndim=3, axes=axes)
-
-    wavelet = _as_wavelet(wavelet)
-
-    res_lll = _check_if_tensor(coeffs[0])
-    torch_device = res_lll.device
-    torch_dtype = res_lll.dtype
+    torch_device, torch_dtype = _check_same_device_dtype(coeffs)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
@@ -224,6 +214,7 @@ def waverec3(
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_3d_filt(lo=rec_lo, hi=rec_hi)
 
+    res_lll = coeffs[0]
     coeff_dicts = coeffs[1:]
     for c_pos, coeff_dict in enumerate(coeff_dicts):
         if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
@@ -233,11 +224,7 @@ def waverec3(
                 "wavedec3."
             )
         for coeff in coeff_dict.values():
-            if torch_device != coeff.device:
-                raise ValueError("coefficients must be on the same device")
-            elif torch_dtype != coeff.dtype:
-                raise ValueError("coefficients must have the same dtype")
-            elif res_lll.shape != coeff.shape:
+            if res_lll.shape != coeff.shape:
                 raise ValueError(
                     "All coefficients on each level must have the same shape"
                 )
