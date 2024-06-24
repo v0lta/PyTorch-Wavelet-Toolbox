@@ -305,6 +305,16 @@ def _preprocess_coeffs(
 ) -> tuple[WaveletCoeffNd, list[int]]: ...
 
 
+# list of nd tensors
+@overload
+def _preprocess_coeffs(
+    coeffs: list[torch.Tensor],
+    ndim: int,
+    axes: Union[tuple[int, ...], int],
+    add_channel_dim: bool = False,
+) -> tuple[list[torch.Tensor], list[int]]: ...
+
+
 def _preprocess_coeffs(
     coeffs: Union[
         list[torch.Tensor],
@@ -380,6 +390,16 @@ def _postprocess_coeffs(
 ) -> WaveletCoeffNd: ...
 
 
+# list of nd tensors
+@overload
+def _postprocess_coeffs(
+    coeffs: list[torch.Tensor],
+    ndim: int,
+    ds: list[int],
+    axes: Union[tuple[int, ...], int],
+) -> list[torch.Tensor]: ...
+
+
 def _postprocess_coeffs(
     coeffs: Union[
         list[torch.Tensor],
@@ -441,56 +461,14 @@ def _preprocess_tensor(
         A tuple (data, ds) where data is the transformed data tensor
         and ds contains the original shape. If `add_channel_dim` is True,
         `data` has `ndim` + 2 axes, otherwise `ndim` + 1.
-
-    Raises:
-        ValueError: if `ndim` is not positive, `axes` has not at least
-            length `ndim` or `data` has not at least `ndim` axes.
     """
-    if isinstance(axes, int):
-        axes = (axes,)
-
-    if ndim <= 0:
-        raise ValueError("Number of dimensions must be positive")
-
-    if tuple(axes) != tuple(range(-ndim, 0)):
-        if len(axes) != ndim:
-            raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
-        else:
-            data = _swap_axes(data, axes)
-
-    # Preprocess multidimensional input.
-    ds = list(data.shape)
-    if len(ds) < ndim:
-        raise ValueError(f"At least {ndim} input dimensions required.")
-    elif len(ds) == ndim:
-        data = data.unsqueeze(0)
-    elif len(ds) > ndim + 1:
-        data, ds = _fold_axes(data, ndim)
-
-    if add_channel_dim:
-        data = data.unsqueeze(1)
-
-    return data, ds
+    data_lst, ds = _preprocess_coeffs(
+        [data], ndim=ndim, axes=axes, add_channel_dim=add_channel_dim
+    )
+    return data_lst[0], ds
 
 
 def _postprocess_tensor(
     data: torch.Tensor, ndim: int, ds: list[int], axes: Union[tuple[int, ...], int]
 ) -> torch.Tensor:
-    if isinstance(axes, int):
-        axes = (axes,)
-
-    if ndim <= 0:
-        raise ValueError("Number of dimensions must be positive")
-
-    if len(ds) == ndim:
-        data = data.squeeze(0)
-    elif len(ds) > ndim + 1:
-        data = _unfold_axes(data, ds, ndim)
-
-    if tuple(axes) != tuple(range(-ndim, 0)):
-        if len(axes) != ndim:
-            raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
-        else:
-            data = _undo_swap_axes(data, axes)
-
-    return data
+    return _postprocess_coeffs(coeffs=[data], ndim=ndim, ds=ds, axes=axes)[0]
