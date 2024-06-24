@@ -14,16 +14,14 @@ from ._util import (
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
-    _fold_axes,
     _is_boundary_mode_supported,
     _is_dtype_supported,
-    _map_result,
-    _swap_axes,
-    _undo_swap_axes,
-    _unfold_axes,
+    _postprocess_coeffs,
+    _postprocess_tensor,
+    _preprocess_coeffs,
+    _preprocess_tensor,
 )
-from .constants import OrthogonalizeMethod, WaveletCoeffNd
-from .conv_transform_3 import _waverec3d_fold_channels_3d_list
+from .constants import OrthogonalizeMethod, WaveletCoeffNd, WaveletDetailDict
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
 
@@ -174,17 +172,9 @@ class MatrixWavedec3(object):
         Raises:
             ValueError: If the input dimensions don't work.
         """
-        if self.axes != (-3, -2, -1):
-            input_signal = _swap_axes(input_signal, list(self.axes))
-
-        ds = None
-        if input_signal.dim() < 3:
-            raise ValueError("At least three dimensions are required for 3d wavedec.")
-        elif len(input_signal.shape) == 3:
-            input_signal = input_signal.unsqueeze(1)
-        else:
-            input_signal, ds = _fold_axes(input_signal, 3)
-
+        input_signal, ds = _preprocess_tensor(
+            input_signal, ndim=3, axes=self.axes, add_channel_dim=False
+        )
         _, depth, height, width = input_signal.shape
 
         if not _is_dtype_supported(input_signal.dtype):
@@ -220,7 +210,7 @@ class MatrixWavedec3(object):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
-        split_list: list[dict[str, torch.Tensor]] = []
+        split_list: list[WaveletDetailDict] = []
         lll = input_signal
         for scale, fwt_mats in enumerate(self.fwt_matrix_list):
             # fwt_depth_matrix, fwt_row_matrix, fwt_col_matrix = fwt_mats
@@ -240,17 +230,17 @@ class MatrixWavedec3(object):
                 tensor: torch.Tensor,
                 key: str,
                 depth: int,
-                dict: dict[str, torch.Tensor],
+                to_dict: WaveletDetailDict,
             ) -> None:
                 if key:
-                    dict[key] = tensor
+                    to_dict[key] = tensor
                 if len(key) < depth:
                     dim = len(key) + 1
                     ca, cd = torch.split(tensor, tensor.shape[-dim] // 2, dim=-dim)
-                    _split_rec(ca, "a" + key, depth, dict)
-                    _split_rec(cd, "d" + key, depth, dict)
+                    _split_rec(ca, "a" + key, depth, to_dict)
+                    _split_rec(cd, "d" + key, depth, to_dict)
 
-            coeff_dict: dict[str, torch.Tensor] = {}
+            coeff_dict: WaveletDetailDict = {}
             _split_rec(lll, "", 3, coeff_dict)
             lll = coeff_dict["aaa"]
             result_keys = list(
@@ -262,17 +252,9 @@ class MatrixWavedec3(object):
             split_list.append(coeff_dict)
 
         split_list.reverse()
-        result: WaveletCoeffNd = lll, *split_list
+        coeffs: WaveletCoeffNd = lll, *split_list
 
-        if ds:
-            _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
-            result = _map_result(result, _unfold_axes_fn)
-
-        if self.axes != (-3, -2, -1):
-            undo_swap_fn = partial(_undo_swap_axes, axes=self.axes)
-            result = _map_result(result, undo_swap_fn)
-
-        return result
+        return _postprocess_coeffs(coeffs, ndim=3, ds=ds, axes=self.axes)
 
 
 class MatrixWaverec3(object):
@@ -372,7 +354,7 @@ class MatrixWaverec3(object):
                 current_width // 2,
             )
 
-    def _cat_coeff_recursive(self, input_dict: dict[str, torch.Tensor]) -> torch.Tensor:
+    def _cat_coeff_recursive(self, input_dict: WaveletDetailDict) -> torch.Tensor:
         done_dict = {}
         a_initial_keys = list(filter(lambda x: x[0] == "a", input_dict.keys()))
         for a_key in a_initial_keys:
@@ -402,20 +384,7 @@ class MatrixWaverec3(object):
         Raises:
             ValueError: If the data structure is inconsistent.
         """
-        if self.axes != (-3, -2, -1):
-            swap_axes_fn = partial(_swap_axes, axes=list(self.axes))
-            coefficients = _map_result(coefficients, swap_axes_fn)
-
-        ds = None
-        # the Union[tensor, dict] idea is coming from pywt. We don't change it here.
-        res_lll = _check_if_tensor(coefficients[0])
-        if res_lll.dim() < 3:
-            raise ValueError(
-                "Three dimensional transforms require at least three dimensions."
-            )
-        elif res_lll.dim() >= 5:
-            coefficients, ds = _waverec3d_fold_channels_3d_list(coefficients)
-            res_lll = _check_if_tensor(coefficients[0])
+        coefficients, ds = _preprocess_coeffs(coefficients, ndim=3, axes=self.axes)
 
         level = len(coefficients) - 1
         if type(coefficients[-1]) is dict:
@@ -439,18 +408,12 @@ class MatrixWaverec3(object):
             self.level = level
             re_build = True
 
-        lll = coefficients[0]
-        if not isinstance(lll, torch.Tensor):
-            raise ValueError(
-                "First element of coeffs must be the approximation coefficient tensor."
-            )
-
+        lll = _check_if_tensor(coefficients[0])
         torch_device = lll.device
         torch_dtype = lll.dtype
 
         if not _is_dtype_supported(torch_dtype):
-            if not _is_dtype_supported(torch_dtype):
-                raise ValueError(f"Input dtype {torch_dtype} not supported")
+            raise ValueError(f"Input dtype {torch_dtype} not supported")
 
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
@@ -484,10 +447,4 @@ class MatrixWaverec3(object):
             for dim, mat in enumerate(self.ifwt_matrix_list[level - 1 - c_pos][::-1]):
                 lll = _batch_dim_mm(mat, lll, dim=(-1) * (dim + 1))
 
-        if ds:
-            lll = _unfold_axes(lll, ds, 3)
-
-        if self.axes != (-3, -2, -1):
-            lll = _undo_swap_axes(lll, list(self.axes))
-
-        return lll
+        return _postprocess_tensor(lll, ndim=3, ds=ds, axes=self.axes)
