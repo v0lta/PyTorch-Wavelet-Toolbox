@@ -14,11 +14,13 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
-    _fold_axes,
     _get_len,
     _is_dtype_supported,
     _pad_symmetric,
-    _unfold_axes,
+    _postprocess_coeffs_1d,
+    _postprocess_tensor_1d,
+    _preprocess_coeffs_1d,
+    _preprocess_tensor_1d,
 )
 from .constants import BoundaryMode, WaveletCoeff2d
 
@@ -206,91 +208,6 @@ def _adjust_padding_at_reconstruction(
     return pad_end, pad_start
 
 
-def _preprocess_tensor_dec1d(
-    data: torch.Tensor, axis: int, add_channel_dim: bool = True
-) -> tuple[torch.Tensor, list[int]]:
-    """Preprocess input tensor dimensions.
-
-    Args:
-        data (torch.Tensor): An input tensor of any shape.
-        axis (int): Compute the transform over this axis instead of the
-            last one.
-        add_channel_dim (bool): If True, ensures that the return has at
-            least three axes by adding a new axis at dim 1.
-            Defaults to True.
-
-    Returns:
-        A tuple (data, ds) where data is a data tensor of shape
-        [new_batch, 1, to_process] and ds contains the original shape.
-    """
-    if axis != -1:
-        if isinstance(axis, int):
-            data = data.swapaxes(axis, -1)
-        else:
-            raise ValueError("1d transforms operate on a single axis only.")
-
-    ds = list(data.shape)
-    if len(ds) == 1:
-        # assume time series
-        data = data.unsqueeze(0)
-    elif len(ds) > 2:
-        data, ds = _fold_axes(data, 1)
-
-    if add_channel_dim:
-        data = data.unsqueeze(1)
-
-    return data, ds
-
-
-def _postprocess_result_list_dec1d(
-    result_list: list[torch.Tensor], ds: list[int], axis: int
-) -> list[torch.Tensor]:
-    if len(ds) == 1:
-        result_list = [r_el.squeeze(0) for r_el in result_list]
-    elif len(ds) > 2:
-        # Unfold axes for the wavelets
-        result_list = [_unfold_axes(fres, ds, 1) for fres in result_list]
-    else:
-        result_list = result_list
-
-    if axis != -1:
-        result_list = [coeff.swapaxes(axis, -1) for coeff in result_list]
-
-    return result_list
-
-
-def _preprocess_result_list_rec1d(
-    result_lst: Sequence[torch.Tensor], axis: int
-) -> tuple[Sequence[torch.Tensor], list[int]]:
-    if axis != -1:
-        if isinstance(axis, int):
-            result_lst = [coeff.swapaxes(axis, -1) for coeff in result_lst]
-        else:
-            raise ValueError("1d transforms operate on a single axis only.")
-
-    # Fold axes for the wavelets
-    ds = list(result_lst[0].shape)
-    if len(ds) == 1:
-        result_lst = [uf_coeff.unsqueeze(0) for uf_coeff in result_lst]
-    elif len(ds) > 2:
-        result_lst = [_fold_axes(uf_coeff, 1)[0] for uf_coeff in result_lst]
-    return result_lst, ds
-
-
-def _postprocess_tensor_rec1d(
-    data: torch.Tensor, ds: list[int], axis: int
-) -> torch.Tensor:
-    if len(ds) == 1:
-        data = data.squeeze(0)
-    elif len(ds) > 2:
-        data = _unfold_axes(data, ds, 1)
-
-    if axis != -1:
-        data = data.swapaxes(axis, -1)
-
-    return data
-
-
 def wavedec(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
@@ -356,7 +273,7 @@ def wavedec(
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
-    data, ds = _preprocess_tensor_dec1d(data, axis=axis)
+    data, ds = _preprocess_tensor_1d(data, axis=axis)
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -377,7 +294,7 @@ def wavedec(
     result_list.append(res_lo.squeeze(1))
     result_list.reverse()
 
-    result_list = _postprocess_result_list_dec1d(result_list, ds, axis)
+    result_list = _postprocess_coeffs_1d(result_list, ds, axis)
 
     return result_list
 
@@ -428,7 +345,7 @@ def waverec(
             raise ValueError("coefficients must have the same dtype")
 
     # fold channels and swap axis, if necessary.
-    coeffs, ds = _preprocess_result_list_rec1d(coeffs, axis=axis)
+    coeffs, ds = _preprocess_coeffs_1d(coeffs, axis=axis)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
@@ -454,6 +371,6 @@ def waverec(
             res_lo = res_lo[..., :-padr]
 
     # undo folding and swapping
-    res_lo = _postprocess_tensor_rec1d(res_lo, ds=ds, axis=axis)
+    res_lo = _postprocess_tensor_1d(res_lo, ds=ds, axis=axis)
 
     return res_lo

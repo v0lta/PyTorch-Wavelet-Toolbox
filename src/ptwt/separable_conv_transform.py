@@ -23,13 +23,14 @@ from ._util import (
     _fold_axes,
     _is_dtype_supported,
     _map_result,
+    _postprocess_tensor_2d,
+    _preprocess_tensor_2d,
     _swap_axes,
     _undo_swap_axes,
     _unfold_axes,
 )
 from .constants import BoundaryMode, WaveletCoeff2dSeparable, WaveletCoeffNd
 from .conv_transform import wavedec, waverec
-from .conv_transform_2 import _preprocess_tensor_dec2d, _postprocess_tensor_rec2d
 
 
 def _separable_conv_dwtn_(
@@ -228,7 +229,7 @@ def fswavedec2(
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
-    data, ds = _preprocess_tensor_dec2d(data, axes=axes, add_channel_dim=False)
+    data, ds = _preprocess_tensor_2d(data, axes=axes, add_channel_dim=False)
     res = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
 
     if ds:
@@ -357,15 +358,12 @@ def fswaverec2(
             swap_fn = partial(_swap_axes, axes=list(axes))
             coeffs = _map_result(coeffs, swap_fn)
 
-    ds = None
-    wavelet = _as_wavelet(wavelet)
-
     res_ll = _check_if_tensor(coeffs[0])
+    ds = list(res_ll.shape)
     torch_dtype = res_ll.dtype
 
     if res_ll.dim() >= 4:
         # avoid the channel sum, fold the channels into batches.
-        ds = _check_if_tensor(coeffs[0]).shape
         coeffs = _map_result(coeffs, lambda t: _fold_axes(t, 2)[0])
         res_ll = _check_if_tensor(coeffs[0])
 
@@ -374,7 +372,7 @@ def fswaverec2(
 
     res_ll = _separable_conv_waverecn(coeffs, wavelet)
 
-    res_ll = _postprocess_tensor_rec2d(res_ll, ds=ds, axes=axes)
+    res_ll = _postprocess_tensor_2d(res_ll, ds=ds, axes=axes)
 
     return res_ll
 

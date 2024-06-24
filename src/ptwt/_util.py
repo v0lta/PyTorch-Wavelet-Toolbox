@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 from collections.abc import Sequence
+from functools import partial
 from typing import Any, Callable, NamedTuple, Optional, Protocol, Union, cast, overload
 
 import numpy as np
@@ -253,3 +254,166 @@ def _map_result(
         Union[list[WaveletDetailDict], list[WaveletDetailTuple2d]], result_lst
     )
     return approx, *cast_result_lst
+
+
+def _preprocess_coeffs_1d(
+    result_lst: Sequence[torch.Tensor], axis: int
+) -> tuple[Sequence[torch.Tensor], list[int]]:
+    if axis != -1:
+        if isinstance(axis, int):
+            result_lst = [coeff.swapaxes(axis, -1) for coeff in result_lst]
+        else:
+            raise ValueError("1d transforms operate on a single axis only.")
+
+    # Fold axes for the wavelets
+    ds = list(result_lst[0].shape)
+    if len(ds) == 1:
+        result_lst = [uf_coeff.unsqueeze(0) for uf_coeff in result_lst]
+    elif len(ds) > 2:
+        result_lst = [_fold_axes(uf_coeff, 1)[0] for uf_coeff in result_lst]
+    return result_lst, ds
+
+
+def _postprocess_coeffs_1d(
+    result_list: list[torch.Tensor], ds: list[int], axis: int
+) -> list[torch.Tensor]:
+    if len(ds) == 1:
+        result_list = [r_el.squeeze(0) for r_el in result_list]
+    elif len(ds) > 2:
+        # Unfold axes for the wavelets
+        result_list = [_unfold_axes(fres, ds, 1) for fres in result_list]
+    else:
+        result_list = result_list
+
+    if axis != -1:
+        result_list = [coeff.swapaxes(axis, -1) for coeff in result_list]
+
+    return result_list
+
+
+def _preprocess_coeffs_2d(
+    coeffs: WaveletCoeff2d, axes: tuple[int, int]
+) -> tuple[WaveletCoeff2d, list[int]]:
+    # swap axes if necessary
+    if tuple(axes) != (-2, -1):
+        if len(axes) != 2:
+            raise ValueError("2D transforms work with two axes.")
+        else:
+            swap_fn = partial(_swap_axes, axes=axes)
+            coeffs = _map_result(coeffs, swap_fn)
+
+    # Fold axes for the wavelets
+    ds = list(coeffs[0].shape)
+    if len(ds) <= 1:
+        raise ValueError("2d transforms require at least 2 input dimensions")
+    elif len(ds) == 2:
+        coeffs = _map_result(coeffs, lambda x: x.unsqueeze(0))
+    elif len(ds) > 3:
+        coeffs = _map_result(coeffs, lambda t: _fold_axes(t, 2)[0])
+    return coeffs, ds
+
+
+def _postprocess_coeffs_2d(
+    coeffs: WaveletCoeff2d, ds: list[int], axes: tuple[int, int]
+) -> WaveletCoeff2d:
+    if len(ds) == 2:
+        coeffs = _map_result(coeffs, lambda x: x.squeeze(0))
+    elif len(ds) > 3:
+        _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
+        coeffs = _map_result(coeffs, _unfold_axes2)
+
+    if tuple(axes) != (-2, -1):
+        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
+        coeffs = _map_result(coeffs, undo_swap_fn)
+
+    return coeffs
+
+
+def _preprocess_tensor_1d(
+    data: torch.Tensor, axis: int, add_channel_dim: bool = True
+) -> tuple[torch.Tensor, list[int]]:
+    """Preprocess input tensor dimensions.
+
+    Args:
+        data (torch.Tensor): An input tensor of any shape.
+        axis (int): Compute the transform over this axis instead of the
+            last one.
+        add_channel_dim (bool): If True, ensures that the return has at
+            least three axes by adding a new axis at dim 1.
+            Defaults to True.
+
+    Returns:
+        A tuple (data, ds) where data is a data tensor of shape
+        [new_batch, 1, to_process] and ds contains the original shape.
+
+    Raises:
+        ValueError: if ``axis`` is not a single int.
+    """
+    if axis != -1:
+        if isinstance(axis, int):
+            data = data.swapaxes(axis, -1)
+        else:
+            raise ValueError("1d transforms operate on a single axis only.")
+
+    ds = list(data.shape)
+    if len(ds) == 1:
+        # assume time series
+        data = data.unsqueeze(0)
+    elif len(ds) > 2:
+        data, ds = _fold_axes(data, 1)
+
+    if add_channel_dim:
+        data = data.unsqueeze(1)
+
+    return data, ds
+
+
+def _postprocess_tensor_1d(
+    data: torch.Tensor, ds: list[int], axis: int
+) -> torch.Tensor:
+    if len(ds) == 1:
+        data = data.squeeze(0)
+    elif len(ds) > 2:
+        data = _unfold_axes(data, ds, 1)
+
+    if axis != -1:
+        data = data.swapaxes(axis, -1)
+
+    return data
+
+
+def _preprocess_tensor_2d(
+    data: torch.Tensor, axes: tuple[int, int], add_channel_dim: bool = True
+) -> tuple[torch.Tensor, list[int]]:
+    if tuple(axes) != (-2, -1):
+        if len(axes) != 2:
+            raise ValueError("2D transforms work with two axes.")
+        else:
+            data = _swap_axes(data, list(axes))
+
+    # Preprocess multidimensional input.
+    ds = list(data.shape)
+    if len(ds) <= 1:
+        raise ValueError("More than one input dimension required.")
+    elif len(ds) == 2:
+        data = data.unsqueeze(0)
+    elif len(ds) >= 4:
+        data, ds = _fold_axes(data, 2)
+
+    if add_channel_dim:
+        data = data.unsqueeze(1)
+
+    return data, ds
+
+
+def _postprocess_tensor_2d(
+    data: torch.Tensor, ds: list[int], axes: tuple[int, int]
+) -> torch.Tensor:
+    if len(ds) == 2:
+        data = data.squeeze(0)
+    elif len(ds) > 3:
+        data = _unfold_axes(data, ds, 2)
+
+    if tuple(axes) != (-2, -1):
+        data = _undo_swap_axes(data, axes)
+    return data

@@ -6,7 +6,6 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 from __future__ import annotations
 
-from functools import partial
 from typing import Optional, Union
 
 import pywt
@@ -15,17 +14,15 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
-    _check_axes_argument,
     _check_if_tensor,
-    _fold_axes,
     _get_len,
     _is_dtype_supported,
-    _map_result,
     _outer,
     _pad_symmetric,
-    _swap_axes,
-    _undo_swap_axes,
-    _unfold_axes,
+    _postprocess_coeffs_2d,
+    _postprocess_tensor_2d,
+    _preprocess_coeffs_2d,
+    _preprocess_tensor_2d,
 )
 from .constants import BoundaryMode, WaveletCoeff2d, WaveletDetailTuple2d
 from .conv_transform import (
@@ -99,81 +96,6 @@ def _fwt_pad2(
     return data_pad
 
 
-def _preprocess_tensor_dec2d(
-    data: torch.Tensor, axes: tuple[int, int], add_channel_dim: bool = True
-) -> tuple[torch.Tensor, list[int]]:
-    if tuple(axes) != (-2, -1):
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            data = _swap_axes(data, list(axes))
-
-    # Preprocess multidimensional input.
-    ds = list(data.shape)
-    if len(ds) <= 1:
-        raise ValueError("More than one input dimension required.")
-    elif len(ds) == 2:
-        data = data.unsqueeze(0)
-    elif len(ds) >= 4:
-        data, ds = _fold_axes(data, 2)
-
-    if add_channel_dim:
-        data = data.unsqueeze(1)
-
-    return data, ds
-
-
-def _postprocess_coeffs_dec2d(
-    coeffs: WaveletCoeff2d, ds: list[int], axes: tuple[int, int]
-) -> WaveletCoeff2d:
-    if len(ds) == 2:
-        coeffs = _map_result(coeffs, lambda x: x.squeeze(0))
-    elif len(ds) > 3:
-        _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
-        coeffs = _map_result(coeffs, _unfold_axes2)
-
-    if tuple(axes) != (-2, -1):
-        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-        coeffs = _map_result(coeffs, undo_swap_fn)
-
-    return coeffs
-
-
-def _preprocess_coeffs_rec2d(
-    coeffs: WaveletCoeff2d, axes: tuple[int, int]
-) -> tuple[WaveletCoeff2d, list[int]]:
-    # swap axes if necessary
-    if tuple(axes) != (-2, -1):
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            swap_fn = partial(_swap_axes, axes=axes)
-            coeffs = _map_result(coeffs, swap_fn)
-
-    # Fold axes for the wavelets
-    ds = list(coeffs[0].shape)
-    if len(ds) <= 1:
-        raise ValueError("2d transforms require at least 2 input dimensions")
-    elif len(ds) == 2:
-        coeffs = _map_result(coeffs, lambda x: x.unsqueeze(0))
-    elif len(ds) > 3:
-        coeffs = _map_result(coeffs, lambda t: _fold_axes(t, 2)[0])
-    return coeffs, ds
-
-
-def _postprocess_tensor_rec2d(
-    data: torch.Tensor, ds: list[int], axes: tuple[int, int]
-) -> torch.Tensor:
-    if len(ds) == 2:
-        data = data.squeeze(0)
-    elif len(ds) > 3:
-        data = _unfold_axes(data, ds, 2)
-
-    if tuple(axes) != (-2, -1):
-        data = _undo_swap_axes(data, axes)
-    return data
-
-
 def wavedec2(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
@@ -244,7 +166,7 @@ def wavedec2(
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
-    data, ds = _preprocess_tensor_dec2d(data, axes=axes)
+    data, ds = _preprocess_tensor_2d(data, axes=axes)
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
@@ -268,7 +190,7 @@ def wavedec2(
     res_ll = res_ll.squeeze(1)
     result: WaveletCoeff2d = res_ll, *result_lst
 
-    result = _postprocess_coeffs_dec2d(result, ds=ds, axes=axes)
+    result = _postprocess_coeffs_2d(result, ds=ds, axes=axes)
 
     return result
 
@@ -320,7 +242,7 @@ def waverec2(
     if not _is_dtype_supported(torch_dtype):
         raise ValueError(f"Input dtype {torch_dtype} not supported")
 
-    coeffs, ds = _preprocess_coeffs_rec2d(coeffs, axes=axes)
+    coeffs, ds = _preprocess_coeffs_2d(coeffs, axes=axes)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
@@ -376,6 +298,6 @@ def waverec2(
         if padr > 0:
             res_ll = res_ll[..., :-padr]
 
-    res_ll = _postprocess_tensor_rec2d(res_ll, ds=ds, axes=axes)
+    res_ll = _postprocess_tensor_2d(res_ll, ds=ds, axes=axes)
 
     return res_ll

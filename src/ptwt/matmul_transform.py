@@ -19,16 +19,13 @@ from ._util import (
     _as_wavelet,
     _is_boundary_mode_supported,
     _is_dtype_supported,
-    _unfold_axes,
+    _postprocess_coeffs_1d,
+    _postprocess_tensor_1d,
+    _preprocess_coeffs_1d,
+    _preprocess_tensor_1d,
 )
 from .constants import OrthogonalizeMethod
-from .conv_transform import (
-    _get_filter_tensors,
-    _postprocess_result_list_dec1d,
-    _postprocess_tensor_rec1d,
-    _preprocess_result_list_rec1d,
-    _preprocess_tensor_dec1d,
-)
+from .conv_transform import _get_filter_tensors
 from .sparse_math import (
     _orth_by_gram_schmidt,
     _orth_by_qr,
@@ -333,7 +330,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
-        input_signal, ds = _preprocess_tensor_dec1d(
+        input_signal, ds = _preprocess_tensor_1d(
             input_signal,
             axis=self.axis,
             add_channel_dim=False,
@@ -380,7 +377,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         result_list = [s.T for s in split_list[::-1]]
 
         # unfold if necessary
-        result_list = _postprocess_result_list_dec1d(result_list, ds, self.axis)
+        result_list = _postprocess_coeffs_1d(result_list, ds, self.axis)
         return result_list
 
 
@@ -595,7 +592,7 @@ class MatrixWaverec(object):
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec` object.
         """
-        coefficients, ds = _preprocess_result_list_rec1d(coefficients, self.axis)
+        coefficients, ds = _preprocess_coeffs_1d(coefficients, self.axis)
 
         level = len(coefficients) - 1
         input_length = coefficients[-1].shape[-1] * 2
@@ -647,6 +644,6 @@ class MatrixWaverec(object):
 
         res_lo = lo.T
 
-        res_lo = _postprocess_tensor_rec1d(res_lo, ds=ds, axis=self.axis)
+        res_lo = _postprocess_tensor_1d(res_lo, ds=ds, axis=self.axis)
 
         return res_lo

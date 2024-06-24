@@ -6,7 +6,6 @@ This module uses boundary filters to minimize padding.
 from __future__ import annotations
 
 import sys
-from functools import partial
 from typing import Optional, Union, cast
 
 import numpy as np
@@ -16,13 +15,12 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _check_axes_argument,
-    _check_if_tensor,
     _is_boundary_mode_supported,
     _is_dtype_supported,
-    _map_result,
-    _swap_axes,
-    _undo_swap_axes,
-    _unfold_axes,
+    _postprocess_coeffs_2d,
+    _postprocess_tensor_2d,
+    _preprocess_coeffs_2d,
+    _preprocess_tensor_2d,
 )
 from .constants import (
     OrthogonalizeMethod,
@@ -31,13 +29,7 @@ from .constants import (
     WaveletDetailTuple2d,
 )
 from .conv_transform import _get_filter_tensors
-from .conv_transform_2 import (
-    _construct_2d_filt,
-    _postprocess_coeffs_dec2d,
-    _postprocess_tensor_rec2d,
-    _preprocess_coeffs_rec2d,
-    _preprocess_tensor_dec2d,
-)
+from .conv_transform_2 import _construct_2d_filt
 from .matmul_transform import (
     BaseMatrixWaveDec,
     construct_boundary_a,
@@ -435,7 +427,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
-        input_signal, ds = _preprocess_tensor_dec2d(
+        input_signal, ds = _preprocess_tensor_2d(
             input_signal, axes=self.axes, add_channel_dim=False
         )
 
@@ -536,7 +528,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         split_list.reverse()
         result: WaveletCoeff2d = ll, *split_list
 
-        result = _postprocess_coeffs_dec2d(result, ds=ds, axes=self.axes)
+        result = _postprocess_coeffs_2d(result, ds=ds, axes=self.axes)
 
         return result
 
@@ -729,7 +721,7 @@ class MatrixWaverec2(object):
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec2` object.
         """
-        coefficients, ds = _preprocess_coeffs_rec2d(coefficients, axes=self.axes)
+        coefficients, ds = _preprocess_coeffs_2d(coefficients, axes=self.axes)
         ll = coefficients[0]
 
         level = len(coefficients) - 1
@@ -823,6 +815,6 @@ class MatrixWaverec2(object):
                     if pred_len[1] != next_len[1]:
                         ll = ll[:, :, :-1]
 
-        ll = _postprocess_tensor_rec2d(ll, ds=ds, axes=self.axes)
+        ll = _postprocess_tensor_2d(ll, ds=ds, axes=self.axes)
 
         return ll

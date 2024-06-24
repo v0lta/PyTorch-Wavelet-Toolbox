@@ -7,14 +7,15 @@ import pywt
 import torch
 import torch.nn.functional as F  # noqa:N812
 
-from ._util import Wavelet, _as_wavelet, _unfold_axes
-from .conv_transform import (
-    _get_filter_tensors,
-    _postprocess_result_list_dec1d,
-    _postprocess_tensor_rec1d,
-    _preprocess_result_list_rec1d,
-    _preprocess_tensor_dec1d,
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _postprocess_coeffs_1d,
+    _postprocess_tensor_1d,
+    _preprocess_coeffs_1d,
+    _preprocess_tensor_1d,
 )
+from .conv_transform import _get_filter_tensors
 
 
 def _circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Tensor:
@@ -70,11 +71,8 @@ def swt(
 
     Returns:
         Same as wavedec. Equivalent to pywt.swt with trim_approx=True.
-
-    Raises:
-        ValueError: Is the axis argument is not an integer.
     """
-    data, ds = _preprocess_tensor_dec1d(data, axis)
+    data, ds = _preprocess_tensor_1d(data, axis)
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -98,7 +96,7 @@ def swt(
         result_list.append(res_hi.squeeze(1))
     result_list.append(res_lo.squeeze(1))
 
-    result_list = _postprocess_result_list_dec1d(result_list, ds, axis)
+    result_list = _postprocess_coeffs_1d(result_list, ds, axis)
 
     return result_list[::-1]
 
@@ -120,11 +118,8 @@ def iswt(
 
     Returns:
         A reconstruction of the original swt input.
-
-    Raises:
-        ValueError: If the axis argument is not an integer.
     """
-    coeffs, ds = _preprocess_result_list_rec1d(coeffs, axis=axis)
+    coeffs, ds = _preprocess_coeffs_1d(coeffs, axis=axis)
 
     wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
@@ -147,6 +142,6 @@ def iswt(
             1,
         )
 
-    res_lo = _postprocess_tensor_rec1d(res_lo, ds=ds, axis=axis)
+    res_lo = _postprocess_tensor_1d(res_lo, ds=ds, axis=axis)
 
     return res_lo
