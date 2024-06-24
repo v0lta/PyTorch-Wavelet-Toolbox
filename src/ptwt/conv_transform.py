@@ -207,7 +207,7 @@ def _adjust_padding_at_reconstruction(
 
 
 def _preprocess_tensor_dec1d(
-    data: torch.Tensor, axis: int
+    data: torch.Tensor, axis: int, add_channel_dim: bool = True
 ) -> tuple[torch.Tensor, list[int]]:
     """Preprocess input tensor dimensions.
 
@@ -215,6 +215,9 @@ def _preprocess_tensor_dec1d(
         data (torch.Tensor): An input tensor of any shape.
         axis (int): Compute the transform over this axis instead of the
             last one.
+        add_channel_dim (bool): If True, ensures that the return has at
+            least three axes by adding a new axis at dim 1.
+            Defaults to True.
 
     Returns:
         A tuple (data, ds) where data is a data tensor of shape
@@ -229,13 +232,13 @@ def _preprocess_tensor_dec1d(
     ds = list(data.shape)
     if len(ds) == 1:
         # assume time series
-        data = data.unsqueeze(0).unsqueeze(0)
-    elif len(ds) == 2:
-        # assume batched time series
-        data = data.unsqueeze(1)
-    else:
+        data = data.unsqueeze(0)
+    elif len(ds) > 2:
         data, ds = _fold_axes(data, 1)
+
+    if add_channel_dim:
         data = data.unsqueeze(1)
+
     return data, ds
 
 

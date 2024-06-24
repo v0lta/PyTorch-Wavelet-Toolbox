@@ -333,8 +333,11 @@ class MatrixWavedec(BaseMatrixWaveDec):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
-        input_signal, ds = _preprocess_tensor_dec1d(input_signal, axis=self.axis)
-        input_signal = input_signal.squeeze(1)
+        input_signal, ds = _preprocess_tensor_dec1d(
+            input_signal,
+            axis=self.axis,
+            add_channel_dim=False,
+        )
 
         if not _is_dtype_supported(input_signal.dtype):
             raise ValueError(f"Input dtype {input_signal.dtype} not supported")
