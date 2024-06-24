@@ -11,6 +11,7 @@ from ._util import Wavelet, _as_wavelet, _unfold_axes
 from .conv_transform import (
     _get_filter_tensors,
     _postprocess_result_list_dec1d,
+    _postprocess_tensor_rec1d,
     _preprocess_result_list_rec1d,
     _preprocess_tensor_dec1d,
 )
@@ -73,13 +74,7 @@ def swt(
     Raises:
         ValueError: Is the axis argument is not an integer.
     """
-    if axis != -1:
-        if isinstance(axis, int):
-            data = data.swapaxes(axis, -1)
-        else:
-            raise ValueError("swt transforms a single axis only.")
-
-    data, ds = _preprocess_tensor_dec1d(data)
+    data, ds = _preprocess_tensor_dec1d(data, axis)
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -111,7 +106,7 @@ def swt(
 def iswt(
     coeffs: Sequence[torch.Tensor],
     wavelet: Union[pywt.Wavelet, str],
-    axis: Optional[int] = -1,
+    axis: int = -1,
 ) -> torch.Tensor:
     """Invert a 1d stationary wavelet transform.
 
@@ -120,7 +115,7 @@ def iswt(
             by the swt function.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet, as used in the forward transform.
-        axis (int, optional): The axis the forward trasform was computed over.
+        axis (int): The axis the forward trasform was computed over.
             Defaults to -1.
 
     Returns:
@@ -129,16 +124,7 @@ def iswt(
     Raises:
         ValueError: If the axis argument is not an integer.
     """
-    if axis != -1:
-        swap = []
-        if isinstance(axis, int):
-            for coeff in coeffs:
-                swap.append(coeff.swapaxes(axis, -1))
-            coeffs = swap
-        else:
-            raise ValueError("iswt transforms a single axis only.")
-
-    coeffs, ds = _preprocess_result_list_rec1d(coeffs)
+    coeffs, ds = _preprocess_result_list_rec1d(coeffs, axis=axis)
 
     wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
@@ -161,12 +147,6 @@ def iswt(
             1,
         )
 
-    if len(ds) == 1:
-        res_lo = res_lo.squeeze(0)
-    elif len(ds) > 2:
-        res_lo = _unfold_axes(res_lo, ds, 1)
-
-    if axis != -1:
-        res_lo = res_lo.swapaxes(axis, -1)
+    res_lo = _postprocess_tensor_rec1d(res_lo, ds=ds, axis=axis)
 
     return res_lo

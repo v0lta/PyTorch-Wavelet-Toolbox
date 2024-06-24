@@ -25,6 +25,7 @@ from .constants import OrthogonalizeMethod
 from .conv_transform import (
     _get_filter_tensors,
     _postprocess_result_list_dec1d,
+    _postprocess_tensor_rec1d,
     _preprocess_result_list_rec1d,
     _preprocess_tensor_dec1d,
 )
@@ -332,10 +333,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
-        if self.axis != -1:
-            input_signal = input_signal.swapaxes(self.axis, -1)
-
-        input_signal, ds = _preprocess_tensor_dec1d(input_signal)
+        input_signal, ds = _preprocess_tensor_dec1d(input_signal, axis=self.axis)
         input_signal = input_signal.squeeze(1)
 
         if not _is_dtype_supported(input_signal.dtype):
@@ -594,13 +592,7 @@ class MatrixWaverec(object):
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec` object.
         """
-        if self.axis != -1:
-            swap = []
-            for coeff in coefficients:
-                swap.append(coeff.swapaxes(self.axis, -1))
-            coefficients = swap
-
-        coefficients, ds = _preprocess_result_list_rec1d(coefficients)
+        coefficients, ds = _preprocess_result_list_rec1d(coefficients, self.axis)
 
         level = len(coefficients) - 1
         input_length = coefficients[-1].shape[-1] * 2
@@ -652,12 +644,6 @@ class MatrixWaverec(object):
 
         res_lo = lo.T
 
-        if len(ds) == 1:
-            res_lo = res_lo.squeeze(0)
-        elif len(ds) > 2:
-            res_lo = _unfold_axes(res_lo, ds, 1)
-
-        if self.axis != -1:
-            res_lo = res_lo.swapaxes(self.axis, -1)
+        res_lo = _postprocess_tensor_rec1d(res_lo, ds=ds, axis=self.axis)
 
         return res_lo
