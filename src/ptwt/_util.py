@@ -211,6 +211,13 @@ def _undo_swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
 
 @overload
 def _map_result(
+    data: list[torch.Tensor],
+    function: Callable[[torch.Tensor], torch.Tensor],
+) -> list[torch.Tensor]: ...
+
+
+@overload
+def _map_result(
     data: WaveletCoeff2d,
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> WaveletCoeff2d: ...
@@ -224,12 +231,13 @@ def _map_result(
 
 
 def _map_result(
-    data: Union[WaveletCoeff2d, WaveletCoeffNd],
+    data: Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd],
     function: Callable[[torch.Tensor], torch.Tensor],
-) -> Union[WaveletCoeff2d, WaveletCoeffNd]:
+) -> Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd]:
     approx = function(data[0])
     result_lst: list[
         Union[
+            torch.Tensor,
             WaveletDetailDict,
             WaveletDetailTuple2d,
         ]
@@ -246,14 +254,25 @@ def _map_result(
         elif isinstance(element, dict):
             new_dict = {key: function(value) for key, value in element.items()}
             result_lst.append(new_dict)
+        elif isinstance(element, torch.Tensor):
+            result_lst.append(function(element))
         else:
             raise ValueError(f"Unexpected input type {type(element)}")
 
-    # cast since we assume that the full list is of the same type
-    cast_result_lst = cast(
-        Union[list[WaveletDetailDict], list[WaveletDetailTuple2d]], result_lst
-    )
-    return approx, *cast_result_lst
+    if not result_lst:
+        # if only approximation coeff:
+        # use list iff data is a list
+        return [approx] if isinstance(data, list) else (approx,)
+    elif isinstance(result_lst[0], torch.Tensor):
+        # if the first detail coeff is tensor
+        # -> all are tensors -> return a list
+        return [approx] + cast(list[torch.Tensor], result_lst)
+    else:
+        # cast since we assume that the full list is of the same type
+        cast_result_lst = cast(
+            Union[list[WaveletDetailDict], list[WaveletDetailTuple2d]], result_lst
+        )
+        return approx, *cast_result_lst
 
 
 def _map_result_1d(
