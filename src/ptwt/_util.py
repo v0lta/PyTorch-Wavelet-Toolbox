@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Any, Callable, Literal, NamedTuple, Optional, Protocol, Union, cast, overload
+from typing import Any, Literal, NamedTuple, Optional, Protocol, Union, cast, overload
 
 import numpy as np
 import pywt
@@ -282,8 +282,8 @@ def _preprocess_coeffs(
     ndim: Literal[1],
     axes: int,
     add_channel_dim: bool = False,
-) -> tuple[list[torch.Tensor], list[int]]:
-    ...
+) -> tuple[list[torch.Tensor], list[int]]: ...
+
 
 # 2d case
 @overload
@@ -292,8 +292,8 @@ def _preprocess_coeffs(
     ndim: Literal[2],
     axes: tuple[int, int],
     add_channel_dim: bool = False,
-) -> tuple[WaveletCoeff2d, list[int]]:
-    ...
+) -> tuple[WaveletCoeff2d, list[int]]: ...
+
 
 # Nd case
 @overload
@@ -302,8 +302,8 @@ def _preprocess_coeffs(
     ndim: int,
     axes: tuple[int, ...],
     add_channel_dim: bool = False,
-) -> tuple[WaveletCoeffNd, list[int]]:
-    ...
+) -> tuple[WaveletCoeffNd, list[int]]: ...
+
 
 def _preprocess_coeffs(
     coeffs: Union[
@@ -357,8 +357,8 @@ def _postprocess_coeffs(
     ndim: Literal[1],
     ds: list[int],
     axes: int,
-) -> list[torch.Tensor]:
-    ...
+) -> list[torch.Tensor]: ...
+
 
 # 2d case
 @overload
@@ -367,8 +367,8 @@ def _postprocess_coeffs(
     ndim: Literal[2],
     ds: list[int],
     axes: tuple[int, int],
-) -> WaveletCoeff2d:
-    ...
+) -> WaveletCoeff2d: ...
+
 
 # Nd case
 @overload
@@ -377,8 +377,8 @@ def _postprocess_coeffs(
     ndim: int,
     ds: list[int],
     axes: tuple[int, ...],
-) -> WaveletCoeffNd:
-    ...
+) -> WaveletCoeffNd: ...
+
 
 def _postprocess_coeffs(
     coeffs: Union[
@@ -432,10 +432,10 @@ def _preprocess_tensor(
         data (torch.Tensor): An input tensor with at least `ndim` axes.
         ndim (int): The number of axes on which the transformation is
             applied.
-        axis (int or tuple of ints): Compute the transform over these axes
+        axes (int or tuple of ints): Compute the transform over these axes
             instead of the last ones.
         add_channel_dim (bool): If True, ensures that the return has at
-            least three axes by adding a new axis at dim 1.
+            least `ndim` + 2 axes by potentially adding a new axis at dim 1.
             Defaults to True.
 
     Returns:
