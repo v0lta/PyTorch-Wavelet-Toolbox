@@ -419,8 +419,11 @@ class MatrixWaverec3(object):
                     "coefficients must be a dict containing 7 tensors as returned by "
                     "MatrixWavedec3."
                 )
+            test_shape = None
             for coeff in coeff_dict.values():
-                if lll.shape != coeff.shape:
+                if test_shape is None:
+                    test_shape = coeff.shape
+                elif test_shape != coeff.shape:
                     raise ValueError(
                         "All coefficients on each level must have the same shape"
                     )
