@@ -84,7 +84,7 @@ class WaveletPacket(BaseDict):
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
             axis (int): The axis to transform. Defaults to -1.
-            boundary_orthogonalization : The orthogonalization method
+            boundary_orthogonalization: The orthogonalization method
                 to use in the sparse matrix backend,
                 see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Only used if `mode` equals 'boundary'. Defaults to 'qr'.
@@ -108,7 +108,7 @@ class WaveletPacket(BaseDict):
         """
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
-        self.boundary = boundary_orthogonalization
+        self.boundary_orthogonalization = boundary_orthogonalization
         self._matrix_wavedec_dict: dict[int, MatrixWavedec] = {}
         self._matrix_waverec_dict: dict[int, MatrixWaverec] = {}
         self.maxlevel: Optional[int] = None
@@ -183,7 +183,10 @@ class WaveletPacket(BaseDict):
         if self.mode == "boundary":
             if length not in self._matrix_wavedec_dict.keys():
                 self._matrix_wavedec_dict[length] = MatrixWavedec(
-                    self.wavelet, level=1, boundary=self.boundary, axis=self.axis
+                    self.wavelet,
+                    level=1,
+                    boundary_orthogonalization=self.boundary_orthogonalization,
+                    axis=self.axis,
                 )
             return self._matrix_wavedec_dict[length]
         else:
@@ -198,7 +201,9 @@ class WaveletPacket(BaseDict):
         if self.mode == "boundary":
             if length not in self._matrix_waverec_dict.keys():
                 self._matrix_waverec_dict[length] = MatrixWaverec(
-                    self.wavelet, boundary=self.boundary, axis=self.axis
+                    self.wavelet,
+                    boundary_orthogonalization=self.boundary_orthogonalization,
+                    axis=self.axis,
                 )
             return self._matrix_waverec_dict[length]
         else:
@@ -328,7 +333,7 @@ class WaveletPacket2D(BaseDict):
         """
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
-        self.boundary = boundary_orthogonalization
+        self.boundary_orthogonalization = boundary_orthogonalization
         self.separable = separable
         self.matrix_wavedec2_dict: dict[tuple[int, ...], MatrixWavedec2] = {}
         self.matrix_waverec2_dict: dict[tuple[int, ...], MatrixWaverec2] = {}
@@ -413,7 +418,7 @@ class WaveletPacket2D(BaseDict):
                     self.wavelet,
                     level=1,
                     axes=self.axes,
-                    boundary=self.boundary,
+                    boundary_orthogonalization=self.boundary_orthogonalization,
                     separable=self.separable,
                 )
             fun = self.matrix_wavedec2_dict[shape]
@@ -442,7 +447,7 @@ class WaveletPacket2D(BaseDict):
                 self.matrix_waverec2_dict[shape] = MatrixWaverec2(
                     self.wavelet,
                     axes=self.axes,
-                    boundary=self.boundary,
+                    boundary_orthogonalization=self.boundary_orthogonalization,
                     separable=self.separable,
                 )
             return self.matrix_waverec2_dict[shape]

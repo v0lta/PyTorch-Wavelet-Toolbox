@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import functools
 import typing
-from collections.abc import Sequence
-from typing import Any, Callable, NamedTuple, Optional, Protocol, Union, cast, overload
+import warnings
+from collections.abc import Callable, Sequence
+from typing import Any, NamedTuple, Optional, Protocol, Union, cast, overload
 
 import numpy as np
 import pywt
 import torch
+from typing_extensions import ParamSpec, TypeVar
 
 from .constants import (
     OrthogonalizeMethod,
@@ -253,3 +256,55 @@ def _map_result(
         Union[list[WaveletDetailDict], list[WaveletDetailTuple2d]], result_lst
     )
     return approx, *cast_result_lst
+
+
+Param = ParamSpec("Param")
+RetType = TypeVar("RetType")
+
+
+def _deprecated_alias(
+    **aliases: str,
+) -> Callable[[Callable[Param, RetType]], Callable[Param, RetType]]:
+    """Handle deprecated function and method arguments.
+
+    Use as follows::
+
+        @deprecated_alias(old_arg='new_arg')
+        def myfunc(new_arg):
+            ...
+
+    Adapted from https://stackoverflow.com/a/49802489
+    """
+
+    def rename_kwargs(
+        func_name: str,
+        kwargs: Param.kwargs,
+        aliases: dict[str, str],
+    ) -> None:
+        """Rename deprecated kwarg."""
+        for alias, new in aliases.items():
+            if alias in kwargs:
+                if new in kwargs:
+                    raise TypeError(
+                        f"{func_name} received both {alias} and {new} as arguments!"
+                        f" {alias} is deprecated, use {new} instead."
+                    )
+                warnings.warn(
+                    message=(
+                        f"`{alias}` is deprecated as an argument to `{func_name}`; use"
+                        f" `{new}` instead."
+                    ),
+                    category=DeprecationWarning,
+                    stacklevel=3,
+                )
+                kwargs[new] = kwargs.pop(alias)
+
+    def deco(f: Callable[Param, RetType]) -> Callable[Param, RetType]:
+        @functools.wraps(f)
+        def wrapper(*args: Param.args, **kwargs: Param.kwargs) -> RetType:
+            rename_kwargs(f.__name__, kwargs, aliases)
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return deco
