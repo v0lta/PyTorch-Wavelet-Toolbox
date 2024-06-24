@@ -33,8 +33,10 @@ from .constants import (
 from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import (
     _construct_2d_filt,
+    _postprocess_coeffs_dec2d,
+    _postprocess_tensor_rec2d,
+    _preprocess_coeffs_rec2d,
     _preprocess_tensor_dec2d,
-    _waverec2d_fold_channels_2d_list,
 )
 from .matmul_transform import (
     BaseMatrixWaveDec,
@@ -124,7 +126,6 @@ def _construct_s_2(
     Returns:
         The generated fast wavelet synthesis matrix.
     """
-    wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype
     )
@@ -290,8 +291,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         if len(axes) != 2:
             raise ValueError("2D transforms work with two axes.")
         else:
-            _check_axes_argument(list(axes))
-            self.axes = tuple(axes)
+            _check_axes_argument(axes)
+            self.axes = axes
         self.level = level
         self.boundary = boundary
         self.separable = separable
@@ -434,11 +435,9 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
-        if self.axes != (-2, -1):
-            input_signal = _swap_axes(input_signal, list(self.axes))
-
-        input_signal, ds = _preprocess_tensor_dec2d(input_signal)
-        input_signal = input_signal.squeeze(1)
+        input_signal, ds = _preprocess_tensor_dec2d(
+            input_signal, axes=self.axes, add_channel_dim=False
+        )
 
         batch_size, height, width = input_signal.shape
 
@@ -537,13 +536,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         split_list.reverse()
         result: WaveletCoeff2d = ll, *split_list
 
-        if ds:
-            _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
-            result = _map_result(result, _unfold_axes2)
-
-        if self.axes != (-2, -1):
-            undo_swap_fn = partial(_undo_swap_axes, axes=self.axes)
-            result = _map_result(result, undo_swap_fn)
+        result = _postprocess_coeffs_dec2d(result, ds=ds, axes=self.axes)
 
         return result
 
@@ -599,7 +592,7 @@ class MatrixWaverec2(object):
         if len(axes) != 2:
             raise ValueError("2D transforms work with two axes.")
         else:
-            _check_axes_argument(list(axes))
+            _check_axes_argument(axes)
             self.axes = axes
 
         self.ifwt_matrix_list: list[
@@ -736,23 +729,8 @@ class MatrixWaverec2(object):
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec2` object.
         """
-        ll = _check_if_tensor(coefficients[0])
-
-        if tuple(self.axes) != (-2, -1):
-            swap_fn = partial(_swap_axes, axes=list(self.axes))
-            coefficients = _map_result(coefficients, swap_fn)
-            ll = _check_if_tensor(coefficients[0])
-
-        ds = None
-        if ll.dim() == 1:
-            raise ValueError("2d transforms require more than a single input dim.")
-        elif ll.dim() == 2:
-            # add batch dim to unbatched input
-            ll = ll.unsqueeze(0)
-        elif ll.dim() >= 4:
-            # avoid the channel sum, fold the channels into batches.
-            coefficients, ds = _waverec2d_fold_channels_2d_list(coefficients)
-            ll = _check_if_tensor(coefficients[0])
+        coefficients, ds = _preprocess_coeffs_rec2d(coefficients, axes=self.axes)
+        ll = coefficients[0]
 
         level = len(coefficients) - 1
         height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
@@ -845,9 +823,6 @@ class MatrixWaverec2(object):
                     if pred_len[1] != next_len[1]:
                         ll = ll[:, :, :-1]
 
-        if ds:
-            ll = _unfold_axes(ll, list(ds), 2)
+        ll = _postprocess_tensor_rec2d(ll, ds=ds, axes=self.axes)
 
-        if self.axes != (-2, -1):
-            ll = _undo_swap_axes(ll, list(self.axes))
         return ll

@@ -270,14 +270,11 @@ def _preprocess_result_list_rec1d(
 
     # Fold axes for the wavelets
     ds = list(result_lst[0].shape)
-    fold_coeffs: Sequence[torch.Tensor]
     if len(ds) == 1:
-        fold_coeffs = [uf_coeff.unsqueeze(0) for uf_coeff in result_lst]
+        result_lst = [uf_coeff.unsqueeze(0) for uf_coeff in result_lst]
     elif len(ds) > 2:
-        fold_coeffs = [_fold_axes(uf_coeff, 1)[0] for uf_coeff in result_lst]
-    else:
-        fold_coeffs = result_lst
-    return fold_coeffs, ds
+        result_lst = [_fold_axes(uf_coeff, 1)[0] for uf_coeff in result_lst]
+    return result_lst, ds
 
 
 def _postprocess_tensor_rec1d(

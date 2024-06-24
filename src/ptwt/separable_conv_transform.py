@@ -29,7 +29,7 @@ from ._util import (
 )
 from .constants import BoundaryMode, WaveletCoeff2dSeparable, WaveletCoeffNd
 from .conv_transform import wavedec, waverec
-from .conv_transform_2 import _preprocess_tensor_dec2d
+from .conv_transform_2 import _preprocess_tensor_dec2d, _postprocess_tensor_rec2d
 
 
 def _separable_conv_dwtn_(
@@ -228,15 +228,7 @@ def fswavedec2(
     if not _is_dtype_supported(data.dtype):
         raise ValueError(f"Input dtype {data.dtype} not supported")
 
-    if tuple(axes) != (-2, -1):
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            data = _swap_axes(data, list(axes))
-
-    wavelet = _as_wavelet(wavelet)
-    data, ds = _preprocess_tensor_dec2d(data)
-    data = data.squeeze(1)
+    data, ds = _preprocess_tensor_dec2d(data, axes=axes, add_channel_dim=False)
     res = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
 
     if ds:
@@ -382,11 +374,7 @@ def fswaverec2(
 
     res_ll = _separable_conv_waverecn(coeffs, wavelet)
 
-    if ds:
-        res_ll = _unfold_axes(res_ll, list(ds), 2)
-
-    if axes != (-2, -1):
-        res_ll = _undo_swap_axes(res_ll, list(axes))
+    res_ll = _postprocess_tensor_rec2d(res_ll, ds=ds, axes=axes)
 
     return res_ll
 
