@@ -170,7 +170,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
     sparse transformation matrix and the input signal.
     This transform uses boundary wavelets instead of padding to
     handle the signal boundaries, see the
-    :ref:`boundary wavelet docs <subsec-boundary-wavelet>`.
+    :ref:`boundary wavelet docs <modes.boundary wavelets>`.
 
     Note:
         Constructing the sparse FWT matrix can be expensive.

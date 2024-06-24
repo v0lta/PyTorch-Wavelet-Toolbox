@@ -5,6 +5,7 @@ The ptwt package -- API reference
    :maxdepth: 2
 
    return-types
+   boundary
    conv-fwt
    conv-inverse-fwt
    matrix-fwt
