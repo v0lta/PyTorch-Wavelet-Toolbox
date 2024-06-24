@@ -19,7 +19,7 @@ from ._util import (
     _as_wavelet,
     _is_boundary_mode_supported,
     _is_dtype_supported,
-    _postprocess_coeffs_1d,
+    _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
@@ -378,7 +378,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         result_list = [s.T for s in split_list[::-1]]
 
         # unfold if necessary
-        return _postprocess_coeffs_1d(result_list, ds, self.axis)
+        return _postprocess_coeffs(result_list, ndim=1, ds=ds, axes=self.axis)
 
 
 def construct_boundary_a(

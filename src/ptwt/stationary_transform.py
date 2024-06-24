@@ -10,7 +10,7 @@ import torch.nn.functional as F  # noqa:N812
 from ._util import (
     Wavelet,
     _as_wavelet,
-    _postprocess_coeffs_1d,
+    _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
@@ -97,7 +97,7 @@ def swt(
     result_list.append(res_lo.squeeze(1))
     result_list.reverse()
 
-    return _postprocess_coeffs_1d(result_list, ds, axis)
+    return _postprocess_coeffs(result_list, ndim=1, ds=ds, axes=axis)
 
 
 def iswt(

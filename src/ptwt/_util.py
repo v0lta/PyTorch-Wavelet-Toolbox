@@ -350,38 +350,72 @@ def _preprocess_coeffs(
     return coeffs, ds
 
 
-def _postprocess_coeffs_1d(
-    coeffs: list[torch.Tensor], ds: list[int], axis: int
+# 1d case
+@overload
+def _postprocess_coeffs(
+    coeffs: list[torch.Tensor],
+    ndim: Literal[1],
+    ds: list[int],
+    axes: int,
 ) -> list[torch.Tensor]:
-    if len(ds) == 1:
-        coeffs = _map_result(coeffs, lambda x: x.squeeze(0))
-    elif len(ds) > 2:
-        # Unfold axes for the wavelets
-        _unfold_axes1 = partial(_unfold_axes, ds=ds, keep_no=1)
-        coeffs = _map_result(coeffs, _unfold_axes1)
+    ...
 
-    if axis != -1:
-        undo_swap_fn = partial(_undo_swap_axes, axes=(axis,))
-        coeffs = _map_result(coeffs, undo_swap_fn)
-
-    if not isinstance(coeffs, list):
-        coeffs = list(coeffs)
-
-    return coeffs
-
-
-def _postprocess_coeffs_2d(
-    coeffs: WaveletCoeff2d, ds: list[int], axes: tuple[int, int]
+# 2d case
+@overload
+def _postprocess_coeffs(
+    coeffs: WaveletCoeff2d,
+    ndim: Literal[2],
+    ds: list[int],
+    axes: tuple[int, int],
 ) -> WaveletCoeff2d:
-    if len(ds) == 2:
-        coeffs = _map_result(coeffs, lambda x: x.squeeze(0))
-    elif len(ds) > 3:
-        _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
-        coeffs = _map_result(coeffs, _unfold_axes2)
+    ...
 
-    if tuple(axes) != (-2, -1):
-        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-        coeffs = _map_result(coeffs, undo_swap_fn)
+# Nd case
+@overload
+def _postprocess_coeffs(
+    coeffs: WaveletCoeffNd,
+    ndim: int,
+    ds: list[int],
+    axes: tuple[int, ...],
+) -> WaveletCoeffNd:
+    ...
+
+def _postprocess_coeffs(
+    coeffs: Union[
+        list[torch.Tensor],
+        WaveletCoeff2d,
+        WaveletCoeffNd,
+    ],
+    ndim: int,
+    ds: list[int],
+    axes: Union[tuple[int, ...], int],
+) -> Union[
+    list[torch.Tensor],
+    WaveletCoeff2d,
+    WaveletCoeffNd,
+]:
+    if isinstance(axes, int):
+        axes = (axes,)
+
+    if ndim <= 0:
+        raise ValueError("Number of dimensions must be positive")
+
+    # Fold axes for the wavelets
+    ds = list(coeffs[0].shape)
+    if len(ds) < ndim:
+        raise ValueError(f"At least {ndim} input dimensions required.")
+    elif len(ds) == ndim:
+        coeffs = _map_result(coeffs, lambda x: x.squeeze(0))
+    elif len(ds) > ndim + 1:
+        unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=ndim)
+        coeffs = _map_result(coeffs, unfold_axes_fn)
+
+    if tuple(axes) != tuple(range(-ndim, 0)):
+        if len(axes) != ndim:
+            raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
+        else:
+            undo_swap_fn = partial(_undo_swap_axes, axes=axes)
+            coeffs = _map_result(coeffs, undo_swap_fn)
 
     return coeffs
 

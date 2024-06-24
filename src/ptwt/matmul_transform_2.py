@@ -17,7 +17,7 @@ from ._util import (
     _check_axes_argument,
     _is_boundary_mode_supported,
     _is_dtype_supported,
-    _postprocess_coeffs_2d,
+    _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
@@ -528,7 +528,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         split_list.reverse()
         result: WaveletCoeff2d = ll, *split_list
 
-        result = _postprocess_coeffs_2d(result, ds=ds, axes=self.axes)
+        result = _postprocess_coeffs(result, ndim=2, ds=ds, axes=self.axes)
 
         return result
 

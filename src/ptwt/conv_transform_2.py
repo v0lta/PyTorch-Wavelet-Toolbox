@@ -19,7 +19,7 @@ from ._util import (
     _is_dtype_supported,
     _outer,
     _pad_symmetric,
-    _postprocess_coeffs_2d,
+    _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
@@ -190,7 +190,7 @@ def wavedec2(
     res_ll = res_ll.squeeze(1)
     result: WaveletCoeff2d = res_ll, *result_lst
 
-    result = _postprocess_coeffs_2d(result, ds=ds, axes=axes)
+    result = _postprocess_coeffs(result, ndim=2, ds=ds, axes=axes)
 
     return result
 
