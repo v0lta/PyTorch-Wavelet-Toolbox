@@ -401,7 +401,6 @@ def _postprocess_coeffs(
         raise ValueError("Number of dimensions must be positive")
 
     # Fold axes for the wavelets
-    ds = list(coeffs[0].shape)
     if len(ds) < ndim:
         raise ValueError(f"At least {ndim} input dimensions required.")
     elif len(ds) == ndim:
