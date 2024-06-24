@@ -1,3 +1,5 @@
+.. _ref-conv-fwt:
+
 .. currentmodule:: ptwt
 
 Fast Wavelet Transform (FWT) using padded convolutions

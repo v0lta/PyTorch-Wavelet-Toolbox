@@ -1,3 +1,5 @@
+.. _ref-packets:
+
 .. currentmodule:: ptwt
 
 Wavelet Packet Transform (WPT)

@@ -1,3 +1,5 @@
+.. _ref-sparse-math:
+
 Sparse-matrix backend functions
 ===============================
 

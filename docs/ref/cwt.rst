@@ -1,3 +1,5 @@
+.. _ref-cwt:
+
 .. currentmodule:: ptwt
 
 Continuous Wavelet Transform (CWT)

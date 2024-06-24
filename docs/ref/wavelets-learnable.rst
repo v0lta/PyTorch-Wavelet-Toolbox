@@ -1,3 +1,5 @@
+.. _ref-wavelets-learnable:
+
 Learnable adaptive wavelets
 -------------------------------
 

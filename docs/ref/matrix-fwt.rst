@@ -1,3 +1,5 @@
+.. _ref-matrix-fwt:
+
 .. currentmodule:: ptwt
 
 Sparse-matrix based Fast Wavelet Transform (FWT)

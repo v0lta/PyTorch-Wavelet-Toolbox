@@ -1,3 +1,5 @@
+.. _ref-return-types:
+
 .. currentmodule:: ptwt.constants
 
 Wavelet transform return types

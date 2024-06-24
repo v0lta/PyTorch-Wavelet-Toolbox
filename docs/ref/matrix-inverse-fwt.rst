@@ -1,3 +1,5 @@
+.. _ref-matrix-inverse-fwt:
+
 .. currentmodule:: ptwt
 
 Sparse-matrix based Inverse Fast Wavelet Transform (iFWT)

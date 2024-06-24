@@ -1,3 +1,5 @@
+.. _ref-conv-inverse-fwt:
+
 .. currentmodule:: ptwt
 
 Inverse Fast Wavelet Transform (iFWT) using padded convolutions

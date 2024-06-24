@@ -1,3 +1,5 @@
+.. _ref-index:
+
 The ptwt package -- API reference
 =================================
 
