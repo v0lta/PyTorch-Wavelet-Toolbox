@@ -175,6 +175,9 @@ def construct_boundary_a2(
         dtype (torch.dtype, optional): The desired data type for the matrix.
             Defaults to torch.float64.
 
+    .. versionchanged:: 1.10
+        The argument `boundary` has been renamed to `boundary_orthogonalization`.
+
     Returns:
         A sparse fwt matrix, with orthogonalized boundary wavelets.
     """
@@ -210,6 +213,9 @@ def construct_boundary_s2(
         dtype (torch.dtype, optional): The data type of the
             sparse matrix, choose float32 or 64.
             Defaults to torch.float64.
+
+    .. versionchanged:: 1.10
+        The argument `boundary` has been renamed to `boundary_orthogonalization`.
 
     Returns:
         The synthesis matrix, used to compute the inverse fast wavelet transform.
@@ -300,6 +306,9 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 are padded to an even length using this mode,
                 see :data:`ptwt.constants.BoundaryMode`.
                 Defaults to 'zero'.
+
+        .. versionchanged:: 1.10
+            The argument `boundary` has been renamed to `boundary_orthogonalization`.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -605,6 +614,9 @@ class MatrixWaverec2(object):
                 size part of the matrices must be orthogonalized.
                 For invertibility, the analysis and synthesis values must be identical!
                 Defaults to True.
+
+        .. versionchanged:: 1.10
+            The argument `boundary` has been renamed to `boundary_orthogonalization`.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.

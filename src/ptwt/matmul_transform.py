@@ -213,6 +213,9 @@ class MatrixWavedec(BaseMatrixWaveDec):
                 see :data:`ptwt.constants.BoundaryMode`.
                 Defaults to 'zero'.
 
+        .. versionchanged:: 1.10
+            The argument `boundary` has been renamed to `boundary_orthogonalization`.
+
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
             ValueError: If the wavelet filters have different lengths or
@@ -426,6 +429,9 @@ def construct_boundary_a(
             Defaults to cpu.
         dtype: Choose float32 or float64.
 
+    .. versionchanged:: 1.10
+        The argument `boundary` has been renamed to `boundary_orthogonalization`.
+
     Returns:
         The sparse analysis matrix.
     """
@@ -456,6 +462,9 @@ def construct_boundary_s(
             Defaults to 'qr'.
         dtype: Choose torch.float32 or torch.float64.
             Defaults to torch.float64.
+
+    .. versionchanged:: 1.10
+        The argument `boundary` has been renamed to `boundary_orthogonalization`.
 
     Returns:
         The sparse synthesis matrix.
@@ -504,6 +513,9 @@ class MatrixWaverec(object):
             boundary_orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to 'qr'.
+
+        .. versionchanged:: 1.10
+            The argument `boundary` has been renamed to `boundary_orthogonalization`.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.

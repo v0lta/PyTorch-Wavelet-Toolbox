@@ -86,6 +86,9 @@ class MatrixWavedec3(object):
                 see :data:`ptwt.constants.BoundaryMode`.
                 Defaults to 'zero'.
 
+        .. versionchanged:: 1.10
+            The argument `boundary` has been renamed to `boundary_orthogonalization`.
+
         Raises:
             NotImplementedError: If the chosen orthogonalization method
                 is not implemented.
@@ -308,6 +311,9 @@ class MatrixWaverec3(object):
             boundary_orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to 'qr'.
+
+        .. versionchanged:: 1.10
+            The argument `boundary` has been renamed to `boundary_orthogonalization`.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
