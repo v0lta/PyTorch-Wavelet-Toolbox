@@ -217,22 +217,13 @@ def fswavedec2(
         as keys. 'a' denotes the low pass or approximation filter and
         'd' the high-pass or detail filter.
 
-    Raises:
-        ValueError: If the data is not a batched 2D signal.
-
     Example:
         >>> import torch
         >>> import ptwt
         >>> data = torch.randn(5, 10, 10)
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
     """
-    if not _is_dtype_supported(data.dtype):
-        raise ValueError(f"Input dtype {data.dtype} not supported")
-
-    data, ds = _preprocess_tensor(data, ndim=2, axes=axes, add_channel_dim=False)
-    coeffs = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
-
-    return _postprocess_coeffs(coeffs, ndim=2, ds=ds, axes=axes)
+    return fswavedecn(data, wavelet, ndim=2, mode=mode, level=level, axes=axes)
 
 
 def fswavedec3(
@@ -269,22 +260,13 @@ def fswavedec3(
         as keys. 'a' denotes the low pass or approximation filter and
         'd' the high-pass or detail filter.
 
-    Raises:
-        ValueError: If the input is not a batched 3D signal.
-
-
     Example:
         >>> import torch
         >>> import ptwt
         >>> data = torch.randn(5, 10, 10, 10)
         >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
     """
-    if not _is_dtype_supported(data.dtype):
-        raise ValueError(f"Input dtype {data.dtype} not supported")
-
-    data, ds = _preprocess_tensor(data, ndim=3, axes=axes, add_channel_dim=False)
-    coeffs = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
-    return _postprocess_coeffs(coeffs, ndim=3, ds=ds, axes=axes)
+    return fswavedecn(data, wavelet, ndim=3, mode=mode, level=level, axes=axes)
 
 
 def fswaverec2(
@@ -311,9 +293,6 @@ def fswaverec2(
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
 
-    Raises:
-        ValueError: If the axes argument is not a tuple of two integers.
-
     Example:
         >>> import torch
         >>> import ptwt
@@ -321,15 +300,7 @@ def fswaverec2(
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
         >>> rec = ptwt.fswaverec2(coeff, "haar")
     """
-    coeffs, ds = _preprocess_coeffs(coeffs, ndim=2, axes=axes)
-
-    torch_dtype = _check_if_tensor(coeffs[0]).dtype
-    if not _is_dtype_supported(torch_dtype):
-        raise ValueError(f"Input dtype {torch_dtype} not supported")
-
-    res_ll = _separable_conv_waverecn(coeffs, wavelet)
-
-    return _postprocess_tensor(res_ll, ndim=2, ds=ds, axes=axes)
+    return fswaverecn(coeffs, wavelet, ndim=2, axes=axes)
 
 
 def fswaverec3(
@@ -353,10 +324,6 @@ def fswaverec3(
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
 
-    Raises:
-        ValueError: If the axes argument is not a tuple with
-            three ints.
-
     Example:
         >>> import torch
         >>> import ptwt
@@ -364,12 +331,102 @@ def fswaverec3(
         >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
         >>> rec = ptwt.fswaverec3(coeff, "haar")
     """
-    coeffs, ds = _preprocess_coeffs(coeffs, ndim=3, axes=axes)
+    return fswaverecn(coeffs, wavelet, ndim=3, axes=axes)
 
+
+def fswavedecn(
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    ndim: int,
+    *,
+    mode: BoundaryMode = "reflect",
+    level: Optional[int] = None,
+    axes: Optional[tuple[int, ...]] = None,
+) -> WaveletCoeffNd:
+    """Compute a fully separable :math:`N`-dimensional padded FWT.
+
+    Args:
+        data (torch.Tensor): An input signal with at least :math:`N` dimensions.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet. Refer to the output of
+            ``pywt.wavelist(kind="discrete")`` for possible choices.
+        ndim (int): The number of dimentsions :math:`N`.
+        mode:
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
+        level (int): The number of desired scales. Defaults to None.
+        axes (tuple[int, ...], optional): Compute the transform over these axes
+            instead of the last :math:`N`. If None, the last :math:`N`
+            axes are transformed. Defaults to None.
+
+    Returns:
+        A tuple with the lll coefficients and for each scale a dictionary
+        containing the detail coefficients,
+        see :data:`ptwt.constants.WaveletCoeffNd`.
+
+    Raises:
+        ValueError: if the dtype of `data` is not supported.
+
+    Example:
+        >>> import torch
+        >>> import ptwt
+        >>> data = torch.randn(5, 10, 10, 10)
+        >>> coeff = ptwt.fswavedecn(data, "haar", ndim=3, level=2)
+    """
+    if not _is_dtype_supported(data.dtype):
+        raise ValueError(f"Input dtype {data.dtype} not supported")
+
+    if axes is None:
+        axes = tuple(range(-ndim, 0))
+
+    data, ds = _preprocess_tensor(data, ndim=ndim, axes=axes, add_channel_dim=False)
+    coeffs = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
+    return _postprocess_coeffs(coeffs, ndim=ndim, ds=ds, axes=axes)
+
+
+def fswaverecn(
+    coeffs: WaveletCoeffNd,
+    wavelet: Union[Wavelet, str],
+    ndim: int,
+    axes: Optional[tuple[int, ...]] = None,
+) -> torch.Tensor:
+    """Invert a fully separable :math:`N`-dimensional padded FWT.
+
+    Args:
+        coeffs (WaveletCoeffNd):
+            The wavelet coefficients as computed by :func:`fswavedecn`,
+            see :data:`ptwt.constants.WaveletCoeffNd`.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
+        ndim (int): The number of dimentsions :math:`N`.
+        axes (tuple[int, ...], optional): Compute the transform over these axes
+            instead of the last :math:`N`. If None, the last :math:`N`
+            axes are transformed. Defaults to None.
+
+    Returns:
+        A reconstruction of the signal encoded in the wavelet coefficients.
+
+    Raises:
+        ValueError: if the dtype of `data` is not supported.
+
+    Example:
+        >>> import torch
+        >>> import ptwt
+        >>> data = torch.randn(5, 10, 10, 10)
+        >>> coeff = ptwt.fswavedecn(data, "haar", ndim=3, level=2)
+        >>> rec = ptwt.fswaverec3(coeff, "haar", ndim=3)
+    """
     torch_dtype = _check_if_tensor(coeffs[0]).dtype
     if not _is_dtype_supported(torch_dtype):
         raise ValueError(f"Input dtype {torch_dtype} not supported")
 
+    if axes is None:
+        axes = tuple(range(-ndim, 0))
+
+    coeffs, ds = _preprocess_coeffs(coeffs, ndim=ndim, axes=axes)
+
     res_ll = _separable_conv_waverecn(coeffs, wavelet)
 
-    return _postprocess_tensor(res_ll, ndim=3, ds=ds, axes=axes)
+    return _postprocess_tensor(res_ll, ndim=ndim, ds=ds, axes=axes)
