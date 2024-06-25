@@ -6,7 +6,7 @@ import collections
 from collections.abc import Sequence
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Literal, Optional, Union
+from typing import TYPE_CHECKING, Callable, Literal, Optional, Union, overload
 
 import numpy as np
 import pywt
@@ -529,6 +529,14 @@ class WaveletPacket2D(BaseDict):
                 f"maximum level {self.maxlevel}."
             )
         return super().__getitem__(key)
+
+    @overload
+    @staticmethod
+    def get_level(level: int, order: Literal["freq"]) -> list[list[str]]: ...
+
+    @overload
+    @staticmethod
+    def get_level(level: int, order: Literal["natural"]) -> list[str]: ...
 
     @staticmethod
     def get_level(
