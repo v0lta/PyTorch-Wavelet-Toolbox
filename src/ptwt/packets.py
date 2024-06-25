@@ -467,7 +467,7 @@ class WaveletPacket2D(BaseDict):
         return _fsdict_func
 
     def _recursive_dwt2d(self, data: torch.Tensor, level: int, path: str) -> None:
-        if not self.maxlevel:
+        if self.maxlevel is None:
             raise AssertionError
 
         self.data[path] = data
