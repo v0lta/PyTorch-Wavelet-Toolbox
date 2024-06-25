@@ -226,7 +226,7 @@ class WaveletPacket(BaseDict):
             return graycode_order
 
     def _recursive_dwt(self, data: torch.Tensor, level: int, path: str) -> None:
-        if not self.maxlevel:
+        if self.maxlevel is None:
             raise AssertionError
 
         self.data[path] = data
