@@ -273,6 +273,143 @@ def test_freq_order(level: int, wavelet_str: str, pywt_boundary: str) -> None:
             assert order_el.path == "".join(tree_el)
 
 
+partial_keys_1d = ["aaaa", "aaad", "aad", "ad", "da", "dd"]
+
+partial_keys_2d = [
+    "aaaa",
+    "aaad",
+    "aaah",
+    "aaav",
+    "aad",
+    "aah",
+    "aava",
+    "aavd",
+    "aavh",
+    "aavv",
+    "ad",
+    "ah",
+    "ava",
+    "avd",
+    "avh",
+    "avv",
+    "d",
+    "h",
+    "vaa",
+    "vad",
+    "vah",
+    "vav",
+    "vd",
+    "vh",
+    "vv",
+]
+
+
+@pytest.mark.parametrize("wavelet_str", ["haar", "db4"])
+@pytest.mark.parametrize("boundary", ["zero", "reflect", "constant", "boundary"])
+def test_partial_expansion_1d(wavelet_str: str, boundary: str) -> None:
+    """Test lazy init in 1d."""
+    max_lev = 4
+    shape = 128
+    test_signal = torch.randn(shape)
+
+    lazy_init_packet = WaveletPacket(
+        test_signal,
+        wavelet_str,
+        mode=boundary,
+        maxlevel=max_lev,
+        lazy_init=True,
+    )
+
+    # Full expansion of the wavelet packet tree
+    full_keys = lazy_init_packet.get_level(max_lev)
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in full_keys)
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in partial_keys_1d)
+
+    # init on partial keys
+    [lazy_init_packet[key] for key in partial_keys_1d]
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in full_keys)
+
+    assert all(key in lazy_init_packet for key in partial_keys_1d)
+
+    eager_init_packet = WaveletPacket(
+        test_signal,
+        wavelet_str,
+        mode=boundary,
+        maxlevel=max_lev,
+        lazy_init=False,
+    )
+
+    assert all(key in eager_init_packet for key in full_keys)
+
+    diffs = [
+        ((lazy_init_packet[key] - eager_init_packet[key]) ** 2).sum()
+        for key in lazy_init_packet.keys()
+    ]
+    delta = torch.sum(torch.stack(diffs))
+
+    assert torch.isclose(delta, torch.tensor(0.0))
+
+
+@pytest.mark.parametrize("wavelet_str", ["haar", "db4"])
+@pytest.mark.parametrize("boundary", ["zero", "reflect", "constant", "boundary"])
+def test_partial_expansion_2d(wavelet_str: str, boundary: str) -> None:
+    """Test lazy init in 2d."""
+    max_lev = 4
+    shape = (128, 128)
+    test_signal = torch.randn(shape)
+
+    # Full expansion of the wavelet packet tree
+    full_keys = WaveletPacket2D.get_natural_order(max_lev)
+
+    lazy_init_packet = WaveletPacket2D(
+        test_signal,
+        wavelet_str,
+        mode=boundary,
+        maxlevel=max_lev,
+        lazy_init=True,
+        separable=True,
+    )
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in full_keys)
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in partial_keys_2d)
+
+    # init on partial keys
+    [lazy_init_packet[key] for key in partial_keys_2d]
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in full_keys)
+
+    assert all(key in lazy_init_packet for key in partial_keys_2d)
+
+    eager_init_packet = WaveletPacket2D(
+        test_signal,
+        wavelet_str,
+        mode=boundary,
+        maxlevel=max_lev,
+        lazy_init=False,
+        separable=True,
+    )
+
+    assert all(key in eager_init_packet for key in full_keys)
+
+    diffs = [
+        ((lazy_init_packet[key] - eager_init_packet[key]) ** 2).sum()
+        for key in lazy_init_packet.keys()
+    ]
+    delta = torch.sum(torch.stack(diffs))
+
+    assert torch.isclose(delta, torch.tensor(0.0))
+
+
 def test_packet_harbo_lvl3() -> None:
     """From Jensen, La Cour-Harbo, Rippels in Mathematics, Chapter 8 (page 89)."""
     data = np.array([56.0, 40.0, 8.0, 24.0, 48.0, 48.0, 40.0, 16.0])
