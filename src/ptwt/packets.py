@@ -273,7 +273,8 @@ class WaveletPacket(BaseDict):
 
         Raises:
             ValueError: If the wavelet packet tree is not initialized.
-            KeyError: If no wavelet coefficients are indexed by the specified key.
+            KeyError: If no wavelet coefficients are indexed by the specified key
+                and a lazy initialization fails.
         """
         if self.maxlevel is None:
             raise ValueError(
@@ -555,7 +556,8 @@ class WaveletPacket2D(BaseDict):
 
         Raises:
             ValueError: If the wavelet packet tree is not initialized.
-            KeyError: If no wavelet coefficients are indexed by the specified key.
+            KeyError: If no wavelet coefficients are indexed by the specified key
+                and a lazy initialization fails.
         """
         if self.maxlevel is None:
             raise ValueError(
