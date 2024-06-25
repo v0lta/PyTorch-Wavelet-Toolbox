@@ -224,9 +224,9 @@ def _check_same_device_dtype(
     torch_device, torch_dtype = c.device, c.dtype
 
     # check for all tensors in `coeffs` that the device matches `torch_device`
-    _map_result(coeffs, partial(_check_same_device, torch_device=torch_device))
+    _apply_to_tensor_elems(coeffs, partial(_check_same_device, torch_device=torch_device))
     # check for all tensors in `coeffs` that the dtype matches `torch_dtype`
-    _map_result(coeffs, partial(_check_same_dtype, torch_dtype=torch_dtype))
+    _apply_to_tensor_elems(coeffs, partial(_check_same_dtype, torch_dtype=torch_dtype))
 
     return torch_device, torch_dtype
 
@@ -254,32 +254,32 @@ def _undo_swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
 
 
 @overload
-def _map_result(
-    data: list[torch.Tensor],
+def _apply_to_tensor_elems(
+    coeffs: list[torch.Tensor],
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> list[torch.Tensor]: ...
 
 
 @overload
-def _map_result(
-    data: WaveletCoeff2d,
+def _apply_to_tensor_elems(
+    coeffs: WaveletCoeff2d,
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> WaveletCoeff2d: ...
 
 
 @overload
-def _map_result(
-    data: WaveletCoeffNd,
+def _apply_to_tensor_elems(
+    coeffs: WaveletCoeffNd,
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> WaveletCoeffNd: ...
 
 
-def _map_result(
-    data: Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd],
+def _apply_to_tensor_elems(
+    coeffs: Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd],
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd]:
     """Apply `function` to all tensor elements in `data`."""
-    approx = function(data[0])
+    approx = function(coeffs[0])
     result_lst: list[
         Union[
             torch.Tensor,
@@ -287,7 +287,7 @@ def _map_result(
             WaveletDetailTuple2d,
         ]
     ] = []
-    for element in data[1:]:
+    for element in coeffs[1:]:
         if isinstance(element, tuple):
             result_lst.append(
                 WaveletDetailTuple2d(
@@ -307,7 +307,7 @@ def _map_result(
     if not result_lst:
         # if only approximation coeff:
         # use list iff data is a list
-        return [approx] if isinstance(data, list) else (approx,)
+        return [approx] if isinstance(coeffs, list) else (approx,)
     elif isinstance(result_lst[0], torch.Tensor):
         # if the first detail coeff is tensor
         # -> all are tensors -> return a list
@@ -425,7 +425,7 @@ def _preprocess_coeffs(
         else:
             # for all tensors in `coeffs`: swap the axes
             swap_fn = partial(_swap_axes, axes=axes)
-            coeffs = _map_result(coeffs, swap_fn)
+            coeffs = _apply_to_tensor_elems(coeffs, swap_fn)
 
     # Fold axes for the wavelets
     ds = list(coeffs[0].shape)
@@ -433,14 +433,14 @@ def _preprocess_coeffs(
         raise ValueError(f"At least {ndim} input dimensions required.")
     elif len(ds) == ndim:
         # for all tensors in `coeffs`: unsqueeze(0)
-        coeffs = _map_result(coeffs, lambda x: x.unsqueeze(0))
+        coeffs = _apply_to_tensor_elems(coeffs, lambda x: x.unsqueeze(0))
     elif len(ds) > ndim + 1:
         # for all tensors in `coeffs`: fold leading dims to batch dim
-        coeffs = _map_result(coeffs, lambda t: _fold_axes(t, ndim)[0])
+        coeffs = _apply_to_tensor_elems(coeffs, lambda t: _fold_axes(t, ndim)[0])
 
     if add_channel_dim:
         # for all tensors in `coeffs`: add channel dim
-        coeffs = _map_result(coeffs, lambda x: x.unsqueeze(1))
+        coeffs = _apply_to_tensor_elems(coeffs, lambda x: x.unsqueeze(1))
 
     return coeffs, ds
 
@@ -538,11 +538,11 @@ def _postprocess_coeffs(
         raise ValueError(f"At least {ndim} input dimensions required.")
     elif len(ds) == ndim:
         # for all tensors in `coeffs`: remove batch dim
-        coeffs = _map_result(coeffs, lambda x: x.squeeze(0))
+        coeffs = _apply_to_tensor_elems(coeffs, lambda x: x.squeeze(0))
     elif len(ds) > ndim + 1:
         # for all tensors in `coeffs`: unfold batch dim
         unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=ndim)
-        coeffs = _map_result(coeffs, unfold_axes_fn)
+        coeffs = _apply_to_tensor_elems(coeffs, unfold_axes_fn)
 
     if tuple(axes) != tuple(range(-ndim, 0)):
         if len(axes) != ndim:
@@ -550,7 +550,7 @@ def _postprocess_coeffs(
         else:
             # for all tensors in `coeffs`: undo axes swapping
             undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-            coeffs = _map_result(coeffs, undo_swap_fn)
+            coeffs = _apply_to_tensor_elems(coeffs, undo_swap_fn)
 
     return coeffs
 
