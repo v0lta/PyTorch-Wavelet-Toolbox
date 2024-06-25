@@ -6,7 +6,7 @@ import collections
 from collections.abc import Sequence
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Optional, Union
+from typing import TYPE_CHECKING, Callable, Literal, Optional, Union
 
 import numpy as np
 import pywt
@@ -205,7 +205,7 @@ class WaveletPacket(BaseDict):
             return partial(waverec, wavelet=self.wavelet, axis=self.axis)
 
     @staticmethod
-    def get_level(level: int, order: str = "freq") -> list[str]:
+    def get_level(level: int, order: Literal["freq", "natural"] = "freq") -> list[str]:
         """Return the paths to the filter tree nodes.
 
         Args:
@@ -531,7 +531,9 @@ class WaveletPacket2D(BaseDict):
         return super().__getitem__(key)
 
     @staticmethod
-    def get_level(level: int, order: str = "freq") -> Union[list[str], list[list[str]]]:
+    def get_level(
+        level: int, order: Literal["freq", "natural"] = "freq"
+    ) -> Union[list[str], list[list[str]]]:
         if order == "freq":
             return WaveletPacket2D.get_freq_order(level)
         elif order == "natural":
