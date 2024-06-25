@@ -24,6 +24,7 @@ def _compare_trees1(
     batch_size: int = 1,
     transform_mode: bool = False,
     multiple_transforms: bool = False,
+    lazy_init: bool = False,
 ) -> None:
     data = np.random.rand(batch_size, length)
     wavelet = pywt.Wavelet(wavelet_str)
@@ -31,15 +32,19 @@ def _compare_trees1(
     if transform_mode:
         twp = WaveletPacket(
             None, wavelet, mode=ptwt_boundary, maxlevel=max_lev
-        ).transform(torch.from_numpy(data), maxlevel=max_lev)
+        ).transform(torch.from_numpy(data), maxlevel=max_lev, lazy_init=lazy_init)
     else:
         twp = WaveletPacket(
-            torch.from_numpy(data), wavelet, mode=ptwt_boundary, maxlevel=max_lev
+            torch.from_numpy(data),
+            wavelet,
+            mode=ptwt_boundary,
+            maxlevel=max_lev,
+            lazy_init=lazy_init,
         )
 
     # if multiple_transform flag is set, recalculcate the packets
     if multiple_transforms:
-        twp.transform(torch.from_numpy(data), maxlevel=max_lev)
+        twp.transform(torch.from_numpy(data), maxlevel=max_lev, lazy_init=lazy_init)
 
     nodes = twp.get_level(twp.maxlevel)
     twp_lst = []
@@ -76,6 +81,7 @@ def _compare_trees2(
     batch_size: int = 1,
     transform_mode: bool = False,
     multiple_transforms: bool = False,
+    lazy_init: bool = False,
 ) -> None:
     face = datasets.face()[:height, :width]
     face = np.mean(face, axis=-1).astype(np.float64)
@@ -104,15 +110,19 @@ def _compare_trees2(
     if transform_mode:
         ptwt_wp_tree = WaveletPacket2D(
             None, wavelet=wavelet, mode=ptwt_boundary
-        ).transform(pt_data, maxlevel=max_lev)
+        ).transform(pt_data, maxlevel=max_lev, lazy_init=lazy_init)
     else:
         ptwt_wp_tree = WaveletPacket2D(
-            pt_data, wavelet=wavelet, mode=ptwt_boundary, maxlevel=max_lev
+            pt_data,
+            wavelet=wavelet,
+            mode=ptwt_boundary,
+            maxlevel=max_lev,
+            lazy_init=lazy_init,
         )
 
     # if multiple_transform flag is set, recalculcate the packets
     if multiple_transforms:
-        ptwt_wp_tree.transform(pt_data, maxlevel=max_lev)
+        ptwt_wp_tree.transform(pt_data, maxlevel=max_lev, lazy_init=lazy_init)
 
     packets = []
     for node in wp_keys:
@@ -132,6 +142,7 @@ def _compare_trees2(
 @pytest.mark.parametrize("batch_size", [2, 1])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
+@pytest.mark.parametrize("lazy_init", [False, True])
 def test_2d_packets(
     max_lev: Optional[int],
     wavelet_str: str,
@@ -139,6 +150,7 @@ def test_2d_packets(
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
+    lazy_init: bool,
 ) -> None:
     """Ensure pywt and ptwt produce equivalent wavelet 2d packet trees."""
     _compare_trees2(
@@ -149,6 +161,7 @@ def test_2d_packets(
         batch_size=batch_size,
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
+        lazy_init=lazy_init,
     )
 
 
@@ -157,11 +170,13 @@ def test_2d_packets(
 @pytest.mark.parametrize("batch_size", [1, 2])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
+@pytest.mark.parametrize("lazy_init", [False, True])
 def test_boundary_matrix_packets2(
     max_lev: Optional[int],
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
+    lazy_init: bool,
 ) -> None:
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
     _compare_trees2(
@@ -172,6 +187,7 @@ def test_boundary_matrix_packets2(
         batch_size=batch_size,
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
+        lazy_init=lazy_init,
     )
 
 
@@ -184,6 +200,7 @@ def test_boundary_matrix_packets2(
 @pytest.mark.parametrize("batch_size", [2, 1])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
+@pytest.mark.parametrize("lazy_init", [False, True])
 def test_1d_packets(
     max_lev: int,
     wavelet_str: str,
@@ -191,6 +208,7 @@ def test_1d_packets(
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
+    lazy_init: bool,
 ) -> None:
     """Ensure pywt and ptwt produce equivalent wavelet 1d packet trees."""
     _compare_trees1(
@@ -201,6 +219,7 @@ def test_1d_packets(
         batch_size=batch_size,
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
+        lazy_init=lazy_init,
     )
 
 
@@ -208,8 +227,12 @@ def test_1d_packets(
 @pytest.mark.parametrize("max_lev", [1, 2, 3, 4, None])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
+@pytest.mark.parametrize("lazy_init", [False, True])
 def test_boundary_matrix_packets1(
-    max_lev: Optional[int], transform_mode: bool, multiple_transforms: bool
+    max_lev: Optional[int],
+    transform_mode: bool,
+    multiple_transforms: bool,
+    lazy_init: bool,
 ) -> None:
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
     _compare_trees1(
@@ -219,6 +242,7 @@ def test_boundary_matrix_packets1(
         "boundary",
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
+        lazy_init=lazy_init,
     )
 
 
@@ -314,15 +338,26 @@ def test_access_errors_2d() -> None:
 @pytest.mark.parametrize("shape", [[1, 64, 63], [3, 64, 64], [1, 128]])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
 @pytest.mark.parametrize("axis", (1, -1))
+@pytest.mark.parametrize("lazy_init", [True, False])
 def test_inverse_packet_1d(
-    level: int, base_key: str, shape: list[int], wavelet: str, axis: int
+    level: int,
+    base_key: str,
+    shape: list[int],
+    wavelet: str,
+    axis: int,
+    lazy_init: bool,
 ) -> None:
     """Test the 1d reconstruction code."""
     signal = np.random.randn(*shape)
     mode = "reflect"
     wp = pywt.WaveletPacket(signal, wavelet, mode=mode, maxlevel=level, axis=axis)
     ptwp = WaveletPacket(
-        torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level, axis=axis
+        torch.from_numpy(signal),
+        wavelet,
+        mode=mode,
+        maxlevel=level,
+        axis=axis,
+        lazy_init=lazy_init,
     )
     wp[base_key * level].data *= 0
     ptwp[base_key * level].data *= 0
@@ -337,19 +372,26 @@ def test_inverse_packet_1d(
 @pytest.mark.parametrize("size", [(32, 32, 32), (32, 32, 31, 64)])
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (1, 2), (2, 0), (0, 2)])
+@pytest.mark.parametrize("lazy_init", [True, False])
 def test_inverse_packet_2d(
     level: int,
     base_key: str,
     size: tuple[int, ...],
     wavelet: str,
     axes: tuple[int, int],
+    lazy_init: bool,
 ) -> None:
     """Test the 2d reconstruction code."""
     signal = np.random.randn(*size)
     mode = "reflect"
     wp = pywt.WaveletPacket2D(signal, wavelet, mode=mode, maxlevel=level, axes=axes)
     ptwp = WaveletPacket2D(
-        torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level, axes=axes
+        torch.from_numpy(signal),
+        wavelet,
+        mode=mode,
+        maxlevel=level,
+        axes=axes,
+        lazy_init=lazy_init,
     )
     wp[base_key * level].data *= 0
     ptwp[base_key * level].data *= 0
@@ -390,7 +432,8 @@ def test_inverse_boundary_packet_2d() -> None:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("axes", ((-2, -1), (1, 2), (2, 1)))
-def test_separable_conv_packets_2d(axes: tuple[int, int]) -> None:
+@pytest.mark.parametrize("lazy_init", [True, False])
+def test_separable_conv_packets_2d(axes: tuple[int, int], lazy_init: bool) -> None:
     """Ensure the 2d separable conv code is ok."""
     wavelet = "db2"
     signal = np.random.randn(1, 32, 32, 32)
@@ -401,6 +444,7 @@ def test_separable_conv_packets_2d(axes: tuple[int, int]) -> None:
         maxlevel=2,
         axes=axes,
         separable=True,
+        lazy_init=lazy_init,
     )
     ptwp.reconstruct()
     assert np.allclose(signal, ptwp[""].data[:, :32, :32, :32])
