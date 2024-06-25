@@ -61,6 +61,7 @@ class WaveletPacket(BaseDict):
         maxlevel: Optional[int] = None,
         axis: int = -1,
         boundary_orthogonalization: OrthogonalizeMethod = "qr",
+        lazy_init: bool = False,
     ) -> None:
         """Create a wavelet packet decomposition object.
 
@@ -116,12 +117,15 @@ class WaveletPacket(BaseDict):
             if len(data.shape) == 1:
                 # add a batch dimension.
                 data = data.unsqueeze(0)
-            self.transform(data, maxlevel)
+            self.transform(data, maxlevel, lazy_init=lazy_init)
         else:
             self.data = {}
 
     def transform(
-        self, data: torch.Tensor, maxlevel: Optional[int] = None
+        self,
+        data: torch.Tensor,
+        maxlevel: Optional[int] = None,
+        lazy_init: bool = False,
     ) -> WaveletPacket:
         """Calculate the 1d wavelet packet transform for the input data.
 
@@ -136,7 +140,8 @@ class WaveletPacket(BaseDict):
         if maxlevel is None:
             maxlevel = pywt.dwt_max_level(data.shape[-1], self.wavelet.dec_len)
         self.maxlevel = maxlevel
-        self._recursive_dwt(path="")
+        if not lazy_init:
+            self._recursive_dwt(path="")
         return self
 
     def reconstruct(self) -> WaveletPacket:
@@ -299,6 +304,7 @@ class WaveletPacket2D(BaseDict):
         axes: tuple[int, int] = (-2, -1),
         boundary_orthogonalization: OrthogonalizeMethod = "qr",
         separable: bool = False,
+        lazy_init: bool = False,
     ) -> None:
         """Create a 2D-Wavelet packet tree.
 
@@ -338,12 +344,15 @@ class WaveletPacket2D(BaseDict):
 
         self.maxlevel: Optional[int] = None
         if data is not None:
-            self.transform(data, maxlevel)
+            self.transform(data, maxlevel, lazy_init=lazy_init)
         else:
             self.data = {}
 
     def transform(
-        self, data: torch.Tensor, maxlevel: Optional[int] = None
+        self,
+        data: torch.Tensor,
+        maxlevel: Optional[int] = None,
+        lazy_init: bool = False,
     ) -> WaveletPacket2D:
         """Calculate the 2d wavelet packet transform for the input data.
 
@@ -365,7 +374,8 @@ class WaveletPacket2D(BaseDict):
             # add batch dim to unbatched input
             data = data.unsqueeze(0)
 
-        self._recursive_dwt2d(path="")
+        if not lazy_init:
+            self._recursive_dwt2d(path="")
         return self
 
     def reconstruct(self) -> WaveletPacket2D:
