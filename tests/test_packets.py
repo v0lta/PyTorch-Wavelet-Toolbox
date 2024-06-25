@@ -74,51 +74,57 @@ def _compare_trees2(
     batch_size: int = 1,
     transform_mode: bool = False,
     multiple_transforms: bool = False,
+    axes: tuple[int, int] = (-2, -1),
 ) -> None:
-    face = datasets.face()[:height, :width]
-    face = np.mean(face, axis=-1).astype(np.float64)
-    wavelet = pywt.Wavelet(wavelet_str)
-    batch_list = []
-    for _ in range(batch_size):
-        wp_tree = pywt.WaveletPacket2D(
-            data=face,
-            wavelet=wavelet,
-            mode=pywt_boundary,
-            maxlevel=max_lev,
-        )
-        # Get the full decomposition
-        wp_keys = list(product(["a", "h", "v", "d"], repeat=wp_tree.maxlevel))
-        np_packets = []
-        for node in wp_keys:
-            np_packet = wp_tree["".join(node)].data
-            np_packets.append(np_packet)
-        np_packets = np.stack(np_packets, 0)
-        batch_list.append(np_packets)
-    batch_np_packets = np.stack(batch_list, 0)
+    face = datasets.face()[:height, :width].astype(np.float64).mean(-1)
+    data = np.stack([face] * batch_size, 0)
+
+    wp_tree = pywt.WaveletPacket2D(
+        data=data,
+        wavelet=wavelet_str,
+        mode=pywt_boundary,
+        maxlevel=max_lev,
+        axes=axes,
+    )
+    np_packets = np.stack(
+        [
+            node.data
+            for node in wp_tree.get_level(level=wp_tree.maxlevel, order="natural")
+        ],
+        1,
+    )
 
     # get the PyTorch decomposition
-    pt_data = torch.stack([torch.from_numpy(face)] * batch_size, 0)
-
     if transform_mode:
         ptwt_wp_tree = WaveletPacket2D(
-            None, wavelet=wavelet, mode=ptwt_boundary
-        ).transform(pt_data, maxlevel=max_lev)
+            None,
+            wavelet=wavelet_str,
+            mode=ptwt_boundary,
+            axes=axes,
+        ).transform(torch.from_numpy(data), maxlevel=max_lev)
     else:
         ptwt_wp_tree = WaveletPacket2D(
-            pt_data, wavelet=wavelet, mode=ptwt_boundary, maxlevel=max_lev
+            torch.from_numpy(data),
+            wavelet=wavelet_str,
+            mode=ptwt_boundary,
+            maxlevel=max_lev,
+            axes=axes,
         )
 
     # if multiple_transform flag is set, recalculcate the packets
     if multiple_transforms:
-        ptwt_wp_tree.transform(pt_data, maxlevel=max_lev)
+        ptwt_wp_tree.transform(torch.from_numpy(data), maxlevel=max_lev)
 
-    packets = []
-    for node in wp_keys:
-        packet = ptwt_wp_tree["".join(node)]
-        packets.append(packet)
-    packets_pt = torch.stack(packets, 1).numpy()
+    packets_pt = torch.stack(
+        [
+            ptwt_wp_tree[node]
+            for node in ptwt_wp_tree.get_natural_order(ptwt_wp_tree.maxlevel)
+        ],
+        1,
+    )
+
     assert wp_tree.maxlevel == ptwt_wp_tree.maxlevel
-    assert np.allclose(packets_pt, batch_np_packets)
+    assert np.allclose(packets_pt.numpy(), np_packets)
 
 
 @pytest.mark.slow
