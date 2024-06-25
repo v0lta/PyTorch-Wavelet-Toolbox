@@ -204,6 +204,22 @@ def _check_same_dtype(tensor: torch.Tensor, torch_dtype: torch.dtype) -> torch.T
 def _check_same_device_dtype(
     coeffs: Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd],
 ) -> tuple[torch.device, torch.dtype]:
+    """Check coefficients for dtype and device consistency.
+
+    Check that all coefficient tensors in `coeffs` have the same
+    device and dtype.
+
+    Args:
+        coeffs (Wavelet coefficients): The resulting coefficients of
+            a discrete wavelet transform. Can be either of
+            `list[torch.Tensor]` (1d case),
+            :data:`ptwt.constants.WaveletCoeff2d` (2d case) or
+            :data:`ptwt.constants.WaveletCoeffNd` (Nd case).
+
+    Returns:
+        A tuple (device, dtype) with the shared device and dtype of
+        all tensors in coeffs.
+    """
     c = _check_if_tensor(coeffs[0])
     torch_device, torch_dtype = c.device, c.dtype
 
@@ -262,6 +278,7 @@ def _map_result(
     data: Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd],
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd]:
+    """Apply `function` to all tensor elements in `data`."""
     approx = function(data[0])
     result_lst: list[
         Union[
@@ -360,6 +377,38 @@ def _preprocess_coeffs(
     ],
     list[int],
 ]:
+    """Preprocess coeff tensor dimensions.
+
+    For each coefficient tensor in `coeffs` the transformed axes
+    as specified by `axes` are moved to be the last.
+    Adds a batch dim if a coefficient tensor has none.
+    If it has has multiple batch dimensions, they are folded into a single
+    batch dimension.
+
+    Args:
+        coeffs (Wavelet coefficients): The resulting coefficients of
+            a discrete wavelet transform. Can be either of
+            `list[torch.Tensor]` (1d case),
+            :data:`ptwt.constants.WaveletCoeff2d` (2d case) or
+            :data:`ptwt.constants.WaveletCoeffNd` (Nd case).
+        ndim (int): The number of axes :math:`N` on which the transformation
+            was applied.
+        axes (int or tuple of ints): Axes on which the transform was calculated.
+        add_channel_dim (bool): If True, ensures that all returned coefficients
+            have at least `:math:`N + 2` axes by potentially adding a new axis at dim 1.
+            Defaults to False.
+
+    Returns:
+        A tuple ``(coeffs, ds)`` where ``coeffs`` are the transformed
+        coefficients and ``ds`` contains the original shape of ``coeffs[0]``.
+        If `add_channel_dim` is True, all coefficient tensors have
+        :math:`N + 2` axes ([B, 1, c1, ..., cN]).
+        otherwise :math:`N + 1` ([B, c1, ..., cN]).
+
+    Raises:
+        ValueError: If the input dtype is unsupported or `ndim` does not
+            fit to the passed `axes` or `coeffs` dimensions.
+    """
     if isinstance(axes, int):
         axes = (axes,)
 
@@ -450,6 +499,34 @@ def _postprocess_coeffs(
     WaveletCoeff2d,
     WaveletCoeffNd,
 ]:
+    """Postprocess coeff tensor dimensions.
+
+    This revereses the operations of :func:`_preprocess_coeffs`.
+
+    Unfolds potentially folded batch dimensions and removes any added
+    dimensions.
+    The transformed axes as specified by `axes` are moved back to their
+    original position.
+
+    Args:
+        coeffs (Wavelet coefficients): The preprocessed coefficients of
+            a discrete wavelet transform. Can be either of
+            `list[torch.Tensor]` (1d case),
+            :data:`ptwt.constants.WaveletCoeff2d` (2d case) or
+            :data:`ptwt.constants.WaveletCoeffNd` (Nd case).
+        ndim (int): The number of axes :math:`N` on which the transformation was
+            applied.
+        ds (list of ints): The shape of the original first coefficient before
+            preprocessing, i.e. of ``coeffs[0]``.
+        axes (int or tuple of ints): Axes on which the transform was calculated.
+
+    Returns:
+        The result of undoing the preprocessing operations on `coeffs`.
+
+    Raises:
+        ValueError: If `ndim` does not fit to the passed `axes`
+            or `coeffs` dimensions.
+    """
     if isinstance(axes, int):
         axes = (axes,)
 
@@ -486,20 +563,26 @@ def _preprocess_tensor(
 ) -> tuple[torch.Tensor, list[int]]:
     """Preprocess input tensor dimensions.
 
+    The transformed axes as specified by `axes` are moved to be the last.
+    Adds a batch dim if `data` has none.
+    If `data` has multiple batch dimensions, they are folded into a single
+    batch dimension.
+
     Args:
         data (torch.Tensor): An input tensor with at least `ndim` axes.
-        ndim (int): The number of axes on which the transformation is
+        ndim (int): The number of axes :math:`N` on which the transformation is
             applied.
-        axes (int or tuple of ints): Compute the transform over these axes
-            instead of the last ones.
+        axes (int or tuple of ints): Axes on which the transform is calculated.
         add_channel_dim (bool): If True, ensures that the return has at
-            least `ndim` + 2 axes by potentially adding a new axis at dim 1.
+            least :math:`N + 2` axes by potentially adding a new axis at dim 1.
             Defaults to True.
 
     Returns:
-        A tuple (data, ds) where data is the transformed data tensor
-        and ds contains the original shape. If `add_channel_dim` is True,
-        `data` has `ndim` + 2 axes, otherwise `ndim` + 1.
+        A tuple ``(data, ds)`` where ``data`` is the transformed data tensor
+        and ``ds`` contains the original shape.
+        If `add_channel_dim` is True,
+        `data` has :math:`N + 2` axes ([B, 1, d1, ..., dN]).
+        otherwise :math:`N + 1` ([B, d1, ..., dN]).
     """
     # interpreting data as the approximation coeffs of a 0-level FWT
     # allows us to reuse the `_preprocess_coeffs` code
@@ -512,6 +595,26 @@ def _preprocess_tensor(
 def _postprocess_tensor(
     data: torch.Tensor, ndim: int, ds: list[int], axes: Union[tuple[int, ...], int]
 ) -> torch.Tensor:
+    """Postprocess input tensor dimensions.
+
+    This revereses the operations of :func:`_preprocess_tensor`.
+
+    Unfolds potentially folded batch dimensions and removes any added
+    dimensions.
+    The transformed axes as specified by `axes` are moved back to their
+    original position.
+
+    Args:
+        data (torch.Tensor): An preprocessed input tensor.
+        ndim (int): The number of axes :math:`N` on which the transformation is
+            applied.
+        ds (list of ints): The shape of the original input tensor before
+            preprocessing.
+        axes (int or tuple of ints): Axes on which the transform was calculated.
+
+    Returns:
+        The result of undoing the preprocessing operations on `data`.
+    """
     # interpreting data as the approximation coeffs of a 0-level FWT
     # allows us to reuse the `_postprocess_coeffs` code
     return _postprocess_coeffs(coeffs=[data], ndim=ndim, ds=ds, axes=axes)[0]
