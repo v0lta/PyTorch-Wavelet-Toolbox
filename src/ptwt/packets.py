@@ -204,7 +204,8 @@ class WaveletPacket(BaseDict):
         else:
             return partial(waverec, wavelet=self.wavelet, axis=self.axis)
 
-    def get_level(self, level: int, order: str = "freq") -> list[str]:
+    @staticmethod
+    def get_level(level: int, order: str = "freq") -> list[str]:
         """Return the paths to the filter tree nodes.
 
         Args:
@@ -221,7 +222,7 @@ class WaveletPacket(BaseDict):
             ValueError: If `order` is neither ``freq`` nor ``natural``.
         """
         if order == "freq":
-            return self._get_graycode_order(level)
+            return WaveletPacket._get_graycode_order(level)
         elif order == "natural":
             return ["".join(p) for p in product(["a", "d"], repeat=level)]
         else:
@@ -229,7 +230,8 @@ class WaveletPacket(BaseDict):
                 f"Unsupported order '{order}'. Choose from 'freq' and 'natural'."
             )
 
-    def _get_graycode_order(self, level: int, x: str = "a", y: str = "d") -> list[str]:
+    @staticmethod
+    def _get_graycode_order(level: int, x: str = "a", y: str = "d") -> list[str]:
         graycode_order = [x, y]
         for _ in range(level - 1):
             graycode_order = [x + path for path in graycode_order] + [
