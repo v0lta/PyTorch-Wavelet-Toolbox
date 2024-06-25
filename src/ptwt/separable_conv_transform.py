@@ -222,7 +222,7 @@ def fswavedec2(
         >>> data = torch.randn(5, 10, 10)
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
     """
-    return fswavedecn(data, wavelet, ndim=2, mode=mode, level=level, axes=axes)
+    return _fswavedecn(data, wavelet, ndim=2, mode=mode, level=level, axes=axes)
 
 
 def fswavedec3(
@@ -265,7 +265,7 @@ def fswavedec3(
         >>> data = torch.randn(5, 10, 10, 10)
         >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
     """
-    return fswavedecn(data, wavelet, ndim=3, mode=mode, level=level, axes=axes)
+    return _fswavedecn(data, wavelet, ndim=3, mode=mode, level=level, axes=axes)
 
 
 def fswaverec2(
@@ -299,7 +299,7 @@ def fswaverec2(
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
         >>> rec = ptwt.fswaverec2(coeff, "haar")
     """
-    return fswaverecn(coeffs, wavelet, ndim=2, axes=axes)
+    return _fswaverecn(coeffs, wavelet, ndim=2, axes=axes)
 
 
 def fswaverec3(
@@ -330,10 +330,10 @@ def fswaverec3(
         >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
         >>> rec = ptwt.fswaverec3(coeff, "haar")
     """
-    return fswaverecn(coeffs, wavelet, ndim=3, axes=axes)
+    return _fswaverecn(coeffs, wavelet, ndim=3, axes=axes)
 
 
-def fswavedecn(
+def _fswavedecn(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
     ndim: int,
@@ -377,7 +377,7 @@ def fswavedecn(
     return _postprocess_coeffs(coeffs, ndim=ndim, ds=ds, axes=axes)
 
 
-def fswaverecn(
+def _fswaverecn(
     coeffs: WaveletCoeffNd,
     wavelet: Union[Wavelet, str],
     ndim: int,
