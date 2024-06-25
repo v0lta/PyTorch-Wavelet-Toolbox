@@ -11,6 +11,7 @@ import pywt
 import torch
 from scipy import datasets
 
+from ptwt._util import _check_axes_argument
 from ptwt.constants import ExtendedBoundaryMode
 from ptwt.packets import WaveletPacket, WaveletPacket2D
 
@@ -27,6 +28,8 @@ def _compare_trees1(
     axis: int = -1,
 ) -> None:
     data = np.random.rand(batch_size, length)
+    data = data.swapaxes(axis, -1)
+
     if transform_mode:
         twp = WaveletPacket(
             None,
@@ -78,6 +81,10 @@ def _compare_trees2(
 ) -> None:
     face = datasets.face()[:height, :width].astype(np.float64).mean(-1)
     data = np.stack([face] * batch_size, 0)
+
+    _check_axes_argument(axes)
+    data = data.swapaxes(axes[0], -2)
+    data = data.swapaxes(axes[1], -1)
 
     wp_tree = pywt.WaveletPacket2D(
         data=data,
