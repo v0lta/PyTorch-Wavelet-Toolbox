@@ -245,7 +245,7 @@ def test_boundary_matrix_packets1(
 @pytest.mark.parametrize("level", [1, 2, 3, 4])
 @pytest.mark.parametrize("wavelet_str", ["db2"])
 @pytest.mark.parametrize("pywt_boundary", ["zero"])
-def test_freq_order(level: int, wavelet_str: str, pywt_boundary: str) -> None:
+def test_freq_order_2d(level: int, wavelet_str: str, pywt_boundary: str) -> None:
     """Test the packets in frequency order."""
     face = datasets.face()
     wavelet = pywt.Wavelet(wavelet_str)
@@ -255,18 +255,12 @@ def test_freq_order(level: int, wavelet_str: str, pywt_boundary: str) -> None:
         mode=pywt_boundary,
     )
     # Get the full decomposition
-    freq_tree = wp_tree.get_level(level, "freq")
-    freq_order = WaveletPacket2D.get_freq_order(level)
+    order_pywt = wp_tree.get_level(level, "freq")
+    order_ptwt = WaveletPacket2D.get_freq_order(level)
 
-    for order_list, tree_list in zip(freq_tree, freq_order):
-        for order_el, tree_el in zip(order_list, tree_list):
-            print(
-                level,
-                order_el.path,
-                tree_el,
-                order_el.path == tree_el,
-            )
-            assert order_el.path == tree_el
+    for node_list, path_list in zip(order_pywt, order_ptwt):
+        for order_el, order_path in zip(node_list, path_list):
+            assert order_el.path == order_path
 
 
 def test_packet_harbo_lvl3() -> None:
@@ -287,18 +281,11 @@ def test_packet_harbo_lvl3() -> None:
     wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=_MyHaarFilterBank())
 
     twp = WaveletPacket(torch.from_numpy(data), wavelet, mode="reflect")
-    twp_nodes = twp.get_level(3)
-    twp_lst = []
-    for node in twp_nodes:
-        twp_lst.append(torch.squeeze(twp[node]))
-    torch_res = torch.stack(twp_lst).numpy()
+    torch_res = torch.cat([twp[node] for node in twp.get_level(3)], 0)
+
     wp = pywt.WaveletPacket(data=data, wavelet=wavelet, mode="reflect")
-    pywt_nodes = [node.path for node in wp.get_level(3, "freq")]
-    np_lst = []
-    for node in pywt_nodes:
-        np_lst.append(wp[node].data)
-    np_res = np.concatenate(np_lst)
-    assert np.allclose(torch_res, np_res)
+    np_res = np.concatenate([node.data for node in wp.get_level(3, "freq")], 0)
+    assert np.allclose(torch_res.numpy(), np_res)
 
 
 def test_access_errors_1d() -> None:
