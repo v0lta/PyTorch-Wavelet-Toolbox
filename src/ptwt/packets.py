@@ -16,6 +16,7 @@ from ._util import Wavelet, _as_wavelet
 from .constants import (
     ExtendedBoundaryMode,
     OrthogonalizeMethod,
+    PacketNodeOrder,
     WaveletCoeff2d,
     WaveletCoeffNd,
     WaveletDetailTuple2d,
@@ -205,7 +206,7 @@ class WaveletPacket(BaseDict):
             return partial(waverec, wavelet=self.wavelet, axis=self.axis)
 
     @staticmethod
-    def get_level(level: int, order: Literal["freq", "natural"] = "freq") -> list[str]:
+    def get_level(level: int, order: PacketNodeOrder = "freq") -> list[str]:
         """Return the paths to the filter tree nodes.
 
         Args:
@@ -540,7 +541,7 @@ class WaveletPacket2D(BaseDict):
 
     @staticmethod
     def get_level(
-        level: int, order: Literal["freq", "natural"] = "freq"
+        level: int, order: PacketNodeOrder = "freq"
     ) -> Union[list[str], list[list[str]]]:
         """Return the paths to the filter tree nodes.
 
