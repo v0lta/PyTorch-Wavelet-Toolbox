@@ -271,6 +271,15 @@ class WaveletPacket(BaseDict):
                 "cannot be accessed! This wavelet packet tree is initialized with "
                 f"maximum level {self.maxlevel}."
             )
+        elif key not in self:
+            if key == "":
+                raise ValueError(
+                    "The requested root of the packet tree cannot be accessed! "
+                    "The wavelet packet tree is not properly initialized. "
+                    "Run `transform` before accessing tree values."
+                )
+            # calculate data from parent
+            self._expand_node(key[:-1])
         return super().__getitem__(key)
 
 
@@ -529,6 +538,16 @@ class WaveletPacket2D(BaseDict):
                 "cannot be accessed! This wavelet packet tree is initialized with "
                 f"maximum level {self.maxlevel}."
             )
+        elif key not in self:
+            if key == "":
+                raise ValueError(
+                    "The requested root of the packet tree cannot be accessed! "
+                    "The wavelet packet tree is not properly initialized. "
+                    "Run `transform` before accessing tree values."
+                )
+            # calculate data from parent
+            self._expand_node(key[:-1])
+
         return super().__getitem__(key)
 
     @staticmethod
