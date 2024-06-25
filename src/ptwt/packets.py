@@ -132,11 +132,11 @@ class WaveletPacket(BaseDict):
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
         """
-        self.data = {}
+        self.data = {"": data}
         if maxlevel is None:
             maxlevel = pywt.dwt_max_level(data.shape[-1], self.wavelet.dec_len)
         self.maxlevel = maxlevel
-        self._recursive_dwt(data, level=0, path="")
+        self._recursive_dwt(path="")
         return self
 
     def reconstruct(self) -> WaveletPacket:
@@ -226,15 +226,24 @@ class WaveletPacket(BaseDict):
         else:
             return graycode_order
 
-    def _recursive_dwt(self, data: torch.Tensor, level: int, path: str) -> None:
+    def _expand_node(self, path: str) -> None:
+        data = self[path]
+        res_lo, res_hi = self._get_wavedec(data.shape[-1])(data)
+        self.data[path + "a"] = res_lo
+        self.data[path + "d"] = res_hi
+
+    def _recursive_dwt(self, path: str) -> None:
         if not self.maxlevel:
             raise AssertionError
 
-        self.data[path] = data
-        if level < self.maxlevel:
-            res_lo, res_hi = self._get_wavedec(data.shape[-1])(data)
-            self._recursive_dwt(res_lo, level + 1, path + "a")
-            self._recursive_dwt(res_hi, level + 1, path + "d")
+        if len(path) >= self.maxlevel:
+            # nothing to expand
+            return
+
+        self._expand_node(path)
+
+        for child in ["a", "d"]:
+            self._recursive_dwt(path + child)
 
     def __getitem__(self, key: str) -> torch.Tensor:
         """Access the coefficients in the wavelet packets tree.
@@ -338,7 +347,7 @@ class WaveletPacket2D(BaseDict):
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
         """
-        self.data = {}
+        self.data = {"": data}
         if maxlevel is None:
             maxlevel = pywt.dwt_max_level(min(data.shape[-2:]), self.wavelet.dec_len)
         self.maxlevel = maxlevel
@@ -347,7 +356,7 @@ class WaveletPacket2D(BaseDict):
             # add batch dim to unbatched input
             data = data.unsqueeze(0)
 
-        self._recursive_dwt2d(data, level=0, path="")
+        self._recursive_dwt2d(path="")
         return self
 
     def reconstruct(self) -> WaveletPacket2D:
@@ -385,6 +394,18 @@ class WaveletPacket2D(BaseDict):
                         rec = rec[..., :-1, :]
                 self[node] = rec
         return self
+
+    def _expand_node(self, path: str) -> None:
+        data = self[path]
+        result = self._get_wavedec(data.shape[-2:])(data)
+
+        # assert for type checking
+        assert len(result) == 2
+        result_a, (result_h, result_v, result_d) = result
+        self.data[path + "a"] = result_a
+        self.data[path + "h"] = result_h
+        self.data[path + "v"] = result_v
+        self.data[path + "d"] = result_d
 
     def _get_wavedec(self, shape: tuple[int, ...]) -> Callable[
         [torch.Tensor],
@@ -467,21 +488,17 @@ class WaveletPacket2D(BaseDict):
 
         return _fsdict_func
 
-    def _recursive_dwt2d(self, data: torch.Tensor, level: int, path: str) -> None:
+    def _recursive_dwt2d(self, path: str) -> None:
         if not self.maxlevel:
             raise AssertionError
 
-        self.data[path] = data
-        if level < self.maxlevel:
-            result = self._get_wavedec(data.shape[-2:])(data)
+        if len(path) >= self.maxlevel:
+            # nothing to expand
+            return
 
-            # assert for type checking
-            assert len(result) == 2
-            result_a, (result_h, result_v, result_d) = result
-            self._recursive_dwt2d(result_a, level + 1, path + "a")
-            self._recursive_dwt2d(result_h, level + 1, path + "h")
-            self._recursive_dwt2d(result_v, level + 1, path + "v")
-            self._recursive_dwt2d(result_d, level + 1, path + "d")
+        self._expand_node(path)
+        for child in ["a", "h", "v", "d"]:
+            self._recursive_dwt2d(path + child)
 
     def __getitem__(self, key: str) -> torch.Tensor:
         """Access the coefficients in the wavelet packets tree.
