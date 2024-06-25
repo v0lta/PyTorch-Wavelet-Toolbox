@@ -113,9 +113,6 @@ class WaveletPacket(BaseDict):
         self.maxlevel: Optional[int] = None
         self.axis = axis
         if data is not None:
-            if len(data.shape) == 1:
-                # add a batch dimension.
-                data = data.unsqueeze(0)
             self.transform(data, maxlevel)
         else:
             self.data = {}
