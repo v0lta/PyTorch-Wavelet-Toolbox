@@ -249,6 +249,26 @@ def test_freq_order(level: int, wavelet_str: str, pywt_boundary: str) -> None:
             assert order_el.path == "".join(tree_el)
 
 
+@pytest.mark.parametrize("level", [1, 2, 3, 4])
+@pytest.mark.parametrize("wavelet_str", ["db2"])
+@pytest.mark.parametrize("pywt_boundary", ["zero"])
+def test_natural_order_2d(level: int, wavelet_str: str, pywt_boundary: str) -> None:
+    """Test the packets in natural order."""
+    face = datasets.face()
+    wavelet = pywt.Wavelet(wavelet_str)
+    wp_tree = pywt.WaveletPacket2D(
+        data=np.mean(face, axis=-1).astype(np.float64),
+        wavelet=wavelet,
+        mode=pywt_boundary,
+    )
+    # Get the full decomposition
+    order_pywt = wp_tree.get_level(level, "natural")
+    order_ptwt = WaveletPacket2D.get_natural_order(level)
+
+    for order_el, order_path in zip(order_pywt, order_ptwt):
+        assert order_el.path == order_path
+
+
 def test_packet_harbo_lvl3() -> None:
     """From Jensen, La Cour-Harbo, Rippels in Mathematics, Chapter 8 (page 89)."""
     data = np.array([56.0, 40.0, 8.0, 24.0, 48.0, 48.0, 40.0, 16.0])
