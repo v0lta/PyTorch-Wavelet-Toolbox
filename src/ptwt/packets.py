@@ -210,7 +210,7 @@ class WaveletPacket(BaseDict):
 
         Args:
             level (int): The depth of the tree.
-            order (str): The order the paths are in.
+            order: The order the paths are in.
                 Choose from frequency order (``freq``) and
                 natural order (``natural``).
                 Defaults to ``freq``.
@@ -542,6 +542,21 @@ class WaveletPacket2D(BaseDict):
     def get_level(
         level: int, order: Literal["freq", "natural"] = "freq"
     ) -> Union[list[str], list[list[str]]]:
+        """Return the paths to the filter tree nodes.
+
+        Args:
+            level (int): The depth of the tree.
+            order: The order the paths are in.
+                Choose from frequency order (``freq``) and
+                natural order (``natural``).
+                Defaults to ``freq``.
+
+        Returns:
+            A list with the paths to each node.
+
+        Raises:
+            ValueError: If `order` is neither ``freq`` nor ``natural``.
+        """
         if order == "freq":
             return WaveletPacket2D.get_freq_order(level)
         elif order == "natural":
