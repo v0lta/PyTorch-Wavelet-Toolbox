@@ -12,7 +12,7 @@ import numpy as np
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet
+from ._util import Wavelet, _as_wavelet, _swap_axes, _undo_swap_axes
 from .constants import (
     ExtendedBoundaryMode,
     OrthogonalizeMethod,
@@ -339,12 +339,9 @@ class WaveletPacket2D(BaseDict):
         """
         self.data = {}
         if maxlevel is None:
-            maxlevel = pywt.dwt_max_level(min(data.shape[-2:]), self.wavelet.dec_len)
+            min_transform_size = min(_swap_axes(data, self.axes).shape[-2:])
+            maxlevel = pywt.dwt_max_level(min_transform_size, self.wavelet.dec_len)
         self.maxlevel = maxlevel
-
-        if data.dim() == 2:
-            # add batch dim to unbatched input
-            data = data.unsqueeze(0)
 
         self._recursive_dwt2d(data, level=0, path="")
         return self
@@ -358,9 +355,8 @@ class WaveletPacket2D(BaseDict):
            a reconstruction from the leaves.
         """
         if self.maxlevel is None:
-            self.maxlevel = pywt.dwt_max_level(
-                min(self[""].shape[-2:]), self.wavelet.dec_len
-            )
+            min_transform_size = min(_swap_axes(self[""], self.axes).shape[-2:])
+            self.maxlevel = pywt.dwt_max_level(min_transform_size, self.wavelet.dec_len)
 
         for level in reversed(range(self.maxlevel)):
             for node in WaveletPacket2D.get_natural_order(level):
@@ -368,20 +364,24 @@ class WaveletPacket2D(BaseDict):
                 data_h = self[node + "h"]
                 data_v = self[node + "v"]
                 data_d = self[node + "d"]
-                rec = self._get_waverec(data_a.shape[-2:])(
+                transform_size = _swap_axes(data_a, self.axes).shape[-2:]
+                rec = self._get_waverec(transform_size)(
                     (data_a, WaveletDetailTuple2d(data_h, data_v, data_d))
                 )
                 if level > 0:
-                    if rec.shape[-1] != self[node].shape[-1]:
+                    rec = _swap_axes(rec, self.axes)
+                    swapped_node = _swap_axes(self[node], self.axes)
+                    if rec.shape[-1] != swapped_node.shape[-1]:
                         assert (
-                            rec.shape[-1] == self[node].shape[-1] + 1
+                            rec.shape[-1] == swapped_node.shape[-1] + 1
                         ), "padding error, please open an issue on GitHub"
                         rec = rec[..., :-1]
-                    if rec.shape[-2] != self[node].shape[-2]:
+                    if rec.shape[-2] != swapped_node.shape[-2]:
                         assert (
-                            rec.shape[-2] == self[node].shape[-2] + 1
+                            rec.shape[-2] == swapped_node.shape[-2] + 1
                         ), "padding error, please open an issue on GitHub"
                         rec = rec[..., :-1, :]
+                    rec = _undo_swap_axes(rec, self.axes)
                 self[node] = rec
         return self
 
@@ -472,7 +472,8 @@ class WaveletPacket2D(BaseDict):
 
         self.data[path] = data
         if level < self.maxlevel:
-            result = self._get_wavedec(data.shape[-2:])(data)
+            transform_size = _swap_axes(data, self.axes).shape[-2:]
+            result = self._get_wavedec(transform_size)(data)
 
             # assert for type checking
             assert len(result) == 2
