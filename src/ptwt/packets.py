@@ -88,6 +88,10 @@ class WaveletPacket(BaseDict):
                 to use in the sparse matrix backend,
                 see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Only used if `mode` equals 'boundary'. Defaults to 'qr'.
+            lazy_init (bool): Value is passed on to :func:`transform`.
+                If True, the packet tree is initialized lazily. This
+                allows for partial expansion of the wavelet packet tree.
+                Defaults to False.
 
         Example:
             >>> import torch, pywt, ptwt
@@ -135,6 +139,10 @@ class WaveletPacket(BaseDict):
             maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
+            lazy_init (bool): If True, the packet tree is initialized lazily.
+                This allows for partial expansion of the wavelet packet tree.
+                Otherwise, all packet coefficients up to the decomposition level
+                `maxlevel` are computed. Defaults to False.
         """
         self.data = {"": data}
         if maxlevel is None:
@@ -332,6 +340,10 @@ class WaveletPacket2D(BaseDict):
                 Only used if `mode` equals 'boundary'. Defaults to 'qr'.
             separable (bool): If true, a separable transform is performed,
                 i.e. each image axis is transformed separately. Defaults to False.
+            lazy_init (bool): Value is passed on to :func:`transform`.
+                If True, the packet tree is initialized lazily. This
+                allows for partial expansion of the wavelet packet tree.
+                Defaults to False.
 
         """
         self.wavelet = _as_wavelet(wavelet)
@@ -364,6 +376,10 @@ class WaveletPacket2D(BaseDict):
             maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
+            lazy_init (bool): If True, the packet tree is initialized lazily.
+                This allows for partial expansion of the wavelet packet tree.
+                Otherwise, all packet coefficients up to the decomposition level
+                `maxlevel` are computed. Defaults to False.
         """
         self.data = {"": data}
         if maxlevel is None:
