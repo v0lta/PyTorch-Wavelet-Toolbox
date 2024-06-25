@@ -496,6 +496,13 @@ def test_inverse_packet_1d(
         axis=axis,
         lazy_init=lazy_init,
     )
+    if lazy_init:
+        with pytest.raises(KeyError):
+            ptwp.reconstruct()
+
+        # lazy init
+        [ptwp[key] for key in ptwp.get_level(level)]
+
     wp[base_key * level].data *= 0
     ptwp[base_key * level] *= 0
     wp.reconstruct(update=True)
@@ -531,6 +538,13 @@ def test_inverse_packet_2d(
         lazy_init=lazy_init,
     )
     wp[base_key * level].data *= 0
+    if lazy_init:
+        with pytest.raises(KeyError):
+            ptwp.reconstruct()
+
+        # lazy init
+        [ptwp[key] for key in ptwp.get_natural_order(level)]
+
     ptwp[base_key * level] *= 0
     wp.reconstruct(update=True)
     ptwp.reconstruct()
@@ -583,5 +597,11 @@ def test_separable_conv_packets_2d(axes: tuple[int, int], lazy_init: bool) -> No
         separable=True,
         lazy_init=lazy_init,
     )
+    if lazy_init:
+        with pytest.raises(KeyError):
+            ptwp.reconstruct()
+
+        # lazy init
+        [ptwp[key] for key in ptwp.get_natural_order(2)]
     ptwp.reconstruct()
     assert np.allclose(signal, ptwp[""].data[:, :32, :32, :32])
