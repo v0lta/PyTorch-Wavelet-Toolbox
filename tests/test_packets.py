@@ -225,6 +225,26 @@ def test_boundary_matrix_packets1(
 @pytest.mark.parametrize("level", [1, 2, 3, 4])
 @pytest.mark.parametrize("wavelet_str", ["db2"])
 @pytest.mark.parametrize("pywt_boundary", ["zero"])
+@pytest.mark.parametrize("order", ["freq", "natural"])
+def test_order_1d(level: int, wavelet_str: str, pywt_boundary: str, order: str) -> None:
+    """Test the packets in natural order."""
+    data = np.random.rand(2, 256)
+    wp_tree = pywt.WaveletPacket(
+        data=data,
+        wavelet=wavelet_str,
+        mode=pywt_boundary,
+    )
+    # Get the full decomposition
+    order_pywt = wp_tree.get_level(level, order)
+    order_ptwt = WaveletPacket.get_level(level, order)
+
+    for order_el, order_path in zip(order_pywt, order_ptwt):
+        assert order_el.path == order_path
+
+
+@pytest.mark.parametrize("level", [1, 2, 3, 4])
+@pytest.mark.parametrize("wavelet_str", ["db2"])
+@pytest.mark.parametrize("pywt_boundary", ["zero"])
 def test_freq_order(level: int, wavelet_str: str, pywt_boundary: str) -> None:
     """Test the packets in frequency order."""
     face = datasets.face()
