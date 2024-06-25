@@ -11,7 +11,7 @@ import pywt
 import torch
 from scipy import datasets
 
-from ptwt._util import _check_axes_argument
+from ptwt._util import _check_axes_argument, _undo_swap_axes
 from ptwt.constants import ExtendedBoundaryMode
 from ptwt.packets import WaveletPacket, WaveletPacket2D
 
@@ -80,14 +80,13 @@ def _compare_trees2(
     axes: tuple[int, int] = (-2, -1),
 ) -> None:
     face = datasets.face()[:height, :width].astype(np.float64).mean(-1)
-    data = np.stack([face] * batch_size, 0)
+    data = torch.stack([torch.from_numpy(face)] * batch_size, 0)
 
     _check_axes_argument(axes)
-    data = data.swapaxes(axes[0], -2)
-    data = data.swapaxes(axes[1], -1)
+    data = _undo_swap_axes(data, axes)
 
     wp_tree = pywt.WaveletPacket2D(
-        data=data,
+        data=data.numpy(),
         wavelet=wavelet_str,
         mode=pywt_boundary,
         maxlevel=max_lev,
@@ -108,10 +107,10 @@ def _compare_trees2(
             wavelet=wavelet_str,
             mode=ptwt_boundary,
             axes=axes,
-        ).transform(torch.from_numpy(data), maxlevel=max_lev)
+        ).transform(data, maxlevel=max_lev)
     else:
         ptwt_wp_tree = WaveletPacket2D(
-            torch.from_numpy(data),
+            data,
             wavelet=wavelet_str,
             mode=ptwt_boundary,
             maxlevel=max_lev,
@@ -120,7 +119,7 @@ def _compare_trees2(
 
     # if multiple_transform flag is set, recalculcate the packets
     if multiple_transforms:
-        ptwt_wp_tree.transform(torch.from_numpy(data), maxlevel=max_lev)
+        ptwt_wp_tree.transform(data, maxlevel=max_lev)
 
     packets_pt = torch.stack(
         [
