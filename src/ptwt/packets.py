@@ -179,9 +179,18 @@ class WaveletPacket(BaseDict):
 
         for level in reversed(range(self.maxlevel)):
             for node in self.get_level(level):
+                # check if any children is not available
+                # we need to check manually to avoid lazy init
+                def _test_key(key: str) -> None:
+                    if key not in self:
+                        raise KeyError(f"Key {key} not found")
+
+                for child in ["a", "d"]:
+                    _test_key(node + child)
+
                 data_a = self[node + "a"]
-                data_b = self[node + "d"]
-                rec = self._get_waverec(data_a.shape[-1])([data_a, data_b])
+                data_d = self[node + "d"]
+                rec = self._get_waverec(data_a.shape[-1])([data_a, data_d])
                 if level > 0:
                     if rec.shape[-1] != self[node].shape[-1]:
                         assert (
@@ -414,6 +423,15 @@ class WaveletPacket2D(BaseDict):
 
         for level in reversed(range(self.maxlevel)):
             for node in WaveletPacket2D.get_natural_order(level):
+                # check if any children is not available
+                # we need to check manually to avoid lazy init
+                def _test_key(key: str) -> None:
+                    if key not in self:
+                        raise KeyError(f"Key {key} not found")
+
+                for child in ["a", "h", "v", "d"]:
+                    _test_key(node + child)
+
                 data_a = self[node + "a"]
                 data_h = self[node + "h"]
                 data_v = self[node + "v"]
