@@ -207,7 +207,9 @@ def _check_same_device_dtype(
     c = _check_if_tensor(coeffs[0])
     torch_device, torch_dtype = c.device, c.dtype
 
+    # check for all tensors in `coeffs` that the device matches `torch_device`
     _map_result(coeffs, partial(_check_same_device, torch_device=torch_device))
+    # check for all tensors in `coeffs` that the dtype matches `torch_dtype`
     _map_result(coeffs, partial(_check_same_dtype, torch_dtype=torch_dtype))
 
     return torch_device, torch_dtype
@@ -372,6 +374,7 @@ def _preprocess_coeffs(
         if len(axes) != ndim:
             raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
         else:
+            # for all tensors in `coeffs`: swap the axes
             swap_fn = partial(_swap_axes, axes=axes)
             coeffs = _map_result(coeffs, swap_fn)
 
@@ -380,11 +383,14 @@ def _preprocess_coeffs(
     if len(ds) < ndim:
         raise ValueError(f"At least {ndim} input dimensions required.")
     elif len(ds) == ndim:
+        # for all tensors in `coeffs`: unsqueeze(0)
         coeffs = _map_result(coeffs, lambda x: x.unsqueeze(0))
     elif len(ds) > ndim + 1:
+        # for all tensors in `coeffs`: fold leading dims to batch dim
         coeffs = _map_result(coeffs, lambda t: _fold_axes(t, ndim)[0])
 
     if add_channel_dim:
+        # for all tensors in `coeffs`: add channel dim
         coeffs = _map_result(coeffs, lambda x: x.unsqueeze(1))
 
     return coeffs, ds
@@ -454,8 +460,10 @@ def _postprocess_coeffs(
     if len(ds) < ndim:
         raise ValueError(f"At least {ndim} input dimensions required.")
     elif len(ds) == ndim:
+        # for all tensors in `coeffs`: remove batch dim
         coeffs = _map_result(coeffs, lambda x: x.squeeze(0))
     elif len(ds) > ndim + 1:
+        # for all tensors in `coeffs`: unfold batch dim
         unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=ndim)
         coeffs = _map_result(coeffs, unfold_axes_fn)
 
@@ -463,6 +471,7 @@ def _postprocess_coeffs(
         if len(axes) != ndim:
             raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
         else:
+            # for all tensors in `coeffs`: undo axes swapping
             undo_swap_fn = partial(_undo_swap_axes, axes=axes)
             coeffs = _map_result(coeffs, undo_swap_fn)
 
@@ -492,6 +501,8 @@ def _preprocess_tensor(
         and ds contains the original shape. If `add_channel_dim` is True,
         `data` has `ndim` + 2 axes, otherwise `ndim` + 1.
     """
+    # interpreting data as the approximation coeffs of a 0-level FWT
+    # allows us to reuse the `_preprocess_coeffs` code
     data_lst, ds = _preprocess_coeffs(
         [data], ndim=ndim, axes=axes, add_channel_dim=add_channel_dim
     )
@@ -501,4 +512,6 @@ def _preprocess_tensor(
 def _postprocess_tensor(
     data: torch.Tensor, ndim: int, ds: list[int], axes: Union[tuple[int, ...], int]
 ) -> torch.Tensor:
+    # interpreting data as the approximation coeffs of a 0-level FWT
+    # allows us to reuse the `_postprocess_coeffs` code
     return _postprocess_coeffs(coeffs=[data], ndim=ndim, ds=ds, axes=axes)[0]
