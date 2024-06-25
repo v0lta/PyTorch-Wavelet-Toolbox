@@ -531,6 +531,17 @@ class WaveletPacket2D(BaseDict):
         return super().__getitem__(key)
 
     @staticmethod
+    def get_level(level: int, order: str = "freq") -> Union[list[str], list[list[str]]]:
+        if order == "freq":
+            return WaveletPacket2D.get_freq_order(level)
+        elif order == "natural":
+            return WaveletPacket2D.get_natural_order(level)
+        else:
+            raise ValueError(
+                f"Unsupported order '{order}'. Choose from 'freq' and 'natural'."
+            )
+
+    @staticmethod
     def get_natural_order(level: int) -> list[str]:
         """Get the natural ordering for a given decomposition level.
 
