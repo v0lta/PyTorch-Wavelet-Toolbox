@@ -263,10 +263,10 @@ def test_freq_order(level: int, wavelet_str: str, pywt_boundary: str) -> None:
             print(
                 level,
                 order_el.path,
-                "".join(tree_el),
-                order_el.path == "".join(tree_el),
+                tree_el,
+                order_el.path == tree_el,
             )
-            assert order_el.path == "".join(tree_el)
+            assert order_el.path == tree_el
 
 
 def test_packet_harbo_lvl3() -> None:
