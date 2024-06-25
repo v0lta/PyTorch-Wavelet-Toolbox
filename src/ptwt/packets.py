@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import collections
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 import pywt
@@ -108,7 +108,6 @@ class WaveletPacket(BaseDict):
             >>> viz = np.stack(np_lst).squeeze()
             >>> plt.imshow(np.abs(viz))
             >>> plt.show()
-
         """
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
@@ -143,6 +142,9 @@ class WaveletPacket(BaseDict):
                 This allows for partial expansion of the wavelet packet tree.
                 Otherwise, all packet coefficients up to the decomposition level
                 `maxlevel` are computed. Defaults to False.
+
+        Returns:
+            This wavelet packet object (to allow call chaining).
         """
         self.data = {"": data}
         if maxlevel is None:
@@ -344,7 +346,6 @@ class WaveletPacket2D(BaseDict):
                 If True, the packet tree is initialized lazily. This
                 allows for partial expansion of the wavelet packet tree.
                 Defaults to False.
-
         """
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
@@ -380,6 +381,9 @@ class WaveletPacket2D(BaseDict):
                 This allows for partial expansion of the wavelet packet tree.
                 Otherwise, all packet coefficients up to the decomposition level
                 `maxlevel` are computed. Defaults to False.
+
+        Returns:
+            This wavelet packet object (to allow call chaining).
         """
         self.data = {"": data}
         if maxlevel is None:
