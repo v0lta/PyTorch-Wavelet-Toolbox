@@ -136,6 +136,7 @@ def _compare_trees2(
 @pytest.mark.parametrize("batch_size", [2, 1])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
+@pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (1, 2), (2, 0), (0, 2)])
 def test_2d_packets(
     max_lev: Optional[int],
     wavelet_str: str,
@@ -143,6 +144,7 @@ def test_2d_packets(
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
+    axes: tuple[int, int],
 ) -> None:
     """Ensure pywt and ptwt produce equivalent wavelet 2d packet trees."""
     _compare_trees2(
@@ -153,6 +155,7 @@ def test_2d_packets(
         batch_size=batch_size,
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
+        axes=axes,
     )
 
 
@@ -161,11 +164,13 @@ def test_2d_packets(
 @pytest.mark.parametrize("batch_size", [1, 2])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
+@pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (1, 2), (2, 0), (0, 2)])
 def test_boundary_matrix_packets2(
     max_lev: Optional[int],
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
+    axes: tuple[int, int],
 ) -> None:
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
     _compare_trees2(
@@ -176,6 +181,7 @@ def test_boundary_matrix_packets2(
         batch_size=batch_size,
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
+        axes=axes,
     )
 
 
@@ -188,6 +194,7 @@ def test_boundary_matrix_packets2(
 @pytest.mark.parametrize("batch_size", [2, 1])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
+@pytest.mark.parametrize("axis", [0, -1])
 def test_1d_packets(
     max_lev: int,
     wavelet_str: str,
@@ -195,6 +202,7 @@ def test_1d_packets(
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
+    axis: int,
 ) -> None:
     """Ensure pywt and ptwt produce equivalent wavelet 1d packet trees."""
     _compare_trees1(
@@ -205,6 +213,7 @@ def test_1d_packets(
         batch_size=batch_size,
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
+        axis=axis,
     )
 
 
