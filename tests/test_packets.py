@@ -360,7 +360,7 @@ def test_inverse_packet_1d(
         lazy_init=lazy_init,
     )
     wp[base_key * level].data *= 0
-    ptwp[base_key * level].data *= 0
+    ptwp[base_key * level] *= 0
     wp.reconstruct(update=True)
     ptwp.reconstruct()
     assert np.allclose(wp[""].data, ptwp[""].numpy()[..., : shape[-2], : shape[-1]])
@@ -394,7 +394,7 @@ def test_inverse_packet_2d(
         lazy_init=lazy_init,
     )
     wp[base_key * level].data *= 0
-    ptwp[base_key * level].data *= 0
+    ptwp[base_key * level] *= 0
     wp.reconstruct(update=True)
     ptwp.reconstruct()
     assert np.allclose(wp[""].data, ptwp[""].numpy()[: size[0], : size[1], : size[2]])
