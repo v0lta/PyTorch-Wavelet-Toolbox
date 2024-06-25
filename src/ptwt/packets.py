@@ -134,7 +134,7 @@ class WaveletPacket(BaseDict):
         """
         self.data = {}
         if maxlevel is None:
-            maxlevel = pywt.dwt_max_level(data.shape[-1], self.wavelet.dec_len)
+            maxlevel = pywt.dwt_max_level(data.shape[self.axis], self.wavelet.dec_len)
         self.maxlevel = maxlevel
         self._recursive_dwt(data, level=0, path="")
         return self
@@ -166,13 +166,15 @@ class WaveletPacket(BaseDict):
             for node in self.get_level(level):
                 data_a = self[node + "a"]
                 data_b = self[node + "d"]
-                rec = self._get_waverec(data_a.shape[-1])([data_a, data_b])
+                rec = self._get_waverec(data_a.shape[self.axis])([data_a, data_b])
                 if level > 0:
-                    if rec.shape[-1] != self[node].shape[-1]:
+                    if rec.shape[self.axis] != self[node].shape[self.axis]:
                         assert (
-                            rec.shape[-1] == self[node].shape[-1] + 1
+                            rec.shape[self.axis] == self[node].shape[self.axis] + 1
                         ), "padding error, please open an issue on github"
-                        rec = rec[..., :-1]
+                        rec = rec.swapaxes(self.axis, -1)[..., :-1].swapaxes(
+                            -1, self.axis
+                        )
                 self[node] = rec
         return self
 
@@ -232,7 +234,7 @@ class WaveletPacket(BaseDict):
 
         self.data[path] = data
         if level < self.maxlevel:
-            res_lo, res_hi = self._get_wavedec(data.shape[-1])(data)
+            res_lo, res_hi = self._get_wavedec(data.shape[self.axis])(data)
             self._recursive_dwt(res_lo, level + 1, path + "a")
             self._recursive_dwt(res_hi, level + 1, path + "d")
 
