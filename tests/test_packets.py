@@ -24,46 +24,44 @@ def _compare_trees1(
     batch_size: int = 1,
     transform_mode: bool = False,
     multiple_transforms: bool = False,
+    axis: int = -1,
 ) -> None:
     data = np.random.rand(batch_size, length)
-    wavelet = pywt.Wavelet(wavelet_str)
-
     if transform_mode:
         twp = WaveletPacket(
-            None, wavelet, mode=ptwt_boundary, maxlevel=max_lev
+            None,
+            wavelet_str,
+            mode=ptwt_boundary,
+            axis=axis,
         ).transform(torch.from_numpy(data), maxlevel=max_lev)
     else:
         twp = WaveletPacket(
-            torch.from_numpy(data), wavelet, mode=ptwt_boundary, maxlevel=max_lev
+            torch.from_numpy(data),
+            wavelet_str,
+            mode=ptwt_boundary,
+            maxlevel=max_lev,
+            axis=axis,
         )
 
     # if multiple_transform flag is set, recalculcate the packets
     if multiple_transforms:
         twp.transform(torch.from_numpy(data), maxlevel=max_lev)
 
-    nodes = twp.get_level(twp.maxlevel)
-    twp_lst = []
-    for node in nodes:
-        twp_lst.append(twp[node])
-    torch_res = torch.cat(twp_lst, -1).numpy()
+    torch_res = torch.cat([twp[node] for node in twp.get_level(twp.maxlevel)], axis)
 
-    np_batches = []
-    for batch_index in range(batch_size):
-        wp = pywt.WaveletPacket(
-            data=data[batch_index],
-            wavelet=wavelet,
-            mode=pywt_boundary,
-            maxlevel=max_lev,
-        )
-        nodes = [node.path for node in wp.get_level(wp.maxlevel, "freq")]
-        np_lst = []
-        for node in nodes:
-            np_lst.append(wp[node].data)
-        np_res = np.concatenate(np_lst, -1)
-        np_batches.append(np_res)
-    np_batches = np.stack(np_batches, 0)
+    wp = pywt.WaveletPacket(
+        data=data,
+        wavelet=wavelet_str,
+        mode=pywt_boundary,
+        maxlevel=max_lev,
+        axis=axis,
+    )
+    np_res = np.concatenate(
+        [node.data for node in wp.get_level(wp.maxlevel, "freq")], axis
+    )
+
     assert wp.maxlevel == twp.maxlevel
-    assert np.allclose(torch_res, np_batches)
+    assert np.allclose(torch_res.numpy(), np_res)
 
 
 def _compare_trees2(
