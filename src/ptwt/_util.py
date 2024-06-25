@@ -224,7 +224,9 @@ def _check_same_device_dtype(
     torch_device, torch_dtype = c.device, c.dtype
 
     # check for all tensors in `coeffs` that the device matches `torch_device`
-    _apply_to_tensor_elems(coeffs, partial(_check_same_device, torch_device=torch_device))
+    _apply_to_tensor_elems(
+        coeffs, partial(_check_same_device, torch_device=torch_device)
+    )
     # check for all tensors in `coeffs` that the dtype matches `torch_dtype`
     _apply_to_tensor_elems(coeffs, partial(_check_same_dtype, torch_dtype=torch_dtype))
 
