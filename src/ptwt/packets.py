@@ -112,6 +112,9 @@ class WaveletPacket(BaseDict):
         self._matrix_waverec_dict: dict[int, MatrixWaverec] = {}
         self.maxlevel: Optional[int] = None
         self.axis = axis
+
+        self._filter_keys = {"a", "d"}
+
         if data is not None:
             self.transform(data, maxlevel)
         else:
@@ -188,12 +191,9 @@ class WaveletPacket(BaseDict):
             for node in self.get_level(level):
                 # check if any children is not available
                 # we need to check manually to avoid lazy init
-                def _test_key(key: str) -> None:
-                    if key not in self:
-                        raise KeyError(f"Key {key} not found")
-
-                for child in ["a", "d"]:
-                    _test_key(node + child)
+                for child in self._filter_keys:
+                    if node + child not in self:
+                        raise KeyError(f"Key {node + child} not found")
 
                 data_a = self[node + "a"]
                 data_d = self[node + "d"]
@@ -315,6 +315,11 @@ class WaveletPacket(BaseDict):
                     "The wavelet packet tree is not properly initialized. "
                     "Run `transform` before accessing tree values."
                 )
+            elif key[-1] not in self._filter_keys:
+                raise ValueError(
+                    f"Invalid key '{key}'. All chars in the key must be of the "
+                    f"set {self._filter_keys}."
+                )
             # calculate data from parent
             self._expand_node(key[:-1])
         return super().__getitem__(key)
@@ -375,6 +380,7 @@ class WaveletPacket2D(BaseDict):
         self.matrix_wavedec2_dict: dict[tuple[int, ...], MatrixWavedec2] = {}
         self.matrix_waverec2_dict: dict[tuple[int, ...], MatrixWaverec2] = {}
         self.axes = axes
+        self._filter_keys = {"a", "h", "v", "d"}
 
         self.maxlevel: Optional[int] = None
         if data is not None:
@@ -442,12 +448,9 @@ class WaveletPacket2D(BaseDict):
             for node in WaveletPacket2D.get_natural_order(level):
                 # check if any children is not available
                 # we need to check manually to avoid lazy init
-                def _test_key(key: str) -> None:
-                    if key not in self:
-                        raise KeyError(f"Key {key} not found")
-
-                for child in ["a", "h", "v", "d"]:
-                    _test_key(node + child)
+                for child in self._filter_keys:
+                    if node + child not in self:
+                        raise KeyError(f"Key {node + child} not found")
 
                 data_a = self[node + "a"]
                 data_h = self[node + "h"]
@@ -604,6 +607,11 @@ class WaveletPacket2D(BaseDict):
                     "The requested root of the packet tree cannot be accessed! "
                     "The wavelet packet tree is not properly initialized. "
                     "Run `transform` before accessing tree values."
+                )
+            elif key[-1] not in self._filter_keys:
+                raise ValueError(
+                    f"Invalid key '{key}'. All chars in the key must be of the "
+                    f"set {self._filter_keys}."
                 )
             # calculate data from parent
             self._expand_node(key[:-1])
