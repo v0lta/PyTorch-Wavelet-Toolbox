@@ -62,7 +62,6 @@ class WaveletPacket(BaseDict):
         maxlevel: Optional[int] = None,
         axis: int = -1,
         boundary_orthogonalization: OrthogonalizeMethod = "qr",
-        lazy_init: bool = False,
     ) -> None:
         """Create a wavelet packet decomposition object.
 
@@ -89,10 +88,6 @@ class WaveletPacket(BaseDict):
                 to use in the sparse matrix backend,
                 see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Only used if `mode` equals 'boundary'. Defaults to 'qr'.
-            lazy_init (bool): Value is passed on to :func:`transform`.
-                If True, the packet tree is initialized lazily. This
-                allows for partial expansion of the wavelet packet tree.
-                Defaults to False.
 
         Example:
             >>> import torch, pywt, ptwt
@@ -116,7 +111,7 @@ class WaveletPacket(BaseDict):
         self.maxlevel: Optional[int] = None
         self.axis = axis
         if data is not None:
-            self.transform(data, maxlevel, lazy_init=lazy_init)
+            self.transform(data, maxlevel)
         else:
             self.data = {}
 
@@ -124,7 +119,6 @@ class WaveletPacket(BaseDict):
         self,
         data: torch.Tensor,
         maxlevel: Optional[int] = None,
-        lazy_init: bool = False,
     ) -> WaveletPacket:
         """Calculate the 1d wavelet packet transform for the input data.
 
@@ -134,10 +128,6 @@ class WaveletPacket(BaseDict):
             maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
-            lazy_init (bool): If True, the packet tree is initialized lazily.
-                This allows for partial expansion of the wavelet packet tree.
-                Otherwise, all packet coefficients up to the decomposition level
-                `maxlevel` are computed. Defaults to False.
 
         Returns:
             This wavelet packet object (to allow call chaining).
@@ -146,8 +136,6 @@ class WaveletPacket(BaseDict):
         if maxlevel is None:
             maxlevel = pywt.dwt_max_level(data.shape[self.axis], self.wavelet.dec_len)
         self.maxlevel = maxlevel
-        if not lazy_init:
-            self._recursive_dwt(path="")
         return self
 
     def reconstruct(self) -> WaveletPacket:
@@ -270,19 +258,6 @@ class WaveletPacket(BaseDict):
         self.data[path + "a"] = res_lo
         self.data[path + "d"] = res_hi
 
-    def _recursive_dwt(self, path: str) -> None:
-        if self.maxlevel is None:
-            raise AssertionError
-
-        if len(path) >= self.maxlevel:
-            # nothing to expand
-            return
-
-        self._expand_node(path)
-
-        for child in ["a", "d"]:
-            self._recursive_dwt(path + child)
-
     def __getitem__(self, key: str) -> torch.Tensor:
         """Access the coefficients in the wavelet packets tree.
 
@@ -338,7 +313,6 @@ class WaveletPacket2D(BaseDict):
         axes: tuple[int, int] = (-2, -1),
         boundary_orthogonalization: OrthogonalizeMethod = "qr",
         separable: bool = False,
-        lazy_init: bool = False,
     ) -> None:
         """Create a 2D-Wavelet packet tree.
 
@@ -366,10 +340,6 @@ class WaveletPacket2D(BaseDict):
                 Only used if `mode` equals 'boundary'. Defaults to 'qr'.
             separable (bool): If true, a separable transform is performed,
                 i.e. each image axis is transformed separately. Defaults to False.
-            lazy_init (bool): Value is passed on to :func:`transform`.
-                If True, the packet tree is initialized lazily. This
-                allows for partial expansion of the wavelet packet tree.
-                Defaults to False.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
@@ -381,7 +351,7 @@ class WaveletPacket2D(BaseDict):
 
         self.maxlevel: Optional[int] = None
         if data is not None:
-            self.transform(data, maxlevel, lazy_init=lazy_init)
+            self.transform(data, maxlevel)
         else:
             self.data = {}
 
@@ -389,7 +359,6 @@ class WaveletPacket2D(BaseDict):
         self,
         data: torch.Tensor,
         maxlevel: Optional[int] = None,
-        lazy_init: bool = False,
     ) -> WaveletPacket2D:
         """Calculate the 2d wavelet packet transform for the input data.
 
@@ -401,10 +370,6 @@ class WaveletPacket2D(BaseDict):
             maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
-            lazy_init (bool): If True, the packet tree is initialized lazily.
-                This allows for partial expansion of the wavelet packet tree.
-                Otherwise, all packet coefficients up to the decomposition level
-                `maxlevel` are computed. Defaults to False.
 
         Returns:
             This wavelet packet object (to allow call chaining).
@@ -414,9 +379,6 @@ class WaveletPacket2D(BaseDict):
             min_transform_size = min(_swap_axes(data, self.axes).shape[-2:])
             maxlevel = pywt.dwt_max_level(min_transform_size, self.wavelet.dec_len)
         self.maxlevel = maxlevel
-
-        if not lazy_init:
-            self._recursive_dwt2d(path="")
         return self
 
     def reconstruct(self) -> WaveletPacket2D:
