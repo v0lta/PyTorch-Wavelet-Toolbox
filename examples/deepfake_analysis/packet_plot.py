@@ -68,7 +68,7 @@ def load_images(path: str) -> list:
 
 if __name__ == "__main__":
     freq_path = ptwt.WaveletPacket2D.get_freq_order(level=3)
-    frequency_path = ptwt.WaveletPacket2D.get_natural_order(level=3)
+    natural_path = ptwt.WaveletPacket2D.get_natural_order(level=3)
     print("Loading ffhq images:")
     ffhq_images = load_images("./ffhq_style_gan/source_data/A_ffhq")
     print("processing ffhq")
