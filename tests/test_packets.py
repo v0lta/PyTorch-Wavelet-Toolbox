@@ -2,7 +2,6 @@
 
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 
-from itertools import product
 from typing import Optional
 
 import numpy as np
@@ -11,6 +10,7 @@ import pywt
 import torch
 from scipy import datasets
 
+from ptwt._util import _check_axes_argument, _undo_swap_axes
 from ptwt.constants import ExtendedBoundaryMode
 from ptwt.packets import WaveletPacket, WaveletPacket2D
 
@@ -24,46 +24,46 @@ def _compare_trees1(
     batch_size: int = 1,
     transform_mode: bool = False,
     multiple_transforms: bool = False,
+    axis: int = -1,
 ) -> None:
     data = np.random.rand(batch_size, length)
-    wavelet = pywt.Wavelet(wavelet_str)
+    data = data.swapaxes(axis, -1)
 
     if transform_mode:
         twp = WaveletPacket(
-            None, wavelet, mode=ptwt_boundary, maxlevel=max_lev
+            None,
+            wavelet_str,
+            mode=ptwt_boundary,
+            axis=axis,
         ).transform(torch.from_numpy(data), maxlevel=max_lev)
     else:
         twp = WaveletPacket(
-            torch.from_numpy(data), wavelet, mode=ptwt_boundary, maxlevel=max_lev
+            torch.from_numpy(data),
+            wavelet_str,
+            mode=ptwt_boundary,
+            maxlevel=max_lev,
+            axis=axis,
         )
 
     # if multiple_transform flag is set, recalculcate the packets
     if multiple_transforms:
         twp.transform(torch.from_numpy(data), maxlevel=max_lev)
 
-    nodes = twp.get_level(twp.maxlevel)
-    twp_lst = []
-    for node in nodes:
-        twp_lst.append(twp[node])
-    torch_res = torch.cat(twp_lst, -1).numpy()
+    torch_res = torch.cat([twp[node] for node in twp.get_level(twp.maxlevel)], axis)
 
-    np_batches = []
-    for batch_index in range(batch_size):
-        wp = pywt.WaveletPacket(
-            data=data[batch_index],
-            wavelet=wavelet,
-            mode=pywt_boundary,
-            maxlevel=max_lev,
-        )
-        nodes = [node.path for node in wp.get_level(wp.maxlevel, "freq")]
-        np_lst = []
-        for node in nodes:
-            np_lst.append(wp[node].data)
-        np_res = np.concatenate(np_lst, -1)
-        np_batches.append(np_res)
-    np_batches = np.stack(np_batches, 0)
+    wp = pywt.WaveletPacket(
+        data=data,
+        wavelet=wavelet_str,
+        mode=pywt_boundary,
+        maxlevel=max_lev,
+        axis=axis,
+    )
+    np_res = np.concatenate(
+        [node.data for node in wp.get_level(wp.maxlevel, "freq")], axis
+    )
+
     assert wp.maxlevel == twp.maxlevel
-    assert np.allclose(torch_res, np_batches)
+    assert np.allclose(torch_res.numpy(), np_res)
 
 
 def _compare_trees2(
@@ -76,51 +76,60 @@ def _compare_trees2(
     batch_size: int = 1,
     transform_mode: bool = False,
     multiple_transforms: bool = False,
+    axes: tuple[int, int] = (-2, -1),
 ) -> None:
-    face = datasets.face()[:height, :width]
-    face = np.mean(face, axis=-1).astype(np.float64)
-    wavelet = pywt.Wavelet(wavelet_str)
-    batch_list = []
-    for _ in range(batch_size):
-        wp_tree = pywt.WaveletPacket2D(
-            data=face,
-            wavelet=wavelet,
-            mode=pywt_boundary,
-            maxlevel=max_lev,
-        )
-        # Get the full decomposition
-        wp_keys = list(product(["a", "h", "v", "d"], repeat=wp_tree.maxlevel))
-        np_packets = []
-        for node in wp_keys:
-            np_packet = wp_tree["".join(node)].data
-            np_packets.append(np_packet)
-        np_packets = np.stack(np_packets, 0)
-        batch_list.append(np_packets)
-    batch_np_packets = np.stack(batch_list, 0)
+    face = datasets.face()[:height, :width].astype(np.float64).mean(-1)
+    data = torch.stack([torch.from_numpy(face)] * batch_size, 0)
+
+    _check_axes_argument(axes)
+    data = _undo_swap_axes(data, axes)
+
+    wp_tree = pywt.WaveletPacket2D(
+        data=data.numpy(),
+        wavelet=wavelet_str,
+        mode=pywt_boundary,
+        maxlevel=max_lev,
+        axes=axes,
+    )
+    np_packets = np.stack(
+        [
+            node.data
+            for node in wp_tree.get_level(level=wp_tree.maxlevel, order="natural")
+        ],
+        1,
+    )
 
     # get the PyTorch decomposition
-    pt_data = torch.stack([torch.from_numpy(face)] * batch_size, 0)
-
     if transform_mode:
         ptwt_wp_tree = WaveletPacket2D(
-            None, wavelet=wavelet, mode=ptwt_boundary
-        ).transform(pt_data, maxlevel=max_lev)
+            None,
+            wavelet=wavelet_str,
+            mode=ptwt_boundary,
+            axes=axes,
+        ).transform(data, maxlevel=max_lev)
     else:
         ptwt_wp_tree = WaveletPacket2D(
-            pt_data, wavelet=wavelet, mode=ptwt_boundary, maxlevel=max_lev
+            data,
+            wavelet=wavelet_str,
+            mode=ptwt_boundary,
+            maxlevel=max_lev,
+            axes=axes,
         )
 
     # if multiple_transform flag is set, recalculcate the packets
     if multiple_transforms:
-        ptwt_wp_tree.transform(pt_data, maxlevel=max_lev)
+        ptwt_wp_tree.transform(data, maxlevel=max_lev)
 
-    packets = []
-    for node in wp_keys:
-        packet = ptwt_wp_tree["".join(node)]
-        packets.append(packet)
-    packets_pt = torch.stack(packets, 1).numpy()
+    packets_pt = torch.stack(
+        [
+            ptwt_wp_tree[node]
+            for node in ptwt_wp_tree.get_natural_order(ptwt_wp_tree.maxlevel)
+        ],
+        1,
+    )
+
     assert wp_tree.maxlevel == ptwt_wp_tree.maxlevel
-    assert np.allclose(packets_pt, batch_np_packets)
+    assert np.allclose(packets_pt.numpy(), np_packets)
 
 
 @pytest.mark.slow
@@ -132,6 +141,7 @@ def _compare_trees2(
 @pytest.mark.parametrize("batch_size", [2, 1])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
+@pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (1, 2), (2, 0), (0, 2)])
 def test_2d_packets(
     max_lev: Optional[int],
     wavelet_str: str,
@@ -139,6 +149,7 @@ def test_2d_packets(
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
+    axes: tuple[int, int],
 ) -> None:
     """Ensure pywt and ptwt produce equivalent wavelet 2d packet trees."""
     _compare_trees2(
@@ -149,6 +160,7 @@ def test_2d_packets(
         batch_size=batch_size,
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
+        axes=axes,
     )
 
 
@@ -157,11 +169,13 @@ def test_2d_packets(
 @pytest.mark.parametrize("batch_size", [1, 2])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
+@pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (1, 2), (2, 0), (0, 2)])
 def test_boundary_matrix_packets2(
     max_lev: Optional[int],
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
+    axes: tuple[int, int],
 ) -> None:
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
     _compare_trees2(
@@ -172,6 +186,7 @@ def test_boundary_matrix_packets2(
         batch_size=batch_size,
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
+        axes=axes,
     )
 
 
@@ -184,6 +199,7 @@ def test_boundary_matrix_packets2(
 @pytest.mark.parametrize("batch_size", [2, 1])
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
+@pytest.mark.parametrize("axis", [0, -1])
 def test_1d_packets(
     max_lev: int,
     wavelet_str: str,
@@ -191,6 +207,7 @@ def test_1d_packets(
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
+    axis: int,
 ) -> None:
     """Ensure pywt and ptwt produce equivalent wavelet 1d packet trees."""
     _compare_trees1(
@@ -201,6 +218,7 @@ def test_1d_packets(
         batch_size=batch_size,
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
+        axis=axis,
     )
 
 
@@ -225,7 +243,7 @@ def test_boundary_matrix_packets1(
 @pytest.mark.parametrize("level", [1, 2, 3, 4])
 @pytest.mark.parametrize("wavelet_str", ["db2"])
 @pytest.mark.parametrize("pywt_boundary", ["zero"])
-def test_freq_order(level: int, wavelet_str: str, pywt_boundary: str) -> None:
+def test_freq_order_2d(level: int, wavelet_str: str, pywt_boundary: str) -> None:
     """Test the packets in frequency order."""
     face = datasets.face()
     wavelet = pywt.Wavelet(wavelet_str)
@@ -235,18 +253,12 @@ def test_freq_order(level: int, wavelet_str: str, pywt_boundary: str) -> None:
         mode=pywt_boundary,
     )
     # Get the full decomposition
-    freq_tree = wp_tree.get_level(level, "freq")
-    freq_order = WaveletPacket2D.get_freq_order(level)
+    order_pywt = wp_tree.get_level(level, "freq")
+    order_ptwt = WaveletPacket2D.get_freq_order(level)
 
-    for order_list, tree_list in zip(freq_tree, freq_order):
-        for order_el, tree_el in zip(order_list, tree_list):
-            print(
-                level,
-                order_el.path,
-                "".join(tree_el),
-                order_el.path == "".join(tree_el),
-            )
-            assert order_el.path == "".join(tree_el)
+    for node_list, path_list in zip(order_pywt, order_ptwt):
+        for order_el, order_path in zip(node_list, path_list):
+            assert order_el.path == order_path
 
 
 def test_packet_harbo_lvl3() -> None:
@@ -267,18 +279,11 @@ def test_packet_harbo_lvl3() -> None:
     wavelet = pywt.Wavelet("unscaled Haar Wavelet", filter_bank=_MyHaarFilterBank())
 
     twp = WaveletPacket(torch.from_numpy(data), wavelet, mode="reflect")
-    twp_nodes = twp.get_level(3)
-    twp_lst = []
-    for node in twp_nodes:
-        twp_lst.append(torch.squeeze(twp[node]))
-    torch_res = torch.stack(twp_lst).numpy()
+    torch_res = torch.cat([twp[node] for node in twp.get_level(3)], 0)
+
     wp = pywt.WaveletPacket(data=data, wavelet=wavelet, mode="reflect")
-    pywt_nodes = [node.path for node in wp.get_level(3, "freq")]
-    np_lst = []
-    for node in pywt_nodes:
-        np_lst.append(wp[node].data)
-    np_res = np.concatenate(np_lst)
-    assert np.allclose(torch_res, np_res)
+    np_res = np.concatenate([node.data for node in wp.get_level(3, "freq")], 0)
+    assert np.allclose(torch_res.numpy(), np_res)
 
 
 def test_access_errors_1d() -> None:
