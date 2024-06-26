@@ -280,8 +280,14 @@ def _coeff_tree_map(
 ) -> Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd]:
     """Apply `function` to all tensor elements in `coeffs`.
 
-    The idea here is to save us from having to loop over the coefficient-
-    data trees during input pre- and post-processing.
+    Applying a function to all tensors in the (potentially nested)
+    coefficient data structure is a common requirement in coefficient
+    pre- and postprocessing. This function saves us from having to loop
+    over the coefficient data structures in processing.
+
+    Conceptually, this function is inspired by the
+    pytree processing philosophy of the JAX framework, see
+    https://jax.readthedocs.io/en/latest/working-with-pytrees.html
 
     Raises:
         ValueError: If the input type is not supported.
