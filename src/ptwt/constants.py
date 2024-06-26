@@ -51,6 +51,14 @@ The method for orthogonalizing a matrix.
 Choose ``gramschmidt`` if ``qr`` runs out of memory.
 """
 
+PacketNodeOrder = Literal["freq", "natural"]
+"""
+This is a type literal for the order of wavelet packet tree nodes.
+
+- frequency order (``freq``)
+- natural order (``natural``)
+"""
+
 
 class WaveletDetailTuple2d(NamedTuple):
     """Detail coefficients of a 2d wavelet transform for a given level.

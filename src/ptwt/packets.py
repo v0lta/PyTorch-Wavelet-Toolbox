@@ -6,16 +6,17 @@ import collections
 from collections.abc import Callable, Sequence
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Literal, Optional, Union, overload
 
 import numpy as np
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet
+from ._util import Wavelet, _as_wavelet, _swap_axes, _undo_swap_axes
 from .constants import (
     ExtendedBoundaryMode,
     OrthogonalizeMethod,
+    PacketNodeOrder,
     WaveletCoeff2d,
     WaveletCoeffNd,
     WaveletDetailTuple2d,
@@ -115,9 +116,6 @@ class WaveletPacket(BaseDict):
         self.maxlevel: Optional[int] = None
         self.axis = axis
         if data is not None:
-            if len(data.shape) == 1:
-                # add a batch dimension.
-                data = data.unsqueeze(0)
             self.transform(data, maxlevel, lazy_init=lazy_init)
         else:
             self.data = {}
@@ -146,7 +144,7 @@ class WaveletPacket(BaseDict):
         """
         self.data = {"": data}
         if maxlevel is None:
-            maxlevel = pywt.dwt_max_level(data.shape[-1], self.wavelet.dec_len)
+            maxlevel = pywt.dwt_max_level(data.shape[self.axis], self.wavelet.dec_len)
         self.maxlevel = maxlevel
         if not lazy_init:
             self._recursive_dwt(path="")
@@ -188,13 +186,15 @@ class WaveletPacket(BaseDict):
 
                 data_a = self[node + "a"]
                 data_d = self[node + "d"]
-                rec = self._get_waverec(data_a.shape[-1])([data_a, data_d])
+                rec = self._get_waverec(data_a.shape[self.axis])([data_a, data_d])
                 if level > 0:
-                    if rec.shape[-1] != self[node].shape[-1]:
+                    if rec.shape[self.axis] != self[node].shape[self.axis]:
                         assert (
-                            rec.shape[-1] == self[node].shape[-1] + 1
+                            rec.shape[self.axis] == self[node].shape[self.axis] + 1
                         ), "padding error, please open an issue on github"
-                        rec = rec[..., :-1]
+                        rec = rec.swapaxes(self.axis, -1)[..., :-1].swapaxes(
+                            -1, self.axis
+                        )
                 self[node] = rec
         return self
 
@@ -226,18 +226,34 @@ class WaveletPacket(BaseDict):
         else:
             return partial(waverec, wavelet=self.wavelet, axis=self.axis)
 
-    def get_level(self, level: int) -> list[str]:
-        """Return the graycode-ordered paths to the filter tree nodes.
+    @staticmethod
+    def get_level(level: int, order: PacketNodeOrder = "freq") -> list[str]:
+        """Return the paths to the filter tree nodes.
 
         Args:
             level (int): The depth of the tree.
+            order: The order the paths are in.
+                Choose from frequency order (``freq``) and
+                natural order (``natural``).
+                Defaults to ``freq``.
 
         Returns:
             A list with the paths to each node.
-        """
-        return self._get_graycode_order(level)
 
-    def _get_graycode_order(self, level: int, x: str = "a", y: str = "d") -> list[str]:
+        Raises:
+            ValueError: If `order` is neither ``freq`` nor ``natural``.
+        """
+        if order == "freq":
+            return WaveletPacket._get_graycode_order(level)
+        elif order == "natural":
+            return ["".join(p) for p in product(["a", "d"], repeat=level)]
+        else:
+            raise ValueError(
+                f"Unsupported order '{order}'. Choose from 'freq' and 'natural'."
+            )
+
+    @staticmethod
+    def _get_graycode_order(level: int, x: str = "a", y: str = "d") -> list[str]:
         graycode_order = [x, y]
         for _ in range(level - 1):
             graycode_order = [x + path for path in graycode_order] + [
@@ -250,12 +266,12 @@ class WaveletPacket(BaseDict):
 
     def _expand_node(self, path: str) -> None:
         data = self[path]
-        res_lo, res_hi = self._get_wavedec(data.shape[-1])(data)
+        res_lo, res_hi = self._get_wavedec(data.shape[self.axis])(data)
         self.data[path + "a"] = res_lo
         self.data[path + "d"] = res_hi
 
     def _recursive_dwt(self, path: str) -> None:
-        if not self.maxlevel:
+        if self.maxlevel is None:
             raise AssertionError
 
         if len(path) >= self.maxlevel:
@@ -395,12 +411,9 @@ class WaveletPacket2D(BaseDict):
         """
         self.data = {"": data}
         if maxlevel is None:
-            maxlevel = pywt.dwt_max_level(min(data.shape[-2:]), self.wavelet.dec_len)
+            min_transform_size = min(_swap_axes(data, self.axes).shape[-2:])
+            maxlevel = pywt.dwt_max_level(min_transform_size, self.wavelet.dec_len)
         self.maxlevel = maxlevel
-
-        if data.dim() == 2:
-            # add batch dim to unbatched input
-            data = data.unsqueeze(0)
 
         if not lazy_init:
             self._recursive_dwt2d(path="")
@@ -415,9 +428,8 @@ class WaveletPacket2D(BaseDict):
            a reconstruction from the leaves.
         """
         if self.maxlevel is None:
-            self.maxlevel = pywt.dwt_max_level(
-                min(self[""].shape[-2:]), self.wavelet.dec_len
-            )
+            min_transform_size = min(_swap_axes(self[""], self.axes).shape[-2:])
+            self.maxlevel = pywt.dwt_max_level(min_transform_size, self.wavelet.dec_len)
 
         for level in reversed(range(self.maxlevel)):
             for node in WaveletPacket2D.get_natural_order(level):
@@ -434,26 +446,31 @@ class WaveletPacket2D(BaseDict):
                 data_h = self[node + "h"]
                 data_v = self[node + "v"]
                 data_d = self[node + "d"]
-                rec = self._get_waverec(data_a.shape[-2:])(
+                transform_size = _swap_axes(data_a, self.axes).shape[-2:]
+                rec = self._get_waverec(transform_size)(
                     (data_a, WaveletDetailTuple2d(data_h, data_v, data_d))
                 )
                 if level > 0:
-                    if rec.shape[-1] != self[node].shape[-1]:
+                    rec = _swap_axes(rec, self.axes)
+                    swapped_node = _swap_axes(self[node], self.axes)
+                    if rec.shape[-1] != swapped_node.shape[-1]:
                         assert (
-                            rec.shape[-1] == self[node].shape[-1] + 1
+                            rec.shape[-1] == swapped_node.shape[-1] + 1
                         ), "padding error, please open an issue on GitHub"
                         rec = rec[..., :-1]
-                    if rec.shape[-2] != self[node].shape[-2]:
+                    if rec.shape[-2] != swapped_node.shape[-2]:
                         assert (
-                            rec.shape[-2] == self[node].shape[-2] + 1
+                            rec.shape[-2] == swapped_node.shape[-2] + 1
                         ), "padding error, please open an issue on GitHub"
                         rec = rec[..., :-1, :]
+                    rec = _undo_swap_axes(rec, self.axes)
                 self[node] = rec
         return self
 
     def _expand_node(self, path: str) -> None:
         data = self[path]
-        result = self._get_wavedec(data.shape[-2:])(data)
+        transform_size = _swap_axes(data, self.axes).shape[-2:]
+        result = self._get_wavedec(transform_size)(data)
 
         # assert for type checking
         assert len(result) == 2
@@ -545,7 +562,7 @@ class WaveletPacket2D(BaseDict):
         return _fsdict_func
 
     def _recursive_dwt2d(self, path: str) -> None:
-        if not self.maxlevel:
+        if self.maxlevel is None:
             raise AssertionError
 
         if len(path) >= self.maxlevel:
@@ -597,6 +614,42 @@ class WaveletPacket2D(BaseDict):
             self._expand_node(key[:-1])
 
         return super().__getitem__(key)
+
+    @overload
+    @staticmethod
+    def get_level(level: int, order: Literal["freq"]) -> list[list[str]]: ...
+
+    @overload
+    @staticmethod
+    def get_level(level: int, order: Literal["natural"]) -> list[str]: ...
+
+    @staticmethod
+    def get_level(
+        level: int, order: PacketNodeOrder = "freq"
+    ) -> Union[list[str], list[list[str]]]:
+        """Return the paths to the filter tree nodes.
+
+        Args:
+            level (int): The depth of the tree.
+            order: The order the paths are in.
+                Choose from frequency order (``freq``) and
+                natural order (``natural``).
+                Defaults to ``freq``.
+
+        Returns:
+            A list with the paths to each node.
+
+        Raises:
+            ValueError: If `order` is neither ``freq`` nor ``natural``.
+        """
+        if order == "freq":
+            return WaveletPacket2D.get_freq_order(level)
+        elif order == "natural":
+            return WaveletPacket2D.get_natural_order(level)
+        else:
+            raise ValueError(
+                f"Unsupported order '{order}'. Choose from 'freq' and 'natural'."
+            )
 
     @staticmethod
     def get_natural_order(level: int) -> list[str]:
