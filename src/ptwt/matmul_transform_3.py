@@ -22,8 +22,8 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod, WaveletCoeffNd
-from .conv_transform_3 import _waverec3d_fold_channels_3d_list
+from .constants import BoundaryMode, OrthogonalizeMethod, WaveletCoeffNd
+from .conv_transform_3 import _fwt_pad3, _waverec3d_fold_channels_3d_list
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
 
@@ -61,6 +61,7 @@ class MatrixWavedec3(object):
         level: Optional[int] = None,
         axes: tuple[int, int, int] = (-3, -2, -1),
         boundary: OrthogonalizeMethod = "qr",
+        odd_coeff_padding_mode: BoundaryMode = "zero",
     ):
         """Create a *separable* three-dimensional fast boundary wavelet transform.
 
@@ -76,6 +77,11 @@ class MatrixWavedec3(object):
                 Defaults to None.
             boundary : The method used for boundary filter treatment,
                 see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
+            odd_coeff_padding_mode: The constructed FWT matrices require inputs
+                with even lengths. Thus, any odd-length approximation coefficients
+                are padded to an even length using this mode,
+                see :data:`ptwt.constants.BoundaryMode`.
+                Defaults to 'zero'.
 
         Raises:
             NotImplementedError: If the chosen orthogonalization method
@@ -86,6 +92,7 @@ class MatrixWavedec3(object):
         self.wavelet = _as_wavelet(wavelet)
         self.level = level
         self.boundary = boundary
+        self.odd_coeff_padding_mode = odd_coeff_padding_mode
         if len(axes) != 3:
             raise ValueError("3D transforms work with three axes.")
         else:
@@ -223,15 +230,16 @@ class MatrixWavedec3(object):
         split_list: list[dict[str, torch.Tensor]] = []
         lll = input_signal
         for scale, fwt_mats in enumerate(self.fwt_matrix_list):
-            # fwt_depth_matrix, fwt_row_matrix, fwt_col_matrix = fwt_mats
             pad_tuple = self.pad_list[scale]
-            # current_depth, current_height, current_width = self.size_list[scale]
-            if pad_tuple.width:
-                lll = torch.nn.functional.pad(lll, [0, 1, 0, 0, 0, 0])
-            if pad_tuple.height:
-                lll = torch.nn.functional.pad(lll, [0, 0, 0, 1, 0, 0])
-            if pad_tuple.depth:
-                lll = torch.nn.functional.pad(lll, [0, 0, 0, 0, 0, 1])
+            padding_width = (0, 1) if pad_tuple.width else (0, 0)
+            padding_height = (0, 1) if pad_tuple.height else (0, 0)
+            padding_depth = (0, 1) if pad_tuple.depth else (0, 0)
+            lll = _fwt_pad3(
+                lll,
+                wavelet=self.wavelet,
+                mode=self.odd_coeff_padding_mode,
+                padding=padding_width + padding_height + padding_depth,
+            )
 
             for dim, mat in enumerate(fwt_mats[::-1]):
                 lll = _batch_dim_mm(mat, lll, dim=(-1) * (dim + 1))

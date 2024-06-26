@@ -25,6 +25,7 @@ from ._util import (
     _unfold_axes,
 )
 from .constants import (
+    BoundaryMode,
     OrthogonalizeMethod,
     PaddingMode,
     WaveletCoeff2d,
@@ -33,6 +34,7 @@ from .constants import (
 from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import (
     _construct_2d_filt,
+    _fwt_pad2,
     _preprocess_tensor_dec2d,
     _waverec2d_fold_channels_2d_list,
 )
@@ -261,6 +263,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         axes: tuple[int, int] = (-2, -1),
         boundary: OrthogonalizeMethod = "qr",
         separable: bool = True,
+        odd_coeff_padding_mode: BoundaryMode = "zero",
     ):
         """Create a new matrix fwt object.
 
@@ -281,6 +284,11 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 Matrix construction is significantly faster for separable
                 transformations since only a small constant-size part of the
                 matrices must be orthogonalized. Defaults to True.
+            odd_coeff_padding_mode: The constructed FWT matrices require inputs
+                with even lengths. Thus, any odd-length approximation coefficients
+                are padded to an even length using this mode,
+                see :data:`ptwt.constants.BoundaryMode`.
+                Defaults to 'zero'.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -294,6 +302,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             self.axes = tuple(axes)
         self.level = level
         self.boundary = boundary
+        self.odd_coeff_padding_mode = odd_coeff_padding_mode
         self.separable = separable
         self.input_signal_shape: Optional[tuple[int, int]] = None
         self.fwt_matrix_list: list[
@@ -468,6 +477,19 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
+        def _add_padding(signal: torch.Tensor, pad: tuple[bool, bool]) -> torch.Tensor:
+            if pad[0] or pad[1]:
+                padding_0 = (0, 1) if pad[0] else (0, 0)
+                padding_1 = (0, 1) if pad[1] else (0, 0)
+
+                signal = _fwt_pad2(
+                    signal,
+                    wavelet=self.wavelet,
+                    mode=self.odd_coeff_padding_mode,
+                    padding=padding_0 + padding_1,
+                )
+            return signal
+
         split_list: list[WaveletDetailTuple2d] = []
         if self.separable:
             ll = input_signal
@@ -475,13 +497,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 fwt_row_matrix, fwt_col_matrix = fwt_mats
                 pad = self.pad_list[scale]
                 current_height, current_width = self.size_list[scale]
-                if pad[0] or pad[1]:
-                    if pad[0] and not pad[1]:
-                        ll = torch.nn.functional.pad(ll, [0, 1])
-                    elif pad[1] and not pad[0]:
-                        ll = torch.nn.functional.pad(ll, [0, 0, 0, 1])
-                    elif pad[0] and pad[1]:
-                        ll = torch.nn.functional.pad(ll, [0, 1, 0, 1])
+                ll = _add_padding(ll, pad)
 
                 ll = batch_mm(fwt_col_matrix, ll.transpose(-2, -1)).transpose(-2, -1)
                 ll = batch_mm(fwt_row_matrix, ll)
@@ -498,22 +514,11 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 pad = self.pad_list[scale]
                 size = self.size_list[scale]
                 if pad[0] or pad[1]:
-                    if pad[0] and not pad[1]:
-                        ll_reshape = ll.T.reshape(
-                            batch_size, size[1] - 1, size[0]
-                        ).transpose(2, 1)
-                        ll = torch.nn.functional.pad(ll_reshape, [0, 1])
-                    elif pad[1] and not pad[0]:
-                        ll_reshape = ll.T.reshape(
-                            batch_size, size[1], size[0] - 1
-                        ).transpose(2, 1)
-                        ll = torch.nn.functional.pad(ll_reshape, [0, 0, 0, 1])
-                    elif pad[0] and pad[1]:
-                        ll_reshape = ll.T.reshape(
-                            batch_size, size[1] - 1, size[0] - 1
-                        ).transpose(2, 1)
-                        ll = torch.nn.functional.pad(ll_reshape, [0, 1, 0, 1])
-                    ll = ll.transpose(2, 1).reshape([batch_size, -1]).T
+                    ll_reshape = ll.T.reshape(
+                        batch_size, size[1] - int(pad[0]), size[0] - int(pad[1])
+                    ).transpose(2, 1)
+                    ll_reshape = _add_padding(ll_reshape, pad)
+                    ll = ll_reshape.transpose(2, 1).reshape([batch_size, -1]).T
                 coefficients = torch.sparse.mm(fwt_matrix, ll)
                 # get the ll,
                 four_split = torch.split(

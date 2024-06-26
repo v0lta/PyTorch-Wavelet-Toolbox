@@ -21,8 +21,9 @@ from ._util import (
     _is_dtype_supported,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod
+from .constants import BoundaryMode, OrthogonalizeMethod
 from .conv_transform import (
+    _fwt_pad,
     _get_filter_tensors,
     _postprocess_result_list_dec1d,
     _preprocess_result_list_rec1d,
@@ -187,6 +188,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         level: Optional[int] = None,
         axis: Optional[int] = -1,
         boundary: OrthogonalizeMethod = "qr",
+        odd_coeff_padding_mode: BoundaryMode = "zero",
     ) -> None:
         """Create a sparse matrix fast wavelet transform object.
 
@@ -202,6 +204,11 @@ class MatrixWavedec(BaseMatrixWaveDec):
                 Defaults to -1.
             boundary : The method used for boundary filter treatment,
                 see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
+            odd_coeff_padding_mode: The constructed FWT matrices require inputs
+                with even lengths. Thus, any odd-length approximation coefficients
+                are padded to an even length using this mode,
+                see :data:`ptwt.constants.BoundaryMode`.
+                Defaults to 'zero'.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -211,6 +218,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         self.wavelet = _as_wavelet(wavelet)
         self.level = level
         self.boundary = boundary
+        self.odd_coeff_padding_mode = odd_coeff_padding_mode
 
         if isinstance(axis, int):
             self.axis = axis
@@ -343,8 +351,12 @@ class MatrixWavedec(BaseMatrixWaveDec):
 
         if input_signal.shape[-1] % 2 != 0:
             # odd length input
-            # print('input length odd, padding a zero on the right')
-            input_signal = torch.nn.functional.pad(input_signal, [0, 1])
+            input_signal = _fwt_pad(
+                input_signal,
+                wavelet=self.wavelet,
+                mode=self.odd_coeff_padding_mode,
+                padding=(0, 1),
+            )
 
         _, length = input_signal.shape
 
@@ -370,7 +382,14 @@ class MatrixWavedec(BaseMatrixWaveDec):
         for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
             if self.pad_list[scale]:
                 # fix odd coefficients lengths for the conv matrix to work.
-                lo = torch.nn.functional.pad(lo.T.unsqueeze(1), [0, 1]).squeeze(1).T
+                lo = lo.T.unsqueeze(1)
+                lo = _fwt_pad(
+                    lo,
+                    wavelet=self.wavelet,
+                    mode=self.odd_coeff_padding_mode,
+                    padding=(0, 1),
+                )
+                lo = lo.squeeze(1).T
             coefficients = torch.sparse.mm(fwt_matrix, lo)
             lo, hi = torch.split(coefficients, coefficients.shape[0] // 2, dim=0)
             split_list.append(hi)
