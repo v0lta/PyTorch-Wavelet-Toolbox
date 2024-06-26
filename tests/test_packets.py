@@ -353,7 +353,7 @@ def test_partial_expansion_1d(wavelet_str: str, boundary: str) -> None:
         assert all(key in lazy_init_packet for key in partial_keys_1d)
 
     # init on partial keys
-    [lazy_init_packet[key] for key in partial_keys_1d]
+    lazy_init_packet.initialize(partial_keys_1d)
 
     with pytest.raises(AssertionError):
         assert all(key in lazy_init_packet for key in full_keys)
@@ -361,7 +361,7 @@ def test_partial_expansion_1d(wavelet_str: str, boundary: str) -> None:
     assert all(key in lazy_init_packet for key in partial_keys_1d)
 
     # init on full keys
-    [lazy_init_packet[key] for key in full_keys]
+    lazy_init_packet.initialize(full_keys)
 
     assert all(key in lazy_init_packet for key in full_keys)
 
@@ -392,7 +392,7 @@ def test_partial_expansion_2d(wavelet_str: str, boundary: str) -> None:
         assert all(key in lazy_init_packet for key in partial_keys_2d)
 
     # init on partial keys
-    [lazy_init_packet[key] for key in partial_keys_2d]
+    lazy_init_packet.initialize(partial_keys_2d)
 
     with pytest.raises(AssertionError):
         assert all(key in lazy_init_packet for key in full_keys)
@@ -400,7 +400,7 @@ def test_partial_expansion_2d(wavelet_str: str, boundary: str) -> None:
     assert all(key in lazy_init_packet for key in partial_keys_2d)
 
     # init on full keys
-    [lazy_init_packet[key] for key in full_keys]
+    lazy_init_packet.initialize(full_keys)
 
     assert all(key in lazy_init_packet for key in full_keys)
 
@@ -485,7 +485,7 @@ def test_inverse_packet_1d(
         ptwp.reconstruct()
 
     # lazy init
-    [ptwp[key] for key in ptwp.get_level(level)]
+    ptwp.initialize(ptwp.get_level(level))
 
     wp[base_key * level].data *= 0
     ptwp[base_key * level] *= 0
@@ -523,7 +523,7 @@ def test_inverse_packet_2d(
         ptwp.reconstruct()
 
     # lazy init
-    [ptwp[key] for key in ptwp.get_natural_order(level)] 
+    ptwp.initialize(ptwp.get_natural_order(level))
 
     ptwp[base_key * level] *= 0
     wp.reconstruct(update=True)
@@ -579,6 +579,6 @@ def test_separable_conv_packets_2d(axes: tuple[int, int]) -> None:
         ptwp.reconstruct()
 
     # lazy init
-    [ptwp[key] for key in ptwp.get_natural_order(2)]
+    ptwp.initialize(ptwp.get_natural_order(2))
     ptwp.reconstruct()
     assert np.allclose(signal, ptwp[""].data[:, :32, :32, :32])

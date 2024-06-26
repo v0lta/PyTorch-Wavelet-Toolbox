@@ -146,6 +146,16 @@ class WaveletPacket(BaseDict):
         self.maxlevel = maxlevel
         return self
 
+    def initialize(self, keys: Iterable[str]) -> None:
+        """Initialize the wavelet packet tree partially.
+
+        Args:
+            keys (Iterable[str]): An iterable yielding the keys of the
+                tree nodes to initialize.
+        """
+        it = (self[key] for key in keys)
+        collections.deque(it, maxlen=0)
+
     def reconstruct(self) -> WaveletPacket:
         """Recursively reconstruct the input starting from the leaf nodes.
 
@@ -402,6 +412,16 @@ class WaveletPacket2D(BaseDict):
         self.maxlevel = maxlevel
 
         return self
+
+    def initialize(self, keys: Iterable[str]) -> None:
+        """Initialize the wavelet packet tree partially.
+
+        Args:
+            keys (Iterable[str]): An iterable yielding the keys of the
+                tree nodes to initialize.
+        """
+        it = (self[key] for key in keys)
+        collections.deque(it, maxlen=0)
 
     def reconstruct(self) -> WaveletPacket2D:
         """Recursively reconstruct the input starting from the leaf nodes.
