@@ -7,6 +7,7 @@ import pytest
 import pywt
 import torch
 
+from ptwt.constants import BoundaryMode
 from ptwt.matmul_transform import construct_boundary_a
 from ptwt.matmul_transform_3 import MatrixWavedec3, MatrixWaverec3
 from ptwt.sparse_math import _batch_dim_mm
@@ -75,13 +76,16 @@ def test_boundary_wavedec3_level1_haar(shape: tuple[int, int, int]) -> None:
 @pytest.mark.parametrize(
     "shape", [(31, 32, 33), (63, 35, 32), (32, 62, 31), (32, 32, 64)]
 )
+@pytest.mark.parametrize(
+    "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
+)
 def test_boundary_wavedec3_inverse(
-    level: Optional[int], shape: tuple[int, int, int]
+    level: Optional[int], shape: tuple[int, int, int], mode: BoundaryMode
 ) -> None:
     """Test the 3d matrix wavedec and the padding for odd axes."""
     batch_size = 1
     test_data = torch.rand(batch_size, shape[0], shape[1], shape[2]).type(torch.float64)
-    ptwtres = MatrixWavedec3("haar", level)(test_data)
+    ptwtres = MatrixWavedec3("haar", level, odd_coeff_padding_mode=mode)(test_data)
     rec = MatrixWaverec3("haar")(ptwtres)
     assert np.allclose(
         test_data.numpy(), rec[:, : shape[0], : shape[1], : shape[2]].numpy()

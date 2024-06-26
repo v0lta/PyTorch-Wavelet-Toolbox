@@ -10,7 +10,7 @@ import pytest
 import pywt
 import torch
 
-from ptwt.constants import OrthogonalizeMethod
+from ptwt.constants import BoundaryMode, OrthogonalizeMethod
 from ptwt.matmul_transform import (
     MatrixWavedec,
     MatrixWaverec,
@@ -71,12 +71,17 @@ def test_fwt_ifwt_mackey_haar_cuda() -> None:
 @pytest.mark.parametrize("level", [1, 2, 3, 4, None])
 @pytest.mark.parametrize("wavelet", ["db2", "db3", "db4", "sym5"])
 @pytest.mark.parametrize("size", [[2, 256], [2, 3, 256], [1, 1, 128]])
-def test_1d_matrix_fwt_ifwt(level: int, wavelet: str, size: list[int]) -> None:
+@pytest.mark.parametrize(
+    "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
+)
+def test_1d_matrix_fwt_ifwt(
+    level: int, wavelet: str, size: list[int], mode: BoundaryMode
+) -> None:
     """Test multiple wavelets and levels for a long signal."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     wavelet = pywt.Wavelet(wavelet)
     pt_data = torch.randn(*size, device=device).type(torch.float64)
-    matrix_wavedec = MatrixWavedec(wavelet, level)
+    matrix_wavedec = MatrixWavedec(wavelet, level, odd_coeff_padding_mode=mode)
     coeffs_mat_max = matrix_wavedec(pt_data)
     matrix_waverec = MatrixWaverec(wavelet)
     reconstructed_data = matrix_waverec(coeffs_mat_max)
