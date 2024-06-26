@@ -6,7 +6,7 @@ import collections
 from collections.abc import Sequence
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Callable, Optional, Union
+from typing import TYPE_CHECKING, Callable, Literal, Optional, Union, overload
 
 import numpy as np
 import pywt
@@ -16,6 +16,7 @@ from ._util import Wavelet, _as_wavelet, _swap_axes, _undo_swap_axes
 from .constants import (
     ExtendedBoundaryMode,
     OrthogonalizeMethod,
+    PacketNodeOrder,
     WaveletCoeff2d,
     WaveletCoeffNd,
     WaveletDetailTuple2d,
@@ -203,18 +204,34 @@ class WaveletPacket(BaseDict):
         else:
             return partial(waverec, wavelet=self.wavelet, axis=self.axis)
 
-    def get_level(self, level: int) -> list[str]:
-        """Return the graycode-ordered paths to the filter tree nodes.
+    @staticmethod
+    def get_level(level: int, order: PacketNodeOrder = "freq") -> list[str]:
+        """Return the paths to the filter tree nodes.
 
         Args:
             level (int): The depth of the tree.
+            order: The order the paths are in.
+                Choose from frequency order (``freq``) and
+                natural order (``natural``).
+                Defaults to ``freq``.
 
         Returns:
             A list with the paths to each node.
-        """
-        return self._get_graycode_order(level)
 
-    def _get_graycode_order(self, level: int, x: str = "a", y: str = "d") -> list[str]:
+        Raises:
+            ValueError: If `order` is neither ``freq`` nor ``natural``.
+        """
+        if order == "freq":
+            return WaveletPacket._get_graycode_order(level)
+        elif order == "natural":
+            return ["".join(p) for p in product(["a", "d"], repeat=level)]
+        else:
+            raise ValueError(
+                f"Unsupported order '{order}'. Choose from 'freq' and 'natural'."
+            )
+
+    @staticmethod
+    def _get_graycode_order(level: int, x: str = "a", y: str = "d") -> list[str]:
         graycode_order = [x, y]
         for _ in range(level - 1):
             graycode_order = [x + path for path in graycode_order] + [
@@ -513,6 +530,42 @@ class WaveletPacket2D(BaseDict):
                 f"maximum level {self.maxlevel}."
             )
         return super().__getitem__(key)
+
+    @overload
+    @staticmethod
+    def get_level(level: int, order: Literal["freq"]) -> list[list[str]]: ...
+
+    @overload
+    @staticmethod
+    def get_level(level: int, order: Literal["natural"]) -> list[str]: ...
+
+    @staticmethod
+    def get_level(
+        level: int, order: PacketNodeOrder = "freq"
+    ) -> Union[list[str], list[list[str]]]:
+        """Return the paths to the filter tree nodes.
+
+        Args:
+            level (int): The depth of the tree.
+            order: The order the paths are in.
+                Choose from frequency order (``freq``) and
+                natural order (``natural``).
+                Defaults to ``freq``.
+
+        Returns:
+            A list with the paths to each node.
+
+        Raises:
+            ValueError: If `order` is neither ``freq`` nor ``natural``.
+        """
+        if order == "freq":
+            return WaveletPacket2D.get_freq_order(level)
+        elif order == "natural":
+            return WaveletPacket2D.get_natural_order(level)
+        else:
+            raise ValueError(
+                f"Unsupported order '{order}'. Choose from 'freq' and 'natural'."
+            )
 
     @staticmethod
     def get_natural_order(level: int) -> list[str]:
