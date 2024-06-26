@@ -535,10 +535,12 @@ def test_inverse_boundary_packet_1d() -> None:
     """Test the 2d boundary reconstruction code."""
     signal = np.random.randn(1, 16)
     wp = pywt.WaveletPacket(signal, "haar", mode="zero", maxlevel=2)
-    ptwp = WaveletPacket(torch.from_numpy(signal), "haar", mode="boundary", maxlevel=2)
     wp["aa"].data *= 0
-    ptwp["aa"].data *= 0
     wp.reconstruct(update=True)
+
+    ptwp = WaveletPacket(torch.from_numpy(signal), "haar", mode="boundary", maxlevel=2)
+    ptwp.initialize(["ad", "da", "dd"])
+    ptwp["aa"] *= 0
     ptwp.reconstruct()
     assert np.allclose(wp[""].data, ptwp[""].numpy()[:, :16])
 
@@ -550,14 +552,18 @@ def test_inverse_boundary_packet_2d() -> None:
     base_key = "h"
     wavelet = "haar"
     signal = np.random.randn(1, size[0], size[1])
+
     wp = pywt.WaveletPacket2D(signal, wavelet, mode="zero", maxlevel=level)
+    wp[base_key * level].data *= 0
+    wp.reconstruct(update=True)
+
     ptwp = WaveletPacket2D(
         torch.from_numpy(signal), wavelet, mode="boundary", maxlevel=level
     )
-    wp[base_key * level].data *= 0
-    ptwp[base_key * level].data *= 0
-    wp.reconstruct(update=True)
+    ptwp.initialize(WaveletPacket2D.get_natural_order(level))
+    ptwp[base_key * level] *= 0
     ptwp.reconstruct()
+
     assert np.allclose(wp[""].data, ptwp[""].numpy()[:, : size[0], : size[1]])
 
 
