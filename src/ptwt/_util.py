@@ -224,9 +224,7 @@ def _check_same_device_dtype(
     torch_device, torch_dtype = c.device, c.dtype
 
     # check for all tensors in `coeffs` that the device matches `torch_device`
-    _coeff_tree_map(
-        coeffs, partial(_check_same_device, torch_device=torch_device)
-    )
+    _coeff_tree_map(coeffs, partial(_check_same_device, torch_device=torch_device))
     # check for all tensors in `coeffs` that the dtype matches `torch_dtype`
     _coeff_tree_map(coeffs, partial(_check_same_dtype, torch_dtype=torch_dtype))
 
@@ -280,7 +278,14 @@ def _coeff_tree_map(
     coeffs: Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd],
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd]:
-    """Apply `function` to all tensor elements in `coeffs`."""
+    """Apply `function` to all tensor elements in `coeffs`.
+
+    The idea here is to save us from having to loop over the coefficient-
+    data trees during input pre- and post-processing.
+
+    Raises:
+        ValueError: If the input type is not supported.
+    """
     approx = function(coeffs[0])
     result_lst: list[
         Union[
