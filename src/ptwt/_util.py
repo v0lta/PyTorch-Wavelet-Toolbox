@@ -224,11 +224,11 @@ def _check_same_device_dtype(
     torch_device, torch_dtype = c.device, c.dtype
 
     # check for all tensors in `coeffs` that the device matches `torch_device`
-    _apply_to_tensor_elems(
+    _coeff_tree_map(
         coeffs, partial(_check_same_device, torch_device=torch_device)
     )
     # check for all tensors in `coeffs` that the dtype matches `torch_dtype`
-    _apply_to_tensor_elems(coeffs, partial(_check_same_dtype, torch_dtype=torch_dtype))
+    _coeff_tree_map(coeffs, partial(_check_same_dtype, torch_dtype=torch_dtype))
 
     return torch_device, torch_dtype
 
@@ -256,31 +256,31 @@ def _undo_swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
 
 
 @overload
-def _apply_to_tensor_elems(
+def _coeff_tree_map(
     coeffs: list[torch.Tensor],
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> list[torch.Tensor]: ...
 
 
 @overload
-def _apply_to_tensor_elems(
+def _coeff_tree_map(
     coeffs: WaveletCoeff2d,
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> WaveletCoeff2d: ...
 
 
 @overload
-def _apply_to_tensor_elems(
+def _coeff_tree_map(
     coeffs: WaveletCoeffNd,
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> WaveletCoeffNd: ...
 
 
-def _apply_to_tensor_elems(
+def _coeff_tree_map(
     coeffs: Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd],
     function: Callable[[torch.Tensor], torch.Tensor],
 ) -> Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd]:
-    """Apply `function` to all tensor elements in `data`."""
+    """Apply `function` to all tensor elements in `coeffs`."""
     approx = function(coeffs[0])
     result_lst: list[
         Union[
@@ -427,7 +427,7 @@ def _preprocess_coeffs(
         else:
             # for all tensors in `coeffs`: swap the axes
             swap_fn = partial(_swap_axes, axes=axes)
-            coeffs = _apply_to_tensor_elems(coeffs, swap_fn)
+            coeffs = _coeff_tree_map(coeffs, swap_fn)
 
     # Fold axes for the wavelets
     ds = list(coeffs[0].shape)
@@ -435,14 +435,14 @@ def _preprocess_coeffs(
         raise ValueError(f"At least {ndim} input dimensions required.")
     elif len(ds) == ndim:
         # for all tensors in `coeffs`: unsqueeze(0)
-        coeffs = _apply_to_tensor_elems(coeffs, lambda x: x.unsqueeze(0))
+        coeffs = _coeff_tree_map(coeffs, lambda x: x.unsqueeze(0))
     elif len(ds) > ndim + 1:
         # for all tensors in `coeffs`: fold leading dims to batch dim
-        coeffs = _apply_to_tensor_elems(coeffs, lambda t: _fold_axes(t, ndim)[0])
+        coeffs = _coeff_tree_map(coeffs, lambda t: _fold_axes(t, ndim)[0])
 
     if add_channel_dim:
         # for all tensors in `coeffs`: add channel dim
-        coeffs = _apply_to_tensor_elems(coeffs, lambda x: x.unsqueeze(1))
+        coeffs = _coeff_tree_map(coeffs, lambda x: x.unsqueeze(1))
 
     return coeffs, ds
 
@@ -540,11 +540,11 @@ def _postprocess_coeffs(
         raise ValueError(f"At least {ndim} input dimensions required.")
     elif len(ds) == ndim:
         # for all tensors in `coeffs`: remove batch dim
-        coeffs = _apply_to_tensor_elems(coeffs, lambda x: x.squeeze(0))
+        coeffs = _coeff_tree_map(coeffs, lambda x: x.squeeze(0))
     elif len(ds) > ndim + 1:
         # for all tensors in `coeffs`: unfold batch dim
         unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=ndim)
-        coeffs = _apply_to_tensor_elems(coeffs, unfold_axes_fn)
+        coeffs = _coeff_tree_map(coeffs, unfold_axes_fn)
 
     if tuple(axes) != tuple(range(-ndim, 0)):
         if len(axes) != ndim:
@@ -552,7 +552,7 @@ def _postprocess_coeffs(
         else:
             # for all tensors in `coeffs`: undo axes swapping
             undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-            coeffs = _apply_to_tensor_elems(coeffs, undo_swap_fn)
+            coeffs = _coeff_tree_map(coeffs, undo_swap_fn)
 
     return coeffs
 
