@@ -203,6 +203,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
+        *,
         axis: Optional[int] = -1,
         boundary: OrthogonalizeMethod = "qr",
     ) -> None:
@@ -474,6 +475,7 @@ class MatrixWaverec(object):
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
+        *,
         axis: int = -1,
         boundary: OrthogonalizeMethod = "qr",
     ) -> None:
