@@ -157,6 +157,7 @@ class WaveletPacket(BaseDict):
                 tree nodes to initialize.
         """
         it = (self[key] for key in keys)
+        # exhaust iterator without storing all values
         collections.deque(it, maxlen=0)
 
     def reconstruct(self) -> WaveletPacket:
@@ -427,6 +428,7 @@ class WaveletPacket2D(BaseDict):
                 tree nodes to initialize.
         """
         it = (self[key] for key in keys)
+        # exhaust iterator without storing all values
         collections.deque(it, maxlen=0)
 
     def reconstruct(self) -> WaveletPacket2D:
