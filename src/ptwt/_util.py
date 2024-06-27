@@ -11,6 +11,7 @@ import pywt
 import torch
 
 from .constants import (
+    SUPPORTED_DTYPES,
     BoundaryMode,
     OrthogonalizeMethod,
     Wavelet,
@@ -126,7 +127,7 @@ def _is_boundary_mode_supported(boundary_mode: Optional[OrthogonalizeMethod]) ->
 
 
 def _is_dtype_supported(dtype: torch.dtype) -> bool:
-    return dtype in [torch.float32, torch.float64]
+    return dtype in SUPPORTED_DTYPES
 
 
 def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:

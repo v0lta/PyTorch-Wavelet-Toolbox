@@ -20,6 +20,8 @@ __all__ = [
     "WaveletDetailDict",
 ]
 
+SUPPORTED_DTYPES = {torch.float32, torch.float64}
+
 
 class Wavelet(Protocol):
     """Wavelet object interface, based on the pywt wavelet object."""
