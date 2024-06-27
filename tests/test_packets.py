@@ -590,17 +590,15 @@ def test_separable_conv_packets_2d(axes: tuple[int, int]) -> None:
     assert np.allclose(signal, ptwp[""].data[:, :32, :32, :32])
 
 
-
 def test_partial_reconstruction() -> None:
-
+    """Reconstruct a cosine wave from packet filters."""
     signal = np.random.randn(1, 16)
     signal2 = np.cos(np.linspace(0, 2 * np.pi, 16))
-    ptwp = WaveletPacket(torch.from_numpy(signal), "haar",
-        mode="reflect", maxlevel=2)
+    ptwp = WaveletPacket(torch.from_numpy(signal), "haar", mode="reflect", maxlevel=2)
     ptwp.initialize(["aa", "ad", "da", "dd"])
-    
+
     ptwp2 = WaveletPacket(torch.from_numpy(signal2), "haar", mode="reflect", maxlevel=2)
-    
+
     # overwrite the first packet set.
     ptwp["aa"] = ptwp2["aa"]
     ptwp["ad"] = ptwp2["ad"]
