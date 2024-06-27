@@ -30,12 +30,9 @@ def _compare_trees1(
     data = data.swapaxes(axis, -1)
 
     if transform_mode:
-        twp = WaveletPacket(
-            None,
-            wavelet_str,
-            mode=ptwt_boundary,
-            axis=axis,
-        ).transform(torch.from_numpy(data), maxlevel=max_lev)
+        twp = WaveletPacket(None, wavelet_str, mode=ptwt_boundary, axis=axis).transform(
+            torch.from_numpy(data), maxlevel=max_lev
+        )
     else:
         twp = WaveletPacket(
             torch.from_numpy(data),
@@ -102,10 +99,7 @@ def _compare_trees2(
     # get the PyTorch decomposition
     if transform_mode:
         ptwt_wp_tree = WaveletPacket2D(
-            None,
-            wavelet=wavelet_str,
-            mode=ptwt_boundary,
-            axes=axes,
+            None, wavelet=wavelet_str, mode=ptwt_boundary, axes=axes
         ).transform(data, maxlevel=max_lev)
     else:
         ptwt_wp_tree = WaveletPacket2D(
@@ -227,7 +221,9 @@ def test_1d_packets(
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
 def test_boundary_matrix_packets1(
-    max_lev: Optional[int], transform_mode: bool, multiple_transforms: bool
+    max_lev: Optional[int],
+    transform_mode: bool,
+    multiple_transforms: bool,
 ) -> None:
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
     _compare_trees1(
@@ -301,6 +297,114 @@ def test_natural_order_2d(level: int, wavelet_str: str, pywt_boundary: str) -> N
         assert order_el.path == order_path
 
 
+partial_keys_1d = ["aaaa", "aaad", "aad", "ad", "da", "dd"]
+
+partial_keys_2d = [
+    "aaaa",
+    "aaad",
+    "aaah",
+    "aaav",
+    "aad",
+    "aah",
+    "aava",
+    "aavd",
+    "aavh",
+    "aavv",
+    "ad",
+    "ah",
+    "ava",
+    "avd",
+    "avh",
+    "avv",
+    "d",
+    "h",
+    "vaa",
+    "vad",
+    "vah",
+    "vav",
+    "vd",
+    "vh",
+    "vv",
+]
+
+
+@pytest.mark.parametrize("wavelet_str", ["haar", "db4"])
+@pytest.mark.parametrize("boundary", ["zero", "reflect", "constant", "boundary"])
+def test_partial_expansion_1d(wavelet_str: str, boundary: str) -> None:
+    """Test lazy init in 1d."""
+    max_lev = 4
+    shape = 128
+    test_signal = torch.randn(shape)
+
+    lazy_init_packet = WaveletPacket(
+        test_signal,
+        wavelet_str,
+        mode=boundary,
+        maxlevel=max_lev,
+    )
+
+    # Full expansion of the wavelet packet tree
+    full_keys = lazy_init_packet.get_level(max_lev)
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in full_keys)
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in partial_keys_1d)
+
+    # init on partial keys
+    lazy_init_packet.initialize(partial_keys_1d)
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in full_keys)
+
+    assert all(key in lazy_init_packet for key in partial_keys_1d)
+
+    # init on full keys
+    lazy_init_packet.initialize(full_keys)
+
+    assert all(key in lazy_init_packet for key in full_keys)
+
+
+@pytest.mark.parametrize("wavelet_str", ["haar", "db4"])
+@pytest.mark.parametrize("boundary", ["zero", "reflect", "constant", "boundary"])
+def test_partial_expansion_2d(wavelet_str: str, boundary: str) -> None:
+    """Test lazy init in 2d."""
+    max_lev = 4
+    shape = (128, 128)
+    test_signal = torch.randn(shape)
+
+    # Full expansion of the wavelet packet tree
+    full_keys = WaveletPacket2D.get_natural_order(max_lev)
+
+    lazy_init_packet = WaveletPacket2D(
+        test_signal,
+        wavelet_str,
+        mode=boundary,
+        maxlevel=max_lev,
+        separable=True,
+    )
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in full_keys)
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in partial_keys_2d)
+
+    # init on partial keys
+    lazy_init_packet.initialize(partial_keys_2d)
+
+    with pytest.raises(AssertionError):
+        assert all(key in lazy_init_packet for key in full_keys)
+
+    assert all(key in lazy_init_packet for key in partial_keys_2d)
+
+    # init on full keys
+    lazy_init_packet.initialize(full_keys)
+
+    assert all(key in lazy_init_packet for key in full_keys)
+
+
 def test_packet_harbo_lvl3() -> None:
     """From Jensen, La Cour-Harbo, Rippels in Mathematics, Chapter 8 (page 89)."""
     data = np.array([56.0, 40.0, 8.0, 24.0, 48.0, 48.0, 40.0, 16.0])
@@ -360,17 +464,31 @@ def test_access_errors_2d() -> None:
 @pytest.mark.parametrize("wavelet", ["db1", "db2", "sym4"])
 @pytest.mark.parametrize("axis", (1, -1))
 def test_inverse_packet_1d(
-    level: int, base_key: str, shape: list[int], wavelet: str, axis: int
+    level: int,
+    base_key: str,
+    shape: list[int],
+    wavelet: str,
+    axis: int,
 ) -> None:
     """Test the 1d reconstruction code."""
     signal = np.random.randn(*shape)
     mode = "reflect"
     wp = pywt.WaveletPacket(signal, wavelet, mode=mode, maxlevel=level, axis=axis)
     ptwp = WaveletPacket(
-        torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level, axis=axis
+        torch.from_numpy(signal),
+        wavelet,
+        mode=mode,
+        maxlevel=level,
+        axis=axis,
     )
+    with pytest.raises(KeyError):
+        ptwp.reconstruct()
+
+    # lazy init
+    ptwp.initialize(ptwp.get_level(level))
+
     wp[base_key * level].data *= 0
-    ptwp[base_key * level].data *= 0
+    ptwp[base_key * level] *= 0
     wp.reconstruct(update=True)
     ptwp.reconstruct()
     assert np.allclose(wp[""].data, ptwp[""].numpy()[..., : shape[-2], : shape[-1]])
@@ -394,10 +512,20 @@ def test_inverse_packet_2d(
     mode = "reflect"
     wp = pywt.WaveletPacket2D(signal, wavelet, mode=mode, maxlevel=level, axes=axes)
     ptwp = WaveletPacket2D(
-        torch.from_numpy(signal), wavelet, mode=mode, maxlevel=level, axes=axes
+        torch.from_numpy(signal),
+        wavelet,
+        mode=mode,
+        maxlevel=level,
+        axes=axes,
     )
     wp[base_key * level].data *= 0
-    ptwp[base_key * level].data *= 0
+    with pytest.raises(KeyError):
+        ptwp.reconstruct()
+
+    # lazy init
+    ptwp.initialize(ptwp.get_natural_order(level))
+
+    ptwp[base_key * level] *= 0
     wp.reconstruct(update=True)
     ptwp.reconstruct()
     assert np.allclose(wp[""].data, ptwp[""].numpy()[: size[0], : size[1], : size[2]])
@@ -407,10 +535,12 @@ def test_inverse_boundary_packet_1d() -> None:
     """Test the 2d boundary reconstruction code."""
     signal = np.random.randn(1, 16)
     wp = pywt.WaveletPacket(signal, "haar", mode="zero", maxlevel=2)
-    ptwp = WaveletPacket(torch.from_numpy(signal), "haar", mode="boundary", maxlevel=2)
     wp["aa"].data *= 0
-    ptwp["aa"].data *= 0
     wp.reconstruct(update=True)
+
+    ptwp = WaveletPacket(torch.from_numpy(signal), "haar", mode="boundary", maxlevel=2)
+    ptwp.initialize(["ad", "da", "dd"])
+    ptwp["aa"] *= 0
     ptwp.reconstruct()
     assert np.allclose(wp[""].data, ptwp[""].numpy()[:, :16])
 
@@ -422,14 +552,18 @@ def test_inverse_boundary_packet_2d() -> None:
     base_key = "h"
     wavelet = "haar"
     signal = np.random.randn(1, size[0], size[1])
+
     wp = pywt.WaveletPacket2D(signal, wavelet, mode="zero", maxlevel=level)
+    wp[base_key * level].data *= 0
+    wp.reconstruct(update=True)
+
     ptwp = WaveletPacket2D(
         torch.from_numpy(signal), wavelet, mode="boundary", maxlevel=level
     )
-    wp[base_key * level].data *= 0
-    ptwp[base_key * level].data *= 0
-    wp.reconstruct(update=True)
+    ptwp.initialize(WaveletPacket2D.get_natural_order(level))
+    ptwp[base_key * level] *= 0
     ptwp.reconstruct()
+
     assert np.allclose(wp[""].data, ptwp[""].numpy()[:, : size[0], : size[1]])
 
 
@@ -447,5 +581,29 @@ def test_separable_conv_packets_2d(axes: tuple[int, int]) -> None:
         axes=axes,
         separable=True,
     )
+    with pytest.raises(KeyError):
+        ptwp.reconstruct()
+
+    # lazy init
+    ptwp.initialize(ptwp.get_natural_order(2))
     ptwp.reconstruct()
     assert np.allclose(signal, ptwp[""].data[:, :32, :32, :32])
+
+
+def test_partial_reconstruction() -> None:
+    """Reconstruct a cosine wave from packet filters."""
+    signal = np.random.randn(1, 16)
+    signal2 = np.cos(np.linspace(0, 2 * np.pi, 16))
+    ptwp = WaveletPacket(torch.from_numpy(signal), "haar", mode="reflect", maxlevel=2)
+    ptwp.initialize(["aa", "ad", "da", "dd"])
+
+    ptwp2 = WaveletPacket(torch.from_numpy(signal2), "haar", mode="reflect", maxlevel=2)
+
+    # overwrite the first packet set.
+    ptwp["aa"] = ptwp2["aa"]
+    ptwp["ad"] = ptwp2["ad"]
+    ptwp["da"] = ptwp2["da"]
+    ptwp["dd"] = ptwp2["dd"]
+    ptwp.reconstruct()
+
+    assert np.allclose(signal2, ptwp[""].numpy()[:16])
