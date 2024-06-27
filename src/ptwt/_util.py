@@ -1,17 +1,19 @@
-"""Utility methods to compute wavelet decompositions from a dataset."""
+"""Utility methods to compute wavelet decompositions."""
 
 from __future__ import annotations
 
 import typing
 from collections.abc import Sequence
-from typing import Any, Callable, NamedTuple, Optional, Protocol, Union, cast, overload
+from typing import Any, Callable, Optional, Union, cast, overload
 
 import numpy as np
 import pywt
 import torch
 
 from .constants import (
+    BoundaryMode,
     OrthogonalizeMethod,
+    Wavelet,
     WaveletCoeff2d,
     WaveletCoeffNd,
     WaveletDetailDict,
@@ -19,59 +21,29 @@ from .constants import (
 )
 
 
-class Wavelet(Protocol):
-    """Wavelet object interface, based on the pywt wavelet object."""
+def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
+    """Translate pywt mode strings to PyTorch mode strings.
 
-    name: str
-    dec_lo: Sequence[float]
-    dec_hi: Sequence[float]
-    rec_lo: Sequence[float]
-    rec_hi: Sequence[float]
-    dec_len: int
-    rec_len: int
-    filter_bank: tuple[
-        Sequence[float], Sequence[float], Sequence[float], Sequence[float]
-    ]
+    We support constant, zero, reflect, and periodic.
+    Unfortunately, "constant" has different meanings in the
+    Pytorch and PyWavelet communities.
 
-    def __len__(self) -> int:
-        """Return the number of filter coefficients."""
-        return len(self.dec_lo)
-
-
-class WaveletTensorTuple(NamedTuple):
-    """Named tuple containing the wavelet filter bank to use in JIT code."""
-
-    dec_lo: torch.Tensor
-    dec_hi: torch.Tensor
-    rec_lo: torch.Tensor
-    rec_hi: torch.Tensor
-
-    @property
-    def dec_len(self) -> int:
-        """Length of decomposition filters."""
-        return len(self.dec_lo)
-
-    @property
-    def rec_len(self) -> int:
-        """Length of reconstruction filters."""
-        return len(self.rec_lo)
-
-    @property
-    def filter_bank(
-        self,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Filter bank of the wavelet."""
-        return self
-
-    @classmethod
-    def from_wavelet(cls, wavelet: Wavelet, dtype: torch.dtype) -> WaveletTensorTuple:
-        """Construct Wavelet named tuple from wavelet protocol member."""
-        return cls(
-            torch.tensor(wavelet.dec_lo, dtype=dtype),
-            torch.tensor(wavelet.dec_hi, dtype=dtype),
-            torch.tensor(wavelet.rec_lo, dtype=dtype),
-            torch.tensor(wavelet.rec_hi, dtype=dtype),
-        )
+    Raises:
+        ValueError: If the padding mode is not supported.
+    """
+    if pywt_mode == "constant":
+        return "replicate"
+    elif pywt_mode == "zero":
+        return "constant"
+    elif pywt_mode == "reflect":
+        return pywt_mode
+    elif pywt_mode == "periodic":
+        return "circular"
+    elif pywt_mode == "symmetric":
+        # pytorch does not support symmetric mode,
+        # we have our own implementation.
+        return pywt_mode
+    raise ValueError(f"Padding mode not supported: {pywt_mode}")
 
 
 def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
@@ -90,6 +62,65 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
         return wavelet
 
 
+def _get_len(wavelet: Union[tuple[torch.Tensor, ...], str, Wavelet]) -> int:
+    """Get number of filter coefficients for various wavelet data types."""
+    if isinstance(wavelet, tuple):
+        return wavelet[0].shape[0]
+    else:
+        return len(_as_wavelet(wavelet))
+
+
+def _get_filter_tensors(
+    wavelet: Union[Wavelet, str],
+    flip: bool,
+    device: Union[torch.device, str],
+    dtype: torch.dtype = torch.float32,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Convert input wavelet to filter tensors.
+
+    Args:
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+        flip (bool): Flip filters left-right, if true.
+        device (torch.device or str): PyTorch target device.
+        dtype (torch.dtype): The data type sets the precision of the
+            computation. Default: torch.float32.
+
+    Returns:
+        A tuple (dec_lo, dec_hi, rec_lo, rec_hi) containing
+        the four filter tensors
+    """
+    wavelet = _as_wavelet(wavelet)
+    device = torch.device(device)
+
+    if isinstance(wavelet, tuple):
+        dec_lo, dec_hi, rec_lo, rec_hi = wavelet
+    else:
+        dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
+    dec_lo_tensor = _create_tensor(dec_lo, flip, device, dtype)
+    dec_hi_tensor = _create_tensor(dec_hi, flip, device, dtype)
+    rec_lo_tensor = _create_tensor(rec_lo, flip, device, dtype)
+    rec_hi_tensor = _create_tensor(rec_hi, flip, device, dtype)
+    return dec_lo_tensor, dec_hi_tensor, rec_lo_tensor, rec_hi_tensor
+
+
+def _create_tensor(
+    filter_seq: Sequence[float], flip: bool, device: torch.device, dtype: torch.dtype
+) -> torch.Tensor:
+    if flip:
+        if isinstance(filter_seq, torch.Tensor):
+            return filter_seq.flip(-1).unsqueeze(0).to(device=device, dtype=dtype)
+        else:
+            return torch.tensor(filter_seq[::-1], device=device, dtype=dtype).unsqueeze(
+                0
+            )
+    else:
+        if isinstance(filter_seq, torch.Tensor):
+            return filter_seq.unsqueeze(0).to(device=device, dtype=dtype)
+        else:
+            return torch.tensor(filter_seq, device=device, dtype=dtype).unsqueeze(0)
+
+
 def _is_boundary_mode_supported(boundary_mode: Optional[OrthogonalizeMethod]) -> bool:
     return boundary_mode in typing.get_args(OrthogonalizeMethod)
 
@@ -105,14 +136,6 @@ def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     a_mul = torch.unsqueeze(a_flat, dim=-1)
     b_mul = torch.unsqueeze(b_flat, dim=0)
     return a_mul * b_mul
-
-
-def _get_len(wavelet: Union[tuple[torch.Tensor, ...], str, Wavelet]) -> int:
-    """Get number of filter coefficients for various wavelet data types."""
-    if isinstance(wavelet, tuple):
-        return wavelet[0].shape[0]
-    else:
-        return len(_as_wavelet(wavelet))
 
 
 def _pad_symmetric_1d(signal: torch.Tensor, pad_list: tuple[int, int]) -> torch.Tensor:
@@ -148,6 +171,79 @@ def _pad_symmetric(
         signal = _pad_symmetric_1d(signal, pad_list)
         signal = signal.transpose(current_axis, 0)
     return signal
+
+
+def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
+    """Compute the required padding.
+
+    Args:
+        data_len (int): The length of the input vector.
+        filt_len (int): The size of the used filter.
+
+    Returns:
+        A tuple (padr, padl). The first entry specifies how many numbers
+        to attach on the right. The second entry covers the left side.
+    """
+    # pad to ensure we see all filter positions and
+    # for pywt compatability.
+    # convolution output length:
+    # see https://arxiv.org/pdf/1603.07285.pdf section 2.3:
+    # floor([data_len - filt_len]/2) + 1
+    # should equal pywt output length
+    # floor((data_len + filt_len - 1)/2)
+    # => floor([data_len + total_pad - filt_len]/2) + 1
+    #    = floor((data_len + filt_len - 1)/2)
+    # (data_len + total_pad - filt_len) + 2 = data_len + filt_len - 1
+    # total_pad = 2*filt_len - 3
+
+    # we pad half of the total requried padding on each side.
+    padr = (2 * filt_len - 3) // 2
+    padl = (2 * filt_len - 3) // 2
+
+    # pad to even singal length.
+    padr += data_len % 2
+
+    return padr, padl
+
+
+def _adjust_padding_at_reconstruction(
+    res_ll_size: int, coeff_size: int, pad_end: int, pad_start: int
+) -> tuple[int, int]:
+    pred_size = res_ll_size - (pad_start + pad_end)
+    next_size = coeff_size
+    if next_size == pred_size:
+        pass
+    elif next_size == pred_size - 1:
+        pad_end += 1
+    else:
+        raise AssertionError(
+            "padding error, please check if dec and rec wavelets are identical."
+        )
+    return pad_end, pad_start
+
+
+def _flatten_2d_coeff_lst(
+    coeff_lst_2d: WaveletCoeff2d,
+    flatten_tensors: bool = True,
+) -> list[torch.Tensor]:
+    """Flattens a sequence of tensor tuples into a single list.
+
+    Args:
+        coeff_lst_2d (WaveletCoeff2d): A pywt-style
+            coefficient tuple of torch tensors.
+        flatten_tensors (bool): If true, 2d tensors are flattened. Defaults to True.
+
+    Returns:
+        A single 1-d list with all original elements.
+    """
+
+    def _process_tensor(coeff: torch.Tensor) -> torch.Tensor:
+        return coeff.flatten() if flatten_tensors else coeff
+
+    flat_coeff_lst = [_process_tensor(coeff_lst_2d[0])]
+    for coeff_tuple in coeff_lst_2d[1:]:
+        flat_coeff_lst.extend(map(_process_tensor, coeff_tuple))
+    return flat_coeff_lst
 
 
 def _fold_axes(data: torch.Tensor, keep_no: int) -> tuple[torch.Tensor, list[int]]:

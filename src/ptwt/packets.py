@@ -12,11 +12,12 @@ import numpy as np
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _swap_axes, _undo_swap_axes
+from ._util import _as_wavelet, _swap_axes, _undo_swap_axes
 from .constants import (
     ExtendedBoundaryMode,
     OrthogonalizeMethod,
     PacketNodeOrder,
+    Wavelet,
     WaveletCoeff1d,
     WaveletCoeff2d,
     WaveletCoeffNd,

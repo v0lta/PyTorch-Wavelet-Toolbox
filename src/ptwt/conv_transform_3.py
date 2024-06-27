@@ -12,27 +12,24 @@ import pywt
 import torch
 
 from ._util import (
-    Wavelet,
+    _adjust_padding_at_reconstruction,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
     _fold_axes,
+    _get_filter_tensors,
     _get_len,
+    _get_pad,
     _is_dtype_supported,
     _map_result,
     _outer,
     _pad_symmetric,
     _swap_axes,
+    _translate_boundary_strings,
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import BoundaryMode, WaveletCoeffNd
-from .conv_transform import (
-    _adjust_padding_at_reconstruction,
-    _get_filter_tensors,
-    _get_pad,
-    _translate_boundary_strings,
-)
+from .constants import BoundaryMode, Wavelet, WaveletCoeffNd, WaveletDetailDict
 
 
 def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
@@ -173,7 +170,7 @@ def wavedec3(
             [data.shape[-1], data.shape[-2], data.shape[-3]], wavelet
         )
 
-    result_lst: list[dict[str, torch.Tensor]] = []
+    result_lst: list[WaveletDetailDict] = []
     res_lll = data
     for _ in range(level):
         if len(res_lll.shape) == 4:
@@ -216,7 +213,7 @@ def _waverec3d_fold_channels_3d_list(
 ]:
     # fold the input coefficients for processing conv2d_transpose.
     fold_approx_coeff = _fold_axes(coeffs[0], 3)[0]
-    fold_coeffs: list[dict[str, torch.Tensor]] = []
+    fold_coeffs: list[WaveletDetailDict] = []
     ds = list(_check_if_tensor(coeffs[0]).shape)
     fold_coeffs = [
         {key: _fold_axes(value, 3)[0] for key, value in coeff.items()}

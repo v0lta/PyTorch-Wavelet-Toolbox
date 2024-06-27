@@ -1,12 +1,13 @@
 """Differentiable and gpu enabled fast wavelet transforms in PyTorch."""
 
-from ._util import Wavelet, WaveletTensorTuple
 from .constants import (
+    Wavelet,
     WaveletCoeff2d,
     WaveletCoeff2dSeparable,
     WaveletCoeffNd,
     WaveletDetailDict,
     WaveletDetailTuple2d,
+    WaveletTensorTuple,
 )
 from .continuous_transform import cwt
 from .conv_transform import wavedec, waverec

@@ -7,10 +7,9 @@ import pywt
 import torch
 import torch.nn.functional as F  # noqa:N812
 
-from ._util import Wavelet, _as_wavelet, _unfold_axes
-from .constants import WaveletCoeff1d
+from ._util import _as_wavelet, _get_filter_tensors, _unfold_axes
+from .constants import Wavelet, WaveletCoeff1d
 from .conv_transform import (
-    _get_filter_tensors,
     _postprocess_result_list_dec1d,
     _preprocess_result_list_rec1d,
     _preprocess_tensor_dec1d,

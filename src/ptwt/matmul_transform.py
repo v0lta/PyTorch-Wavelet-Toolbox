@@ -14,15 +14,14 @@ import numpy as np
 import torch
 
 from ._util import (
-    Wavelet,
     _as_wavelet,
+    _get_filter_tensors,
     _is_boundary_mode_supported,
     _is_dtype_supported,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod, PaddingMode, WaveletCoeff1d
+from .constants import OrthogonalizeMethod, PaddingMode, Wavelet, WaveletCoeff1d
 from .conv_transform import (
-    _get_filter_tensors,
     _postprocess_result_list_dec1d,
     _preprocess_result_list_rec1d,
     _preprocess_tensor_dec1d,

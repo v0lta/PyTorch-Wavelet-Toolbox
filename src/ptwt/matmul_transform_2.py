@@ -13,10 +13,10 @@ import numpy as np
 import torch
 
 from ._util import (
-    Wavelet,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
+    _get_filter_tensors,
     _is_boundary_mode_supported,
     _is_dtype_supported,
     _map_result,
@@ -27,10 +27,10 @@ from ._util import (
 from .constants import (
     OrthogonalizeMethod,
     PaddingMode,
+    Wavelet,
     WaveletCoeff2d,
     WaveletDetailTuple2d,
 )
-from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import (
     _construct_2d_filt,
     _preprocess_tensor_dec2d,

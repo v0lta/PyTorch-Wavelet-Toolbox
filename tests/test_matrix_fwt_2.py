@@ -8,7 +8,7 @@ import pywt
 import scipy.signal
 import torch
 
-from ptwt.conv_transform import _flatten_2d_coeff_lst
+from ptwt._util import _flatten_2d_coeff_lst
 from ptwt.matmul_transform import BaseMatrixWaveDec, MatrixWavedec, MatrixWaverec
 from ptwt.matmul_transform_2 import (
     MatrixWavedec2,

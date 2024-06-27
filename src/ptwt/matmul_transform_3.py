@@ -10,7 +10,6 @@ import numpy as np
 import torch
 
 from ._util import (
-    Wavelet,
     _as_wavelet,
     _check_axes_argument,
     _check_if_tensor,
@@ -22,7 +21,7 @@ from ._util import (
     _undo_swap_axes,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod, WaveletCoeffNd
+from .constants import OrthogonalizeMethod, Wavelet, WaveletCoeffNd
 from .conv_transform_3 import _waverec3d_fold_channels_3d_list
 from .matmul_transform import (
     BaseMatrixWaveDec,
