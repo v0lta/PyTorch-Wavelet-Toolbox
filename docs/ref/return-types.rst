@@ -5,6 +5,12 @@
 Wavelet transform return types
 ==============================
 
+Transforms in one dimension
+---------------------------
+
+.. autodata:: WaveletCoeff1d
+
+
 Transforms in two dimensions
 ----------------------------
 

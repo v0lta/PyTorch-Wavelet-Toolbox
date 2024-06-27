@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import collections
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable
 from functools import partial
 from itertools import product
 from typing import TYPE_CHECKING, Literal, Optional, Union, overload
@@ -17,6 +17,7 @@ from .constants import (
     ExtendedBoundaryMode,
     OrthogonalizeMethod,
     PacketNodeOrder,
+    WaveletCoeff1d,
     WaveletCoeff2d,
     WaveletCoeffNd,
     WaveletDetailTuple2d,
@@ -230,7 +231,7 @@ class WaveletPacket(BaseDict):
     def _get_waverec(
         self,
         length: int,
-    ) -> Callable[[Sequence[torch.Tensor]], torch.Tensor]:
+    ) -> Callable[[WaveletCoeff1d], torch.Tensor]:
         if self.mode == "boundary":
             if length not in self._matrix_waverec_dict.keys():
                 self._matrix_waverec_dict[length] = MatrixWaverec(

@@ -8,6 +8,7 @@ import torch
 import torch.nn.functional as F  # noqa:N812
 
 from ._util import Wavelet, _as_wavelet, _unfold_axes
+from .constants import WaveletCoeff1d
 from .conv_transform import (
     _get_filter_tensors,
     _postprocess_result_list_dec1d,
@@ -109,15 +110,15 @@ def swt(
 
 
 def iswt(
-    coeffs: Sequence[torch.Tensor],
+    coeffs: WaveletCoeff1d,
     wavelet: Union[pywt.Wavelet, str],
     axis: Optional[int] = -1,
 ) -> torch.Tensor:
     """Invert a 1d stationary wavelet transform.
 
     Args:
-        coeffs (Sequence[torch.Tensor]): The coefficients as computed
-            by the swt function.
+        coeffs: The wavelet coefficient sequence produced by the forward transform
+            :func:`swt`. See :data:`ptwt.constants.WaveletCoeff1d`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet, as used in the forward transform.
         axis (int, optional): The axis the forward trasform was computed over.

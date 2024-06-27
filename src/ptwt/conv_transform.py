@@ -21,7 +21,7 @@ from ._util import (
     _pad_symmetric,
     _unfold_axes,
 )
-from .constants import BoundaryMode, WaveletCoeff2d
+from .constants import BoundaryMode, WaveletCoeff1d, WaveletCoeff2d
 
 
 def _create_tensor(
@@ -361,12 +361,13 @@ def wavedec(
 
 
 def waverec(
-    coeffs: Sequence[torch.Tensor], wavelet: Union[Wavelet, str], axis: int = -1
+    coeffs: WaveletCoeff1d, wavelet: Union[Wavelet, str], axis: int = -1
 ) -> torch.Tensor:
     """Reconstruct a 1d signal from wavelet coefficients.
 
     Args:
-        coeffs (Sequence): The wavelet coefficient sequence produced by wavedec.
+        coeffs: The wavelet coefficient sequence produced by the forward transform
+            :func:`wavedec`. See :data:`ptwt.constants.WaveletCoeff1d`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``

@@ -8,7 +8,6 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
 
 import sys
-from collections.abc import Sequence
 from typing import Optional, Union
 
 import numpy as np
@@ -21,7 +20,7 @@ from ._util import (
     _is_dtype_supported,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod, PaddingMode
+from .constants import OrthogonalizeMethod, PaddingMode, WaveletCoeff1d
 from .conv_transform import (
     _get_filter_tensors,
     _postprocess_result_list_dec1d,
@@ -595,12 +594,12 @@ class MatrixWaverec(object):
             self.ifwt_matrix_list.append(sn)
             curr_length = curr_length // 2
 
-    def __call__(self, coefficients: Sequence[torch.Tensor]) -> torch.Tensor:
+    def __call__(self, coefficients: WaveletCoeff1d) -> torch.Tensor:
         """Run the synthesis or inverse matrix fwt.
 
         Args:
-            coefficients (Sequence[torch.Tensor]): The coefficients produced
-                by the forward transform.
+            coefficients: The coefficients produced by the forward transform
+                :data:`MatrixWavedec`. See :data:`ptwt.constants.WaveletCoeff1d`.
 
         Returns:
             The input signal reconstruction.

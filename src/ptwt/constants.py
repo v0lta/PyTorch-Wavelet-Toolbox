@@ -1,5 +1,6 @@
 """Constants and types used throughout the PyTorch Wavelet Toolbox."""
 
+from collections.abc import Sequence
 from typing import Literal, NamedTuple, Union
 
 import torch
@@ -59,6 +60,27 @@ This is a type literal for the order of wavelet packet tree nodes.
 
 - frequency order (``freq``)
 - natural order (``natural``)
+"""
+
+
+# Note: This data structure was chosen to follow pywt's conventions
+WaveletCoeff1d: TypeAlias = Sequence[torch.Tensor]
+"""Type alias for 1d wavelet transform results.
+
+This type alias represents the result of a 1d wavelet transform
+with :math:`n` levels as a sequence::
+
+    [cA_n, cD_n, cD_n-1, …, cD1]
+
+of :math:`n + 1` tensors.
+The first entry of the sequence (``cA_n``) is the approximation coefficient tensor.
+The following entries (``cD_n`` - ``cD1``) are the detail coefficient tensors
+of the respective level.
+
+Note that this type always contains an approximation coefficient tensor but does not
+necesseraily contain any detail coefficients.
+
+Alias of ``Sequence[torch.Tensor]``
 """
 
 
