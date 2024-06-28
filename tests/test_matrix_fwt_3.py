@@ -116,3 +116,9 @@ def test_axes_arg_matrix_3d(axes: list[int], level: int) -> None:
     # test inversion
     rec = MatrixWaverec3(wavelet, axes=axes)(ptwc)
     assert np.allclose(data, rec.numpy())
+
+
+def test_deprecation() -> None:
+    """Ensure the deprecation warning is raised."""
+    with pytest.warns(DeprecationWarning):
+        MatrixWavedec3("haar", 3, boundary="qr")

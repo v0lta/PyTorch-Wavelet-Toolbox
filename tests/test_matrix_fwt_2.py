@@ -259,3 +259,9 @@ def test_axes_2d(axes: tuple[int, int]) -> None:
 
     rec = matrix_waverec2(coeff)
     assert np.allclose(rec, data)
+
+
+def test_deprecation() -> None:
+    """Ensure the deprecation warning is raised."""
+    with pytest.warns(DeprecationWarning):
+        MatrixWavedec2("haar", 3, boundary="qr")
