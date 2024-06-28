@@ -56,13 +56,13 @@ def _matrix_pad_3(
 class MatrixWavedec3(object):
     """Compute 3d separable transforms."""
 
-    @_deprecated_alias(boundary="boundary_orthogonalization")
+    @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         axes: tuple[int, int, int] = (-3, -2, -1),
-        boundary_orthogonalization: OrthogonalizeMethod = "qr",
+        orthogonalization: OrthogonalizeMethod = "qr",
         odd_coeff_padding_mode: BoundaryMode = "zero",
     ):
         """Create a *separable* three-dimensional fast boundary wavelet transform.
@@ -77,7 +77,7 @@ class MatrixWavedec3(object):
                 for possible choices.
             level (int, optional): The desired decomposition level.
                 Defaults to None.
-            boundary_orthogonalization: The method used to orthogonalize
+            orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to 'qr'.
             odd_coeff_padding_mode: The constructed FWT matrices require inputs
@@ -87,7 +87,7 @@ class MatrixWavedec3(object):
                 Defaults to 'zero'.
 
         .. versionchanged:: 1.10
-            The argument `boundary` has been renamed to `boundary_orthogonalization`.
+            The argument `boundary` has been renamed to `orthogonalization`.
 
         Raises:
             NotImplementedError: If the chosen orthogonalization method
@@ -97,7 +97,7 @@ class MatrixWavedec3(object):
         """
         self.wavelet = _as_wavelet(wavelet)
         self.level = level
-        self.boundary_orthogonalization = boundary_orthogonalization
+        self.orthogonalization = orthogonalization
         self.odd_coeff_padding_mode = odd_coeff_padding_mode
         if len(axes) != 3:
             raise ValueError("3D transforms work with three axes.")
@@ -107,7 +107,7 @@ class MatrixWavedec3(object):
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
         self.fwt_matrix_list: list[list[torch.Tensor]] = []
 
-        if not _is_boundary_mode_supported(self.boundary_orthogonalization):
+        if not _is_boundary_mode_supported(self.orthogonalization):
             raise NotImplementedError
         if self.wavelet.dec_len != self.wavelet.rec_len:
             raise ValueError("All filters must have the same length")
@@ -155,7 +155,7 @@ class MatrixWavedec3(object):
             matrix_construction_fun = partial(
                 construct_boundary_a,
                 wavelet=self.wavelet,
-                boundary_orthogonalization=self.boundary_orthogonalization,
+                orthogonalization=self.orthogonalization,
                 device=device,
                 dtype=dtype,
             )
@@ -292,12 +292,12 @@ class MatrixWavedec3(object):
 class MatrixWaverec3(object):
     """Reconstruct a signal from 3d-separable-fwt coefficients."""
 
-    @_deprecated_alias(boundary="boundary_orthogonalization")
+    @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
         axes: tuple[int, int, int] = (-3, -2, -1),
-        boundary_orthogonalization: OrthogonalizeMethod = "qr",
+        orthogonalization: OrthogonalizeMethod = "qr",
     ):
         """Compute a three-dimensional separable boundary wavelet synthesis transform.
 
@@ -308,12 +308,12 @@ class MatrixWaverec3(object):
                 for possible choices.
             axes (tuple[int, int, int]): Transform these axes instead of the
                 last three. Defaults to (-3, -2, -1).
-            boundary_orthogonalization: The method used to orthogonalize
+            orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to 'qr'.
 
         .. versionchanged:: 1.10
-            The argument `boundary` has been renamed to `boundary_orthogonalization`.
+            The argument `boundary` has been renamed to `orthogonalization`.
 
         Raises:
             NotImplementedError: If the selected `boundary` mode is not supported.
@@ -325,12 +325,12 @@ class MatrixWaverec3(object):
         else:
             _check_axes_argument(list(axes))
             self.axes = axes
-        self.boundary_orthogonalization = boundary_orthogonalization
+        self.orthogonalization = orthogonalization
         self.ifwt_matrix_list: list[list[torch.Tensor]] = []
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
         self.level: Optional[int] = None
 
-        if not _is_boundary_mode_supported(self.boundary_orthogonalization):
+        if not _is_boundary_mode_supported(self.orthogonalization):
             raise NotImplementedError
 
         if self.wavelet.dec_len != self.wavelet.rec_len:
@@ -375,7 +375,7 @@ class MatrixWaverec3(object):
             matrix_construction_fun = partial(
                 construct_boundary_s,
                 wavelet=self.wavelet,
-                boundary_orthogonalization=self.boundary_orthogonalization,
+                orthogonalization=self.orthogonalization,
                 device=device,
                 dtype=dtype,
             )
