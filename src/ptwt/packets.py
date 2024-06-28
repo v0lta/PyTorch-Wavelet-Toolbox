@@ -12,7 +12,7 @@ import numpy as np
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _swap_axes, _undo_swap_axes
+from ._util import Wavelet, _as_wavelet, _deprecated_alias, _swap_axes, _undo_swap_axes
 from .constants import (
     ExtendedBoundaryMode,
     OrthogonalizeMethod,
@@ -54,6 +54,7 @@ def _wpfreq(fs: float, level: int) -> list[float]:
 class WaveletPacket(BaseDict):
     """Implements a single-dimensional wavelet packets analysis transform."""
 
+    @_deprecated_alias(boundary_orthogonalization="orthogonalization")
     def __init__(
         self,
         data: Optional[torch.Tensor],
@@ -90,6 +91,10 @@ class WaveletPacket(BaseDict):
                 to use in the sparse matrix backend,
                 see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Only used if `mode` equals 'boundary'. Defaults to 'qr'.
+
+        .. versionchanged:: 1.10
+            The argument `boundary_orthogonalization` has been renamed to
+            `orthogonalization`.
 
         Example:
             >>> import torch, pywt, ptwt
@@ -338,6 +343,7 @@ class WaveletPacket2D(BaseDict):
     https://github.com/v0lta/PyTorch-Wavelet-Toolbox/tree/main/examples/deepfake_analysis
     """
 
+    @_deprecated_alias(boundary_orthogonalization="orthogonalization")
     def __init__(
         self,
         data: Optional[torch.Tensor],
@@ -378,6 +384,10 @@ class WaveletPacket2D(BaseDict):
                 Only used if `mode` equals 'boundary'. Defaults to 'qr'.
             separable (bool): If true, a separable transform is performed,
                 i.e. each image axis is transformed separately. Defaults to False.
+
+        .. versionchanged:: 1.10
+            The argument `boundary_orthogonalization` has been renamed to
+            `orthogonalization`.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
