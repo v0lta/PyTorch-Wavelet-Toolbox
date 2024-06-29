@@ -269,7 +269,7 @@ def _deprecated_alias(
 
     Use as follows::
 
-        @deprecated_alias(old_arg='new_arg')
+        @_deprecated_alias(old_arg='new_arg')
         def myfunc(new_arg):
             ...
 
