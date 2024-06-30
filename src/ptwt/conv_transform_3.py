@@ -65,7 +65,11 @@ def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
 
 
 def _fwt_pad3(
-    data: torch.Tensor, wavelet: Union[Wavelet, str], *, mode: BoundaryMode
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    *,
+    mode: BoundaryMode,
+    padding: Optional[tuple[int, int, int, int, int, int]] = None,
 ) -> torch.Tensor:
     """Pad data for the 3d-FWT.
 
@@ -77,19 +81,26 @@ def _fwt_pad3(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        mode :
-            The desired padding mode for extending the signal along the edges.
+        mode: The desired padding mode for extending the signal along the edges.
             See :data:`ptwt.constants.BoundaryMode`.
+        padding (tuple[int, int, int, int, int, int], optional): A tuple
+            (pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back)
+            with the number of padded values on the respective side of the
+            last three axes of `data`.
+            If None, the padding values are computed based
+            on the signal shape and the wavelet length. Defaults to None.
 
     Returns:
         The padded output tensor.
     """
     pytorch_mode = _translate_boundary_strings(mode)
 
-    wavelet = _as_wavelet(wavelet)
-    pad_back, pad_front = _get_pad(data.shape[-3], _get_len(wavelet))
-    pad_bottom, pad_top = _get_pad(data.shape[-2], _get_len(wavelet))
-    pad_right, pad_left = _get_pad(data.shape[-1], _get_len(wavelet))
+    if padding is None:
+        pad_back, pad_front = _get_pad(data.shape[-3], _get_len(wavelet))
+        pad_bottom, pad_top = _get_pad(data.shape[-2], _get_len(wavelet))
+        pad_right, pad_left = _get_pad(data.shape[-1], _get_len(wavelet))
+    else:
+        pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back = padding
     if pytorch_mode == "symmetric":
         data_pad = _pad_symmetric(
             data, [(pad_front, pad_back), (pad_top, pad_bottom), (pad_left, pad_right)]
