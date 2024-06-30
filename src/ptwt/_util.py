@@ -93,8 +93,10 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
         return wavelet
 
 
-def _is_boundary_mode_supported(boundary_mode: Optional[OrthogonalizeMethod]) -> bool:
-    return boundary_mode in typing.get_args(OrthogonalizeMethod)
+def _is_orthogonalize_method_supported(
+    orthogonalization: Optional[OrthogonalizeMethod],
+) -> bool:
+    return orthogonalization in typing.get_args(OrthogonalizeMethod)
 
 
 def _is_dtype_supported(dtype: torch.dtype) -> bool:

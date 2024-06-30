@@ -16,8 +16,8 @@ from ._util import (
     _check_if_tensor,
     _deprecated_alias,
     _fold_axes,
-    _is_boundary_mode_supported,
     _is_dtype_supported,
+    _is_orthogonalize_method_supported,
     _map_result,
     _swap_axes,
     _undo_swap_axes,
@@ -107,7 +107,7 @@ class MatrixWavedec3(object):
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
         self.fwt_matrix_list: list[list[torch.Tensor]] = []
 
-        if not _is_boundary_mode_supported(self.orthogonalization):
+        if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
         if self.wavelet.dec_len != self.wavelet.rec_len:
             raise ValueError("All filters must have the same length")
@@ -330,7 +330,7 @@ class MatrixWaverec3(object):
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
         self.level: Optional[int] = None
 
-        if not _is_boundary_mode_supported(self.orthogonalization):
+        if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
 
         if self.wavelet.dec_len != self.wavelet.rec_len:

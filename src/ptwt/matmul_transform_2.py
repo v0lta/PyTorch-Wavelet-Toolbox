@@ -18,8 +18,8 @@ from ._util import (
     _check_axes_argument,
     _check_if_tensor,
     _deprecated_alias,
-    _is_boundary_mode_supported,
     _is_dtype_supported,
+    _is_orthogonalize_method_supported,
     _map_result,
     _swap_axes,
     _undo_swap_axes,
@@ -331,7 +331,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         self.pad_list: list[tuple[bool, bool]] = []
         self.padded = False
 
-        if not _is_boundary_mode_supported(self.orthogonalization):
+        if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
 
         if self.wavelet.dec_len != self.wavelet.rec_len:
@@ -640,7 +640,7 @@ class MatrixWaverec2(object):
 
         self.padded = False
 
-        if not _is_boundary_mode_supported(self.orthogonalization):
+        if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
 
         if self.wavelet.dec_len != self.wavelet.rec_len:
