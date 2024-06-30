@@ -311,7 +311,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             The argument `boundary` has been renamed to `orthogonalization`.
 
         Raises:
-            NotImplementedError: If the selected `boundary` mode is not supported.
+            NotImplementedError: If the selected `orthogonalization` mode
+                is not supported.
             ValueError: If the wavelet filters have different lengths.
         """
         self.wavelet = _as_wavelet(wavelet)
@@ -619,7 +620,8 @@ class MatrixWaverec2(object):
             The argument `boundary` has been renamed to `orthogonalization`.
 
         Raises:
-            NotImplementedError: If the selected `boundary` mode is not supported.
+            NotImplementedError: If the selected `orthogonalization` mode
+                is not supported.
             ValueError: If the wavelet filters have different lengths.
         """
         self.wavelet = _as_wavelet(wavelet)
