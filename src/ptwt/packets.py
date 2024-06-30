@@ -12,7 +12,14 @@ import numpy as np
 import pywt
 import torch
 
-from ._util import Wavelet, _as_wavelet, _deprecated_alias, _swap_axes, _undo_swap_axes
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _deprecated_alias,
+    _is_orthogonalize_method_supported,
+    _swap_axes,
+    _undo_swap_axes,
+)
 from .constants import (
     ExtendedBoundaryMode,
     OrthogonalizeMethod,
@@ -96,6 +103,10 @@ class WaveletPacket(BaseDict):
             The argument `boundary_orthogonalization` has been renamed to
             `orthogonalization`.
 
+        Raises:
+            NotImplementedError: If the selected `orthogonalization` mode
+                is not supported.
+
         Example:
             >>> import torch, pywt, ptwt
             >>> import numpy as np
@@ -119,6 +130,9 @@ class WaveletPacket(BaseDict):
         self.axis = axis
 
         self._filter_keys = {"a", "d"}
+
+        if not _is_orthogonalize_method_supported(self.orthogonalization):
+            raise NotImplementedError
 
         if data is not None:
             self.transform(data, maxlevel)
@@ -388,6 +402,10 @@ class WaveletPacket2D(BaseDict):
         .. versionchanged:: 1.10
             The argument `boundary_orthogonalization` has been renamed to
             `orthogonalization`.
+
+        Raises:
+            NotImplementedError: If the selected `orthogonalization` mode
+                is not supported.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode
@@ -397,6 +415,9 @@ class WaveletPacket2D(BaseDict):
         self.matrix_waverec2_dict: dict[tuple[int, ...], MatrixWaverec2] = {}
         self.axes = axes
         self._filter_keys = {"a", "h", "v", "d"}
+
+        if not _is_orthogonalize_method_supported(self.orthogonalization):
+            raise NotImplementedError
 
         self.maxlevel: Optional[int] = None
         if data is not None:
