@@ -18,23 +18,15 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _check_same_device_dtype,
+    _deprecated_alias,
+    _is_orthogonalize_method_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
-    _deprecated_alias,
-    _is_orthogonalize_method_supported,
 )
-from .constants import (
-    BoundaryMode,
-    OrthogonalizeMethod,
-    OrthogonalizeMethod
-)
-from .conv_transform import _get_filter_tensors
-from .conv_transform import (
-    _fwt_pad,
-    _get_filter_tensors,
-)
+from .constants import BoundaryMode, OrthogonalizeMethod
+from .conv_transform import _fwt_pad, _get_filter_tensors
 from .sparse_math import (
     _orth_by_gram_schmidt,
     _orth_by_qr,

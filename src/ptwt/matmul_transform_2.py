@@ -16,12 +16,12 @@ from ._util import (
     _as_wavelet,
     _check_axes_argument,
     _check_same_device_dtype,
+    _deprecated_alias,
+    _is_orthogonalize_method_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
-    _deprecated_alias,
-    _is_orthogonalize_method_supported,
 )
 from .constants import (
     BoundaryMode,
@@ -30,11 +30,7 @@ from .constants import (
     WaveletCoeff2d,
     WaveletDetailTuple2d,
 )
-from .conv_transform_2 import (
-    _get_filter_tensors,
-    _construct_2d_filt,
-    _fwt_pad2,
-)
+from .conv_transform_2 import _construct_2d_filt, _fwt_pad2, _get_filter_tensors
 from .matmul_transform import (
     BaseMatrixWaveDec,
     construct_boundary_a,

@@ -14,15 +14,19 @@ from ._util import (
     _as_wavelet,
     _check_axes_argument,
     _check_same_device_dtype,
+    _deprecated_alias,
+    _is_orthogonalize_method_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
-    _deprecated_alias,
-    _is_orthogonalize_method_supported,
 )
-from .constants import OrthogonalizeMethod, WaveletCoeffNd, WaveletDetailDict
-from .constants import BoundaryMode, OrthogonalizeMethod, WaveletCoeffNd
+from .constants import (
+    BoundaryMode,
+    OrthogonalizeMethod,
+    WaveletCoeffNd,
+    WaveletDetailDict,
+)
 from .conv_transform_3 import _fwt_pad3
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm

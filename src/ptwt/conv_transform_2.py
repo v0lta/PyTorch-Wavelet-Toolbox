@@ -13,7 +13,6 @@ import torch
 
 from ._util import (
     Wavelet,
-    _as_wavelet,
     _check_same_device_dtype,
     _get_len,
     _outer,

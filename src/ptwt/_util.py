@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import functools
-import warnings
 import typing
-from functools import partial
+import warnings
 from collections.abc import Callable, Sequence
+from functools import partial
 from typing import Any, Literal, NamedTuple, Optional, Protocol, Union, cast, overload
 
 import numpy as np
