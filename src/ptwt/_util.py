@@ -29,26 +29,26 @@ from .constants import (
 def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
     """Translate pywt mode strings to PyTorch mode strings.
 
-    We support constant, zero, reflect, and periodic.
+    We support constant, zero, reflect, periodic and symmetric.
     Unfortunately, "constant" has different meanings in the
     Pytorch and PyWavelet communities.
 
     Raises:
         ValueError: If the padding mode is not supported.
     """
-    if pywt_mode == "constant":
-        return "replicate"
-    elif pywt_mode == "zero":
-        return "constant"
-    elif pywt_mode == "reflect":
-        return pywt_mode
-    elif pywt_mode == "periodic":
-        return "circular"
-    elif pywt_mode == "symmetric":
+    translation_dict = {
+        "constant": "replicate",
+        "zero": "constant",
+        "reflect": "reflect",
+        "periodic": "circular",
         # pytorch does not support symmetric mode,
         # we have our own implementation.
-        return pywt_mode
-    raise ValueError(f"Padding mode not supported: {pywt_mode}")
+        "symmetric": "symmetric",
+    }
+    if pywt_mode in translation_dict:
+        return translation_dict[pywt_mode]
+    else:
+        raise ValueError(f"Padding mode not supported: {pywt_mode}")
 
 
 def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
@@ -112,18 +112,16 @@ def _get_filter_tensors(
 def _create_tensor(
     filter_seq: Sequence[float], flip: bool, device: torch.device, dtype: torch.dtype
 ) -> torch.Tensor:
+    return_tensor = torch.as_tensor(
+        data=filter_seq,
+        dtype=dtype,
+        device=device,
+    ).unsqueeze(0)
+
     if flip:
-        if isinstance(filter_seq, torch.Tensor):
-            return filter_seq.flip(-1).unsqueeze(0).to(device=device, dtype=dtype)
-        else:
-            return torch.tensor(filter_seq[::-1], device=device, dtype=dtype).unsqueeze(
-                0
-            )
-    else:
-        if isinstance(filter_seq, torch.Tensor):
-            return filter_seq.unsqueeze(0).to(device=device, dtype=dtype)
-        else:
-            return torch.tensor(filter_seq, device=device, dtype=dtype).unsqueeze(0)
+        return_tensor = return_tensor.flip(-1)
+
+    return return_tensor
 
 
 def _is_orthogonalize_method_supported(

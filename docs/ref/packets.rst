@@ -20,3 +20,8 @@ Wavelet Packet Transform (WPT)
    :members:
    :special-members: __getitem__
    :undoc-members:
+
+Node ordering
+-------------
+
+.. autoclass:: ptwt.constants.PacketNodeOrder

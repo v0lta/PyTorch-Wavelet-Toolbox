@@ -272,6 +272,7 @@ class WaveletPacket(BaseDict):
         Args:
             level (int): The depth of the tree.
             order: The order the paths are in.
+                See :data:`ptwt.constants.PacketNodeOrder`.
                 Choose from frequency order (``freq``) and
                 natural order (``natural``).
                 Defaults to ``freq``.
@@ -677,6 +678,7 @@ class WaveletPacket2D(BaseDict):
         Args:
             level (int): The depth of the tree.
             order: The order the paths are in.
+                See :data:`ptwt.constants.PacketNodeOrder`.
                 Choose from frequency order (``freq``) and
                 natural order (``natural``).
                 Defaults to ``freq``.

@@ -12,12 +12,15 @@ __all__ = [
     "BoundaryMode",
     "ExtendedBoundaryMode",
     "PaddingMode",
+    "PacketNodeOrder",
     "OrthogonalizeMethod",
+    "Wavelet",
     "WaveletDetailTuple2d",
     "WaveletCoeff2d",
     "WaveletCoeff2dSeparable",
     "WaveletCoeffNd",
     "WaveletDetailDict",
+    "WaveletTensorTuple",
 ]
 
 SUPPORTED_DTYPES = {torch.float32, torch.float64}

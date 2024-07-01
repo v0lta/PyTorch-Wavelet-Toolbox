@@ -15,7 +15,7 @@ Signal extension via padding
 
 .. _`modes.padding`:
 
-.. autodata:: BoundaryMode
+.. autoclass:: BoundaryMode
 
 
 Boundary wavelets
@@ -27,4 +27,4 @@ Boundary wavelets
 
 .. autodata:: PaddingMode
 
-.. autodata:: OrthogonalizeMethod
+.. autoclass:: OrthogonalizeMethod

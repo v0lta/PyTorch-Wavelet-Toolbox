@@ -35,7 +35,7 @@ Sparse-matrix based Fast Wavelet Transform (FWT)
 
 Sparse-matrix FWT base class
 ----------------------------
-All sparse-matrix decomposition classes extend ``BaseMatrixWaveDec``.
+All sparse-matrix decomposition classes extend :class:`ptwt.matmul_transform.BaseMatrixWaveDec`.
 
 .. autoclass:: ptwt.matmul_transform.BaseMatrixWaveDec
    :members:
