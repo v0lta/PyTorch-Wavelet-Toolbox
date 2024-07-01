@@ -30,7 +30,8 @@ from .constants import (
     WaveletCoeff2d,
     WaveletDetailTuple2d,
 )
-from .conv_transform_2 import _construct_2d_filt, _fwt_pad2, _get_filter_tensors
+from .conv_transform import _get_filter_tensors
+from .conv_transform_2 import _construct_2d_filt, _fwt_pad2
 from .matmul_transform import (
     BaseMatrixWaveDec,
     construct_boundary_a,
