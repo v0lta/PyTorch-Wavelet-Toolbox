@@ -19,6 +19,8 @@ from ._util import (
     _as_wavelet,
     _check_same_device_dtype,
     _deprecated_alias,
+    _fwt_padn,
+    _get_filter_tensors,
     _is_orthogonalize_method_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -26,7 +28,6 @@ from ._util import (
     _preprocess_tensor,
 )
 from .constants import BoundaryMode, OrthogonalizeMethod
-from .conv_transform import _fwt_pad, _get_filter_tensors
 from .sparse_math import (
     _orth_by_gram_schmidt,
     _orth_by_qr,
@@ -353,9 +354,10 @@ class MatrixWavedec(BaseMatrixWaveDec):
 
         if input_signal.shape[-1] % 2 != 0:
             # odd length input
-            input_signal = _fwt_pad(
+            input_signal = _fwt_padn(
                 input_signal,
                 wavelet=self.wavelet,
+                ndim=1,
                 mode=self.odd_coeff_padding_mode,
                 padding=(0, 1),
             )
@@ -385,9 +387,10 @@ class MatrixWavedec(BaseMatrixWaveDec):
             if self.pad_list[scale]:
                 # fix odd coefficients lengths for the conv matrix to work.
                 lo = lo.T.unsqueeze(1)
-                lo = _fwt_pad(
+                lo = _fwt_padn(
                     lo,
                     wavelet=self.wavelet,
+                    ndim=1,
                     mode=self.odd_coeff_padding_mode,
                     padding=(0, 1),
                 )

@@ -14,97 +14,16 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _check_same_device_dtype,
-    _get_len,
-    _get_pad,
-    _outer,
-    _pad_symmetric,
+    _construct_nd_filt,
+    _fwt_padn,
+    _get_filter_tensors,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
-    _translate_boundary_strings,
 )
 from .constants import BoundaryMode, WaveletCoeffNd, WaveletDetailDict
-from .conv_transform import _adjust_padding_at_reconstruction, _get_filter_tensors
-
-
-def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct three-dimensional filters using outer products.
-
-    Args:
-        lo (torch.Tensor): Low-pass input filter.
-        hi (torch.Tensor): High-pass input filter
-
-    Returns:
-        Stacked 3d filters of dimension::
-
-        [8, 1, length, height, width].
-
-        The four filters are ordered ll, lh, hl, hh.
-    """
-    dim_size = lo.shape[-1]
-    size = [dim_size] * 3
-    lll = _outer(lo, _outer(lo, lo)).reshape(size)
-    llh = _outer(lo, _outer(lo, hi)).reshape(size)
-    lhl = _outer(lo, _outer(hi, lo)).reshape(size)
-    lhh = _outer(lo, _outer(hi, hi)).reshape(size)
-    hll = _outer(hi, _outer(lo, lo)).reshape(size)
-    hlh = _outer(hi, _outer(lo, hi)).reshape(size)
-    hhl = _outer(hi, _outer(hi, lo)).reshape(size)
-    hhh = _outer(hi, _outer(hi, hi)).reshape(size)
-    filt = torch.stack([lll, llh, lhl, lhh, hll, hlh, hhl, hhh], 0)
-    filt = filt.unsqueeze(1)
-    return filt
-
-
-def _fwt_pad3(
-    data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
-    *,
-    mode: BoundaryMode,
-    padding: Optional[tuple[int, int, int, int, int, int]] = None,
-) -> torch.Tensor:
-    """Pad data for the 3d-FWT.
-
-    This function pads the last three axes.
-
-    Args:
-        data (torch.Tensor): Input data with 4 dimensions.
-        wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet.
-            Refer to the output from ``pywt.wavelist(kind='discrete')``
-            for possible choices.
-        mode: The desired padding mode for extending the signal along the edges.
-            See :data:`ptwt.constants.BoundaryMode`.
-        padding (tuple[int, int, int, int, int, int], optional): A tuple
-            (pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back)
-            with the number of padded values on the respective side of the
-            last three axes of `data`.
-            If None, the padding values are computed based
-            on the signal shape and the wavelet length. Defaults to None.
-
-    Returns:
-        The padded output tensor.
-    """
-    pytorch_mode = _translate_boundary_strings(mode)
-
-    if padding is None:
-        pad_back, pad_front = _get_pad(data.shape[-3], _get_len(wavelet))
-        pad_bottom, pad_top = _get_pad(data.shape[-2], _get_len(wavelet))
-        pad_right, pad_left = _get_pad(data.shape[-1], _get_len(wavelet))
-    else:
-        pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back = padding
-    if pytorch_mode == "symmetric":
-        data_pad = _pad_symmetric(
-            data, [(pad_front, pad_back), (pad_top, pad_bottom), (pad_left, pad_right)]
-        )
-    else:
-        data_pad = torch.nn.functional.pad(
-            data,
-            [pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back],
-            mode=pytorch_mode,
-        )
-    return data_pad
+from .conv_transform import _adjust_padding_at_reconstruction
 
 
 def wavedec3(
@@ -147,7 +66,7 @@ def wavedec3(
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
-    dec_filt = _construct_3d_filt(lo=dec_lo, hi=dec_hi)
+    dec_filt = _construct_nd_filt(lo=dec_lo, hi=dec_hi, ndim=3)
 
     if level is None:
         level = pywt.dwtn_max_level(
@@ -159,7 +78,7 @@ def wavedec3(
     for _ in range(level):
         if len(res_lll.shape) == 4:
             res_lll = res_lll.unsqueeze(1)
-        res_lll = _fwt_pad3(res_lll, wavelet, mode=mode)
+        res_lll = _fwt_padn(res_lll, wavelet, ndim=3, mode=mode)
         res = torch.nn.functional.conv3d(res_lll, dec_filt, stride=2)
         res_lll, res_llh, res_lhl, res_lhh, res_hll, res_hlh, res_hhl, res_hhh = [
             sr.squeeze(1) for sr in torch.split(res, 1, 1)
@@ -175,8 +94,9 @@ def wavedec3(
                 "ddd": res_hhh,
             }
         )
+        res_lll = res_lll.unsqueeze(1)
     result_lst.reverse()
-    coeffs: WaveletCoeffNd = res_lll, *result_lst
+    coeffs: WaveletCoeffNd = res_lll.squeeze(1), *result_lst
 
     return _postprocess_coeffs(coeffs, ndim=3, ds=ds, axes=axes)
 
@@ -220,7 +140,7 @@ def waverec3(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
-    rec_filt = _construct_3d_filt(lo=rec_lo, hi=rec_hi)
+    rec_filt = _construct_nd_filt(lo=rec_lo, hi=rec_hi, ndim=3)
 
     res_lll = coeffs[0]
     coeff_dicts = coeffs[1:]

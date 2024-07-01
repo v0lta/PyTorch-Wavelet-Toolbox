@@ -11,12 +11,13 @@ from ._util import (
     Wavelet,
     _as_wavelet,
     _check_same_device_dtype,
+    _construct_nd_filt,
+    _get_filter_tensors,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
 )
-from .conv_transform import _get_filter_tensors
 
 
 def _circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Tensor:
@@ -79,7 +80,7 @@ def swt(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
     filt_len = dec_lo.shape[-1]
-    filt = torch.stack([dec_lo, dec_hi], 0)
+    dec_filt = _construct_nd_filt(lo=dec_lo, hi=dec_hi, ndim=1)
 
     if level is None:
         level = pywt.swt_max_level(data.shape[-1])
@@ -90,7 +91,7 @@ def swt(
         dilation = 2**current_level
         padl, padr = dilation * (filt_len // 2 - 1), dilation * (filt_len // 2)
         res_lo = _circular_pad(res_lo, [padl, padr])
-        res = torch.nn.functional.conv1d(res_lo, filt, stride=1, dilation=dilation)
+        res = torch.nn.functional.conv1d(res_lo, dec_filt, stride=1, dilation=dilation)
         res_lo, res_hi = torch.split(res, 1, 1)
         # Trim_approx == False
         # result_list.append((res_lo.squeeze(1), res_hi.squeeze(1)))
@@ -129,7 +130,7 @@ def iswt(
         wavelet, flip=False, dtype=torch_dtype, device=torch_device
     )
     filt_len = rec_lo.shape[-1]
-    rec_filt = torch.stack([rec_lo, rec_hi], 0)
+    rec_filt = _construct_nd_filt(lo=rec_lo, hi=rec_hi, ndim=1)
 
     res_lo = coeffs[0]
     for c_pos, res_hi in enumerate(coeffs[1:]):

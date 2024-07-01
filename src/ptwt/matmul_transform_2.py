@@ -16,7 +16,10 @@ from ._util import (
     _as_wavelet,
     _check_axes_argument,
     _check_same_device_dtype,
+    _construct_nd_filt,
     _deprecated_alias,
+    _fwt_padn,
+    _get_filter_tensors,
     _is_orthogonalize_method_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -30,8 +33,6 @@ from .constants import (
     WaveletCoeff2d,
     WaveletDetailTuple2d,
 )
-from .conv_transform import _get_filter_tensors
-from .conv_transform_2 import _construct_2d_filt, _fwt_pad2
 from .matmul_transform import (
     BaseMatrixWaveDec,
     construct_boundary_a,
@@ -78,8 +79,9 @@ def _construct_a_2(
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=False, device=device, dtype=dtype
     )
-    dec_filt = _construct_2d_filt(lo=dec_lo, hi=dec_hi)
-    ll, lh, hl, hh = dec_filt.squeeze(1)
+    ll, lh, hl, hh = _construct_nd_filt(
+        lo=dec_lo, hi=dec_hi, ndim=2, add_channel_dim=False
+    )
     analysis_ll = construct_strided_conv2d_matrix(ll, height, width, mode=mode)
     analysis_lh = construct_strided_conv2d_matrix(lh, height, width, mode=mode)
     analysis_hl = construct_strided_conv2d_matrix(hl, height, width, mode=mode)
@@ -123,8 +125,9 @@ def _construct_s_2(
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=True, device=device, dtype=dtype
     )
-    dec_filt = _construct_2d_filt(lo=rec_lo, hi=rec_hi)
-    ll, lh, hl, hh = dec_filt.squeeze(1)
+    ll, lh, hl, hh = _construct_nd_filt(
+        lo=rec_lo, hi=rec_hi, ndim=2, add_channel_dim=False
+    )
     synthesis_ll = construct_strided_conv2d_matrix(ll, height, width, mode=mode)
     synthesis_lh = construct_strided_conv2d_matrix(lh, height, width, mode=mode)
     synthesis_hl = construct_strided_conv2d_matrix(hl, height, width, mode=mode)
@@ -490,9 +493,10 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 padding_0 = (0, 1) if pad[0] else (0, 0)
                 padding_1 = (0, 1) if pad[1] else (0, 0)
 
-                signal = _fwt_pad2(
+                signal = _fwt_padn(
                     signal,
                     wavelet=self.wavelet,
+                    ndim=2,
                     mode=self.odd_coeff_padding_mode,
                     padding=padding_0 + padding_1,
                 )

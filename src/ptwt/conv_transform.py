@@ -13,108 +13,16 @@ import torch
 
 from ._util import (
     Wavelet,
-    _as_wavelet,
     _check_same_device_dtype,
-    _get_len,
-    _get_pad,
-    _pad_symmetric,
+    _construct_nd_filt,
+    _fwt_padn,
+    _get_filter_tensors,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
-    _translate_boundary_strings,
 )
 from .constants import BoundaryMode, WaveletCoeff2d
-
-
-def _create_tensor(
-    filter: Sequence[float], flip: bool, device: torch.device, dtype: torch.dtype
-) -> torch.Tensor:
-    if flip:
-        if isinstance(filter, torch.Tensor):
-            return filter.flip(-1).unsqueeze(0).to(device=device, dtype=dtype)
-        else:
-            return torch.tensor(filter[::-1], device=device, dtype=dtype).unsqueeze(0)
-    else:
-        if isinstance(filter, torch.Tensor):
-            return filter.unsqueeze(0).to(device=device, dtype=dtype)
-        else:
-            return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
-
-
-def _get_filter_tensors(
-    wavelet: Union[Wavelet, str],
-    flip: bool,
-    device: Union[torch.device, str],
-    dtype: torch.dtype = torch.float32,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Convert input wavelet to filter tensors.
-
-    Args:
-        wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet.
-        flip (bool): Flip filters left-right, if true.
-        device (torch.device or str): PyTorch target device.
-        dtype (torch.dtype): The data type sets the precision of the
-               computation. Default: torch.float32.
-
-    Returns:
-        A tuple (dec_lo, dec_hi, rec_lo, rec_hi) containing
-        the four filter tensors
-    """
-    wavelet = _as_wavelet(wavelet)
-    device = torch.device(device)
-
-    if isinstance(wavelet, tuple):
-        dec_lo, dec_hi, rec_lo, rec_hi = wavelet
-    else:
-        dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
-    dec_lo_tensor = _create_tensor(dec_lo, flip, device, dtype)
-    dec_hi_tensor = _create_tensor(dec_hi, flip, device, dtype)
-    rec_lo_tensor = _create_tensor(rec_lo, flip, device, dtype)
-    rec_hi_tensor = _create_tensor(rec_hi, flip, device, dtype)
-    return dec_lo_tensor, dec_hi_tensor, rec_lo_tensor, rec_hi_tensor
-
-
-def _fwt_pad(
-    data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
-    *,
-    mode: Optional[BoundaryMode] = None,
-    padding: Optional[tuple[int, int]] = None,
-) -> torch.Tensor:
-    """Pad the input signal to make the fwt matrix work.
-
-    The padding assumes a future step will transform the last axis.
-
-    Args:
-        data (torch.Tensor): Input data ``[batch_size, 1, time]``
-        wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet.
-        mode: The desired padding mode for extending the signal along the edges.
-            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
-        padding (tuple[int, int], optional): A tuple (padl, padr) with the
-            number of padded values on the left and right side of the last
-            axes of `data`. If None, the padding values are computed based
-            on the signal shape and the wavelet length. Defaults to None.
-
-    Returns:
-        A PyTorch tensor with the padded input data
-    """
-    # convert pywt to pytorch convention.
-    if mode is None:
-        mode = "reflect"
-    pytorch_mode = _translate_boundary_strings(mode)
-
-    if padding is None:
-        padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
-    else:
-        padl, padr = padding
-    if pytorch_mode == "symmetric":
-        data_pad = _pad_symmetric(data, [(padl, padr)])
-    else:
-        data_pad = torch.nn.functional.pad(data, [padl, padr], mode=pytorch_mode)
-    return data_pad
 
 
 def _flatten_2d_coeff_lst(
@@ -221,7 +129,8 @@ def wavedec(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
     filt_len = dec_lo.shape[-1]
-    filt = torch.stack([dec_lo, dec_hi], 0)
+
+    dec_filt = _construct_nd_filt(lo=dec_lo, hi=dec_hi, ndim=1)
 
     if level is None:
         level = pywt.dwt_max_level(data.shape[-1], filt_len)
@@ -229,8 +138,8 @@ def wavedec(
     result_list = []
     res_lo = data
     for _ in range(level):
-        res_lo = _fwt_pad(res_lo, wavelet, mode=mode)
-        res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
+        res_lo = _fwt_padn(res_lo, wavelet, ndim=1, mode=mode)
+        res = torch.nn.functional.conv1d(res_lo, dec_filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)
         result_list.append(res_hi.squeeze(1))
     result_list.append(res_lo.squeeze(1))
@@ -278,12 +187,14 @@ def waverec(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
-    filt = torch.stack([rec_lo, rec_hi], 0)
+    rec_filt = _construct_nd_filt(lo=rec_lo, hi=rec_hi, ndim=1)
 
     res_lo = coeffs[0]
     for c_pos, res_hi in enumerate(coeffs[1:]):
         res_lo = torch.stack([res_lo, res_hi], 1)
-        res_lo = torch.nn.functional.conv_transpose1d(res_lo, filt, stride=2).squeeze(1)
+        res_lo = torch.nn.functional.conv_transpose1d(
+            res_lo, rec_filt, stride=2
+        ).squeeze(1)
 
         # remove the padding
         padl = (2 * filt_len - 3) // 2

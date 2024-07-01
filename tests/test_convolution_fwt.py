@@ -10,11 +10,10 @@ import pywt
 import torch
 from scipy import datasets
 
-from ptwt._util import _outer
+from ptwt._util import _outer, _translate_boundary_strings
 from ptwt.constants import BoundaryMode
 from ptwt.conv_transform import (
     _flatten_2d_coeff_lst,
-    _translate_boundary_strings,
     wavedec,
     waverec,
 )

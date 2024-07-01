@@ -15,6 +15,7 @@ from ._util import (
     _check_axes_argument,
     _check_same_device_dtype,
     _deprecated_alias,
+    _fwt_padn,
     _is_orthogonalize_method_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -27,7 +28,6 @@ from .constants import (
     WaveletCoeffNd,
     WaveletDetailDict,
 )
-from .conv_transform_3 import _fwt_pad3
 from .matmul_transform import construct_boundary_a, construct_boundary_s
 from .sparse_math import _batch_dim_mm
 
@@ -232,9 +232,10 @@ class MatrixWavedec3(object):
             padding_width = (0, 1) if pad_tuple.width else (0, 0)
             padding_height = (0, 1) if pad_tuple.height else (0, 0)
             padding_depth = (0, 1) if pad_tuple.depth else (0, 0)
-            lll = _fwt_pad3(
+            lll = _fwt_padn(
                 lll,
                 wavelet=self.wavelet,
+                ndim=3,
                 mode=self.odd_coeff_padding_mode,
                 padding=padding_width + padding_height + padding_depth,
             )

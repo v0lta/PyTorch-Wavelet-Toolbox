@@ -14,89 +14,16 @@ import torch
 from ._util import (
     Wavelet,
     _check_same_device_dtype,
-    _get_len,
-    _get_pad,
-    _outer,
-    _pad_symmetric,
+    _construct_nd_filt,
+    _fwt_padn,
+    _get_filter_tensors,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
-    _translate_boundary_strings,
 )
 from .constants import BoundaryMode, WaveletCoeff2d, WaveletDetailTuple2d
-from .conv_transform import _adjust_padding_at_reconstruction, _get_filter_tensors
-
-
-def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct two-dimensional filters using outer products.
-
-    Args:
-        lo (torch.Tensor): Low-pass input filter.
-        hi (torch.Tensor): High-pass input filter
-
-    Returns:
-        Stacked 2d-filters of dimension
-
-        [filt_no, 1, height, width].
-
-        The four filters are ordered ll, lh, hl, hh.
-
-    """
-    ll = _outer(lo, lo)
-    lh = _outer(hi, lo)
-    hl = _outer(lo, hi)
-    hh = _outer(hi, hi)
-    filt = torch.stack([ll, lh, hl, hh], 0)
-    filt = filt.unsqueeze(1)
-    return filt
-
-
-def _fwt_pad2(
-    data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
-    *,
-    mode: Optional[BoundaryMode] = None,
-    padding: Optional[tuple[int, int, int, int]] = None,
-) -> torch.Tensor:
-    """Pad data for the 2d FWT.
-
-    This function pads along the last two axes.
-
-    Args:
-        data (torch.Tensor): Input data with 4 dimensions.
-        wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet.
-            Refer to the output from ``pywt.wavelist(kind='discrete')``
-            for possible choices.
-        mode: The desired padding mode for extending the signal along the edges.
-            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
-        padding (tuple[int, int, int, int], optional): A tuple
-            (padl, padr, padt, padb) with the number of padded values
-            on the left, right, top and bottom side of the last two
-            axes of `data`. If None, the padding values are computed based
-            on the signal shape and the wavelet length. Defaults to None.
-
-    Returns:
-        The padded output tensor.
-
-    """
-    if mode is None:
-        mode = "reflect"
-    pytorch_mode = _translate_boundary_strings(mode)
-
-    if padding is None:
-        padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
-        padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
-    else:
-        padl, padr, padt, padb = padding
-    if pytorch_mode == "symmetric":
-        data_pad = _pad_symmetric(data, [(padt, padb), (padl, padr)])
-    else:
-        data_pad = torch.nn.functional.pad(
-            data, [padl, padr, padt, padb], mode=pytorch_mode
-        )
-    return data_pad
+from .conv_transform import _adjust_padding_at_reconstruction
 
 
 def wavedec2(
@@ -165,7 +92,7 @@ def wavedec2(
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
-    dec_filt = _construct_2d_filt(lo=dec_lo, hi=dec_hi)
+    dec_filt = _construct_nd_filt(lo=dec_lo, hi=dec_hi, ndim=2)
 
     if level is None:
         level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
@@ -173,7 +100,7 @@ def wavedec2(
     result_lst: list[WaveletDetailTuple2d] = []
     res_ll = data
     for _ in range(level):
-        res_ll = _fwt_pad2(res_ll, wavelet, mode=mode)
+        res_ll = _fwt_padn(res_ll, wavelet, ndim=2, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
         to_append = WaveletDetailTuple2d(
@@ -238,7 +165,7 @@ def waverec2(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
     )
     filt_len = rec_lo.shape[-1]
-    rec_filt = _construct_2d_filt(lo=rec_lo, hi=rec_hi)
+    rec_filt = _construct_nd_filt(lo=rec_lo, hi=rec_hi, ndim=2)
 
     res_ll = coeffs[0]
     for c_pos, coeff_tuple in enumerate(coeffs[1:]):

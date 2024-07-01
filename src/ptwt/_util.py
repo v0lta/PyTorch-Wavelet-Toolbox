@@ -139,6 +139,55 @@ def _is_dtype_supported(dtype: torch.dtype) -> bool:
     return dtype in [torch.float32, torch.float64]
 
 
+def _create_tensor(
+    filter: Sequence[float], flip: bool, device: torch.device, dtype: torch.dtype
+) -> torch.Tensor:
+    if flip:
+        if isinstance(filter, torch.Tensor):
+            return filter.flip(-1).unsqueeze(0).to(device=device, dtype=dtype)
+        else:
+            return torch.tensor(filter[::-1], device=device, dtype=dtype).unsqueeze(0)
+    else:
+        if isinstance(filter, torch.Tensor):
+            return filter.unsqueeze(0).to(device=device, dtype=dtype)
+        else:
+            return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
+
+
+def _get_filter_tensors(
+    wavelet: Union[Wavelet, str],
+    flip: bool,
+    device: Union[torch.device, str],
+    dtype: torch.dtype = torch.float32,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Convert input wavelet to filter tensors.
+
+    Args:
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+        flip (bool): Flip filters left-right, if true.
+        device (torch.device or str): PyTorch target device.
+        dtype (torch.dtype): The data type sets the precision of the
+               computation. Default: torch.float32.
+
+    Returns:
+        A tuple (dec_lo, dec_hi, rec_lo, rec_hi) containing
+        the four filter tensors
+    """
+    wavelet = _as_wavelet(wavelet)
+    device = torch.device(device)
+
+    if isinstance(wavelet, tuple):
+        dec_lo, dec_hi, rec_lo, rec_hi = wavelet
+    else:
+        dec_lo, dec_hi, rec_lo, rec_hi = wavelet.filter_bank
+    dec_lo_tensor = _create_tensor(dec_lo, flip, device, dtype)
+    dec_hi_tensor = _create_tensor(dec_hi, flip, device, dtype)
+    rec_lo_tensor = _create_tensor(rec_lo, flip, device, dtype)
+    rec_hi_tensor = _create_tensor(rec_hi, flip, device, dtype)
+    return dec_lo_tensor, dec_hi_tensor, rec_lo_tensor, rec_hi_tensor
+
+
 def _outer_pair(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """Outer product of two 1d vectors."""
     a = a.squeeze(0)
