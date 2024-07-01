@@ -104,13 +104,31 @@ def _is_dtype_supported(dtype: torch.dtype) -> bool:
     return dtype in [torch.float32, torch.float64]
 
 
-def _outer(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    """Torch implementation of numpy's outer for 1d vectors."""
-    a_flat = torch.reshape(a, [-1])
-    b_flat = torch.reshape(b, [-1])
-    a_mul = torch.unsqueeze(a_flat, dim=-1)
-    b_mul = torch.unsqueeze(b_flat, dim=0)
-    return a_mul * b_mul
+def _outer_pair(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    """Outer product of two 1d vectors."""
+    a = a.squeeze(0)
+    b = b.squeeze(0)
+
+    a_size = a.size()
+    b_size = b.size()
+
+    if a.ndim > 1:
+        a = a.reshape(-1)
+
+    if b.ndim > 1:
+        b = b.reshape(-1)
+
+    outer_prod = torch.outer(a, b)
+    return outer_prod.reshape(a_size + b_size)
+
+
+def _outer(*tensors: torch.Tensor) -> torch.Tensor:
+    if not tensors:
+        raise ValueError
+    elif len(tensors) == 1:
+        return tensors[0]
+
+    return _outer_pair(tensors[0], _outer(*tensors[1:]))
 
 
 def _get_len(wavelet: Union[tuple[torch.Tensor, ...], str, Wavelet]) -> int:
