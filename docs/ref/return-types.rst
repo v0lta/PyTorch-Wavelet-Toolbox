@@ -8,13 +8,13 @@ Wavelet transform return types
 Transforms in one dimension
 ---------------------------
 
-.. autodata:: WaveletCoeff1d
+.. autoclass:: WaveletCoeff1d
 
 
 Transforms in two dimensions
 ----------------------------
 
-.. autodata:: WaveletCoeff2d
+.. autoclass:: WaveletCoeff2d
 
 .. autoclass:: WaveletDetailTuple2d
     :members:
@@ -26,11 +26,11 @@ Transforms in two dimensions
 Transforms in N dimensions
 --------------------------
 
-.. autodata:: WaveletCoeffNd
+.. autoclass:: WaveletCoeffNd
 
-.. autodata:: WaveletDetailDict
+.. autoclass:: WaveletDetailDict
 
 Fully separable 2d transforms
 -----------------------------
 
-.. autodata:: WaveletCoeff2dSeparable
+.. autoclass:: WaveletCoeff2dSeparable
