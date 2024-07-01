@@ -6,7 +6,6 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 from __future__ import annotations
 
-from functools import partial
 from typing import Optional, Union
 
 import pywt
@@ -14,18 +13,14 @@ import torch
 
 from ._util import (
     Wavelet,
-    _as_wavelet,
-    _check_axes_argument,
-    _check_if_tensor,
-    _fold_axes,
+    _check_same_device_dtype,
     _get_len,
-    _is_dtype_supported,
-    _map_result,
     _outer,
     _pad_symmetric,
-    _swap_axes,
-    _undo_swap_axes,
-    _unfold_axes,
+    _postprocess_coeffs,
+    _postprocess_tensor,
+    _preprocess_coeffs,
+    _preprocess_tensor,
 )
 from .constants import BoundaryMode, WaveletCoeff2d, WaveletDetailTuple2d
 from .conv_transform import (
@@ -107,32 +102,6 @@ def _fwt_pad2(
     return data_pad
 
 
-def _waverec2d_fold_channels_2d_list(
-    coeffs: WaveletCoeff2d,
-) -> tuple[WaveletCoeff2d, list[int]]:
-    # fold the input coefficients for processing conv2d_transpose.
-    ds = list(_check_if_tensor(coeffs[0]).shape)
-    return _map_result(coeffs, lambda t: _fold_axes(t, 2)[0]), ds
-
-
-def _preprocess_tensor_dec2d(
-    data: torch.Tensor,
-) -> tuple[torch.Tensor, Union[list[int], None]]:
-    # Preprocess multidimensional input.
-    ds = None
-    if len(data.shape) == 2:
-        data = data.unsqueeze(0).unsqueeze(0)
-    elif len(data.shape) == 3:
-        # add a channel dimension for torch.
-        data = data.unsqueeze(1)
-    elif len(data.shape) >= 4:
-        data, ds = _fold_axes(data, 2)
-        data = data.unsqueeze(1)
-    elif len(data.shape) == 1:
-        raise ValueError("More than one input dimension required.")
-    return data, ds
-
-
 def wavedec2(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
@@ -183,11 +152,6 @@ def wavedec2(
         A tuple containing the wavelet coefficients in pywt order,
         see :data:`ptwt.constants.WaveletCoeff2d`.
 
-    Raises:
-        ValueError: If the dimensionality or the dtype of the input data tensor
-            is unsupported or if the provided ``axes``
-            input has a length other than two.
-
     Example:
         >>> import torch
         >>> import ptwt, pywt
@@ -200,17 +164,7 @@ def wavedec2(
         >>>                              level=2, mode="zero")
 
     """
-    if not _is_dtype_supported(data.dtype):
-        raise ValueError(f"Input dtype {data.dtype} not supported")
-
-    if tuple(axes) != (-2, -1):
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            data = _swap_axes(data, list(axes))
-
-    wavelet = _as_wavelet(wavelet)
-    data, ds = _preprocess_tensor_dec2d(data)
+    data, ds = _preprocess_tensor(data, ndim=2, axes=axes)
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
@@ -234,13 +188,7 @@ def wavedec2(
     res_ll = res_ll.squeeze(1)
     result: WaveletCoeff2d = res_ll, *result_lst
 
-    if ds:
-        _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
-        result = _map_result(result, _unfold_axes2)
-
-    if axes != (-2, -1):
-        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-        result = _map_result(result, undo_swap_fn)
+    result = _postprocess_coeffs(result, ndim=2, ds=ds, axes=axes)
 
     return result
 
@@ -286,28 +234,8 @@ def waverec2(
         >>> reconstruction = ptwt.waverec2(coefficients, pywt.Wavelet("haar"))
 
     """
-    if tuple(axes) != (-2, -1):
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            _check_axes_argument(list(axes))
-            swap_fn = partial(_swap_axes, axes=list(axes))
-            coeffs = _map_result(coeffs, swap_fn)
-
-    ds = None
-    wavelet = _as_wavelet(wavelet)
-
-    res_ll = _check_if_tensor(coeffs[0])
-    torch_device = res_ll.device
-    torch_dtype = res_ll.dtype
-
-    if res_ll.dim() >= 4:
-        # avoid the channel sum, fold the channels into batches.
-        coeffs, ds = _waverec2d_fold_channels_2d_list(coeffs)
-        res_ll = _check_if_tensor(coeffs[0])
-
-    if not _is_dtype_supported(torch_dtype):
-        raise ValueError(f"Input dtype {torch_dtype} not supported")
+    coeffs, ds = _preprocess_coeffs(coeffs, ndim=2, axes=axes)
+    torch_device, torch_dtype = _check_same_device_dtype(coeffs)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
@@ -315,6 +243,7 @@ def waverec2(
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_2d_filt(lo=rec_lo, hi=rec_hi)
 
+    res_ll = coeffs[0]
     for c_pos, coeff_tuple in enumerate(coeffs[1:]):
         if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
             raise ValueError(
@@ -325,11 +254,7 @@ def waverec2(
 
         curr_shape = res_ll.shape
         for coeff in coeff_tuple:
-            if torch_device != coeff.device:
-                raise ValueError("coefficients must be on the same device")
-            elif torch_dtype != coeff.dtype:
-                raise ValueError("coefficients must have the same dtype")
-            elif coeff.shape != curr_shape:
+            if coeff.shape != curr_shape:
                 raise ValueError(
                     "All coefficients on each level must have the same shape"
                 )
@@ -362,10 +287,6 @@ def waverec2(
         if padr > 0:
             res_ll = res_ll[..., :-padr]
 
-    if ds:
-        res_ll = _unfold_axes(res_ll, list(ds), 2)
-
-    if axes != (-2, -1):
-        res_ll = _undo_swap_axes(res_ll, list(axes))
+    res_ll = _postprocess_tensor(res_ll, ndim=2, ds=ds, axes=axes)
 
     return res_ll

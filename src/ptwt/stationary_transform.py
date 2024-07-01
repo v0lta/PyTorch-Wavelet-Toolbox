@@ -7,13 +7,16 @@ import pywt
 import torch
 import torch.nn.functional as F  # noqa:N812
 
-from ._util import Wavelet, _as_wavelet, _unfold_axes
-from .conv_transform import (
-    _get_filter_tensors,
-    _postprocess_result_list_dec1d,
-    _preprocess_result_list_rec1d,
-    _preprocess_tensor_dec1d,
+from ._util import (
+    Wavelet,
+    _as_wavelet,
+    _check_same_device_dtype,
+    _postprocess_coeffs,
+    _postprocess_tensor,
+    _preprocess_coeffs,
+    _preprocess_tensor,
 )
+from .conv_transform import _get_filter_tensors
 
 
 def _circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Tensor:
@@ -69,17 +72,8 @@ def swt(
 
     Returns:
         Same as wavedec. Equivalent to pywt.swt with trim_approx=True.
-
-    Raises:
-        ValueError: Is the axis argument is not an integer.
     """
-    if axis != -1:
-        if isinstance(axis, int):
-            data = data.swapaxes(axis, -1)
-        else:
-            raise ValueError("swt transforms a single axis only.")
-
-    data, ds = _preprocess_tensor_dec1d(data)
+    data, ds = _preprocess_tensor(data, ndim=1, axes=axis)
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -102,16 +96,15 @@ def swt(
         # result_list.append((res_lo.squeeze(1), res_hi.squeeze(1)))
         result_list.append(res_hi.squeeze(1))
     result_list.append(res_lo.squeeze(1))
+    result_list.reverse()
 
-    result_list = _postprocess_result_list_dec1d(result_list, ds, axis)
-
-    return result_list[::-1]
+    return _postprocess_coeffs(result_list, ndim=1, ds=ds, axes=axis)
 
 
 def iswt(
     coeffs: Sequence[torch.Tensor],
     wavelet: Union[pywt.Wavelet, str],
-    axis: Optional[int] = -1,
+    axis: int = -1,
 ) -> torch.Tensor:
     """Invert a 1d stationary wavelet transform.
 
@@ -120,29 +113,20 @@ def iswt(
             by the swt function.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet, as used in the forward transform.
-        axis (int, optional): The axis the forward trasform was computed over.
+        axis (int): The axis the forward trasform was computed over.
             Defaults to -1.
 
     Returns:
         A reconstruction of the original swt input.
-
-    Raises:
-        ValueError: If the axis argument is not an integer.
     """
-    if axis != -1:
-        swap = []
-        if isinstance(axis, int):
-            for coeff in coeffs:
-                swap.append(coeff.swapaxes(axis, -1))
-            coeffs = swap
-        else:
-            raise ValueError("iswt transforms a single axis only.")
-
-    coeffs, ds = _preprocess_result_list_rec1d(coeffs)
+    if not isinstance(coeffs, list):
+        coeffs = list(coeffs)
+    coeffs, ds = _preprocess_coeffs(coeffs, ndim=1, axes=axis)
+    torch_device, torch_dtype = _check_same_device_dtype(coeffs)
 
     wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
-        wavelet, flip=False, dtype=coeffs[0].dtype, device=coeffs[0].device
+        wavelet, flip=False, dtype=torch_dtype, device=torch_device
     )
     filt_len = rec_lo.shape[-1]
     rec_filt = torch.stack([rec_lo, rec_hi], 0)
@@ -161,12 +145,6 @@ def iswt(
             1,
         )
 
-    if len(ds) == 1:
-        res_lo = res_lo.squeeze(0)
-    elif len(ds) > 2:
-        res_lo = _unfold_axes(res_lo, ds, 1)
-
-    if axis != -1:
-        res_lo = res_lo.swapaxes(axis, -1)
+    res_lo = _postprocess_tensor(res_lo, ndim=1, ds=ds, axes=axis)
 
     return res_lo

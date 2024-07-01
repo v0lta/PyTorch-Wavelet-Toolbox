@@ -17,19 +17,16 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
+    _check_same_device_dtype,
     _deprecated_alias,
-    _is_dtype_supported,
     _is_orthogonalize_method_supported,
-    _unfold_axes,
+    _postprocess_coeffs,
+    _postprocess_tensor,
+    _preprocess_coeffs,
+    _preprocess_tensor,
 )
 from .constants import BoundaryMode, OrthogonalizeMethod
-from .conv_transform import (
-    _fwt_pad,
-    _get_filter_tensors,
-    _postprocess_result_list_dec1d,
-    _preprocess_result_list_rec1d,
-    _preprocess_tensor_dec1d,
-)
+from .conv_transform import _fwt_pad, _get_filter_tensors
 from .sparse_math import (
     _orth_by_gram_schmidt,
     _orth_by_qr,
@@ -347,14 +344,12 @@ class MatrixWavedec(BaseMatrixWaveDec):
             ValueError: If the decomposition level is not a positive integer
                 or if the input signal has not the expected shape.
         """
-        if self.axis != -1:
-            input_signal = input_signal.swapaxes(self.axis, -1)
-
-        input_signal, ds = _preprocess_tensor_dec1d(input_signal)
-        input_signal = input_signal.squeeze(1)
-
-        if not _is_dtype_supported(input_signal.dtype):
-            raise ValueError(f"Input dtype {input_signal.dtype} not supported")
+        input_signal, ds = _preprocess_tensor(
+            input_signal,
+            ndim=1,
+            axes=self.axis,
+            add_channel_dim=False,
+        )
 
         if input_signal.shape[-1] % 2 != 0:
             # odd length input
@@ -405,8 +400,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         result_list = [s.T for s in split_list[::-1]]
 
         # unfold if necessary
-        result_list = _postprocess_result_list_dec1d(result_list, ds, self.axis)
-        return result_list
+        return _postprocess_coeffs(result_list, ndim=1, ds=ds, axes=self.axis)
 
 
 @_deprecated_alias(boundary="orthogonalization")
@@ -638,13 +632,10 @@ class MatrixWaverec(object):
                 coefficients are not in the shape as it is returned from a
                 `MatrixWavedec` object.
         """
-        if self.axis != -1:
-            swap = []
-            for coeff in coefficients:
-                swap.append(coeff.swapaxes(self.axis, -1))
-            coefficients = swap
-
-        coefficients, ds = _preprocess_result_list_rec1d(coefficients)
+        if not isinstance(coefficients, list):
+            coefficients = list(coefficients)
+        coefficients, ds = _preprocess_coeffs(coefficients, ndim=1, axes=self.axis)
+        torch_device, torch_dtype = _check_same_device_dtype(coefficients)
 
         level = len(coefficients) - 1
         input_length = coefficients[-1].shape[-1] * 2
@@ -654,17 +645,6 @@ class MatrixWaverec(object):
             self.level = level
             self.input_length = input_length
             re_build = True
-
-        torch_device = coefficients[0].device
-        torch_dtype = coefficients[0].dtype
-        for coeff in coefficients[1:]:
-            if torch_device != coeff.device:
-                raise ValueError("coefficients must be on the same device")
-            elif torch_dtype != coeff.dtype:
-                raise ValueError("coefficients must have the same dtype")
-
-        if not _is_dtype_supported(torch_dtype):
-            raise ValueError(f"Input dtype {torch_dtype} not supported")
 
         if not self.ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
@@ -696,12 +676,4 @@ class MatrixWaverec(object):
 
         res_lo = lo.T
 
-        if len(ds) == 1:
-            res_lo = res_lo.squeeze(0)
-        elif len(ds) > 2:
-            res_lo = _unfold_axes(res_lo, ds, 1)
-
-        if self.axis != -1:
-            res_lo = res_lo.swapaxes(self.axis, -1)
-
-        return res_lo
+        return _postprocess_tensor(res_lo, ndim=1, ds=ds, axes=self.axis)

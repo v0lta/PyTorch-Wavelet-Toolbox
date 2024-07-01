@@ -9,7 +9,6 @@ using torch.nn.functional.conv1d and it's transpose.
 
 from __future__ import annotations
 
-from functools import partial
 from typing import Optional, Union
 
 import numpy as np
@@ -18,22 +17,23 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
-    _check_axes_argument,
-    _check_if_tensor,
-    _fold_axes,
-    _is_dtype_supported,
-    _map_result,
-    _swap_axes,
-    _undo_swap_axes,
-    _unfold_axes,
+    _check_same_device_dtype,
+    _postprocess_coeffs,
+    _postprocess_tensor,
+    _preprocess_coeffs,
+    _preprocess_tensor,
 )
-from .constants import BoundaryMode, WaveletCoeff2dSeparable, WaveletCoeffNd
+from .constants import (
+    BoundaryMode,
+    WaveletCoeff2dSeparable,
+    WaveletCoeffNd,
+    WaveletDetailDict,
+)
 from .conv_transform import wavedec, waverec
-from .conv_transform_2 import _preprocess_tensor_dec2d
 
 
 def _separable_conv_dwtn_(
-    rec_dict: dict[str, torch.Tensor],
+    rec_dict: WaveletDetailDict,
     input_arg: torch.Tensor,
     wavelet: Union[Wavelet, str],
     *,
@@ -45,6 +45,8 @@ def _separable_conv_dwtn_(
     All but the first axes are transformed.
 
     Args:
+        rec_dict (WaveletDetailDict): The result will be stored here
+            in place.
         input_arg (torch.Tensor): Tensor of shape ``[batch, data_1, ... data_n]``.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
@@ -54,8 +56,6 @@ def _separable_conv_dwtn_(
 
             Defaults to "reflect".
         key (str): The filter application path. Defaults to "".
-        dict (dict[str, torch.Tensor]): The result will be stored here
-            in place. Defaults to {}.
     """
     axis_total = len(input_arg.shape) - 1
     if len(key) == axis_total:
@@ -70,12 +70,12 @@ def _separable_conv_dwtn_(
 
 
 def _separable_conv_idwtn(
-    in_dict: dict[str, torch.Tensor], wavelet: Union[Wavelet, str]
+    in_dict: WaveletDetailDict, wavelet: Union[Wavelet, str]
 ) -> torch.Tensor:
     """Separable single level inverse fast wavelet transform.
 
     Args:
-        in_dict (dict[str, torch.Tensor]): The dictionary produced
+        in_dict (WaveletDetailDict): The dictionary produced
             by _separable_conv_dwtn_ .
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet, as used by ``_separable_conv_dwtn_``.
@@ -131,7 +131,7 @@ def _separable_conv_wavedecn(
         'a' denoting the low pass or approximation filter and
         'd' the high-pass or detail filter.
     """
-    result: list[dict[str, torch.Tensor]] = []
+    result: list[WaveletDetailDict] = []
     approx = input
 
     if level is None:
@@ -141,7 +141,7 @@ def _separable_conv_wavedecn(
         )
 
     for _ in range(level):
-        level_dict: dict[str, torch.Tensor] = {}
+        level_dict: WaveletDetailDict = {}
         _separable_conv_dwtn_(level_dict, approx, wavelet, mode=mode, key="")
         approx_key = "a" * (len(input.shape) - 1)
         approx = level_dict.pop(approx_key)
@@ -216,38 +216,13 @@ def fswavedec2(
         as keys. 'a' denotes the low pass or approximation filter and
         'd' the high-pass or detail filter.
 
-    Raises:
-        ValueError: If the data is not a batched 2D signal.
-
     Example:
         >>> import torch
         >>> import ptwt
         >>> data = torch.randn(5, 10, 10)
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
     """
-    if not _is_dtype_supported(data.dtype):
-        raise ValueError(f"Input dtype {data.dtype} not supported")
-
-    if tuple(axes) != (-2, -1):
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            data = _swap_axes(data, list(axes))
-
-    wavelet = _as_wavelet(wavelet)
-    data, ds = _preprocess_tensor_dec2d(data)
-    data = data.squeeze(1)
-    res = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
-
-    if ds:
-        _unfold_axes2 = partial(_unfold_axes, ds=ds, keep_no=2)
-        res = _map_result(res, _unfold_axes2)
-
-    if axes != (-2, -1):
-        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-        res = _map_result(res, undo_swap_fn)
-
-    return res
+    return _fswavedecn(data, wavelet, ndim=2, mode=mode, level=level, axes=axes)
 
 
 def fswavedec3(
@@ -284,43 +259,13 @@ def fswavedec3(
         as keys. 'a' denotes the low pass or approximation filter and
         'd' the high-pass or detail filter.
 
-    Raises:
-        ValueError: If the input is not a batched 3D signal.
-
-
     Example:
         >>> import torch
         >>> import ptwt
         >>> data = torch.randn(5, 10, 10, 10)
         >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
     """
-    if not _is_dtype_supported(data.dtype):
-        raise ValueError(f"Input dtype {data.dtype} not supported")
-
-    if tuple(axes) != (-3, -2, -1):
-        if len(axes) != 3:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            data = _swap_axes(data, list(axes))
-
-    wavelet = _as_wavelet(wavelet)
-    ds = None
-    if len(data.shape) >= 5:
-        data, ds = _fold_axes(data, 3)
-    elif len(data.shape) < 4:
-        raise ValueError("At lest four input dimensions are required.")
-    data = data.squeeze(1)
-    res = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
-
-    if ds:
-        _unfold_axes3 = partial(_unfold_axes, ds=ds, keep_no=3)
-        res = _map_result(res, _unfold_axes3)
-
-    if axes != (-3, -2, -1):
-        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-        res = _map_result(res, undo_swap_fn)
-
-    return res
+    return _fswavedecn(data, wavelet, ndim=3, mode=mode, level=level, axes=axes)
 
 
 def fswaverec2(
@@ -347,9 +292,6 @@ def fswaverec2(
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
 
-    Raises:
-        ValueError: If the axes argument is not a tuple of two integers.
-
     Example:
         >>> import torch
         >>> import ptwt
@@ -357,38 +299,7 @@ def fswaverec2(
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
         >>> rec = ptwt.fswaverec2(coeff, "haar")
     """
-    if tuple(axes) != (-2, -1):
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            _check_axes_argument(list(axes))
-            swap_fn = partial(_swap_axes, axes=list(axes))
-            coeffs = _map_result(coeffs, swap_fn)
-
-    ds = None
-    wavelet = _as_wavelet(wavelet)
-
-    res_ll = _check_if_tensor(coeffs[0])
-    torch_dtype = res_ll.dtype
-
-    if res_ll.dim() >= 4:
-        # avoid the channel sum, fold the channels into batches.
-        ds = _check_if_tensor(coeffs[0]).shape
-        coeffs = _map_result(coeffs, lambda t: _fold_axes(t, 2)[0])
-        res_ll = _check_if_tensor(coeffs[0])
-
-    if not _is_dtype_supported(torch_dtype):
-        raise ValueError(f"Input dtype {torch_dtype} not supported")
-
-    res_ll = _separable_conv_waverecn(coeffs, wavelet)
-
-    if ds:
-        res_ll = _unfold_axes(res_ll, list(ds), 2)
-
-    if axes != (-2, -1):
-        res_ll = _undo_swap_axes(res_ll, list(axes))
-
-    return res_ll
+    return _fswaverecn(coeffs, wavelet, ndim=2, axes=axes)
 
 
 def fswaverec3(
@@ -412,10 +323,6 @@ def fswaverec3(
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
 
-    Raises:
-        ValueError: If the axes argument is not a tuple with
-            three ints.
-
     Example:
         >>> import torch
         >>> import ptwt
@@ -423,34 +330,96 @@ def fswaverec3(
         >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
         >>> rec = ptwt.fswaverec3(coeff, "haar")
     """
-    if tuple(axes) != (-3, -2, -1):
-        if len(axes) != 3:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            _check_axes_argument(list(axes))
-            swap_fn = partial(_swap_axes, axes=list(axes))
-            coeffs = _map_result(coeffs, swap_fn)
+    return _fswaverecn(coeffs, wavelet, ndim=3, axes=axes)
 
-    ds = None
-    wavelet = _as_wavelet(wavelet)
-    res_ll = _check_if_tensor(coeffs[0])
-    torch_dtype = res_ll.dtype
 
-    if res_ll.dim() >= 5:
-        # avoid the channel sum, fold the channels into batches.
-        ds = _check_if_tensor(coeffs[0]).shape
-        coeffs = _map_result(coeffs, lambda t: _fold_axes(t, 3)[0])
-        res_ll = _check_if_tensor(coeffs[0])
+def _fswavedecn(
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    ndim: int,
+    *,
+    mode: BoundaryMode = "reflect",
+    level: Optional[int] = None,
+    axes: Optional[tuple[int, ...]] = None,
+) -> WaveletCoeffNd:
+    """Compute a fully separable :math:`N`-dimensional padded FWT.
 
-    if not _is_dtype_supported(torch_dtype):
-        raise ValueError(f"Input dtype {torch_dtype} not supported")
+    Args:
+        data (torch.Tensor): An input signal with at least :math:`N` dimensions.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet. Refer to the output of
+            ``pywt.wavelist(kind="discrete")`` for possible choices.
+        ndim (int): The number of dimentsions :math:`N`.
+        mode:
+            The desired padding mode for extending the signal along the edges.
+            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
+        level (int): The number of desired scales. Defaults to None.
+        axes (tuple[int, ...], optional): Compute the transform over these axes
+            instead of the last :math:`N`. If None, the last :math:`N`
+            axes are transformed. Defaults to None.
+
+    Returns:
+        A tuple with the lll coefficients and for each scale a dictionary
+        containing the detail coefficients,
+        see :data:`ptwt.constants.WaveletCoeffNd`.
+
+    Example:
+        >>> import torch
+        >>> from ptwt.separable_conv_transform import _fswavedecn
+        >>> data = torch.randn(5, 10, 10, 10)
+        >>> coeff = _fswavedecn(data, "haar", ndim=3, level=2)
+
+    Note:
+        ND-Transforms are generally out of this project's scope.
+    """
+    if axes is None:
+        axes = tuple(range(-ndim, 0))
+
+    data, ds = _preprocess_tensor(data, ndim=ndim, axes=axes, add_channel_dim=False)
+    coeffs = _separable_conv_wavedecn(data, wavelet, mode=mode, level=level)
+    return _postprocess_coeffs(coeffs, ndim=ndim, ds=ds, axes=axes)
+
+
+def _fswaverecn(
+    coeffs: WaveletCoeffNd,
+    wavelet: Union[Wavelet, str],
+    ndim: int,
+    axes: Optional[tuple[int, ...]] = None,
+) -> torch.Tensor:
+    """Invert a fully separable :math:`N`-dimensional padded FWT.
+
+    Args:
+        coeffs (WaveletCoeffNd):
+            The wavelet coefficients as computed by :func:`fswavedecn`,
+            see :data:`ptwt.constants.WaveletCoeffNd`.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
+        ndim (int): The number of dimentsions :math:`N`.
+        axes (tuple[int, ...], optional): Compute the transform over these axes
+            instead of the last :math:`N`. If None, the last :math:`N`
+            axes are transformed. Defaults to None.
+
+    Returns:
+        A reconstruction of the signal encoded in the wavelet coefficients.
+
+    Example:
+        >>> import torch
+        >>> from ptwt.separable_conv_transform import _fswavedecn, _fswaverecn
+        >>> data = torch.randn(5, 10, 10, 10)
+        >>> coeff = _fswavedecn(data, "haar", ndim=3, level=2)
+        >>> rec = _fswaverecn(coeff, "haar", ndim=3)
+
+    Note:
+        ND-Transforms are generally out of this project's scope.
+    """
+    if axes is None:
+        axes = tuple(range(-ndim, 0))
+
+    coeffs, ds = _preprocess_coeffs(coeffs, ndim=ndim, axes=axes)
+    _check_same_device_dtype(coeffs)
 
     res_ll = _separable_conv_waverecn(coeffs, wavelet)
 
-    if ds:
-        res_ll = _unfold_axes(res_ll, list(ds), 3)
-
-    if axes != (-3, -2, -1):
-        res_ll = _undo_swap_axes(res_ll, list(axes))
-
-    return res_ll
+    return _postprocess_tensor(res_ll, ndim=ndim, ds=ds, axes=axes)

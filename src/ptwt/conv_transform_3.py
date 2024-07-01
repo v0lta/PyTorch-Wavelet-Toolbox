@@ -5,7 +5,6 @@ The functions here are based on torch.nn.functional.conv3d and it's transpose.
 
 from __future__ import annotations
 
-from functools import partial
 from typing import Optional, Union
 
 import pywt
@@ -14,19 +13,16 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
-    _check_axes_argument,
-    _check_if_tensor,
-    _fold_axes,
+    _check_same_device_dtype,
     _get_len,
-    _is_dtype_supported,
-    _map_result,
     _outer,
     _pad_symmetric,
-    _swap_axes,
-    _undo_swap_axes,
-    _unfold_axes,
+    _postprocess_coeffs,
+    _postprocess_tensor,
+    _preprocess_coeffs,
+    _preprocess_tensor,
 )
-from .constants import BoundaryMode, WaveletCoeffNd
+from .constants import BoundaryMode, WaveletCoeffNd, WaveletDetailDict
 from .conv_transform import (
     _adjust_padding_at_reconstruction,
     _get_filter_tensors,
@@ -143,34 +139,12 @@ def wavedec3(
         A tuple containing the wavelet coefficients,
         see :data:`ptwt.constants.WaveletCoeffNd`.
 
-    Raises:
-        ValueError: If the input has fewer than three dimensions or
-            if the dtype is not supported or
-            if the provided axes input has length other than three.
-
     Example:
         >>> import ptwt, torch
         >>> data = torch.randn(5, 16, 16, 16)
         >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
     """
-    if tuple(axes) != (-3, -2, -1):
-        if len(axes) != 3:
-            raise ValueError("3D transforms work with three axes.")
-        else:
-            _check_axes_argument(list(axes))
-            data = _swap_axes(data, list(axes))
-
-    ds = None
-    if data.dim() < 3:
-        raise ValueError("At least three dimensions are required for 3d wavedec.")
-    elif len(data.shape) == 3:
-        data = data.unsqueeze(1)
-    else:
-        data, ds = _fold_axes(data, 3)
-        data = data.unsqueeze(1)
-
-    if not _is_dtype_supported(data.dtype):
-        raise ValueError(f"Input dtype {data.dtype} not supported")
+    data, ds = _preprocess_tensor(data, ndim=3, axes=axes)
 
     wavelet = _as_wavelet(wavelet)
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
@@ -183,7 +157,7 @@ def wavedec3(
             [data.shape[-1], data.shape[-2], data.shape[-3]], wavelet
         )
 
-    result_lst: list[dict[str, torch.Tensor]] = []
+    result_lst: list[WaveletDetailDict] = []
     res_lll = data
     for _ in range(level):
         if len(res_lll.shape) == 4:
@@ -205,34 +179,9 @@ def wavedec3(
             }
         )
     result_lst.reverse()
-    result: WaveletCoeffNd = res_lll, *result_lst
+    coeffs: WaveletCoeffNd = res_lll, *result_lst
 
-    if ds:
-        _unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=3)
-        result = _map_result(result, _unfold_axes_fn)
-
-    if tuple(axes) != (-3, -2, -1):
-        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-        result = _map_result(result, undo_swap_fn)
-
-    return result
-
-
-def _waverec3d_fold_channels_3d_list(
-    coeffs: WaveletCoeffNd,
-) -> tuple[
-    WaveletCoeffNd,
-    list[int],
-]:
-    # fold the input coefficients for processing conv2d_transpose.
-    fold_approx_coeff = _fold_axes(coeffs[0], 3)[0]
-    fold_coeffs: list[dict[str, torch.Tensor]] = []
-    ds = list(_check_if_tensor(coeffs[0]).shape)
-    fold_coeffs = [
-        {key: _fold_axes(value, 3)[0] for key, value in coeff.items()}
-        for coeff in coeffs[1:]
-    ]
-    return (fold_approx_coeff, *fold_coeffs), ds
+    return _postprocess_coeffs(coeffs, ndim=3, ds=ds, axes=axes)
 
 
 def waverec3(
@@ -267,32 +216,8 @@ def waverec3(
         >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
         >>> reconstruction = ptwt.waverec3(transformed, "haar")
     """
-    if tuple(axes) != (-3, -2, -1):
-        if len(axes) != 3:
-            raise ValueError("3D transforms work with three axes")
-        else:
-            _check_axes_argument(list(axes))
-            swap_axes_fn = partial(_swap_axes, axes=list(axes))
-            coeffs = _map_result(coeffs, swap_axes_fn)
-
-    wavelet = _as_wavelet(wavelet)
-    ds = None
-    # the Union[tensor, dict] idea is coming from pywt. We don't change it here.
-    res_lll = _check_if_tensor(coeffs[0])
-    if res_lll.dim() < 3:
-        raise ValueError(
-            "Three dimensional transforms require at least three dimensions."
-        )
-    elif res_lll.dim() >= 5:
-        coeffs, ds = _waverec3d_fold_channels_3d_list(coeffs)
-        res_lll = _check_if_tensor(coeffs[0])
-
-    torch_device = res_lll.device
-    torch_dtype = res_lll.dtype
-
-    if not _is_dtype_supported(torch_dtype):
-        if not _is_dtype_supported(torch_dtype):
-            raise ValueError(f"Input dtype {torch_dtype} not supported")
+    coeffs, ds = _preprocess_coeffs(coeffs, ndim=3, axes=axes)
+    torch_device, torch_dtype = _check_same_device_dtype(coeffs)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
@@ -300,6 +225,7 @@ def waverec3(
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_3d_filt(lo=rec_lo, hi=rec_hi)
 
+    res_lll = coeffs[0]
     coeff_dicts = coeffs[1:]
     for c_pos, coeff_dict in enumerate(coeff_dicts):
         if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
@@ -309,11 +235,7 @@ def waverec3(
                 "wavedec3."
             )
         for coeff in coeff_dict.values():
-            if torch_device != coeff.device:
-                raise ValueError("coefficients must be on the same device")
-            elif torch_dtype != coeff.dtype:
-                raise ValueError("coefficients must have the same dtype")
-            elif res_lll.shape != coeff.shape:
+            if res_lll.shape != coeff.shape:
                 raise ValueError(
                     "All coefficients on each level must have the same shape"
                 )
@@ -362,11 +284,5 @@ def waverec3(
             res_lll = res_lll[..., padfr:, :, :]
         if padba > 0:
             res_lll = res_lll[..., :-padba, :, :]
-    res_lll = res_lll.squeeze(1)
 
-    if ds:
-        res_lll = _unfold_axes(res_lll, ds, 3)
-
-    if axes != (-3, -2, -1):
-        res_lll = _undo_swap_axes(res_lll, list(axes))
-    return res_lll
+    return _postprocess_tensor(res_lll, ndim=3, ds=ds, axes=axes)
