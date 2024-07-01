@@ -369,9 +369,9 @@ def _fswavedecn(
 
     Example:
         >>> import torch
-        >>> import ptwt
+        >>> from ptwt.separable_conv_transform import _fswavedecn
         >>> data = torch.randn(5, 10, 10, 10)
-        >>> coeff = ptwt.fswavedecn(data, "haar", ndim=3, level=2)
+        >>> coeff = _fswavedecn(data, "haar", ndim=3, level=2)
     """
     if axes is None:
         axes = tuple(range(-ndim, 0))
@@ -407,10 +407,10 @@ def _fswaverecn(
 
     Example:
         >>> import torch
-        >>> import ptwt
+        >>> from ptwt.separable_conv_transform import _fswavedecn, _fswaverecn
         >>> data = torch.randn(5, 10, 10, 10)
-        >>> coeff = ptwt.fswavedecn(data, "haar", ndim=3, level=2)
-        >>> rec = ptwt.fswaverec3(coeff, "haar", ndim=3)
+        >>> coeff = _fswavedecn(data, "haar", ndim=3, level=2)
+        >>> rec = _fswaverecn(coeff, "haar", ndim=3)
     """
     if axes is None:
         axes = tuple(range(-ndim, 0))
