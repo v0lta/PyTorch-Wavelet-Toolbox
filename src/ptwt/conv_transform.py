@@ -16,11 +16,13 @@ from ._util import (
     _as_wavelet,
     _check_same_device_dtype,
     _get_len,
+    _get_pad,
     _pad_symmetric,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
+    _translate_boundary_strings,
 )
 from .constants import BoundaryMode, WaveletCoeff2d
 
@@ -72,64 +74,6 @@ def _get_filter_tensors(
     rec_lo_tensor = _create_tensor(rec_lo, flip, device, dtype)
     rec_hi_tensor = _create_tensor(rec_hi, flip, device, dtype)
     return dec_lo_tensor, dec_hi_tensor, rec_lo_tensor, rec_hi_tensor
-
-
-def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
-    """Compute the required padding.
-
-    Args:
-        data_len (int): The length of the input vector.
-        filt_len (int): The size of the used filter.
-
-    Returns:
-        A tuple (padr, padl). The first entry specifies how many numbers
-        to attach on the right. The second entry covers the left side.
-    """
-    # pad to ensure we see all filter positions and
-    # for pywt compatability.
-    # convolution output length:
-    # see https://arxiv.org/pdf/1603.07285.pdf section 2.3:
-    # floor([data_len - filt_len]/2) + 1
-    # should equal pywt output length
-    # floor((data_len + filt_len - 1)/2)
-    # => floor([data_len + total_pad - filt_len]/2) + 1
-    #    = floor((data_len + filt_len - 1)/2)
-    # (data_len + total_pad - filt_len) + 2 = data_len + filt_len - 1
-    # total_pad = 2*filt_len - 3
-
-    # we pad half of the total requried padding on each side.
-    padr = (2 * filt_len - 3) // 2
-    padl = (2 * filt_len - 3) // 2
-
-    # pad to even singal length.
-    padr += data_len % 2
-
-    return padr, padl
-
-
-def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
-    """Translate pywt mode strings to PyTorch mode strings.
-
-    We support constant, zero, reflect, and periodic.
-    Unfortunately, "constant" has different meanings in the
-    Pytorch and PyWavelet communities.
-
-    Raises:
-        ValueError: If the padding mode is not supported.
-    """
-    if pywt_mode == "constant":
-        return "replicate"
-    elif pywt_mode == "zero":
-        return "constant"
-    elif pywt_mode == "reflect":
-        return pywt_mode
-    elif pywt_mode == "periodic":
-        return "circular"
-    elif pywt_mode == "symmetric":
-        # pytorch does not support symmetric mode,
-        # we have our own implementation.
-        return pywt_mode
-    raise ValueError(f"Padding mode not supported: {pywt_mode}")
 
 
 def _fwt_pad(

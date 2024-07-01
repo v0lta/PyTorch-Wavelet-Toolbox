@@ -16,6 +16,7 @@ import torch
 from typing_extensions import ParamSpec, TypeVar
 
 from .constants import (
+    BoundaryMode,
     OrthogonalizeMethod,
     WaveletCoeff2d,
     WaveletCoeffNd,
@@ -103,6 +104,31 @@ def _get_len(wavelet: Union[tuple[torch.Tensor, ...], str, Wavelet]) -> int:
         return len(_as_wavelet(wavelet))
 
 
+def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
+    """Translate pywt mode strings to PyTorch mode strings.
+
+    We support constant, zero, reflect, and periodic.
+    Unfortunately, "constant" has different meanings in the
+    Pytorch and PyWavelet communities.
+
+    Raises:
+        ValueError: If the padding mode is not supported.
+    """
+    if pywt_mode == "constant":
+        return "replicate"
+    elif pywt_mode == "zero":
+        return "constant"
+    elif pywt_mode == "reflect":
+        return pywt_mode
+    elif pywt_mode == "periodic":
+        return "circular"
+    elif pywt_mode == "symmetric":
+        # pytorch does not support symmetric mode,
+        # we have our own implementation.
+        return pywt_mode
+    raise ValueError(f"Padding mode not supported: {pywt_mode}")
+
+
 def _is_orthogonalize_method_supported(
     orthogonalization: Optional[OrthogonalizeMethod],
 ) -> bool:
@@ -164,6 +190,94 @@ def _construct_nd_filt(
         filter_tensor = filter_tensor.unsqueeze(1)
 
     return filter_tensor
+
+
+def _fwt_padn(
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    ndim: int,
+    *,
+    mode: BoundaryMode,
+    padding: Optional[tuple[int, ...]] = None,
+) -> torch.Tensor:
+    """Pad data for the Nd-FWT.
+
+    This function pads the last :math:`N` axes.
+
+    Args:
+        data (torch.Tensor): Input data with :math:`N+1` dimensions.
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
+        ndim (int): The number of dimentsions :math:`N`.
+        mode: The desired padding mode for extending the signal along the edges.
+            See :data:`ptwt.constants.BoundaryMode`.
+        padding (tuple[int, ...], optional): A tuple with the number of
+            padded values on the respective side of each transformed axis
+            of `data`. Expects to have :math:`2N` entries.
+            If None, the padding values are computed based
+            on the signal shape and the wavelet length.
+            Defaults to None.
+
+    Returns:
+        The padded output tensor.
+
+    Raises:
+        ValueError: If `padding` is not None and has a length different
+            from :math:`2N`.
+    """
+    if padding is None:
+        padding_lst: list[int] = []
+        for dim in range(1, ndim + 1):
+            pad_axis_r, pad_axis_l = _get_pad(data.shape[-dim], _get_len(wavelet))
+            padding_lst.extend([pad_axis_l, pad_axis_r])
+        padding = tuple(padding_lst)
+
+    if len(padding) != 2 * ndim:
+        raise ValueError("Invalid number of padding values passed!")
+
+    if mode == "symmetric":
+        padding_pairs = list(zip(padding[::2], padding[1::2]))
+        data_pad = _pad_symmetric(data, padding_pairs[::-1])
+    else:
+        data_pad = torch.nn.functional.pad(
+            data, padding, mode=_translate_boundary_strings(mode)
+        )
+    return data_pad
+
+
+def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
+    """Compute the required padding.
+
+    Args:
+        data_len (int): The length of the input vector.
+        filt_len (int): The size of the used filter.
+
+    Returns:
+        A tuple (padr, padl). The first entry specifies how many numbers
+        to attach on the right. The second entry covers the left side.
+    """
+    # pad to ensure we see all filter positions and
+    # for pywt compatability.
+    # convolution output length:
+    # see https://arxiv.org/pdf/1603.07285.pdf section 2.3:
+    # floor([data_len - filt_len]/2) + 1
+    # should equal pywt output length
+    # floor((data_len + filt_len - 1)/2)
+    # => floor([data_len + total_pad - filt_len]/2) + 1
+    #    = floor((data_len + filt_len - 1)/2)
+    # (data_len + total_pad - filt_len) + 2 = data_len + filt_len - 1
+    # total_pad = 2*filt_len - 3
+
+    # we pad half of the total requried padding on each side.
+    padr = (2 * filt_len - 3) // 2
+    padl = (2 * filt_len - 3) // 2
+
+    # pad to even singal length.
+    padr += data_len % 2
+
+    return padr, padl
 
 
 def _pad_symmetric_1d(signal: torch.Tensor, pad_list: tuple[int, int]) -> torch.Tensor:
