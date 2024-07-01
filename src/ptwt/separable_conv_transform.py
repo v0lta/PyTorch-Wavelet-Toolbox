@@ -368,6 +368,9 @@ def _fswavedecn(
         >>> from ptwt.separable_conv_transform import _fswavedecn
         >>> data = torch.randn(5, 10, 10, 10)
         >>> coeff = _fswavedecn(data, "haar", ndim=3, level=2)
+
+    Note:
+        ND-Transforms are generally out of this project's scope.
     """
     if axes is None:
         axes = tuple(range(-ndim, 0))
