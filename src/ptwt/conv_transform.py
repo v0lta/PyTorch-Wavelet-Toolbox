@@ -6,7 +6,6 @@ and its transpose. This module treats boundaries with edge-padding.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import Optional, Union
 
 import pywt
@@ -14,14 +13,16 @@ import torch
 
 from ._util import (
     _adjust_padding_at_reconstruction,
-    _fold_axes,
+    _check_same_device_dtype,
     _get_filter_tensors,
     _get_len,
     _get_pad,
-    _is_dtype_supported,
     _pad_symmetric,
+    _postprocess_coeffs,
+    _postprocess_tensor,
+    _preprocess_coeffs,
+    _preprocess_tensor,
     _translate_boundary_strings,
-    _unfold_axes,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeff1d
 
@@ -65,63 +66,6 @@ def _fwt_pad(
     else:
         data_pad = torch.nn.functional.pad(data, [padl, padr], mode=pytorch_mode)
     return data_pad
-
-
-def _preprocess_tensor_dec1d(
-    data: torch.Tensor,
-) -> tuple[torch.Tensor, list[int]]:
-    """Preprocess input tensor dimensions.
-
-    Args:
-        data (torch.Tensor): An input tensor of any shape.
-
-    Returns:
-        A tuple (data, ds) where data is a data tensor of shape
-        [new_batch, 1, to_process] and ds contains the original shape.
-    """
-    ds = list(data.shape)
-    if len(ds) == 1:
-        # assume time series
-        data = data.unsqueeze(0).unsqueeze(0)
-    elif len(ds) == 2:
-        # assume batched time series
-        data = data.unsqueeze(1)
-    else:
-        data, ds = _fold_axes(data, 1)
-        data = data.unsqueeze(1)
-    return data, ds
-
-
-def _postprocess_result_list_dec1d(
-    result_list: list[torch.Tensor], ds: list[int], axis: int
-) -> list[torch.Tensor]:
-    if len(ds) == 1:
-        result_list = [r_el.squeeze(0) for r_el in result_list]
-    elif len(ds) > 2:
-        # Unfold axes for the wavelets
-        result_list = [_unfold_axes(fres, ds, 1) for fres in result_list]
-    else:
-        result_list = result_list
-
-    if axis != -1:
-        result_list = [coeff.swapaxes(axis, -1) for coeff in result_list]
-
-    return result_list
-
-
-def _preprocess_result_list_rec1d(
-    result_lst: Sequence[torch.Tensor],
-) -> tuple[Sequence[torch.Tensor], list[int]]:
-    # Fold axes for the wavelets
-    ds = list(result_lst[0].shape)
-    fold_coeffs: Sequence[torch.Tensor]
-    if len(ds) == 1:
-        fold_coeffs = [uf_coeff.unsqueeze(0) for uf_coeff in result_lst]
-    elif len(ds) > 2:
-        fold_coeffs = [_fold_axes(uf_coeff, 1)[0] for uf_coeff in result_lst]
-    else:
-        fold_coeffs = result_lst
-    return fold_coeffs, ds
 
 
 def wavedec(
@@ -174,10 +118,6 @@ def wavedec(
         The following entries (``cD_n`` - ``cD1``) are the detail coefficient tensors
         of the respective level.
 
-    Raises:
-        ValueError: If the dtype of the input data tensor is unsupported or
-            if more than one axis is provided.
-
     Example:
         >>> import ptwt, torch
         >>> # generate an input of even length.
@@ -185,16 +125,7 @@ def wavedec(
         >>> # compute the forward fwt coefficients
         >>> ptwt.wavedec(data, 'haar', mode='zero', level=2)
     """
-    if axis != -1:
-        if isinstance(axis, int):
-            data = data.swapaxes(axis, -1)
-        else:
-            raise ValueError("wavedec transforms a single axis only.")
-
-    if not _is_dtype_supported(data.dtype):
-        raise ValueError(f"Input dtype {data.dtype} not supported")
-
-    data, ds = _preprocess_tensor_dec1d(data)
+    data, ds = _preprocess_tensor(data, ndim=1, axes=axis)
 
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
@@ -215,9 +146,7 @@ def wavedec(
     result_list.append(res_lo.squeeze(1))
     result_list.reverse()
 
-    result_list = _postprocess_result_list_dec1d(result_list, ds, axis)
-
-    return result_list
+    return _postprocess_coeffs(result_list, ndim=1, ds=ds, axes=axis)
 
 
 def waverec(
@@ -238,11 +167,6 @@ def waverec(
     Returns:
         The reconstructed signal tensor.
 
-    Raises:
-        ValueError: If the dtype of the coeffs tensor is unsupported or if the
-            coefficients have incompatible shapes, dtypes or devices or if
-            more than one axis is provided.
-
     Example:
         >>> import ptwt, torch
         >>> # generate an input of even length.
@@ -251,29 +175,11 @@ def waverec(
         >>> coefficients = ptwt.wavedec(data, 'haar', mode='zero', level=2)
         >>> ptwt.waverec(coefficients, "haar")
     """
-    torch_device = coeffs[0].device
-    torch_dtype = coeffs[0].dtype
-    if not _is_dtype_supported(torch_dtype):
-        raise ValueError(f"Input dtype {torch_dtype} not supported")
-
-    for coeff in coeffs[1:]:
-        if torch_device != coeff.device:
-            raise ValueError("coefficients must be on the same device")
-        elif torch_dtype != coeff.dtype:
-            raise ValueError("coefficients must have the same dtype")
-
-    if axis != -1:
-        swap = []
-        if isinstance(axis, int):
-            for coeff in coeffs:
-                swap.append(coeff.swapaxes(axis, -1))
-            coeffs = swap
-        else:
-            raise ValueError("waverec transforms a single axis only.")
-
-    # fold channels, if necessary.
-    ds = list(coeffs[0].shape)
-    coeffs, ds = _preprocess_result_list_rec1d(coeffs)
+    # fold channels and swap axis, if necessary.
+    if not isinstance(coeffs, list):
+        coeffs = list(coeffs)
+    coeffs, ds = _preprocess_coeffs(coeffs, ndim=1, axes=axis)
+    torch_device, torch_dtype = _check_same_device_dtype(coeffs)
 
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, device=torch_device, dtype=torch_dtype
@@ -298,12 +204,7 @@ def waverec(
         if padr > 0:
             res_lo = res_lo[..., :-padr]
 
-    if len(ds) == 1:
-        res_lo = res_lo.squeeze(0)
-    elif len(ds) > 2:
-        res_lo = _unfold_axes(res_lo, ds, 1)
-
-    if axis != -1:
-        res_lo = res_lo.swapaxes(axis, -1)
+    # undo folding and swapping
+    res_lo = _postprocess_tensor(res_lo, ndim=1, ds=ds, axes=axis)
 
     return res_lo
