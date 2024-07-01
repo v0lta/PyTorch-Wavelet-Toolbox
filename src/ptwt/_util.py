@@ -7,6 +7,7 @@ import typing
 import warnings
 from collections.abc import Callable, Sequence
 from functools import partial
+from itertools import product
 from typing import Any, Literal, NamedTuple, Optional, Protocol, Union, cast, overload
 
 import numpy as np
@@ -94,6 +95,14 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
         return wavelet
 
 
+def _get_len(wavelet: Union[tuple[torch.Tensor, ...], str, Wavelet]) -> int:
+    """Get number of filter coefficients for various wavelet data types."""
+    if isinstance(wavelet, tuple):
+        return wavelet[0].shape[0]
+    else:
+        return len(_as_wavelet(wavelet))
+
+
 def _is_orthogonalize_method_supported(
     orthogonalization: Optional[OrthogonalizeMethod],
 ) -> bool:
@@ -131,12 +140,30 @@ def _outer(*tensors: torch.Tensor) -> torch.Tensor:
     return _outer_pair(tensors[0], _outer(*tensors[1:]))
 
 
-def _get_len(wavelet: Union[tuple[torch.Tensor, ...], str, Wavelet]) -> int:
-    """Get number of filter coefficients for various wavelet data types."""
-    if isinstance(wavelet, tuple):
-        return wavelet[0].shape[0]
-    else:
-        return len(_as_wavelet(wavelet))
+def _construct_nd_filt(
+    lo: torch.Tensor, hi: torch.Tensor, ndim: int, add_channel_dim: bool = True
+) -> torch.Tensor:
+    """Construct :math:`N` dimensional filters using outer products.
+
+    Args:
+        lo (torch.Tensor): Low-pass input filter.
+        hi (torch.Tensor): High-pass input filter
+        ndim (int): The number of dimentsions :math:`N`.
+        add_channel_dim (bool): If True, ensures that the return has at
+            least :math:`N + 2` axes by potentially adding a new axis at dim 1.
+            Defaults to True.
+
+    Returns:
+        Stacked :math:`N` dimensional filters of shape::
+
+            [2^N, 1, dim_1, ..., dim_N].
+    """
+    filters = [_outer(*comb) for comb in product([lo, hi], repeat=ndim)]
+    filter_tensor = torch.stack(filters, 0)
+    if add_channel_dim:
+        filter_tensor = filter_tensor.unsqueeze(1)
+
+    return filter_tensor
 
 
 def _pad_symmetric_1d(signal: torch.Tensor, pad_list: tuple[int, int]) -> torch.Tensor:
