@@ -6,6 +6,7 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 from __future__ import annotations
 
+from functools import partial
 from typing import Optional, Union
 
 import pywt
@@ -17,6 +18,8 @@ from ._util import (
     _construct_nd_filt,
     _fwt_padn,
     _get_filter_tensors,
+    _get_pad,
+    _get_pad_removal_slice,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -185,30 +188,22 @@ def waverec2(
 
         res_hl, res_lh, res_hh = coeff_tuple
         res_ll = torch.stack([res_ll, res_lh, res_hl, res_hh], 1)
-        res_ll = torch.nn.functional.conv_transpose2d(
-            res_ll, rec_filt, stride=2
-        ).squeeze(1)
-
-        # remove the padding
-        padr, padl = _get_pad(data_len=0, filt_len=filt_len)
-        padb, padt = _get_pad(data_len=0, filt_len=filt_len)
+        res_ll = torch.nn.functional.conv_transpose2d(res_ll, rec_filt, stride=2)
+        res_ll = res_ll.squeeze(1)
 
         if c_pos < len(coeffs) - 1:
-            padr, padl = _adjust_padding_at_reconstruction(
-                res_ll.shape[-1], coeffs[c_pos + 1][0].shape[-1], padr, padl
-            )
-            padb, padt = _adjust_padding_at_reconstruction(
-                res_ll.shape[-2], coeffs[c_pos + 1][0].shape[-2], padb, padt
-            )
+            next_detail_shape = coeffs[c_pos + 1][0].shape
+        else:
+            next_detail_shape = None
 
-        if padt > 0:
-            res_ll = res_ll[..., padt:, :]
-        if padb > 0:
-            res_ll = res_ll[..., :-padb, :]
-        if padl > 0:
-            res_ll = res_ll[..., padl:]
-        if padr > 0:
-            res_ll = res_ll[..., :-padr]
+        _slice = partial(
+            _get_pad_removal_slice,
+            filt_len=filt_len,
+            data_shape=res_ll.shape,
+            next_detail_shape=next_detail_shape,
+        )
+
+        res_ll = res_ll[..., _slice(-2), _slice(-1)]
 
     res_ll = _postprocess_tensor(res_ll, ndim=2, ds=ds, axes=axes)
 

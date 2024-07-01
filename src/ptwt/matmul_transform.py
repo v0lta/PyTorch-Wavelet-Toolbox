@@ -9,6 +9,7 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 
 import sys
 from collections.abc import Sequence
+from functools import partial
 from typing import Optional, Union
 
 import numpy as np
@@ -21,6 +22,7 @@ from ._util import (
     _deprecated_alias,
     _fwt_padn,
     _get_filter_tensors,
+    _get_pad_removal_slice,
     _is_orthogonalize_method_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -668,14 +670,19 @@ class MatrixWaverec(object):
 
             # remove padding
             if c_pos < len(coefficients) - 2:
-                pred_len = lo.shape[0]
-                next_len = coefficients[c_pos + 2].shape[0]
-                if next_len != pred_len:
-                    lo = lo[:-1, :]
-                    pred_len = lo.shape[0]
-                    assert (
-                        pred_len == next_len
-                    ), "padding error, please open an issue on github"
+                next_detail_shape = coefficients[c_pos + 2].shape
+            else:
+                next_detail_shape = None
+
+            _slice = partial(
+                _get_pad_removal_slice,
+                filt_len=self.wavelet.rec_len,
+                data_shape=lo.shape,
+                next_detail_shape=next_detail_shape,
+                padding=(0, 0)
+            )
+
+            lo = lo[_slice(0)]
 
         res_lo = lo.T
 

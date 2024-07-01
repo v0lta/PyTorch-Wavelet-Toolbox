@@ -296,6 +296,29 @@ def _fwt_padn(
     return data_pad
 
 
+def _get_pad_removal_slice(
+    dim: int,
+    filt_len: int,
+    data_shape: torch.Size,
+    next_detail_shape: Optional[torch.Size],
+    padding: Optional[tuple[int, int]] = None,
+) -> slice:
+    if padding is None:
+        end_pad, start_pad = _get_pad(data_len=0, filt_len=filt_len)
+    else:
+        end_pad, start_pad = padding
+
+    if next_detail_shape is not None:
+        end_pad, start_pad = _adjust_padding_at_reconstruction(
+            data_shape[dim], next_detail_shape[dim], end_pad, start_pad
+        )
+
+    return slice(
+        start_pad if start_pad > 0 else None,
+        -end_pad if end_pad > 0 else None,
+    )
+
+
 def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
     """Compute the required padding.
 

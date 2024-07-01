@@ -5,6 +5,7 @@ The functions here are based on torch.nn.functional.conv3d and it's transpose.
 
 from __future__ import annotations
 
+from functools import partial
 from itertools import product
 from typing import Optional, Union, cast
 
@@ -18,6 +19,8 @@ from ._util import (
     _construct_nd_filt,
     _fwt_padn,
     _get_filter_tensors,
+    _get_pad,
+    _get_pad_removal_slice,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -146,42 +149,26 @@ def waverec3(
                 "wavedec3."
             )
         if any(coeff.shape != res_lll.shape for coeff in coeff_dict.values()):
-            raise ValueError(
-                "All coefficients on each level must have the same shape"
-            )
+            raise ValueError("All coefficients on each level must have the same shape")
 
         res_lll = torch.stack([res_lll] + [coeff_dict[key] for key in detail_keys], 1)
         res_lll = torch.nn.functional.conv_transpose3d(res_lll, rec_filt, stride=2)
         res_lll = res_lll.squeeze(1)
 
         # remove the padding
-        padba, padfr = _get_pad(data_len=0, filt_len=filt_len)
-        padr, padl = _get_pad(data_len=0, filt_len=filt_len)
-        padb, padt = _get_pad(data_len=0, filt_len=filt_len)
-
         if c_pos < len(coeffs) - 1:
             next_details = cast(WaveletDetailDict, coeffs[c_pos + 1])
             next_detail_shape = next_details["aad"].shape
-            padr, padl = _adjust_padding_at_reconstruction(
-                res_lll.shape[-1], next_detail_shape[-1], padr, padl
-            )
-            padb, padt = _adjust_padding_at_reconstruction(
-                res_lll.shape[-2], next_detail_shape[-2], padb, padt
-            )
-            padba, padfr = _adjust_padding_at_reconstruction(
-                res_lll.shape[-3], next_detail_shape[-3], padba, padfr
-            )
-        if padt > 0:
-            res_lll = res_lll[..., padt:, :]
-        if padb > 0:
-            res_lll = res_lll[..., :-padb, :]
-        if padl > 0:
-            res_lll = res_lll[..., padl:]
-        if padr > 0:
-            res_lll = res_lll[..., :-padr]
-        if padfr > 0:
-            res_lll = res_lll[..., padfr:, :, :]
-        if padba > 0:
-            res_lll = res_lll[..., :-padba, :, :]
+        else:
+            next_detail_shape = None
+
+        _slice = partial(
+            _get_pad_removal_slice,
+            filt_len=filt_len,
+            data_shape=res_lll.shape,
+            next_detail_shape=next_detail_shape,
+        )
+
+        res_lll = res_lll[..., _slice(-3), _slice(-2), _slice(-1)]
 
     return _postprocess_tensor(res_lll, ndim=3, ds=ds, axes=axes)

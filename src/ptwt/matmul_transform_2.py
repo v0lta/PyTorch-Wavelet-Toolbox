@@ -6,6 +6,7 @@ This module uses boundary filters to minimize padding.
 from __future__ import annotations
 
 import sys
+from functools import partial
 from typing import Optional, Union, cast
 
 import numpy as np
@@ -20,6 +21,7 @@ from ._util import (
     _deprecated_alias,
     _fwt_padn,
     _get_filter_tensors,
+    _get_pad_removal_slice,
     _is_orthogonalize_method_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -825,20 +827,24 @@ class MatrixWaverec2(object):
                 ifwt_mat = cast(torch.Tensor, self.ifwt_matrix_list[::-1][c_pos])
                 ll = cast(torch.Tensor, torch.sparse.mm(ifwt_mat, ll.T))
 
+            # remove the padding
             if not self.separable:
                 pred_len = [s * 2 for s in curr_shape[-2:]][::-1]
                 ll = ll.T.reshape([batch_size] + pred_len).transpose(2, 1)
-                pred_len = list(ll.shape[1:])
+                pred_len = torch.Size(ll.shape[1:])
             else:
-                pred_len = [s * 2 for s in curr_shape[-2:]]
-            # remove the padding
-            if c_pos < len(coefficients) - 2:
-                next_len = list(coefficients[c_pos + 2][0].shape[-2:])
-                if pred_len != next_len:
-                    if pred_len[0] != next_len[0]:
-                        ll = ll[:, :-1, :]
-                    if pred_len[1] != next_len[1]:
-                        ll = ll[:, :, :-1]
+                pred_len = torch.Size([s * 2 for s in curr_shape[-2:]])
+
+            next_detail_shape = pred_len if c_pos < len(coefficients) - 2 else None
+            _slice = partial(
+                _get_pad_removal_slice,
+                filt_len=self.wavelet.rec_len,
+                data_shape=ll.shape,
+                next_detail_shape=next_detail_shape,
+                padding=(0, 0)
+            )
+
+            ll = ll[..., _slice(-2), _slice(-1)]
 
         ll = _postprocess_tensor(ll, ndim=2, ds=ds, axes=self.axes)
 

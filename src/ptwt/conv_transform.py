@@ -6,6 +6,7 @@ This module treats boundaries with edge-padding.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from functools import partial
 from typing import Optional, Union
 
 import pywt
@@ -17,6 +18,8 @@ from ._util import (
     _construct_nd_filt,
     _fwt_padn,
     _get_filter_tensors,
+    _get_pad,
+    _get_pad_removal_slice,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -196,16 +199,19 @@ def waverec(
         ).squeeze(1)
 
         # remove the padding
-        padr, padl = _get_pad(data_len=0, filt_len=filt_len)
-
         if c_pos < len(coeffs) - 1:
-            padr, padl = _adjust_padding_at_reconstruction(
-                res_lo.shape[-1], coeffs[c_pos + 1].shape[-1], padr, padl
-            )
-        if padl > 0:
-            res_lo = res_lo[..., padl:]
-        if padr > 0:
-            res_lo = res_lo[..., :-padr]
+            next_detail_shape = coeffs[c_pos + 1].shape
+        else:
+            next_detail_shape = None
+
+        _slice = partial(
+            _get_pad_removal_slice,
+            filt_len=filt_len,
+            data_shape=res_lo.shape,
+            next_detail_shape=next_detail_shape,
+        )
+
+        res_lo = res_lo[..., _slice(-1)]
 
     # undo folding and swapping
     res_lo = _postprocess_tensor(res_lo, ndim=1, ds=ds, axes=axis)
