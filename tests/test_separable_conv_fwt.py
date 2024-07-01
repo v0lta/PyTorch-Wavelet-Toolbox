@@ -105,8 +105,8 @@ def test_conv_mm_2d(
         if isinstance(c_conv, torch.Tensor):
             assert np.allclose(c_conv.numpy(), c_mm.numpy())
         else:
-            # (ll, (lh, hl, hh), ...)
-            c_conv_list = [c_conv[key] for key in ("ad", "da", "dd")]
+            # (ll, (hl, lh, hh), ...)
+            c_conv_list = [c_conv[key] for key in ("da", "ad", "dd")]
             assert all(
                 np.allclose(c_el_conv.numpy(), c_el_mm.numpy())
                 for c_el_conv, c_el_mm in zip(c_conv_list, c_mm)

@@ -70,7 +70,7 @@ def _construct_a_2(
 
     Returns:
         A sparse fwt analysis matrix.
-        The matrices are ordered a, h, v, d or ll, lh, hl, hh.
+        The matrices are ordered a, h, v, d or ll, hl, lh, hh.
 
     Note:
         The constructed matrix is NOT necessarily orthogonal.
@@ -518,7 +518,9 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 ll, lh = torch.split(a_coeffs, current_width // 2, dim=-1)
                 hl, hh = torch.split(d_coeffs, current_width // 2, dim=-1)
 
-                split_list.append(WaveletDetailTuple2d(lh, hl, hh))
+                split_list.append(
+                    WaveletDetailTuple2d(horizontal=hl, vertical=lh, diagonal=hh)
+                )
         else:
             ll = input_signal.transpose(-2, -1).reshape([batch_size, -1]).T
             for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
@@ -536,19 +538,19 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 four_split = torch.split(
                     coefficients, int(np.prod((size[0] // 2, size[1] // 2)))
                 )
-                reshaped = cast(
-                    tuple[torch.Tensor, torch.Tensor, torch.Tensor],
-                    tuple(
-                        (
-                            el.T.reshape(
-                                batch_size, size[1] // 2, size[0] // 2
-                            ).transpose(2, 1)
-                        )
-                        for el in four_split[1:]
-                    ),
-                )
-                split_list.append(WaveletDetailTuple2d(*reshaped))
                 ll = four_split[0]
+                lh, hl, hh = tuple(
+                    (
+                        el.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(
+                            2, 1
+                        )
+                    )
+                    for el in four_split[1:]
+                )
+                split_list.append(
+                    WaveletDetailTuple2d(horizontal=hl, vertical=lh, diagonal=hh)
+                )
+
             ll = ll.T.reshape(batch_size, size[1] // 2, size[0] // 2).transpose(2, 1)
 
         split_list.reverse()
@@ -795,7 +797,7 @@ class MatrixWaverec2(object):
                         "All coefficients on each level must have the same shape"
                     )
 
-            lh, hl, hh = coeff_tuple
+            hl, lh, hh = coeff_tuple
 
             if self.separable:
                 synthesis_matrix_rows, synthesis_matrix_cols = self.ifwt_matrix_list[

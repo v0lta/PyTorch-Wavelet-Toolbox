@@ -187,7 +187,7 @@ def test_separable_haar_2d() -> None:
     pywtl, pywth = pywt.wavedec(test_data.numpy(), "haar", level=1, axis=-1)
     pywtll, pywthl = pywt.wavedec(pywtl, "haar", level=1, axis=-2)
     pywtlh, pywthh = pywt.wavedec(pywth, "haar", level=1, axis=-2)
-    pywtres = (pywtll, pywtlh, pywthl, pywthh)
+    pywtres = (pywtll, pywthl, pywtlh, pywthh)
 
     ptwtres_nested = MatrixWavedec2("haar", 1)(test_data)
     # flatten list

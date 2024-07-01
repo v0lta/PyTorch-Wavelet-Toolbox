@@ -103,10 +103,13 @@ def wavedec2(
         res_ll = _fwt_padn(res_ll, wavelet, ndim=2, mode=mode)
         res = torch.nn.functional.conv2d(res_ll, dec_filt, stride=2)
         res_ll, res_lh, res_hl, res_hh = torch.split(res, 1, 1)
-        to_append = WaveletDetailTuple2d(
-            res_lh.squeeze(1), res_hl.squeeze(1), res_hh.squeeze(1)
+        result_lst.append(
+            WaveletDetailTuple2d(
+                horizontal=res_hl.squeeze(1),
+                vertical=res_lh.squeeze(1),
+                diagonal=res_hh.squeeze(1),
+            )
         )
-        result_lst.append(to_append)
 
     result_lst.reverse()
     res_ll = res_ll.squeeze(1)
@@ -183,7 +186,7 @@ def waverec2(
                     "All coefficients on each level must have the same shape"
                 )
 
-        res_lh, res_hl, res_hh = coeff_tuple
+        res_hl, res_lh, res_hh = coeff_tuple
         res_ll = torch.stack([res_ll, res_lh, res_hl, res_hh], 1)
         res_ll = torch.nn.functional.conv_transpose2d(
             res_ll, rec_filt, stride=2
