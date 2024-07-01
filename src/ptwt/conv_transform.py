@@ -137,6 +137,7 @@ def _fwt_pad(
     wavelet: Union[Wavelet, str],
     *,
     mode: Optional[BoundaryMode] = None,
+    padding: Optional[tuple[int, int]] = None,
 ) -> torch.Tensor:
     """Pad the input signal to make the fwt matrix work.
 
@@ -146,21 +147,25 @@ def _fwt_pad(
         data (torch.Tensor): Input data ``[batch_size, 1, time]``
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        mode :
-            The desired padding mode for extending the signal along the edges.
+        mode: The desired padding mode for extending the signal along the edges.
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
+        padding (tuple[int, int], optional): A tuple (padl, padr) with the
+            number of padded values on the left and right side of the last
+            axes of `data`. If None, the padding values are computed based
+            on the signal shape and the wavelet length. Defaults to None.
 
     Returns:
         A PyTorch tensor with the padded input data
     """
-    wavelet = _as_wavelet(wavelet)
-
     # convert pywt to pytorch convention.
     if mode is None:
         mode = "reflect"
     pytorch_mode = _translate_boundary_strings(mode)
 
-    padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
+    if padding is None:
+        padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
+    else:
+        padl, padr = padding
     if pytorch_mode == "symmetric":
         data_pad = _pad_symmetric(data, [(padl, padr)])
     else:

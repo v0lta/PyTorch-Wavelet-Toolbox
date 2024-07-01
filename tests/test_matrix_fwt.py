@@ -10,7 +10,7 @@ import pytest
 import pywt
 import torch
 
-from ptwt.constants import OrthogonalizeMethod
+from ptwt.constants import BoundaryMode, OrthogonalizeMethod
 from ptwt.matmul_transform import (
     MatrixWavedec,
     MatrixWaverec,
@@ -71,12 +71,17 @@ def test_fwt_ifwt_mackey_haar_cuda() -> None:
 @pytest.mark.parametrize("level", [1, 2, 3, 4, None])
 @pytest.mark.parametrize("wavelet", ["db2", "db3", "db4", "sym5"])
 @pytest.mark.parametrize("size", [[2, 256], [2, 3, 256], [1, 1, 128]])
-def test_1d_matrix_fwt_ifwt(level: int, wavelet: str, size: list[int]) -> None:
+@pytest.mark.parametrize(
+    "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
+)
+def test_1d_matrix_fwt_ifwt(
+    level: int, wavelet: str, size: list[int], mode: BoundaryMode
+) -> None:
     """Test multiple wavelets and levels for a long signal."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     wavelet = pywt.Wavelet(wavelet)
     pt_data = torch.randn(*size, device=device).type(torch.float64)
-    matrix_wavedec = MatrixWavedec(wavelet, level)
+    matrix_wavedec = MatrixWavedec(wavelet, level, odd_coeff_padding_mode=mode)
     coeffs_mat_max = matrix_wavedec(pt_data)
     matrix_waverec = MatrixWaverec(wavelet)
     reconstructed_data = matrix_waverec(coeffs_mat_max)
@@ -135,9 +140,9 @@ def test_boundary_transform_1d(
     """Ensure matrix fwt reconstructions are pywt compatible."""
     data_torch = torch.from_numpy(data.astype(np.float64))
     wavelet = pywt.Wavelet(wavelet_str)
-    matrix_wavedec = MatrixWavedec(wavelet, level=level, boundary=boundary)
+    matrix_wavedec = MatrixWavedec(wavelet, level=level, orthogonalization=boundary)
     coeffs = matrix_wavedec(data_torch)
-    matrix_waverec = MatrixWaverec(wavelet, boundary=boundary)
+    matrix_waverec = MatrixWaverec(wavelet, orthogonalization=boundary)
     rec = matrix_waverec(coeffs)
     rec_pywt = pywt.waverec(
         pywt.wavedec(data_torch.numpy(), wavelet, mode="zero"), wavelet
@@ -167,9 +172,9 @@ def test_matrix_transform_1d_rebuild(
     """Ensure matrix fwt reconstructions are pywt compatible."""
     data_list = [np.random.randn(18), np.random.randn(21)]
     wavelet = pywt.Wavelet(wavelet_str)
-    matrix_waverec = MatrixWaverec(wavelet, boundary=boundary)
+    matrix_waverec = MatrixWaverec(wavelet, orthogonalization=boundary)
     for level in [2, 1]:
-        matrix_wavedec = MatrixWavedec(wavelet, level=level, boundary=boundary)
+        matrix_wavedec = MatrixWavedec(wavelet, level=level, orthogonalization=boundary)
         for data in data_list:
             data_torch = torch.from_numpy(data.astype(np.float64))
             coeffs = matrix_wavedec(data_torch)
@@ -231,3 +236,9 @@ def test_axis_1d(axis: int) -> None:
 
     rec = matrix_waverec(coeff)
     assert np.allclose(rec, data)
+
+
+def test_deprecation() -> None:
+    """Ensure the deprecation warning is raised."""
+    with pytest.warns(DeprecationWarning):
+        MatrixWavedec("haar", 3, boundary="qr")

@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import functools
+import warnings
 import typing
-from collections.abc import Callable, Sequence
 from functools import partial
+from collections.abc import Callable, Sequence
 from typing import Any, Literal, NamedTuple, Optional, Protocol, Union, cast, overload
 
 import numpy as np
 import pywt
 import torch
+from typing_extensions import ParamSpec, TypeVar
 
 from .constants import (
     OrthogonalizeMethod,
@@ -91,8 +94,10 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
         return wavelet
 
 
-def _is_boundary_mode_supported(boundary_mode: Optional[OrthogonalizeMethod]) -> bool:
-    return boundary_mode in typing.get_args(OrthogonalizeMethod)
+def _is_orthogonalize_method_supported(
+    orthogonalization: Optional[OrthogonalizeMethod],
+) -> bool:
+    return orthogonalization in typing.get_args(OrthogonalizeMethod)
 
 
 def _is_dtype_supported(dtype: torch.dtype) -> bool:
@@ -630,4 +635,57 @@ def _postprocess_tensor(
     """
     # interpreting data as the approximation coeffs of a 0-level FWT
     # allows us to reuse the `_postprocess_coeffs` code
+    # return approx, *cast_result_lst
     return _postprocess_coeffs(coeffs=[data], ndim=ndim, ds=ds, axes=axes)[0]
+
+
+Param = ParamSpec("Param")
+RetType = TypeVar("RetType")
+
+
+def _deprecated_alias(
+    **aliases: str,
+) -> Callable[[Callable[Param, RetType]], Callable[Param, RetType]]:
+    """Handle deprecated function and method arguments.
+
+    Use as follows::
+
+        @_deprecated_alias(old_arg='new_arg')
+        def myfunc(new_arg):
+            ...
+
+    Adapted from https://stackoverflow.com/a/49802489
+    """
+
+    def rename_kwargs(
+        func_name: str,
+        kwargs: Param.kwargs,
+        aliases: dict[str, str],
+    ) -> None:
+        """Rename deprecated kwarg."""
+        for alias, new in aliases.items():
+            if alias in kwargs:
+                if new in kwargs:
+                    raise TypeError(
+                        f"{func_name} received both {alias} and {new} as arguments!"
+                        f" {alias} is deprecated, use {new} instead."
+                    )
+                warnings.warn(
+                    message=(
+                        f"`{alias}` is deprecated as an argument to `{func_name}`; use"
+                        f" `{new}` instead."
+                    ),
+                    category=DeprecationWarning,
+                    stacklevel=3,
+                )
+                kwargs[new] = kwargs.pop(alias)
+
+    def deco(f: Callable[Param, RetType]) -> Callable[Param, RetType]:
+        @functools.wraps(f)
+        def wrapper(*args: Param.args, **kwargs: Param.kwargs) -> RetType:
+            rename_kwargs(f.__name__, kwargs, aliases)
+            return f(*args, **kwargs)
+
+        return wrapper
+
+    return deco
