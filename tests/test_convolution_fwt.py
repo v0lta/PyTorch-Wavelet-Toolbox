@@ -10,13 +10,9 @@ import pywt
 import torch
 from scipy import datasets
 
-from ptwt._util import _outer, _translate_boundary_strings
+from ptwt._util import _flatten_2d_coeff_lst, _outer, _translate_boundary_strings
 from ptwt.constants import BoundaryMode
-from ptwt.conv_transform import (
-    _flatten_2d_coeff_lst,
-    wavedec,
-    waverec,
-)
+from ptwt.conv_transform import wavedec, waverec
 from ptwt.conv_transform_2 import wavedec2, waverec2
 from ptwt.wavelets_learnable import SoftOrthogonalWavelet
 from tests._mackey_glass import MackeyGenerator

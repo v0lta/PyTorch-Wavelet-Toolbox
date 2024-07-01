@@ -831,17 +831,17 @@ class MatrixWaverec2(object):
             if not self.separable:
                 pred_len = [s * 2 for s in curr_shape[-2:]][::-1]
                 ll = ll.T.reshape([batch_size] + pred_len).transpose(2, 1)
-                pred_len = torch.Size(ll.shape[1:])
+                pred_len_size = ll.shape[1:]
             else:
-                pred_len = torch.Size([s * 2 for s in curr_shape[-2:]])
+                pred_len_size = torch.Size([s * 2 for s in curr_shape[-2:]])
 
-            next_detail_shape = pred_len if c_pos < len(coefficients) - 2 else None
+            next_detail_shape = pred_len_size if c_pos < len(coefficients) - 2 else None
             _slice = partial(
                 _get_pad_removal_slice,
                 filt_len=self.wavelet.rec_len,
                 data_shape=ll.shape,
                 next_detail_shape=next_detail_shape,
-                padding=(0, 0)
+                padding=(0, 0),
             )
 
             ll = ll[..., _slice(-2), _slice(-1)]

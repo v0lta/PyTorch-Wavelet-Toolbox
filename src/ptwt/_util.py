@@ -296,6 +296,22 @@ def _fwt_padn(
     return data_pad
 
 
+def _adjust_padding_at_reconstruction(
+    res_ll_size: int, coeff_size: int, pad_end: int, pad_start: int
+) -> tuple[int, int]:
+    pred_size = res_ll_size - (pad_start + pad_end)
+    next_size = coeff_size
+    if next_size == pred_size:
+        pass
+    elif next_size == pred_size - 1:
+        pad_end += 1
+    else:
+        raise AssertionError(
+            "padding error, please check if dec and rec wavelets are identical."
+        )
+    return pad_end, pad_start
+
+
 def _get_pad_removal_slice(
     dim: int,
     filt_len: int,
@@ -385,6 +401,30 @@ def _pad_symmetric(
         signal = _pad_symmetric_1d(signal, pad_list)
         signal = signal.transpose(current_axis, 0)
     return signal
+
+
+def _flatten_2d_coeff_lst(
+    coeff_lst_2d: WaveletCoeff2d,
+    flatten_tensors: bool = True,
+) -> list[torch.Tensor]:
+    """Flattens a sequence of tensor tuples into a single list.
+
+    Args:
+        coeff_lst_2d (WaveletCoeff2d): A pywt-style
+            coefficient tuple of torch tensors.
+        flatten_tensors (bool): If true, 2d tensors are flattened. Defaults to True.
+
+    Returns:
+        A single 1-d list with all original elements.
+    """
+
+    def _process_tensor(coeff: torch.Tensor) -> torch.Tensor:
+        return coeff.flatten() if flatten_tensors else coeff
+
+    flat_coeff_lst = [_process_tensor(coeff_lst_2d[0])]
+    for coeff_tuple in coeff_lst_2d[1:]:
+        flat_coeff_lst.extend(map(_process_tensor, coeff_tuple))
+    return flat_coeff_lst
 
 
 def _fold_axes(data: torch.Tensor, keep_no: int) -> tuple[torch.Tensor, list[int]]:

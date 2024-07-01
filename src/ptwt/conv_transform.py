@@ -18,7 +18,6 @@ from ._util import (
     _construct_nd_filt,
     _fwt_padn,
     _get_filter_tensors,
-    _get_pad,
     _get_pad_removal_slice,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -26,46 +25,6 @@ from ._util import (
     _preprocess_tensor,
 )
 from .constants import BoundaryMode, WaveletCoeff2d
-
-
-def _flatten_2d_coeff_lst(
-    coeff_lst_2d: WaveletCoeff2d,
-    flatten_tensors: bool = True,
-) -> list[torch.Tensor]:
-    """Flattens a sequence of tensor tuples into a single list.
-
-    Args:
-        coeff_lst_2d (WaveletCoeff2d): A pywt-style
-            coefficient tuple of torch tensors.
-        flatten_tensors (bool): If true, 2d tensors are flattened. Defaults to True.
-
-    Returns:
-        A single 1-d list with all original elements.
-    """
-
-    def _process_tensor(coeff: torch.Tensor) -> torch.Tensor:
-        return coeff.flatten() if flatten_tensors else coeff
-
-    flat_coeff_lst = [_process_tensor(coeff_lst_2d[0])]
-    for coeff_tuple in coeff_lst_2d[1:]:
-        flat_coeff_lst.extend(map(_process_tensor, coeff_tuple))
-    return flat_coeff_lst
-
-
-def _adjust_padding_at_reconstruction(
-    res_ll_size: int, coeff_size: int, pad_end: int, pad_start: int
-) -> tuple[int, int]:
-    pred_size = res_ll_size - (pad_start + pad_end)
-    next_size = coeff_size
-    if next_size == pred_size:
-        pass
-    elif next_size == pred_size - 1:
-        pad_end += 1
-    else:
-        raise AssertionError(
-            "padding error, please check if dec and rec wavelets are identical."
-        )
-    return pad_end, pad_start
 
 
 def wavedec(
@@ -194,9 +153,8 @@ def waverec(
     res_lo = coeffs[0]
     for c_pos, res_hi in enumerate(coeffs[1:], start=1):
         res_lo = torch.stack([res_lo, res_hi], 1)
-        res_lo = torch.nn.functional.conv_transpose1d(
-            res_lo, rec_filt, stride=2
-        ).squeeze(1)
+        res_lo = torch.nn.functional.conv_transpose1d(res_lo, rec_filt, stride=2)
+        res_lo = res_lo.squeeze(1)
 
         # remove the padding
         if c_pos < len(coeffs) - 1:

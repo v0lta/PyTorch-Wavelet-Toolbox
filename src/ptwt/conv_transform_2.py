@@ -18,7 +18,6 @@ from ._util import (
     _construct_nd_filt,
     _fwt_padn,
     _get_filter_tensors,
-    _get_pad,
     _get_pad_removal_slice,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -26,7 +25,6 @@ from ._util import (
     _preprocess_tensor,
 )
 from .constants import BoundaryMode, WaveletCoeff2d, WaveletDetailTuple2d
-from .conv_transform import _adjust_padding_at_reconstruction
 
 
 def wavedec2(

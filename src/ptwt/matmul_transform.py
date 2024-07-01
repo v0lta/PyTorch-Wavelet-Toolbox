@@ -679,7 +679,7 @@ class MatrixWaverec(object):
                 filt_len=self.wavelet.rec_len,
                 data_shape=lo.shape,
                 next_detail_shape=next_detail_shape,
-                padding=(0, 0)
+                padding=(0, 0),
             )
 
             lo = lo[_slice(0)]
