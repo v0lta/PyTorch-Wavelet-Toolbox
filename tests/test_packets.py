@@ -607,3 +607,11 @@ def test_partial_reconstruction() -> None:
     ptwp.reconstruct()
 
     assert np.allclose(signal2, ptwp[""].numpy()[:16])
+
+
+def test_deprecation() -> None:
+    """Ensure the deprecation warning is raised."""
+    with pytest.warns(DeprecationWarning):
+        WaveletPacket(None, "haar", boundary_orthogonalization="qr")
+    with pytest.warns(DeprecationWarning):
+        WaveletPacket2D(None, "haar", boundary_orthogonalization="qr")

@@ -9,6 +9,7 @@ import scipy.signal
 import torch
 
 from ptwt._util import _flatten_2d_coeff_lst
+from ptwt.constants import BoundaryMode
 from ptwt.matmul_transform import BaseMatrixWaveDec, MatrixWavedec, MatrixWaverec
 from ptwt.matmul_transform_2 import (
     MatrixWavedec2,
@@ -86,15 +87,24 @@ def test_matrix_analysis_fwt_2d_haar(size: tuple[int, int], level: int) -> None:
 )
 @pytest.mark.parametrize("level", [1, 2, 3, None])
 @pytest.mark.parametrize("separable", [False, True])
+@pytest.mark.parametrize(
+    "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
+)
 def test_boundary_matrix_fwt_2d(
-    wavelet_str: str, size: tuple[int, int], level: int, separable: bool
+    wavelet_str: str,
+    size: tuple[int, int],
+    level: int,
+    separable: bool,
+    mode: BoundaryMode,
 ) -> None:
     """Ensure the boundary matrix fwt is invertable."""
     face = np.mean(
         scipy.datasets.face()[256 : (256 + size[0]), 256 : (256 + size[1])], -1
     ).astype(np.float64)
     wavelet = pywt.Wavelet(wavelet_str)
-    matrixfwt = MatrixWavedec2(wavelet, level=level, separable=separable)
+    matrixfwt = MatrixWavedec2(
+        wavelet, level=level, separable=separable, odd_coeff_padding_mode=mode
+    )
     mat_coeff = matrixfwt(torch.from_numpy(face))
     matrixifwt = MatrixWaverec2(wavelet, separable=separable)
     reconstruction = matrixifwt(mat_coeff).squeeze(0)
@@ -249,3 +259,9 @@ def test_axes_2d(axes: tuple[int, int]) -> None:
 
     rec = matrix_waverec2(coeff)
     assert np.allclose(rec, data)
+
+
+def test_deprecation() -> None:
+    """Ensure the deprecation warning is raised."""
+    with pytest.warns(DeprecationWarning):
+        MatrixWavedec2("haar", 3, boundary="qr")

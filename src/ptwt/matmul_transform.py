@@ -15,13 +15,21 @@ import torch
 
 from ._util import (
     _as_wavelet,
+    _deprecated_alias,
     _get_filter_tensors,
-    _is_boundary_mode_supported,
     _is_dtype_supported,
+    _is_orthogonalize_method_supported,
     _unfold_axes,
 )
-from .constants import OrthogonalizeMethod, PaddingMode, Wavelet, WaveletCoeff1d
+from .constants import (
+    BoundaryMode,
+    OrthogonalizeMethod,
+    PaddingMode,
+    Wavelet,
+    WaveletCoeff1d,
+)
 from .conv_transform import (
+    _fwt_pad,
     _postprocess_result_list_dec1d,
     _preprocess_result_list_rec1d,
     _preprocess_tensor_dec1d,
@@ -197,13 +205,15 @@ class MatrixWavedec(BaseMatrixWaveDec):
         >>> coefficients = matrix_wavedec(data)
     """
 
+    @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         *,
         axis: Optional[int] = -1,
-        boundary: OrthogonalizeMethod = "qr",
+        orthogonalization: OrthogonalizeMethod = "qr",
+        odd_coeff_padding_mode: BoundaryMode = "zero",
     ) -> None:
         """Create a sparse matrix fast wavelet transform object.
 
@@ -217,17 +227,28 @@ class MatrixWavedec(BaseMatrixWaveDec):
                 None.
             axis (int, optional): The axis we would like to transform.
                 Defaults to -1.
-            boundary: The method used for boundary filter treatment,
-                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
+            orthogonalization: The method used to orthogonalize
+                boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
+                Defaults to 'qr'.
+            odd_coeff_padding_mode: The constructed FWT matrices require inputs
+                with even lengths. Thus, any odd-length approximation coefficients
+                are padded to an even length using this mode,
+                see :data:`ptwt.constants.BoundaryMode`.
+                Defaults to 'zero'.
+
+        .. versionchanged:: 1.10
+            The argument `boundary` has been renamed to `orthogonalization`.
 
         Raises:
-            NotImplementedError: If the selected `boundary` mode is not supported.
+            NotImplementedError: If the selected `orthogonalization` mode
+                is not supported.
             ValueError: If the wavelet filters have different lengths or
-                        if axis is not an integer.
+                if axis is not an integer.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.level = level
-        self.boundary = boundary
+        self.odd_coeff_padding_mode = odd_coeff_padding_mode
+        self.orthogonalization = orthogonalization
 
         if isinstance(axis, int):
             self.axis = axis
@@ -240,7 +261,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         self.padded = False
         self.size_list: list[int] = []
 
-        if not _is_boundary_mode_supported(self.boundary):
+        if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
 
         if self.wavelet.dec_len != self.wavelet.rec_len:
@@ -320,7 +341,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
             an = construct_boundary_a(
                 self.wavelet,
                 curr_length,
-                boundary=self.boundary,
+                orthogonalization=self.orthogonalization,
                 device=device,
                 dtype=dtype,
             )
@@ -360,8 +381,12 @@ class MatrixWavedec(BaseMatrixWaveDec):
 
         if input_signal.shape[-1] % 2 != 0:
             # odd length input
-            # print('input length odd, padding a zero on the right')
-            input_signal = torch.nn.functional.pad(input_signal, [0, 1])
+            input_signal = _fwt_pad(
+                input_signal,
+                wavelet=self.wavelet,
+                mode=self.odd_coeff_padding_mode,
+                padding=(0, 1),
+            )
 
         _, length = input_signal.shape
 
@@ -387,7 +412,14 @@ class MatrixWavedec(BaseMatrixWaveDec):
         for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
             if self.pad_list[scale]:
                 # fix odd coefficients lengths for the conv matrix to work.
-                lo = torch.nn.functional.pad(lo.T.unsqueeze(1), [0, 1]).squeeze(1).T
+                lo = lo.T.unsqueeze(1)
+                lo = _fwt_pad(
+                    lo,
+                    wavelet=self.wavelet,
+                    mode=self.odd_coeff_padding_mode,
+                    padding=(0, 1),
+                )
+                lo = lo.squeeze(1).T
             coefficients = torch.sparse.mm(fwt_matrix, lo)
             lo, hi = torch.split(coefficients, coefficients.shape[0] // 2, dim=0)
             split_list.append(hi)
@@ -400,11 +432,12 @@ class MatrixWavedec(BaseMatrixWaveDec):
         return result_list
 
 
+@_deprecated_alias(boundary="orthogonalization")
 def construct_boundary_a(
     wavelet: Union[Wavelet, str],
     length: int,
     device: Union[torch.device, str] = "cpu",
-    boundary: OrthogonalizeMethod = "qr",
+    orthogonalization: OrthogonalizeMethod = "qr",
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Construct a boundary-wavelet filter 1d-analysis matrix.
@@ -413,26 +446,31 @@ def construct_boundary_a(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         length (int): The number of entries in the input signal.
-        boundary: The method used for boundary filter treatment,
-            see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
+        orthogonalization: The method used to orthogonalize
+            boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
+            Defaults to 'qr'.
         device: Where to place the matrix. Choose cpu or cuda.
             Defaults to cpu.
         dtype: Choose float32 or float64.
+
+    .. versionchanged:: 1.10
+        The argument `boundary` has been renamed to `orthogonalization`.
 
     Returns:
         The sparse analysis matrix.
     """
     wavelet = _as_wavelet(wavelet)
     a_full = _construct_a(wavelet, length, dtype=dtype, device=device)
-    a_orth = orthogonalize(a_full, wavelet.dec_len, method=boundary)
+    a_orth = orthogonalize(a_full, wavelet.dec_len, method=orthogonalization)
     return a_orth
 
 
+@_deprecated_alias(boundary="orthogonalization")
 def construct_boundary_s(
     wavelet: Union[Wavelet, str],
     length: int,
     device: Union[torch.device, str] = "cpu",
-    boundary: OrthogonalizeMethod = "qr",
+    orthogonalization: OrthogonalizeMethod = "qr",
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
     """Construct a boundary-wavelet filter 1d-synthesis matarix.
@@ -443,17 +481,23 @@ def construct_boundary_s(
         length (int): The number of entries in the input signal.
         device (torch.device): Where to place the matrix.
             Choose cpu or cuda. Defaults to cpu.
-        boundary : The method used for boundary filter treatment,
-            see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
+        orthogonalization: The method used to orthogonalize
+            boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
+            Defaults to 'qr'.
         dtype: Choose torch.float32 or torch.float64.
             Defaults to torch.float64.
+
+    .. versionchanged:: 1.10
+        The argument `boundary` has been renamed to `orthogonalization`.
 
     Returns:
         The sparse synthesis matrix.
     """
     wavelet = _as_wavelet(wavelet)
     s_full = _construct_s(wavelet, length, dtype=dtype, device=device)
-    s_orth = orthogonalize(s_full.transpose(1, 0), wavelet.rec_len, method=boundary)
+    s_orth = orthogonalize(
+        s_full.transpose(1, 0), wavelet.rec_len, method=orthogonalization
+    )
     return s_orth.transpose(1, 0)
 
 
@@ -470,12 +514,13 @@ class MatrixWaverec(object):
         >>> reconstruction = matrix_waverec(coefficients)
     """
 
+    @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
         *,
         axis: int = -1,
-        boundary: OrthogonalizeMethod = "qr",
+        orthogonalization: OrthogonalizeMethod = "qr",
     ) -> None:
         """Create the inverse matrix-based fast wavelet transformation.
 
@@ -486,16 +531,21 @@ class MatrixWaverec(object):
                 for possible choices.
             axis (int): The axis transformed by the original decomposition
                 defaults to -1 or the last axis.
-            boundary : The method used for boundary filter treatment,
-                see :data:`ptwt.constants.OrthogonalizeMethod`. Defaults to 'qr'.
+            orthogonalization: The method used to orthogonalize
+                boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
+                Defaults to 'qr'.
+
+        .. versionchanged:: 1.10
+            The argument `boundary` has been renamed to `orthogonalization`.
 
         Raises:
-            NotImplementedError: If the selected `boundary` mode is not supported.
+            NotImplementedError: If the selected `orthogonalization` mode
+                is not supported.
             ValueError: If the wavelet filters have different lengths or if
                 axis is not an integer.
         """
         self.wavelet = _as_wavelet(wavelet)
-        self.boundary = boundary
+        self.orthogonalization = orthogonalization
         if isinstance(axis, int):
             self.axis = axis
         else:
@@ -506,7 +556,7 @@ class MatrixWaverec(object):
         self.input_length: Optional[int] = None
         self.padded = False
 
-        if not _is_boundary_mode_supported(self.boundary):
+        if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
 
         if self.wavelet.dec_len != self.wavelet.rec_len:
@@ -586,7 +636,7 @@ class MatrixWaverec(object):
             sn = construct_boundary_s(
                 self.wavelet,
                 curr_length,
-                boundary=self.boundary,
+                orthogonalization=self.orthogonalization,
                 device=device,
                 dtype=dtype,
             )
