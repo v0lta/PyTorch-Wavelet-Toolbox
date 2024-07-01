@@ -406,7 +406,7 @@ def _fswaverecn(
         >>> from ptwt.separable_conv_transform import _fswavedecn, _fswaverecn
         >>> data = torch.randn(5, 10, 10, 10)
         >>> coeff = _fswavedecn(data, "haar", ndim=3, level=2)
-        >>> rec = _fswaverec3(coeff, "haar", ndim=3)
+        >>> rec = _fswaverecn(coeff, "haar", ndim=3)
     """
     if axes is None:
         axes = tuple(range(-ndim, 0))
