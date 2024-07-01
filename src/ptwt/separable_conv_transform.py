@@ -44,6 +44,10 @@ def _separable_conv_dwtn_(
 
     All but the first axes are transformed.
 
+    Note:
+        Please note, that ND-Transforms are generally out
+        of this project's scope.
+
     Args:
         rec_dict (WaveletDetailDict): The result will be stored here
             in place.
