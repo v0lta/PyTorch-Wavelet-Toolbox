@@ -133,8 +133,8 @@ def iswt(
     rec_filt = _construct_nd_filt(lo=rec_lo, hi=rec_hi, ndim=1)
 
     res_lo = coeffs[0]
-    for c_pos, res_hi in enumerate(coeffs[1:]):
-        dilation = 2 ** (len(coeffs[1:]) - c_pos - 1)
+    for c_pos, res_hi in enumerate(coeffs[1:], start=1):
+        dilation = 2 ** (len(coeffs[1:]) - c_pos)
         res_lo = torch.stack([res_lo, res_hi], 1)
         padl, padr = dilation * (filt_len // 2), dilation * (filt_len // 2 - 1)
         # res_lo = torch.nn.functional.pad(res_lo, (padl, padr), mode="circular")

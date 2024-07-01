@@ -5,7 +5,8 @@ The functions here are based on torch.nn.functional.conv3d and it's transpose.
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from itertools import product
+from typing import Optional, Union, cast
 
 import pywt
 import torch
@@ -73,28 +74,18 @@ def wavedec3(
             [data.shape[-1], data.shape[-2], data.shape[-3]], wavelet
         )
 
+    coeff_keys = ["".join(key) for key in product(["a", "d"], repeat=3)]
+
     result_lst: list[WaveletDetailDict] = []
     res_lll = data
     for _ in range(level):
-        if len(res_lll.shape) == 4:
-            res_lll = res_lll.unsqueeze(1)
         res_lll = _fwt_padn(res_lll, wavelet, ndim=3, mode=mode)
         res = torch.nn.functional.conv3d(res_lll, dec_filt, stride=2)
-        res_lll, res_llh, res_lhl, res_lhh, res_hll, res_hlh, res_hhl, res_hhh = [
-            sr.squeeze(1) for sr in torch.split(res, 1, 1)
-        ]
-        result_lst.append(
-            {
-                "aad": res_llh,
-                "ada": res_lhl,
-                "add": res_lhh,
-                "daa": res_hll,
-                "dad": res_hlh,
-                "dda": res_hhl,
-                "ddd": res_hhh,
-            }
-        )
-        res_lll = res_lll.unsqueeze(1)
+        result_dict = {
+            key: res.squeeze(1) for key, res in zip(coeff_keys, torch.split(res, 1, 1))
+        }
+        res_lll = result_dict.pop("aaa").unsqueeze(1)
+        result_lst.append(result_dict)
     result_lst.reverse()
     coeffs: WaveletCoeffNd = res_lll.squeeze(1), *result_lst
 
@@ -142,52 +133,43 @@ def waverec3(
     filt_len = rec_lo.shape[-1]
     rec_filt = _construct_nd_filt(lo=rec_lo, hi=rec_hi, ndim=3)
 
+    detail_keys = [
+        "".join(key) for key in product(["a", "d"], repeat=3) if "".join(key) != "aaa"
+    ]
+
     res_lll = coeffs[0]
-    coeff_dicts = coeffs[1:]
-    for c_pos, coeff_dict in enumerate(coeff_dicts):
+    for c_pos, coeff_dict in enumerate(coeffs[1:], start=1):
         if not isinstance(coeff_dict, dict) or len(coeff_dict) != 7:
             raise ValueError(
                 f"Unexpected detail coefficient type: {type(coeff_dict)}. Detail "
                 "coefficients must be a dict containing 7 tensors as returned by "
                 "wavedec3."
             )
-        for coeff in coeff_dict.values():
-            if res_lll.shape != coeff.shape:
-                raise ValueError(
-                    "All coefficients on each level must have the same shape"
-                )
-        res_lll = torch.stack(
-            [
-                res_lll,
-                coeff_dict["aad"],
-                coeff_dict["ada"],
-                coeff_dict["add"],
-                coeff_dict["daa"],
-                coeff_dict["dad"],
-                coeff_dict["dda"],
-                coeff_dict["ddd"],
-            ],
-            1,
-        )
+        if any(coeff.shape != res_lll.shape for coeff in coeff_dict.values()):
+            raise ValueError(
+                "All coefficients on each level must have the same shape"
+            )
+
+        res_lll = torch.stack([res_lll] + [coeff_dict[key] for key in detail_keys], 1)
         res_lll = torch.nn.functional.conv_transpose3d(res_lll, rec_filt, stride=2)
         res_lll = res_lll.squeeze(1)
 
         # remove the padding
-        padfr = (2 * filt_len - 3) // 2
-        padba = (2 * filt_len - 3) // 2
-        padl = (2 * filt_len - 3) // 2
-        padr = (2 * filt_len - 3) // 2
-        padt = (2 * filt_len - 3) // 2
-        padb = (2 * filt_len - 3) // 2
-        if c_pos + 1 < len(coeff_dicts):
+        padba, padfr = _get_pad(data_len=0, filt_len=filt_len)
+        padr, padl = _get_pad(data_len=0, filt_len=filt_len)
+        padb, padt = _get_pad(data_len=0, filt_len=filt_len)
+
+        if c_pos < len(coeffs) - 1:
+            next_details = cast(WaveletDetailDict, coeffs[c_pos + 1])
+            next_detail_shape = next_details["aad"].shape
             padr, padl = _adjust_padding_at_reconstruction(
-                res_lll.shape[-1], coeff_dicts[c_pos + 1]["aad"].shape[-1], padr, padl
+                res_lll.shape[-1], next_detail_shape[-1], padr, padl
             )
             padb, padt = _adjust_padding_at_reconstruction(
-                res_lll.shape[-2], coeff_dicts[c_pos + 1]["aad"].shape[-2], padb, padt
+                res_lll.shape[-2], next_detail_shape[-2], padb, padt
             )
             padba, padfr = _adjust_padding_at_reconstruction(
-                res_lll.shape[-3], coeff_dicts[c_pos + 1]["aad"].shape[-3], padba, padfr
+                res_lll.shape[-3], next_detail_shape[-3], padba, padfr
             )
         if padt > 0:
             res_lll = res_lll[..., padt:, :]

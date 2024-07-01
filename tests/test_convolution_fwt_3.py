@@ -81,7 +81,7 @@ def test_waverec3(
     # ensure ptwt and pywt coefficients are identical.
     test_list = []
     for a, b in zip(ptwc, cat_pywc):
-        if type(a) is torch.Tensor:
+        if isinstance(a, torch.Tensor):
             test_list.append(np.allclose(a, b))
         else:
             test_list.extend([np.allclose(a[key], b[key]) for key in a.keys()])

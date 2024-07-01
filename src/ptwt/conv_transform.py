@@ -103,7 +103,6 @@ def wavedec(
         axis (int): Compute the transform over this axis instead of the
             last one. Defaults to -1.
 
-
     Returns:
         A list::
 
@@ -190,18 +189,18 @@ def waverec(
     rec_filt = _construct_nd_filt(lo=rec_lo, hi=rec_hi, ndim=1)
 
     res_lo = coeffs[0]
-    for c_pos, res_hi in enumerate(coeffs[1:]):
+    for c_pos, res_hi in enumerate(coeffs[1:], start=1):
         res_lo = torch.stack([res_lo, res_hi], 1)
         res_lo = torch.nn.functional.conv_transpose1d(
             res_lo, rec_filt, stride=2
         ).squeeze(1)
 
         # remove the padding
-        padl = (2 * filt_len - 3) // 2
-        padr = (2 * filt_len - 3) // 2
-        if c_pos < len(coeffs) - 2:
+        padr, padl = _get_pad(data_len=0, filt_len=filt_len)
+
+        if c_pos < len(coeffs) - 1:
             padr, padl = _adjust_padding_at_reconstruction(
-                res_lo.shape[-1], coeffs[c_pos + 2].shape[-1], padr, padl
+                res_lo.shape[-1], coeffs[c_pos + 1].shape[-1], padr, padl
             )
         if padl > 0:
             res_lo = res_lo[..., padl:]

@@ -171,7 +171,7 @@ def waverec2(
     rec_filt = _construct_nd_filt(lo=rec_lo, hi=rec_hi, ndim=2)
 
     res_ll = coeffs[0]
-    for c_pos, coeff_tuple in enumerate(coeffs[1:]):
+    for c_pos, coeff_tuple in enumerate(coeffs[1:], start=1):
         if not isinstance(coeff_tuple, tuple) or len(coeff_tuple) != 3:
             raise ValueError(
                 f"Unexpected detail coefficient type: {type(coeff_tuple)}. Detail "
@@ -180,11 +180,8 @@ def waverec2(
             )
 
         curr_shape = res_ll.shape
-        for coeff in coeff_tuple:
-            if coeff.shape != curr_shape:
-                raise ValueError(
-                    "All coefficients on each level must have the same shape"
-                )
+        if any(coeff.shape != curr_shape for coeff in coeff_tuple):
+            raise ValueError("All coefficients on each level must have the same shape")
 
         res_hl, res_lh, res_hh = coeff_tuple
         res_ll = torch.stack([res_ll, res_lh, res_hl, res_hh], 1)
@@ -193,16 +190,15 @@ def waverec2(
         ).squeeze(1)
 
         # remove the padding
-        padl = (2 * filt_len - 3) // 2
-        padr = (2 * filt_len - 3) // 2
-        padt = (2 * filt_len - 3) // 2
-        padb = (2 * filt_len - 3) // 2
-        if c_pos < len(coeffs) - 2:
+        padr, padl = _get_pad(data_len=0, filt_len=filt_len)
+        padb, padt = _get_pad(data_len=0, filt_len=filt_len)
+
+        if c_pos < len(coeffs) - 1:
             padr, padl = _adjust_padding_at_reconstruction(
-                res_ll.shape[-1], coeffs[c_pos + 2][0].shape[-1], padr, padl
+                res_ll.shape[-1], coeffs[c_pos + 1][0].shape[-1], padr, padl
             )
             padb, padt = _adjust_padding_at_reconstruction(
-                res_ll.shape[-2], coeffs[c_pos + 2][0].shape[-2], padb, padt
+                res_ll.shape[-2], coeffs[c_pos + 1][0].shape[-2], padb, padt
             )
 
         if padt > 0:
