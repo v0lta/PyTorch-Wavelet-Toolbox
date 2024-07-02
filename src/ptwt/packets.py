@@ -622,7 +622,8 @@ class WaveletPacket2D(BaseDict):
                 of the following chars: ``a``, ``h``, ``v``, ``d``
                 The chars correspond to the selected coefficients for a level
                 where ``a`` denotes the approximation coefficients and
-                ``h`` horizontal, ``v`` vertical  and ``d`` diagonal details coefficients.
+                ``h`` horizontal, ``v`` vertical  and ``d`` diagonal
+                details coefficients.
 
         Returns:
             The accessed wavelet packet coefficients.

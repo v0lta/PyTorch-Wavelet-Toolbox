@@ -95,8 +95,8 @@ class MatrixWavedec3(BaseMatrixWaveDec):
                 for possible choices.
             level (int, optional): The desired decomposition level.
                 Defaults to None.
-            axes (tuple[int, int, int]): Compute the transform over these axes of the data
-                tensor. Defaults to (-3, -2, -1).
+            axes (tuple[int, int, int]): Compute the transform over these axes
+                of the data tensor. Defaults to (-3, -2, -1).
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to ``qr``.
@@ -310,8 +310,8 @@ class MatrixWaverec3(object):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            axes (tuple[int, int, int]): Compute the transform over these axes of the data
-                tensor. Defaults to (-3, -2, -1).
+            axes (tuple[int, int, int]): Compute the transform over these axes
+                of the data tensor. Defaults to (-3, -2, -1).
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to ``qr``.

@@ -88,5 +88,5 @@ autodoc_type_aliases = {
     "BaseMatrixWaveDec": "ptwt.matmul_transform.BaseMatrixWaveDec",
     "BoundaryMode": "ptwt.constants.BoundaryMode",
     "ExtendedBoundaryMode": "ptwt.constants.ExtendedBoundaryMode",
-    "OrthogonalizeMethod": "ptwt.constants.OrthogonalizeMethod"
+    "OrthogonalizeMethod": "ptwt.constants.OrthogonalizeMethod",
 }

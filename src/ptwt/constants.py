@@ -171,7 +171,8 @@ class WaveletDetailTuple2d(NamedTuple):
     We follow the pywt convention for the orientation of axes , i.e.
     axis 0 is horizontal and axis 1 vertical.
     For more information, see the
-    `pywt docs <https://pywavelets.readthedocs.io/en/latest/ref/2d-dwt-and-idwt.html#d-coordinate-conventions>`_.
+    `pywt docs
+    <https://pywavelets.readthedocs.io/en/latest/ref/2d-dwt-and-idwt.html#d-coordinate-conventions>`_.
     """
 
     horizontal: torch.Tensor
