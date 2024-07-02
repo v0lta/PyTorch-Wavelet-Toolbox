@@ -8,15 +8,14 @@ import torch
 import torch.nn.functional as F  # noqa:N812
 
 from ._util import (
-    Wavelet,
-    _as_wavelet,
     _check_same_device_dtype,
+    _get_filter_tensors,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
 )
-from .conv_transform import _get_filter_tensors
+from .constants import Wavelet, WaveletCoeff1d
 
 
 def _circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Tensor:
@@ -102,15 +101,15 @@ def swt(
 
 
 def iswt(
-    coeffs: Sequence[torch.Tensor],
+    coeffs: WaveletCoeff1d,
     wavelet: Union[pywt.Wavelet, str],
     axis: int = -1,
 ) -> torch.Tensor:
     """Invert a 1d stationary wavelet transform.
 
     Args:
-        coeffs (Sequence[torch.Tensor]): The coefficients as computed
-            by the swt function.
+        coeffs: The wavelet coefficient sequence produced by the forward transform
+            :func:`swt`. See :data:`ptwt.constants.WaveletCoeff1d`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet, as used in the forward transform.
         axis (int): The axis the forward trasform was computed over.
@@ -124,7 +123,6 @@ def iswt(
     coeffs, ds = _preprocess_coeffs(coeffs, ndim=1, axes=axis)
     torch_device, torch_dtype = _check_same_device_dtype(coeffs)
 
-    wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, dtype=torch_dtype, device=torch_device
     )

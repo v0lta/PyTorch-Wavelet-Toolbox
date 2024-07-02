@@ -15,7 +15,6 @@ import numpy as np
 import torch
 
 from ._util import (
-    Wavelet,
     _as_wavelet,
     _check_same_device_dtype,
     _postprocess_coeffs,
@@ -25,6 +24,7 @@ from ._util import (
 )
 from .constants import (
     BoundaryMode,
+    Wavelet,
     WaveletCoeff2dSeparable,
     WaveletCoeffNd,
     WaveletDetailDict,
@@ -197,17 +197,17 @@ def fswavedec2(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
-        mode :
-            The desired padding mode for extending the signal along the edges.
-            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
-        level (int): The number of desired scales.
+        mode: The desired padding mode for extending the signal along the edges.
+            See :data:`ptwt.constants.BoundaryMode`. Defaults to "reflect".
+        level (int, optional): The maximum decomposition level.
+            If None, the level is computed based on the signal shape.
             Defaults to None.
-        axes ([int, int]): The axes we want to transform,
-            defaults to (-2, -1).
+        axes (tuple[int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-2, -1).
 
     Returns:
-        A tuple with the ll coefficients and for each scale a dictionary
-        containing the detail coefficients,
+        A tuple starting with the approximation coefficient tensor
+        followed by a dictionary of detail coefficients for each scale,
         see :data:`ptwt.constants.WaveletCoeff2dSeparable`.
         The dictionaries use the filter order strings::
 
@@ -217,8 +217,7 @@ def fswavedec2(
         'd' the high-pass or detail filter.
 
     Example:
-        >>> import torch
-        >>> import ptwt
+        >>> import ptwt, torch
         >>> data = torch.randn(5, 10, 10)
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
     """
@@ -240,17 +239,17 @@ def fswavedec3(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for possible choices.
-        mode :
-            The desired padding mode for extending the signal along the edges.
+        mode: The desired padding mode for extending the signal along the edges.
             Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
-        level (int): The number of desired scales.
+        level (int, optional): The maximum decomposition level.
+            If None, the level is computed based on the signal shape.
             Defaults to None.
-        axes (tuple[int, int, int]): Compute the transform over these axes
-            instead of the last three. Defaults to (-3, -2, -1).
+        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-3, -2, -1).
 
     Returns:
-        A tuple with the lll coefficients and for each scale a dictionary
-        containing the detail coefficients,
+        A tuple starting with the approximation coefficient tensor
+        followed by a dictionary of detail coefficients for each scale,
         see :data:`ptwt.constants.WaveletCoeffNd`.
         The dictionaries use the filter order strings::
 
@@ -260,8 +259,7 @@ def fswavedec3(
         'd' the high-pass or detail filter.
 
     Example:
-        >>> import torch
-        >>> import ptwt
+        >>> import ptwt, torch
         >>> data = torch.randn(5, 10, 10, 10)
         >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
     """
@@ -279,22 +277,20 @@ def fswaverec2(
     the hood.
 
     Args:
-        coeffs (WaveletCoeff2dSeparable):
-            The wavelet coefficients as computed by `fswavedec2`,
+        coeffs: The wavelet coefficients as computed by :data:`ptwt.fswavedec2`,
             see :data:`ptwt.constants.WaveletCoeff2dSeparable`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int]): Compute the transform over these
-            axes instead of the last two. Defaults to (-2, -1).
+        axes (tuple[int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-2, -1).
 
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
 
     Example:
-        >>> import torch
-        >>> import ptwt
+        >>> import ptwt, torch
         >>> data = torch.randn(5, 10, 10)
         >>> coeff = ptwt.fswavedec2(data, "haar", level=2)
         >>> rec = ptwt.fswaverec2(coeff, "haar")
@@ -310,22 +306,20 @@ def fswaverec3(
     """Compute a fully separable 3D-padded synthesis wavelet transform.
 
     Args:
-        coeffs (WaveletCoeffNd):
-            The wavelet coefficients as computed by `fswavedec3`,
+        coeffs: The wavelet coefficients as computed by :data:`ptwt.fswavedec3`,
             see :data:`ptwt.constants.WaveletCoeffNd`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int, int]): Compute the transform over these axes
-            instead of the last three. Defaults to (-3, -2, -1).
+        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-3, -2, -1).
 
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
 
     Example:
-        >>> import torch
-        >>> import ptwt
+        >>> import ptwt, torch
         >>> data = torch.randn(5, 10, 10, 10)
         >>> coeff = ptwt.fswavedec3(data, "haar", level=2)
         >>> rec = ptwt.fswaverec3(coeff, "haar")

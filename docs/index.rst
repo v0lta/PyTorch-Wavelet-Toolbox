@@ -55,5 +55,5 @@ If you use this work in a scientific context, please cite the following paper:
    :maxdepth: 2
    :caption: Public API
 
-   ptwt
+   ref/index
 
