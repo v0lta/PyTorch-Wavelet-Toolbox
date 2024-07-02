@@ -209,7 +209,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         *,
-        axis: Optional[int] = -1,
+        axis: int = -1,
         orthogonalization: OrthogonalizeMethod = "qr",
         odd_coeff_padding_mode: BoundaryMode = "zero",
     ) -> None:
@@ -223,8 +223,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
-            axis (int, optional): The axis we would like to transform.
-                Defaults to -1.
+            axis (int): The axis we would like to transform. Defaults to -1.
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to 'qr'.

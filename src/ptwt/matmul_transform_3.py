@@ -275,7 +275,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
             _split_rec(lll, "", 3, coeff_dict)
             lll = coeff_dict["aaa"]
             result_keys = list(
-                filter(lambda x: len(x) == 3 and not x == "aaa", coeff_dict.keys())
+                filter(lambda x: len(x) == 3 and x != "aaa", coeff_dict.keys())
             )
             coeff_dict = {
                 key: tensor for key, tensor in coeff_dict.items() if key in result_keys
@@ -394,7 +394,7 @@ class MatrixWaverec3(object):
 
     def _cat_coeff_recursive(self, input_dict: WaveletDetailDict) -> torch.Tensor:
         done_dict = {}
-        a_initial_keys = list(filter(lambda x: x[0] == "a", input_dict.keys()))
+        a_initial_keys = filter(lambda x: x[0] == "a", input_dict.keys())
         for a_key in a_initial_keys:
             d_key = "d" + a_key[1:]
             cat_d = input_dict[d_key]
@@ -470,7 +470,7 @@ class MatrixWaverec3(object):
                         "All coefficients on each level must have the same shape"
                     )
 
-            coeff_dict["a" * len(list(coeff_dict.keys())[-1])] = lll
+            coeff_dict["aaa"] = lll
             lll = self._cat_coeff_recursive(coeff_dict)
 
             for dim, mat in enumerate(self.ifwt_matrix_list[level - 1 - c_pos][::-1]):
