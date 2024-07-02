@@ -140,18 +140,14 @@ def _is_dtype_supported(dtype: torch.dtype) -> bool:
 
 
 def _create_tensor(
-    filter: Sequence[float], flip: bool, device: torch.device, dtype: torch.dtype
+    filter_seq: Sequence[float], flip: bool, device: torch.device, dtype: torch.dtype
 ) -> torch.Tensor:
+    return_tensor = torch.as_tensor(data=filter_seq, dtype=dtype, device=device)
+
     if flip:
-        if isinstance(filter, torch.Tensor):
-            return filter.flip(-1).unsqueeze(0).to(device=device, dtype=dtype)
-        else:
-            return torch.tensor(filter[::-1], device=device, dtype=dtype).unsqueeze(0)
-    else:
-        if isinstance(filter, torch.Tensor):
-            return filter.unsqueeze(0).to(device=device, dtype=dtype)
-        else:
-            return torch.tensor(filter, device=device, dtype=dtype).unsqueeze(0)
+        return_tensor = return_tensor.flip(-1)
+
+    return return_tensor
 
 
 def _get_filter_tensors(
