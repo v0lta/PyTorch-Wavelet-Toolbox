@@ -29,8 +29,9 @@ from .constants import (
 def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
     """Translate pywt mode strings to PyTorch mode strings.
 
-    We support constant, zero, reflect, periodic and symmetric.
-    Unfortunately, "constant" has different meanings in the
+    We support ``constant``, ``zero``, ``reflect``,
+    ``periodic`` and ``symmetric``.
+    Unfortunately, ``constant`` has different meanings in the
     Pytorch and PyWavelet communities.
 
     Raises:

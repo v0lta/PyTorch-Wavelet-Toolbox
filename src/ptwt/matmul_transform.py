@@ -1,4 +1,4 @@
-"""Implement matrix-based fwt and ifwt.
+"""Implement matrix-based FWT and iFWT.
 
 This module uses boundary filters instead of padding.
 
@@ -169,7 +169,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
     """Compute the 1d fast wavelet transform using sparse matrices.
 
     This transform is the sparse matrix correspondant to
-    :data:`ptwt.wavedec`. The convolution operations are
+    :func:`ptwt.wavedec`. The convolution operations are
     implemented as a matrix-vector product between a
     sparse transformation matrix and the input signal.
     This transform uses boundary wavelets instead of padding to
@@ -183,12 +183,13 @@ class MatrixWavedec(BaseMatrixWaveDec):
         The matrix is therefore constructed only once and reused
         in further calls.
         The sparse transformation matrix can be accessed
-        via the :data:`sparse_fwt_operator` property.
+        via the :attr:`sparse_fwt_operator` property.
 
     Note:
         On each level of the transform the convolved signal
         is required to be of even length. This transform uses
-        zero padding to transform coefficients with an odd length.
+        padding to transform coefficients with an odd length,
+        with the padding mode specified by `odd_coeff_padding_mode`.
         To avoid padding consider transforming signals
         with a length divisable by :math:`2^L`
         for a :math:`L`-level transform.
@@ -220,18 +221,18 @@ class MatrixWavedec(BaseMatrixWaveDec):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            level (int, optional): The level up to which to compute the fwt. If None,
+            level (int, optional): The level up to which to compute the FWT. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
             axis (int): The axis we would like to transform. Defaults to -1.
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Defaults to 'qr'.
+                Defaults to ``qr``.
             odd_coeff_padding_mode: The constructed FWT matrices require inputs
                 with even lengths. Thus, any odd-length approximation coefficients
                 are padded to an even length using this mode,
                 see :data:`ptwt.constants.BoundaryMode`.
-                Defaults to 'zero'.
+                Defaults to ``zero``.
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
@@ -272,8 +273,13 @@ class MatrixWavedec(BaseMatrixWaveDec):
         the whole operation is padding-free and can be expressed
         as a single matrix multiply.
 
-        The operation ``torch.sparse.mm(sparse_fwt_operator, data.T)``
-        computes a batched fwt.
+        The operation
+
+        .. code-block:: python
+
+            torch.sparse.mm(sparse_fwt_operator, data.T)
+
+        computes a batched FWT.
 
         This property exists to make the operator matrix transparent.
         Calling the object will handle odd-length inputs properly.
@@ -348,16 +354,14 @@ class MatrixWavedec(BaseMatrixWaveDec):
         self.size_list.append(curr_length)
 
     def __call__(self, input_signal: torch.Tensor) -> list[torch.Tensor]:
-        """Compute the matrix fwt for the given input signal.
+        """Compute the matrix FWT for the given input signal.
 
         Matrix FWTs are used to avoid padding.
 
         Args:
-            input_signal (torch.Tensor): Batched input data.
-                An example shape could be ``[batch_size, time]``.
-                Inputs can have any dimension.
+            input_signal (torch.Tensor): Input data to transform.
                 This transform affects the last axis by default.
-                Use the axis argument in the constructor to choose
+                Use the `axis` argument in the constructor to choose
                 another axis.
 
         Returns:
@@ -527,7 +531,7 @@ class MatrixWaverec(object):
                 defaults to -1 or the last axis.
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Defaults to 'qr'.
+                Defaults to ``qr``.
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
@@ -565,7 +569,11 @@ class MatrixWaverec(object):
         as a single matrix multiply.
 
         Having concatenated the analysis coefficients,
-        torch.sparse.mm(sparse_ifwt_operator, coefficients.T)
+
+        .. code-block:: python
+
+            torch.sparse.mm(sparse_ifwt_operator, coefficients.T)
+
         to computes a batched iFWT.
 
         This functionality is mainly here to make the operator-matrix
@@ -638,11 +646,11 @@ class MatrixWaverec(object):
             curr_length = curr_length // 2
 
     def __call__(self, coefficients: WaveletCoeff1d) -> torch.Tensor:
-        """Run the synthesis or inverse matrix fwt.
+        """Run the synthesis or inverse matrix FWT.
 
         Args:
             coefficients: The coefficients produced by the forward transform
-                :data:`MatrixWavedec`. See :data:`ptwt.constants.WaveletCoeff1d`.
+                :class:`MatrixWavedec`. See :data:`ptwt.constants.WaveletCoeff1d`.
 
         Returns:
             The input signal reconstruction.
@@ -650,7 +658,7 @@ class MatrixWaverec(object):
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the
                 coefficients are not in the shape as it is returned from a
-                `MatrixWavedec` object.
+                :class:`MatrixWavedec` object.
         """
         if not isinstance(coefficients, list):
             coefficients = list(coefficients)

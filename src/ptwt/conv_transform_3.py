@@ -115,18 +115,18 @@ def wavedec3(
     level: Optional[int] = None,
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> WaveletCoeffNd:
-    """Compute a three-dimensional wavelet transform.
+    """Compute the three-dimensional fast wavelet transformation.
 
     Args:
-        data (torch.Tensor): The input data. For example of shape
-            ``[batch_size, length, height, width]``
+        data (torch.Tensor): The input data tensor with at least three dimensions.
+            By default, the last three axes are transformed.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
         mode: The desired padding mode for extending the signal
             along the edges. See :data:`ptwt.constants.BoundaryMode`.
-            Defaults to "zero".
+            Defaults to ``zero``.
         level (int, optional): The maximum decomposition level.
             If None, the level is computed based on the signal shape.
             Defaults to None.
@@ -190,7 +190,7 @@ def waverec3(
     """Reconstruct a 3d signal from wavelet coefficients.
 
     Args:
-        coeffs: The wavelet coefficient tuple produced by :data:`ptwt.wavedec3`,
+        coeffs: The wavelet coefficient tuple produced by :func:`ptwt.wavedec3`,
             see :data:`ptwt.constants.WaveletCoeffNd`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
@@ -200,12 +200,12 @@ def waverec3(
             tensor. Defaults to (-3, -2, -1).
 
     Returns:
-        The reconstructed four-dimensional signal tensor of shape
-        ``[batch, depth, height, width]``.
+        The reconstructed signal tensor.
+        Its shape depends on the shape of the input to :func:`ptwt.wavedec3`.
 
     Raises:
-        ValueError: If coeffs is not in a shape as returned
-            from :data:`ptwt.wavedec3` or if the dtype is not supported or
+        ValueError: If `coeffs` is not in a shape as returned
+            from :func:`ptwt.wavedec3` or if the dtype is not supported or
             if the provided axes input has length other than three or
             if the same axes it repeated three.
 

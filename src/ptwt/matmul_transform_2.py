@@ -237,7 +237,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
     """Compute the 2d fast wavelet transform using sparse matrices.
 
     This transform is the sparse matrix correspondant to
-    :data:`ptwt.wavedec2`. The convolution operations are
+    :func:`ptwt.wavedec2`. The convolution operations are
     implemented as a matrix-vector product between a
     sparse transformation matrix and the input signal.
     This transform uses boundary wavelets instead of padding to
@@ -250,7 +250,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         input images this may take a while.
         The matrix is therefore constructed only once.
         In the non-separable case, it can be accessed via
-        the :data:`sparse_fwt_operator` property.
+        the :attr:`sparse_fwt_operator` property.
 
     Note:
         On each level of the transform both axis of
@@ -296,7 +296,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 tensor. Defaults to (-2, -1).
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Defaults to 'qr'.
+                Defaults to ``qr``.
             separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis.
                 Matrix construction is significantly faster for separable
@@ -306,7 +306,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 with even lengths. Thus, any odd-length approximation coefficients
                 are padded to an even length using this mode,
                 see :data:`ptwt.constants.BoundaryMode`.
-                Defaults to 'zero'.
+                Defaults to ``zero``.
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
@@ -347,7 +347,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         To benefit from code handling odd-length levels call the object.
 
         Returns:
-            The sparse 2d-fwt operator matrix.
+            The sparse 2d FWT operator matrix.
 
         Raises:
             NotImplementedError: if a separable transformation was used or if padding
@@ -453,10 +453,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         Args:
             input_signal (torch.Tensor): The input data tensor with
                 at least two dimensions.
-                By default 2d inputs are interpreted as ``[height, width]``,
-                3d inputs are interpreted as ``[batch_size, height, width]``.
-                4d inputs are interpreted as ``[batch_size, channels, height, width]``.
-                The ``axes`` class attribute allows other interpretations.
+                By default the last two axes are transformed.
+                The `axes` class attribute allows other choices.
 
         Returns:
             The resulting coefficients per level are stored in a pywt style tuple,
@@ -596,11 +594,11 @@ class MatrixWaverec2(object):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            axes (int, int): The axes transformed by waverec2.
+            axes (tuple[int, int]): Compute the transform over these axes.
                 Defaults to (-2, -1).
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Defaults to 'qr'.
+                Defaults to ``qr``.
             separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis. This is significantly
                 faster than a non-separable transformation since only a small constant-
@@ -642,10 +640,10 @@ class MatrixWaverec2(object):
 
     @property
     def sparse_ifwt_operator(self) -> torch.Tensor:
-        """Compute the ifwt operator matrix for pad-free cases.
+        """Compute the iFWT operator matrix for pad-free cases.
 
         Returns:
-            The sparse 2d ifwt operator matrix.
+            The sparse 2d iFWT operator matrix.
 
         Raises:
             NotImplementedError: if a separable transformation was used or if padding
@@ -746,19 +744,17 @@ class MatrixWaverec2(object):
 
         Args:
             coefficients (WaveletCoeff2d): The coefficient tuple as returned
-                by the `MatrixWavedec2` object,
+                by the :class:`MatrixWavedec2` object,
                 see :data:`ptwt.constants.WaveletCoeff2d`.
 
         Returns:
-            The original signal reconstruction. For example of shape
-            ``[batch_size, height, width]`` or ``[batch_size, channels, height, width]``
-            depending on the input to the forward transform and the value
-            of the `axis` argument.
+            The original signal reconstruction.
+            Its shape depends on the shape of the input to :class:`ptwt.MatrixWavedec2`.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the
                 coefficients are not in the shape as it is returned from a
-                `MatrixWavedec2` object.
+                :class:`MatrixWavedec2` object.
         """
         coefficients, ds = _preprocess_coeffs(coefficients, ndim=2, axes=self.axes)
         torch_device, torch_dtype = _check_same_device_dtype(coefficients)

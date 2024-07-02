@@ -99,13 +99,12 @@ def wavedec(
             Please consider the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
         mode: The desired padding mode for extending the signal along the edges.
-            See :data:`ptwt.constants.BoundaryMode`. Defaults to "reflect".
+            See :data:`ptwt.constants.BoundaryMode`. Defaults to ``reflect``.
         level (int, optional): The maximum decomposition level.
             If None, the level is computed based on the signal shape.
             Defaults to None.
         axis (int): Compute the transform over this axis of the `data` tensor.
             Defaults to -1.
-
 
     Returns:
         A list::
@@ -166,6 +165,7 @@ def waverec(
 
     Returns:
         The reconstructed signal tensor.
+        Its shape depends on the shape of the input to :func:`ptwt.wavedec`.
 
     Example:
         >>> import ptwt, torch

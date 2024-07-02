@@ -18,7 +18,7 @@ Transforms in two dimensions
 
 .. autoclass:: WaveletDetailTuple2d
     :members:
-    :undoc-members:
+    :class-doc-from: class
     :show-inheritance:
     :member-order: bysource
 

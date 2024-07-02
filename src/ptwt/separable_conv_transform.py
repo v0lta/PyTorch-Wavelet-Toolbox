@@ -191,14 +191,19 @@ def fswavedec2(
 ) -> WaveletCoeff2dSeparable:
     """Compute a fully separable 2D-padded analysis wavelet transform.
 
+    Single-dimensional convolutions are used to transform
+    each axis individually.
+    Under the hood, all dimensions are transformed
+    using :func:`torch.nn.functional.conv1d`.
+
     Args:
-        data (torch.Tensor): An data signal of shape ``[batch, height, width]``
-            or ``[batch, channels, height, width]``.
+        data (torch.Tensor): The input data tensor with at least two dimensions.
+            By default, the last two axes are transformed.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for a list of possible choices.
         mode: The desired padding mode for extending the signal along the edges.
-            See :data:`ptwt.constants.BoundaryMode`. Defaults to "reflect".
+            See :data:`ptwt.constants.BoundaryMode`. Defaults to ``reflect``.
         level (int, optional): The maximum decomposition level.
             If None, the level is computed based on the signal shape.
             Defaults to None.
@@ -211,10 +216,10 @@ def fswavedec2(
         see :data:`ptwt.constants.WaveletCoeff2dSeparable`.
         The dictionaries use the filter order strings::
 
-        ("ad", "da", "dd")
+            "ad", "da", "dd"
 
-        as keys. 'a' denotes the low pass or approximation filter and
-        'd' the high-pass or detail filter.
+        as keys. ``a`` denotes the low pass or approximation filter and
+        ``d`` the high-pass or detail filter.
 
     Example:
         >>> import ptwt, torch
@@ -234,13 +239,19 @@ def fswavedec3(
 ) -> WaveletCoeffNd:
     """Compute a fully separable 3D-padded analysis wavelet transform.
 
+    Single-dimensional convolutions are used to transform
+    each axis individually.
+    Under the hood, all dimensions are transformed
+    using :func:`torch.nn.functional.conv1d`.
+
     Args:
-        data (torch.Tensor): An input signal of shape ``[batch, depth, height, width]``.
+        data (torch.Tensor): The input data tensor with at least three dimensions.
+            By default, the last three axes are transformed.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for possible choices.
         mode: The desired padding mode for extending the signal along the edges.
-            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
+            See :data:`ptwt.constants.BoundaryMode`. Defaults to ``reflect``.
         level (int, optional): The maximum decomposition level.
             If None, the level is computed based on the signal shape.
             Defaults to None.
@@ -253,10 +264,10 @@ def fswavedec3(
         see :data:`ptwt.constants.WaveletCoeffNd`.
         The dictionaries use the filter order strings::
 
-        ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
+            "aad", "ada", "add", "daa", "dad", "dda", "ddd"
 
-        as keys. 'a' denotes the low pass or approximation filter and
-        'd' the high-pass or detail filter.
+        as keys. ``a`` denotes the low pass or approximation filter and
+        ``d`` the high-pass or detail filter.
 
     Example:
         >>> import ptwt, torch
@@ -273,11 +284,13 @@ def fswaverec2(
 ) -> torch.Tensor:
     """Compute a fully separable 2D-padded synthesis wavelet transform.
 
-    The function uses separate single-dimensional convolutions under
-    the hood.
+    Single-dimensional convolutions are used to transform
+    each axis individually.
+    Under the hood, all dimensions are transformed
+    using :func:`torch.nn.functional.conv1d`.
 
     Args:
-        coeffs: The wavelet coefficients as computed by :data:`ptwt.fswavedec2`,
+        coeffs: The wavelet coefficients as computed by :func:`ptwt.fswavedec2`,
             see :data:`ptwt.constants.WaveletCoeff2dSeparable`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
@@ -288,6 +301,7 @@ def fswaverec2(
 
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
+        Its shape depends on the shape of the input to :func:`ptwt.fswavedec2`.
 
     Example:
         >>> import ptwt, torch
@@ -305,8 +319,13 @@ def fswaverec3(
 ) -> torch.Tensor:
     """Compute a fully separable 3D-padded synthesis wavelet transform.
 
+    Single-dimensional convolutions are used to transform
+    each axis individually.
+    Under the hood, all dimensions are transformed
+    using :func:`torch.nn.functional.conv1d`.
+
     Args:
-        coeffs: The wavelet coefficients as computed by :data:`ptwt.fswavedec3`,
+        coeffs: The wavelet coefficients as computed by :func:`ptwt.fswavedec3`,
             see :data:`ptwt.constants.WaveletCoeffNd`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
@@ -317,6 +336,7 @@ def fswaverec3(
 
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
+        Its shape depends on the shape of the input to :func:`ptwt.fswavedec3`.
 
     Example:
         >>> import ptwt, torch
@@ -338,23 +358,27 @@ def _fswavedecn(
 ) -> WaveletCoeffNd:
     """Compute a fully separable :math:`N`-dimensional padded FWT.
 
+    Single-dimensional convolutions are used to transform
+    each axis individually.
+    Under the hood, all dimensions are transformed
+    using :func:`torch.nn.functional.conv1d`.
+
     Args:
         data (torch.Tensor): An input signal with at least :math:`N` dimensions.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output of
             ``pywt.wavelist(kind="discrete")`` for possible choices.
         ndim (int): The number of dimentsions :math:`N`.
-        mode:
-            The desired padding mode for extending the signal along the edges.
-            Defaults to "reflect". See :data:`ptwt.constants.BoundaryMode`.
-        level (int): The number of desired scales. Defaults to None.
+        mode: The desired padding mode for extending the signal along the edges.
+            See :data:`ptwt.constants.BoundaryMode`. Defaults to ``reflect``.
+        level (int, optional): The number of desired scales. Defaults to None.
         axes (tuple[int, ...], optional): Compute the transform over these axes
             instead of the last :math:`N`. If None, the last :math:`N`
             axes are transformed. Defaults to None.
 
     Returns:
-        A tuple with the lll coefficients and for each scale a dictionary
-        containing the detail coefficients,
+        A tuple starting with the approximation coefficient tensor
+        followed by a dictionary of detail coefficients for each scale,
         see :data:`ptwt.constants.WaveletCoeffNd`.
 
     Example:
@@ -382,6 +406,11 @@ def _fswaverecn(
 ) -> torch.Tensor:
     """Invert a fully separable :math:`N`-dimensional padded FWT.
 
+    Single-dimensional convolutions are used to transform
+    each axis individually.
+    Under the hood, all dimensions are transformed
+    using :func:`torch.nn.functional.conv1d`.
+
     Args:
         coeffs (WaveletCoeffNd):
             The wavelet coefficients as computed by :func:`fswavedecn`,
@@ -397,6 +426,7 @@ def _fswaverecn(
 
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
+        Its shape depends on the shape of the input to :func:`ptwt.fswaverecn`.
 
     Example:
         >>> import torch

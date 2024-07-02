@@ -95,14 +95,16 @@ class MatrixWavedec3(BaseMatrixWaveDec):
                 for possible choices.
             level (int, optional): The desired decomposition level.
                 Defaults to None.
+            axes (tuple[int, int, int]): Compute the transform over these axes of the data
+                tensor. Defaults to (-3, -2, -1).
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Defaults to 'qr'.
+                Defaults to ``qr``.
             odd_coeff_padding_mode: The constructed FWT matrices require inputs
                 with even lengths. Thus, any odd-length approximation coefficients
                 are padded to an even length using this mode,
                 see :data:`ptwt.constants.BoundaryMode`.
-                Defaults to 'zero'.
+                Defaults to ``zero``.
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
@@ -192,14 +194,16 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         self.size_list.append((current_depth, current_height, current_width))
 
     def __call__(self, input_signal: torch.Tensor) -> WaveletCoeffNd:
-        """Compute a separable 3d-boundary wavelet transform.
+        """Compute a separable 3d FWT using boundary wavelets.
 
         Args:
-            input_signal (torch.Tensor): An input signal. For example
-                of shape ``[batch_size, depth, height, width]``.
+            input_signal (torch.Tensor): The input data tensor with
+                at least three dimensions.
+                By default the last three axes are transformed.
+                The ``axes`` class attribute allows other choices.
 
         Returns:
-            The resulting coefficients for each level are stored in a tuple,
+            A tuple containing the wavelet coefficients,
             see :data:`ptwt.constants.WaveletCoeffNd`.
 
         Raises:
@@ -289,7 +293,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
 
 
 class MatrixWaverec3(object):
-    """Reconstruct a signal from 3d-separable-fwt coefficients."""
+    """Reconstruct a signal from 3d separable FWT coefficients."""
 
     @_deprecated_alias(boundary="orthogonalization")
     def __init__(
@@ -306,11 +310,11 @@ class MatrixWaverec3(object):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            axes (tuple[int, int, int]): Transform these axes instead of the
-                last three. Defaults to (-3, -2, -1).
+            axes (tuple[int, int, int]): Compute the transform over these axes of the data
+                tensor. Defaults to (-3, -2, -1).
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Defaults to 'qr'.
+                Defaults to ``qr``.
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
@@ -412,8 +416,7 @@ class MatrixWaverec3(object):
         """Reconstruct a batched 3d-signal from its coefficients.
 
         Args:
-            coefficients (WaveletCoeffNd):
-                The output from the `MatrixWavedec3` object,
+            coefficients: The output from the :class:`MatrixWavedec3` object,
                 see :data:`ptwt.constants.WaveletCoeffNd`.
 
         Returns:

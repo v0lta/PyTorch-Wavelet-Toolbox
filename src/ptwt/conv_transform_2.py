@@ -107,7 +107,7 @@ def wavedec2(
     level: Optional[int] = None,
     axes: tuple[int, int] = (-2, -1),
 ) -> WaveletCoeff2d:
-    r"""Run a two-dimensional fast wavelet transformation.
+    r"""Compute the two-dimensional fast wavelet transformation.
 
     This function relies on two-dimensional convolutions.
     Outer products allow the construction of 2d filters
@@ -131,17 +131,13 @@ def wavedec2(
 
     Args:
         data (torch.Tensor): The input data tensor with at least two dimensions.
-            By default 2d inputs are interpreted as ``[height, width]``,
-            3d inputs are interpreted as ``[batch_size, height, width]``.
-            4d inputs are interpreted as ``[batch_size, channels, height, width]``.
-            The ``axes`` argument allows other interpretations.
+            By default, the last two axes are transformed.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        mode :
-            The desired padding mode for extending the signal along the edges.
-            See :data:`ptwt.constants.BoundaryMode`. Defaults to "reflect".
+        mode: The desired padding mode for extending the signal along the edges.
+            See :data:`ptwt.constants.BoundaryMode`. Defaults to ``reflect``.
         level (int, optional): The maximum decomposition level.
             If None, the level is computed based on the signal shape.
             Defaults to None.
@@ -199,7 +195,7 @@ def waverec2(
     """Reconstruct a 2d signal from wavelet coefficients.
 
     Args:
-        coeffs: The wavelet coefficient tuple produced by :data:`ptwt.wavedec2`.
+        coeffs: The wavelet coefficient tuple produced by :func:`ptwt.wavedec2`.
             See :data:`ptwt.constants.WaveletCoeff2d`
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
@@ -209,13 +205,12 @@ def waverec2(
             tensor. Defaults to (-2, -1).
 
     Returns:
-        The reconstructed signal tensor of shape ``[batch, height, width]`` or
-        ``[batch, channel, height, width]`` depending on the input
-        to :data:`ptwt.wavedec2`.
+        The reconstructed signal tensor.
+        Its shape depends on the shape of the input to :func:`ptwt.wavedec2`.
 
     Raises:
-        ValueError: If coeffs is not in a shape as returned from
-            :data:`ptwt.wavedec2` or if the dtype is not supported or
+        ValueError: If `coeffs` is not in a shape as returned from
+            :func:`ptwt.wavedec2` or if the dtype is not supported or
             if the provided axes input has length other
             than two or if the same axes it repeated twice.
 

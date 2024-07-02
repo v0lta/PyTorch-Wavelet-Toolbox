@@ -85,11 +85,25 @@ BoundaryMode = Literal["constant", "zero", "reflect", "periodic", "symmetric"]
 """
 This is a type literal for the way of padding used at boundaries.
 
-- Refection padding mirrors samples along the border (``reflect``)
-- Zero padding pads zeros (``zero``)
-- Constant padding replicates border values (``constant``)
-- Periodic padding cyclically repeats samples (``periodic``)
-- Symmetric padding mirrors samples along the border (``symmetric``)
+- ``reflect``: Refection padding reflects samples at the border::
+
+    ... x3  x2 | x1 x2 ... xn | xn-1  xn-2 ...
+
+- ``zero``: Zero padding extends the signal with zeros::
+
+    ... 0  0 | x1 x2 ... xn | 0  0 ...
+
+- ``constant``: Constant padding replicates border values::
+
+    ... x1 x1 | x1 x2 ... xn | xn xn ...
+
+- ``periodic``: Periodic padding cyclically repeats samples::
+
+    ... xn-1 xn | x1 x2 ... xn | x1 x2 ...
+
+- ``symmetric``: Symmetric padding mirrors samples along the border::
+
+    ... x2 x1 | x1 x2 ... xn | xn xn-1 ...
 """
 
 ExtendedBoundaryMode = Union[Literal["boundary"], BoundaryMode]
@@ -153,6 +167,11 @@ class WaveletDetailTuple2d(NamedTuple):
 
     This is a type alias for a named tuple ``(H, V, D)`` of detail coefficient tensors
     where ``H`` denotes horizontal, ``V`` vertical and ``D`` diagonal coefficients.
+
+    We follow the pywt convention for the orientation of axes , i.e.
+    axis 0 is horizontal and axis 1 vertical.
+    For more information, see the
+    `pywt docs <https://pywavelets.readthedocs.io/en/latest/ref/2d-dwt-and-idwt.html#d-coordinate-conventions>`_.
     """
 
     horizontal: torch.Tensor
@@ -191,7 +210,7 @@ with :math:`n` levels as a tuple::
 of length :math:`n + 1`.
 ``cAn`` denotes a tensor of approximation coefficients for the `n`-th level
 of decomposition. ``Tl`` is a tuple of detail coefficients for level ``l``,
-see :data:`ptwt.constants.WaveletDetailTuple2d`.
+see :class:`ptwt.constants.WaveletDetailTuple2d`.
 
 Note that this type always contains an approximation coefficient tensor but does not
 necesseraily contain any detail coefficients.
