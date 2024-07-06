@@ -9,7 +9,7 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 
 import sys
 from collections.abc import Sequence
-from typing import Optional, Union, overload
+from typing import Optional, Union, cast, overload
 
 import numpy as np
 import torch
@@ -165,12 +165,16 @@ class BaseMatrixWaveDec:
     orthogonalization: OrthogonalizeMethod
     odd_coeff_padding_mode: BoundaryMode
     padded: bool
+    separable: bool
+
+    fwt_matrix_list: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]]
 
     def __init__(
         self,
         ndim: int,
         wavelet: Union[Wavelet, str],
         axes: Union[tuple[int, ...], int],
+        separable: bool,
         level: Optional[int] = None,
         orthogonalization: OrthogonalizeMethod = "qr",
         odd_coeff_padding_mode: BoundaryMode = "zero",
@@ -184,6 +188,8 @@ class BaseMatrixWaveDec:
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
             axes (tuple[int, ...] or int): The axes we would like to transform.
+            separable (bool): If this flag is set, a separable transformation
+                is used, i.e. a 1d transformation along each axis.
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
@@ -207,8 +213,11 @@ class BaseMatrixWaveDec:
         self.orthogonalization = orthogonalization
         self.odd_coeff_padding_mode = odd_coeff_padding_mode
 
+        self.separable = separable
+
         self.padded = False
         self.level: Optional[int] = level
+        self.fwt_matrix_list = []
 
         if isinstance(axes, int):
             axes = (axes,)
@@ -284,6 +293,49 @@ class BaseMatrixWaveDec:
         else:
             return return_tuple
 
+    @property
+    def sparse_fwt_operator(self) -> torch.Tensor:
+        """The sparse transformation operator.
+
+        If the input signal at all levels is divisible by two,
+        the whole operation is padding-free and can be expressed
+        as a single matrix multiply.
+
+        The operation ``torch.sparse.mm(sparse_fwt_operator, data.T)``
+        computes a batched fwt.
+
+        This property exists to make the operator matrix transparent.
+        Calling the object will handle odd-length inputs properly.
+
+        Raises:
+            NotImplementedError: if a separable transformation was used or if padding
+                had to be used in the creation of the transformation matrices.
+            ValueError: If no level transformation matrices are stored (most likely
+                since the object was not called yet).
+        """
+        if self.separable:
+            raise NotImplementedError
+
+        # in the non-separable case the list entries are tensors
+        fwt_matrix_list = cast(list[torch.Tensor], self.fwt_matrix_list)
+
+        if len(fwt_matrix_list) == 1:
+            return fwt_matrix_list[0]
+        elif len(fwt_matrix_list) > 1:
+            if self.padded:
+                raise NotImplementedError
+
+            fwt_matrix = fwt_matrix_list[0]
+            for scale_mat in fwt_matrix_list[1:]:
+                scale_mat = cat_sparse_identity_matrix(scale_mat, fwt_matrix.shape[0])
+                fwt_matrix = torch.sparse.mm(scale_mat, fwt_matrix)
+            return fwt_matrix
+        else:
+            raise ValueError(
+                "Call this object first to create the transformation matrices for each "
+                "level."
+            )
+
 
 class MatrixWavedec(BaseMatrixWaveDec):
     """Compute the sparse matrix fast wavelet transform.
@@ -344,49 +396,12 @@ class MatrixWavedec(BaseMatrixWaveDec):
             axes=axis,
             orthogonalization=orthogonalization,
             odd_coeff_padding_mode=odd_coeff_padding_mode,
+            separable=False,
         )
 
         self.input_length: Optional[int] = None
-        self.fwt_matrix_list: list[torch.Tensor] = []
         self.pad_list: list[bool] = []
         self.size_list: list[int] = []
-
-    @property
-    def sparse_fwt_operator(self) -> torch.Tensor:
-        """The sparse transformation operator.
-
-        If the input signal at all levels is divisible by two,
-        the whole operation is padding-free and can be expressed
-        as a single matrix multiply.
-
-        The operation ``torch.sparse.mm(sparse_fwt_operator, data.T)``
-        computes a batched fwt.
-
-        This property exists to make the operator matrix transparent.
-        Calling the object will handle odd-length inputs properly.
-
-        Raises:
-            NotImplementedError: if padding had to be used in the creation of the
-                transformation matrices.
-            ValueError: If no level transformation matrices are stored (most likely
-                since the object was not called yet).
-        """
-        if len(self.fwt_matrix_list) == 1:
-            return self.fwt_matrix_list[0]
-        elif len(self.fwt_matrix_list) > 1:
-            if self.padded:
-                raise NotImplementedError
-
-            fwt_matrix = self.fwt_matrix_list[0]
-            for scale_mat in self.fwt_matrix_list[1:]:
-                scale_mat = cat_sparse_identity_matrix(scale_mat, fwt_matrix.shape[0])
-                fwt_matrix = torch.sparse.mm(scale_mat, fwt_matrix)
-            return fwt_matrix
-        else:
-            raise ValueError(
-                "Call this object first to create the transformation matrices for each "
-                "level."
-            )
 
     def _construct_analysis_matrices(
         self, device: Union[torch.device, str], dtype: torch.dtype
@@ -583,15 +598,19 @@ class BaseMatrixWaveRec:
 
     ndim: int
     wavelet: Wavelet
-    padded: bool
     level: Optional[int]
     orthogonalization: OrthogonalizeMethod
+    padded: bool
+    separable: bool
+
+    ifwt_matrix_list: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]]
 
     def __init__(
         self,
         ndim: int,
         wavelet: Union[Wavelet, str],
         axes: Union[tuple[int, ...], int],
+        separable: bool,
         orthogonalization: OrthogonalizeMethod = "qr",
     ) -> None:
         """Construct base class for inverse matrix-based fast wavelet transformation.
@@ -603,6 +622,8 @@ class BaseMatrixWaveRec:
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
             axes (tuple[int, ...] or int): The axes we would like to transform.
+            separable (bool): If this flag is set, a separable transformation
+                is used, i.e. a 1d transformation along each axis.
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to 'qr'.
@@ -617,8 +638,11 @@ class BaseMatrixWaveRec:
         self.wavelet = _as_wavelet(wavelet)
         self.orthogonalization = orthogonalization
 
+        self.separable = separable
+
         self.padded = False
         self.level: Optional[int] = None
+        self.ifwt_matrix_list = []
 
         if isinstance(axes, int):
             axes = (axes,)
@@ -695,6 +719,52 @@ class BaseMatrixWaveRec:
         else:
             return return_tuple
 
+    @property
+    def sparse_ifwt_operator(self) -> torch.Tensor:
+        """The sparse transformation operator.
+
+        If the input signal at all levels is divisible by two,
+        the whole operation is padding-free and can be expressed
+        as a single matrix multiply.
+
+        Having concatenated the analysis coefficients,
+        torch.sparse.mm(sparse_ifwt_operator, coefficients.T)
+        to computes a batched iFWT.
+
+        This functionality is mainly here to make the operator-matrix
+        transparent. Calling the object handles padding for odd inputs.
+
+        Raises:
+            NotImplementedError: if a separable transformation was used or if padding
+                had to be used in the creation of the transformation matrices.
+            ValueError: If no level transformation matrices are stored (most likely
+                since the object was not called yet).
+        """
+        if self.separable:
+            raise NotImplementedError
+
+        # in the non-separable case the list entries are tensors
+        ifwt_matrix_list = cast(list[torch.Tensor], self.ifwt_matrix_list)
+
+        if len(ifwt_matrix_list) == 1:
+            return ifwt_matrix_list[0]
+        elif len(ifwt_matrix_list) > 1:
+            if self.padded:
+                raise NotImplementedError
+
+            ifwt_matrix = ifwt_matrix_list[-1]
+            for scale_mat in ifwt_matrix_list[:-1][::-1]:
+                ifwt_matrix = cat_sparse_identity_matrix(
+                    ifwt_matrix, scale_mat.shape[0]
+                )
+                ifwt_matrix = torch.sparse.mm(scale_mat, ifwt_matrix)
+            return ifwt_matrix
+        else:
+            raise ValueError(
+                "Call this object first to create the transformation matrices for each "
+                "level."
+            )
+
 
 class MatrixWaverec(BaseMatrixWaveRec):
     """Matrix-based inverse fast wavelet transform.
@@ -737,51 +807,13 @@ class MatrixWaverec(BaseMatrixWaveRec):
             The argument `boundary` has been renamed to `orthogonalization`.
         """
         super().__init__(
-            ndim=1, wavelet=wavelet, axes=axis, orthogonalization=orthogonalization
+            ndim=1,
+            wavelet=wavelet,
+            axes=axis,
+            separable=False,
+            orthogonalization=orthogonalization,
         )
-
-        self.ifwt_matrix_list: list[torch.Tensor] = []
         self.input_length: Optional[int] = None
-
-    @property
-    def sparse_ifwt_operator(self) -> torch.Tensor:
-        """The sparse transformation operator.
-
-        If the input signal at all levels is divisible by two,
-        the whole operation is padding-free and can be expressed
-        as a single matrix multiply.
-
-        Having concatenated the analysis coefficients,
-        torch.sparse.mm(sparse_ifwt_operator, coefficients.T)
-        to computes a batched iFWT.
-
-        This functionality is mainly here to make the operator-matrix
-        transparent. Calling the object handles padding for odd inputs.
-
-        Raises:
-            NotImplementedError: if padding had to be used in the creation of the
-                transformation matrices.
-            ValueError: If no level transformation matrices are stored (most likely
-                since the object was not called yet).
-        """
-        if len(self.ifwt_matrix_list) == 1:
-            return self.ifwt_matrix_list[0]
-        elif len(self.ifwt_matrix_list) > 1:
-            if self.padded:
-                raise NotImplementedError
-
-            ifwt_matrix = self.ifwt_matrix_list[-1]
-            for scale_matrix in self.ifwt_matrix_list[:-1][::-1]:
-                ifwt_matrix = cat_sparse_identity_matrix(
-                    ifwt_matrix, scale_matrix.shape[0]
-                )
-                ifwt_matrix = torch.sparse.mm(scale_matrix, ifwt_matrix)
-            return ifwt_matrix
-        else:
-            raise ValueError(
-                "Call this object first to create the transformation matrices for each "
-                "level."
-            )
 
     def _construct_synthesis_matrices(
         self, device: Union[torch.device, str], dtype: torch.dtype
