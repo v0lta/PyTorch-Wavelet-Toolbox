@@ -104,10 +104,10 @@ def test_boundary_filter_analysis_and_synthethis_matrices(
 ) -> None:
     """Check 1d the 1d-fwt matrices for orthogonality and invertability."""
     analysis_matrix = construct_boundary_a(
-        wavelet, size, boundary="gramschmidt"
+        wavelet, size, orthogonalization="gramschmidt"
     ).to_dense()
     synthesis_matrix = construct_boundary_s(
-        wavelet, size, boundary="gramschmidt"
+        wavelet, size, orthogonalization="gramschmidt"
     ).to_dense()
     # s_db2 = construct_s(pywt.Wavelet("db8"), size)
     # test_eye_inv = torch.sparse.mm(a_db8, s_db2.to_dense()).numpy()
