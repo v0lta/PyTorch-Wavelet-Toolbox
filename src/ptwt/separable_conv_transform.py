@@ -78,7 +78,7 @@ def _separable_conv_idwtn(
         in_dict (WaveletDetailDict): The dictionary produced
             by _separable_conv_dwtn_ .
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet, as used by ``_separable_conv_dwtn_``.
+            the name of a pywt wavelet, as used by :func:`_separable_conv_dwtn_`.
 
     Returns:
         A reconstruction of the original signal.
@@ -160,7 +160,7 @@ def _separable_conv_waverecn(
         coeffs (WaveletCoeffNd):
             The output as produced by `_separable_conv_wavedecn`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet, as used by ``_separable_conv_wavedecn``.
+            the name of a pywt wavelet, as used by :func:`_separable_conv_wavedecn`.
 
     Returns:
         The reconstruction of the original signal.

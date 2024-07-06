@@ -20,7 +20,7 @@ to get started:
 
 This documentation aims to explain the foundations of wavelet theory, introduce the ``ptwt`` package by example, and
 deliver a complete documentation of all functions. Readers who are already familiar with the theory should directly
-jump to the examples or the API documentation using the navigation on the left.
+jump to the :ref:`examples <sec-examples>` or the :ref:`API documentation <ref-index>` using the navigation on the left.
 
 ``ptwt`` is built to be `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_ compatible.
 It should be possible to switch back and forth with relative ease.
@@ -56,4 +56,3 @@ If you use this work in a scientific context, please cite the following paper:
    :caption: Public API
 
    ref/index
-

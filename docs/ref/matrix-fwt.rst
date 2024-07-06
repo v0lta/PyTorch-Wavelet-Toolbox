@@ -5,8 +5,8 @@
 Sparse-matrix based Fast Wavelet Transform (FWT)
 ================================================
 
-1d decomposition using ``MatrixWavedec``
-----------------------------------------
+1d decomposition using :class:`MatrixWavedec`
+---------------------------------------------
 
 .. autoclass:: MatrixWavedec
    :members:
@@ -14,8 +14,8 @@ Sparse-matrix based Fast Wavelet Transform (FWT)
    :undoc-members:
    :show-inheritance:
 
-2d decomposition using ``MatrixWavedec2``
------------------------------------------
+2d decomposition using :class:`MatrixWavedec2`
+----------------------------------------------
 
 .. autoclass:: MatrixWavedec2
    :members:
@@ -23,8 +23,8 @@ Sparse-matrix based Fast Wavelet Transform (FWT)
    :undoc-members:
    :show-inheritance:
 
-3d decomposition using ``MatrixWavedec3``
------------------------------------------
+3d decomposition using :class:`MatrixWavedec3`
+----------------------------------------------
 
 .. autoclass:: MatrixWavedec3
    :members:

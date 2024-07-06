@@ -5,16 +5,16 @@
 Wavelet Packet Transform (WPT)
 ====================================
 
-1d Wavelet Packet Transform
----------------------------
+Packets in 1d using :class:`WaveletPacket`
+------------------------------------------
 
 .. autoclass:: WaveletPacket
    :members:
    :special-members: __getitem__
    :undoc-members:
 
-2d Wavelet Packet Transform
----------------------------
+Packets in 2d using :class:`WaveletPacket2D`
+--------------------------------------------
 
 .. autoclass:: WaveletPacket2D
    :members:
