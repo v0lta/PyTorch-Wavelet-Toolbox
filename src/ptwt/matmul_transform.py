@@ -15,6 +15,7 @@ import torch
 
 from ._util import (
     _as_wavelet,
+    _check_axes_argument,
     _check_same_device_dtype,
     _deprecated_alias,
     _get_filter_tensors,
@@ -172,7 +173,9 @@ class BaseMatrixWaveDec:
 
     def __init__(
         self,
+        ndim: int,
         wavelet: Union[Wavelet, str],
+        axes: Union[tuple[int, ...], int],
         level: Optional[int] = None,
         orthogonalization: OrthogonalizeMethod = "qr",
         odd_coeff_padding_mode: BoundaryMode = "zero",
@@ -180,10 +183,12 @@ class BaseMatrixWaveDec:
         """Construct base class for matrix-based fast wavelet transformation.
 
         Args:
+            ndim (int): The number of dimensions to transform.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
+            axes (tuple[int, ...] or int): The axes we would like to transform.
             level (int, optional): The level up to which to compute the fwt. If None,
                 the maximum level based on the signal length is chosen. Defaults to
                 None.
@@ -200,7 +205,7 @@ class BaseMatrixWaveDec:
             NotImplementedError: If the selected `orthogonalization` mode
                 is not supported.
             ValueError: If the wavelet filters have different lengths or
-                if axis is not an integer.
+                if axes is not a tuple of integers.
         """
         self.wavelet = _as_wavelet(wavelet)
         self.orthogonalization = orthogonalization
@@ -208,6 +213,14 @@ class BaseMatrixWaveDec:
 
         self.padded = False
         self.level: Optional[int] = level
+
+        if isinstance(axes, int):
+            axes = (axes,)
+        if len(axes) != ndim:
+            raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
+
+        _check_axes_argument(axes)
+        self.axes = axes
 
         if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
@@ -287,22 +300,15 @@ class MatrixWavedec(BaseMatrixWaveDec):
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
-
-        Raises:
-            ValueError: If the wavelet filters have different lengths or
-                if axis is not an integer.
         """
         super().__init__(
+            ndim=1,
             wavelet=wavelet,
             level=level,
+            axes=axis,
             orthogonalization=orthogonalization,
             odd_coeff_padding_mode=odd_coeff_padding_mode,
         )
-
-        if isinstance(axis, int):
-            self.axis = axis
-        else:
-            raise ValueError("MatrixWavedec transforms a single axis only.")
 
         self.input_length: Optional[int] = None
         self.fwt_matrix_list: list[torch.Tensor] = []
@@ -418,7 +424,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         input_signal, ds = _preprocess_tensor(
             input_signal,
             ndim=1,
-            axes=self.axis,
+            axes=self.axes,
             add_channel_dim=False,
         )
 
@@ -471,7 +477,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         result_list = [s.T for s in split_list[::-1]]
 
         # unfold if necessary
-        return _postprocess_coeffs(result_list, ndim=1, ds=ds, axes=self.axis)
+        return _postprocess_coeffs(result_list, ndim=1, ds=ds, axes=self.axes)
 
 
 @_deprecated_alias(boundary="orthogonalization")
@@ -553,16 +559,20 @@ class BaseMatrixWaveRec:
 
     def __init__(
         self,
+        ndim: int,
         wavelet: Union[Wavelet, str],
+        axes: Union[tuple[int, ...], int],
         orthogonalization: OrthogonalizeMethod = "qr",
     ) -> None:
         """Construct base class for inverse matrix-based fast wavelet transformation.
 
         Args:
+            ndim (int): The number of dimensions to transform.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
+            axes (tuple[int, ...] or int): The axes we would like to transform.
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to 'qr'.
@@ -578,6 +588,15 @@ class BaseMatrixWaveRec:
 
         self.padded = False
         self.level: Optional[int] = None
+
+        if isinstance(axes, int):
+            axes = (axes,)
+
+        if len(axes) != ndim:
+            raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
+
+        _check_axes_argument(axes)
+        self.axes = axes
 
         if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
@@ -622,17 +641,10 @@ class MatrixWaverec(BaseMatrixWaveRec):
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
-
-        Raises:
-            ValueError: If the wavelet filters have different lengths or if
-                axis is not an integer.
         """
-        super().__init__(wavelet=wavelet, orthogonalization=orthogonalization)
-
-        if isinstance(axis, int):
-            self.axis = axis
-        else:
-            raise ValueError("MatrixWaverec transforms a single axis only.")
+        super().__init__(
+            ndim=1, wavelet=wavelet, axes=axis, orthogonalization=orthogonalization
+        )
 
         self.ifwt_matrix_list: list[torch.Tensor] = []
         self.input_length: Optional[int] = None
@@ -739,7 +751,7 @@ class MatrixWaverec(BaseMatrixWaveRec):
         """
         if not isinstance(coefficients, list):
             coefficients = list(coefficients)
-        coefficients, ds = _preprocess_coeffs(coefficients, ndim=1, axes=self.axis)
+        coefficients, ds = _preprocess_coeffs(coefficients, ndim=1, axes=self.axes)
         torch_device, torch_dtype = _check_same_device_dtype(coefficients)
 
         level = len(coefficients) - 1
@@ -781,4 +793,4 @@ class MatrixWaverec(BaseMatrixWaveRec):
 
         res_lo = lo.T
 
-        return _postprocess_tensor(res_lo, ndim=1, ds=ds, axes=self.axis)
+        return _postprocess_tensor(res_lo, ndim=1, ds=ds, axes=self.axes)

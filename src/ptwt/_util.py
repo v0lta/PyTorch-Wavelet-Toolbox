@@ -449,7 +449,7 @@ def _preprocess_coeffs(
 def _preprocess_coeffs(
     coeffs: WaveletCoeff2d,
     ndim: Literal[2],
-    axes: tuple[int, int],
+    axes: tuple[int, ...],
     add_channel_dim: bool = False,
 ) -> tuple[WaveletCoeff2d, list[int]]: ...
 
@@ -536,10 +536,10 @@ def _preprocess_coeffs(
     if tuple(axes) != tuple(range(-ndim, 0)):
         if len(axes) != ndim:
             raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
-        else:
-            # for all tensors in `coeffs`: swap the axes
-            swap_fn = partial(_swap_axes, axes=axes)
-            coeffs = _coeff_tree_map(coeffs, swap_fn)
+
+        # for all tensors in `coeffs`: swap the axes
+        swap_fn = partial(_swap_axes, axes=axes)
+        coeffs = _coeff_tree_map(coeffs, swap_fn)
 
     # Fold axes for the wavelets
     ds = list(coeffs[0].shape)
@@ -575,7 +575,7 @@ def _postprocess_coeffs(
     coeffs: WaveletCoeff2d,
     ndim: Literal[2],
     ds: list[int],
-    axes: tuple[int, int],
+    axes: tuple[int, ...],
 ) -> WaveletCoeff2d: ...
 
 
@@ -661,10 +661,10 @@ def _postprocess_coeffs(
     if tuple(axes) != tuple(range(-ndim, 0)):
         if len(axes) != ndim:
             raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
-        else:
-            # for all tensors in `coeffs`: undo axes swapping
-            undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-            coeffs = _coeff_tree_map(coeffs, undo_swap_fn)
+
+        # for all tensors in `coeffs`: undo axes swapping
+        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
+        coeffs = _coeff_tree_map(coeffs, undo_swap_fn)
 
     return coeffs
 

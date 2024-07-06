@@ -10,7 +10,6 @@ import numpy as np
 import torch
 
 from ._util import (
-    _check_axes_argument,
     _check_same_device_dtype,
     _deprecated_alias,
     _postprocess_coeffs,
@@ -107,23 +106,15 @@ class MatrixWavedec3(BaseMatrixWaveDec):
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
-
-        Raises:
-            ValueError: If the wavelet filters have different lengths or
-                if axis is not a triple of integers.
         """
         super().__init__(
+            ndim=3,
             wavelet=wavelet,
             level=level,
+            axes=axes,
             orthogonalization=orthogonalization,
             odd_coeff_padding_mode=odd_coeff_padding_mode,
         )
-
-        if len(axes) != 3:
-            raise ValueError("3D transforms work with three axes.")
-        else:
-            _check_axes_argument(axes)
-            self.axes = axes
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
         self.fwt_matrix_list: list[list[torch.Tensor]] = []
 
@@ -313,17 +304,10 @@ class MatrixWaverec3(BaseMatrixWaveRec):
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
-
-        Raises:
-            ValueError: If the wavelet filters have different lengths or
-                if axis is not a triple of integers.
         """
-        super().__init__(wavelet=wavelet, orthogonalization=orthogonalization)
-        if len(axes) != 3:
-            raise ValueError("3D transforms work with three axes")
-        else:
-            _check_axes_argument(axes)
-            self.axes = axes
+        super().__init__(
+            ndim=3, wavelet=wavelet, axes=axes, orthogonalization=orthogonalization
+        )
         self.ifwt_matrix_list: list[list[torch.Tensor]] = []
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
 
