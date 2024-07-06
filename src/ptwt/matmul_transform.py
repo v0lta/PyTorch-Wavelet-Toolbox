@@ -160,6 +160,7 @@ def orthogonalize(
 class BaseMatrixWaveDec:
     """A base class for matrix wavedec."""
 
+    ndim: int
     wavelet: Wavelet
     level: Optional[int]
     orthogonalization: OrthogonalizeMethod
@@ -202,6 +203,7 @@ class BaseMatrixWaveDec:
             ValueError: If the wavelet filters have different lengths or
                 if axes is not a tuple of integers.
         """
+        self.ndim = ndim
         self.wavelet = _as_wavelet(wavelet)
         self.orthogonalization = orthogonalization
         self.odd_coeff_padding_mode = odd_coeff_padding_mode
@@ -524,6 +526,7 @@ def construct_boundary_s(
 class BaseMatrixWaveRec:
     """A base class for matrix waverec."""
 
+    ndim: int
     wavelet: Wavelet
     padded: bool
     level: Optional[int]
@@ -555,6 +558,7 @@ class BaseMatrixWaveRec:
             ValueError: If the wavelet filters have different lengths or if
                 axis is not an integer.
         """
+        self.ndim = ndim
         self.wavelet = _as_wavelet(wavelet)
         self.orthogonalization = orthogonalization
 
