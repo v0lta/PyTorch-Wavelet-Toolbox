@@ -164,6 +164,57 @@ def orthogonalize(
 class BaseMatrixWaveDec:
     """A base class for matrix wavedec."""
 
+    wavelet: Wavelet
+    level: Optional[int]
+    orthogonalization: OrthogonalizeMethod
+    odd_coeff_padding_mode: BoundaryMode
+    padded: bool
+
+    def __init__(
+        self,
+        wavelet: Union[Wavelet, str],
+        level: Optional[int] = None,
+        orthogonalization: OrthogonalizeMethod = "qr",
+        odd_coeff_padding_mode: BoundaryMode = "zero",
+    ) -> None:
+        """Construct base class for matrix-based fast wavelet transformation.
+
+        Args:
+            wavelet (Wavelet or str): A pywt wavelet compatible object or
+                the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
+            level (int, optional): The level up to which to compute the fwt. If None,
+                the maximum level based on the signal length is chosen. Defaults to
+                None.
+            orthogonalization: The method used to orthogonalize
+                boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
+                Defaults to 'qr'.
+            odd_coeff_padding_mode: The constructed FWT matrices require inputs
+                with even lengths. Thus, any odd-length approximation coefficients
+                are padded to an even length using this mode,
+                see :data:`ptwt.constants.BoundaryMode`.
+                Defaults to 'zero'.
+
+        Raises:
+            NotImplementedError: If the selected `orthogonalization` mode
+                is not supported.
+            ValueError: If the wavelet filters have different lengths or
+                if axis is not an integer.
+        """
+        self.wavelet = _as_wavelet(wavelet)
+        self.orthogonalization = orthogonalization
+        self.odd_coeff_padding_mode = odd_coeff_padding_mode
+
+        self.padded = False
+        self.level: Optional[int] = level
+
+        if not _is_orthogonalize_method_supported(self.orthogonalization):
+            raise NotImplementedError
+
+        if self.wavelet.dec_len != self.wavelet.rec_len:
+            raise ValueError("All filters must have the same length")
+
 
 class MatrixWavedec(BaseMatrixWaveDec):
     """Compute the 1d fast wavelet transform using sparse matrices.
@@ -238,15 +289,15 @@ class MatrixWavedec(BaseMatrixWaveDec):
             The argument `boundary` has been renamed to `orthogonalization`.
 
         Raises:
-            NotImplementedError: If the selected `orthogonalization` mode
-                is not supported.
             ValueError: If the wavelet filters have different lengths or
                 if axis is not an integer.
         """
-        self.wavelet = _as_wavelet(wavelet)
-        self.level = level
-        self.odd_coeff_padding_mode = odd_coeff_padding_mode
-        self.orthogonalization = orthogonalization
+        super().__init__(
+            wavelet=wavelet,
+            level=level,
+            orthogonalization=orthogonalization,
+            odd_coeff_padding_mode=odd_coeff_padding_mode,
+        )
 
         if isinstance(axis, int):
             self.axis = axis
@@ -256,14 +307,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         self.input_length: Optional[int] = None
         self.fwt_matrix_list: list[torch.Tensor] = []
         self.pad_list: list[bool] = []
-        self.padded = False
         self.size_list: list[int] = []
-
-        if not _is_orthogonalize_method_supported(self.orthogonalization):
-            raise NotImplementedError
-
-        if self.wavelet.dec_len != self.wavelet.rec_len:
-            raise ValueError("All filters must have the same length")
 
     @property
     def sparse_fwt_operator(self) -> torch.Tensor:
@@ -499,7 +543,50 @@ def construct_boundary_s(
     return s_orth.transpose(1, 0)
 
 
-class MatrixWaverec(object):
+class BaseMatrixWaveRec:
+    """A base class for matrix waverec."""
+
+    wavelet: Wavelet
+    padded: bool
+    level: Optional[int]
+    orthogonalization: OrthogonalizeMethod
+
+    def __init__(
+        self,
+        wavelet: Union[Wavelet, str],
+        orthogonalization: OrthogonalizeMethod = "qr",
+    ) -> None:
+        """Construct base class for inverse matrix-based fast wavelet transformation.
+
+        Args:
+            wavelet (Wavelet or str): A pywt wavelet compatible object or
+                the name of a pywt wavelet.
+                Refer to the output from ``pywt.wavelist(kind='discrete')``
+                for possible choices.
+            orthogonalization: The method used to orthogonalize
+                boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
+                Defaults to 'qr'.
+
+        Raises:
+            NotImplementedError: If the selected `orthogonalization` mode
+                is not supported.
+            ValueError: If the wavelet filters have different lengths or if
+                axis is not an integer.
+        """
+        self.wavelet = _as_wavelet(wavelet)
+        self.orthogonalization = orthogonalization
+
+        self.padded = False
+        self.level: Optional[int] = None
+
+        if not _is_orthogonalize_method_supported(self.orthogonalization):
+            raise NotImplementedError
+
+        if self.wavelet.dec_len != self.wavelet.rec_len:
+            raise ValueError("All filters must have the same length")
+
+
+class MatrixWaverec(BaseMatrixWaveRec):
     """Matrix-based inverse fast wavelet transform.
 
     Example:
@@ -537,28 +624,18 @@ class MatrixWaverec(object):
             The argument `boundary` has been renamed to `orthogonalization`.
 
         Raises:
-            NotImplementedError: If the selected `orthogonalization` mode
-                is not supported.
             ValueError: If the wavelet filters have different lengths or if
                 axis is not an integer.
         """
-        self.wavelet = _as_wavelet(wavelet)
-        self.orthogonalization = orthogonalization
+        super().__init__(wavelet=wavelet, orthogonalization=orthogonalization)
+
         if isinstance(axis, int):
             self.axis = axis
         else:
             raise ValueError("MatrixWaverec transforms a single axis only.")
 
         self.ifwt_matrix_list: list[torch.Tensor] = []
-        self.level: Optional[int] = None
         self.input_length: Optional[int] = None
-        self.padded = False
-
-        if not _is_orthogonalize_method_supported(self.orthogonalization):
-            raise NotImplementedError
-
-        if self.wavelet.dec_len != self.wavelet.rec_len:
-            raise ValueError("All filters must have the same length")
 
     @property
     def sparse_ifwt_operator(self) -> torch.Tensor:
