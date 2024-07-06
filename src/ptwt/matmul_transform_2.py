@@ -14,7 +14,6 @@ import torch
 from ._util import (
     Wavelet,
     _as_wavelet,
-    _check_axes_argument,
     _check_same_device_dtype,
     _deprecated_alias,
     _postprocess_coeffs,
@@ -301,22 +300,15 @@ class MatrixWavedec2(BaseMatrixWaveDec):
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
-
-        Raises:
-            ValueError: If the wavelet filters have different lengths or
-                if axis is not a pair of integers.
         """
         super().__init__(
+            ndim=2,
             wavelet=wavelet,
+            axes=axes,
             level=level,
             orthogonalization=orthogonalization,
             odd_coeff_padding_mode=odd_coeff_padding_mode,
         )
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            _check_axes_argument(axes)
-            self.axes = axes
 
         self.separable = separable
         self.input_signal_shape: Optional[tuple[int, int]] = None
@@ -594,19 +586,11 @@ class MatrixWaverec2(BaseMatrixWaveRec):
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
-
-        Raises:
-            ValueError: If the wavelet filters have different lengths or
-                if axis is not a pair of integers.
         """
-        super().__init__(wavelet=wavelet, orthogonalization=orthogonalization)
+        super().__init__(
+            ndim=2, wavelet=wavelet, axes=axes, orthogonalization=orthogonalization
+        )
         self.separable = separable
-
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            _check_axes_argument(axes)
-            self.axes = axes
 
         self.ifwt_matrix_list: list[
             Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]
