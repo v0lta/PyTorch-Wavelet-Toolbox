@@ -8,7 +8,7 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
 
 import sys
-from typing import Optional, Union
+from typing import Optional, Union, overload
 
 import numpy as np
 import torch
@@ -95,8 +95,7 @@ def _construct_s(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
         length (int): The length of the originally transformed signal.
-        device (torch.device, optional): Choose cuda or cpu.
-            Defaults to torch.device("cpu").
+        device (torch.device or str): Choose cuda or cpu. Defaults to "cpu".
         dtype (torch.dtype): The desired data type. Choose torch.float32
             or torch.float64. Defaults to torch.float64.
         mode: The padding mode to use.
@@ -229,6 +228,66 @@ class BaseMatrixWaveDec:
 
         if self.wavelet.dec_len != self.wavelet.rec_len:
             raise ValueError("All filters must have the same length")
+
+    # 1d case
+    @overload
+    def construct_separable_analysis_matrices(
+        self, size: int, device: Union[torch.device, str], dtype: torch.dtype
+    ) -> torch.Tensor: ...
+
+    # 2d case
+    @overload
+    def construct_separable_analysis_matrices(
+        self,
+        size: tuple[int, int],
+        device: Union[torch.device, str],
+        dtype: torch.dtype,
+    ) -> tuple[torch.Tensor, torch.Tensor]: ...
+
+    # 3d case
+    @overload
+    def construct_separable_analysis_matrices(
+        self,
+        size: tuple[int, int, int],
+        device: Union[torch.device, str],
+        dtype: torch.dtype,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]: ...
+
+    def construct_separable_analysis_matrices(
+        self,
+        size: Union[tuple[int, ...], int],
+        device: Union[torch.device, str],
+        dtype: torch.dtype,
+    ) -> Union[torch.Tensor, tuple[torch.Tensor, ...]]:
+        """Construct a analysis matrix per signal axis.
+
+        Args:
+            size (tuple of ints or int): The signal shape to transform.
+            device (torch.device or str): Choose cuda or cpu.
+            dtype (torch.dtype): The desired data type. Choose torch.float32
+                or torch.float64.
+
+        Returns:
+            The constructed analysis matrices. A tensor is returned
+            if a single axis is transformed.
+            Otherwise, a tuple of tensors is returned.
+        """
+        if isinstance(size, int):
+            size = (size,)
+        return_tuple = tuple(
+            construct_boundary_a(
+                wavelet=self.wavelet,
+                length=length,
+                orthogonalization=self.orthogonalization,
+                device=device,
+                dtype=dtype,
+            )
+            for length in size
+        )
+        if len(return_tuple) == 1:
+            return return_tuple[0]
+        else:
+            return return_tuple
 
 
 class MatrixWavedec(BaseMatrixWaveDec):
@@ -393,12 +452,8 @@ class MatrixWavedec(BaseMatrixWaveDec):
 
             self.size_list.append(curr_length)
 
-            an = construct_boundary_a(
-                self.wavelet,
-                curr_length,
-                orthogonalization=self.orthogonalization,
-                device=device,
-                dtype=dtype,
+            an = self.construct_separable_analysis_matrices(
+                curr_length, device=device, dtype=dtype
             )
             self.fwt_matrix_list.append(an)
             curr_length = curr_length // 2
@@ -608,6 +663,66 @@ class BaseMatrixWaveRec:
         if self.wavelet.dec_len != self.wavelet.rec_len:
             raise ValueError("All filters must have the same length")
 
+    # 1d case
+    @overload
+    def construct_separable_synthesis_matrices(
+        self, size: int, device: Union[torch.device, str], dtype: torch.dtype
+    ) -> torch.Tensor: ...
+
+    # 2d case
+    @overload
+    def construct_separable_synthesis_matrices(
+        self,
+        size: tuple[int, int],
+        device: Union[torch.device, str],
+        dtype: torch.dtype,
+    ) -> tuple[torch.Tensor, torch.Tensor]: ...
+
+    # 3d case
+    @overload
+    def construct_separable_synthesis_matrices(
+        self,
+        size: tuple[int, int, int],
+        device: Union[torch.device, str],
+        dtype: torch.dtype,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]: ...
+
+    def construct_separable_synthesis_matrices(
+        self,
+        size: Union[tuple[int, ...], int],
+        device: Union[torch.device, str],
+        dtype: torch.dtype,
+    ) -> Union[torch.Tensor, tuple[torch.Tensor, ...]]:
+        """Construct a synthesis matrix per signal axis.
+
+        Args:
+            size (tuple of ints or int): The signal shape to transform.
+            device (torch.device or str): Choose cuda or cpu.
+            dtype (torch.dtype): The desired data type. Choose torch.float32
+                or torch.float64.
+
+        Returns:
+            The constructed synthesis matrices. A tensor is returned
+            if a single axis is transformed.
+            Otherwise, a tuple of tensors is returned.
+        """
+        if isinstance(size, int):
+            size = (size,)
+        return_tuple = tuple(
+            construct_boundary_s(
+                wavelet=self.wavelet,
+                length=length,
+                orthogonalization=self.orthogonalization,
+                device=device,
+                dtype=dtype,
+            )
+            for length in size
+        )
+        if len(return_tuple) == 1:
+            return return_tuple[0]
+        else:
+            return return_tuple
+
 
 class MatrixWaverec(BaseMatrixWaveRec):
     """Matrix-based inverse fast wavelet transform.
@@ -728,12 +843,8 @@ class MatrixWaverec(BaseMatrixWaveRec):
 
             self.size_list.append(curr_length)
 
-            sn = construct_boundary_s(
-                self.wavelet,
-                curr_length,
-                orthogonalization=self.orthogonalization,
-                device=device,
-                dtype=dtype,
+            sn = self.construct_separable_synthesis_matrices(
+                curr_length, device=device, dtype=dtype
             )
             self.ifwt_matrix_list.append(sn)
             curr_length = curr_length // 2

@@ -31,13 +31,7 @@ from .constants import (
     WaveletDetailTuple2d,
 )
 from .conv_transform_2 import _construct_2d_filt, _fwt_pad2
-from .matmul_transform import (
-    BaseMatrixWaveDec,
-    BaseMatrixWaveRec,
-    construct_boundary_a,
-    construct_boundary_s,
-    orthogonalize,
-)
+from .matmul_transform import BaseMatrixWaveDec, BaseMatrixWaveRec, orthogonalize
 from .sparse_math import (
     batch_mm,
     cat_sparse_identity_matrix,
@@ -401,23 +395,10 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             self.pad_list.append(pad_tuple)
             self.size_list.append((current_height, current_width))
             if self.separable:
-                analysis_matrix_rows = construct_boundary_a(
-                    wavelet=self.wavelet,
-                    length=current_height,
-                    orthogonalization=self.orthogonalization,
-                    device=device,
-                    dtype=dtype,
+                analysis_matrices = self.construct_separable_analysis_matrices(
+                    (current_height, current_width), device=device, dtype=dtype
                 )
-                analysis_matrix_cols = construct_boundary_a(
-                    wavelet=self.wavelet,
-                    length=current_width,
-                    orthogonalization=self.orthogonalization,
-                    device=device,
-                    dtype=dtype,
-                )
-                self.fwt_matrix_list.append(
-                    (analysis_matrix_rows, analysis_matrix_cols)
-                )
+                self.fwt_matrix_list.append(analysis_matrices)
             else:
                 analysis_matrix_2d = construct_boundary_a2(
                     wavelet=self.wavelet,
@@ -675,23 +656,10 @@ class MatrixWaverec2(BaseMatrixWaveRec):
             if any(pad_tuple):
                 self.padded = True
             if self.separable:
-                synthesis_matrix_rows = construct_boundary_s(
-                    wavelet=self.wavelet,
-                    length=current_height,
-                    orthogonalization=self.orthogonalization,
-                    device=device,
-                    dtype=dtype,
+                synthesis_matrices = self.construct_separable_synthesis_matrices(
+                    (current_height, current_width), device=device, dtype=dtype
                 )
-                synthesis_matrix_cols = construct_boundary_s(
-                    wavelet=self.wavelet,
-                    length=current_width,
-                    orthogonalization=self.orthogonalization,
-                    device=device,
-                    dtype=dtype,
-                )
-                self.ifwt_matrix_list.append(
-                    (synthesis_matrix_rows, synthesis_matrix_cols)
-                )
+                self.ifwt_matrix_list.append(synthesis_matrices)
             else:
                 synthesis_matrix_2d = construct_boundary_s2(
                     self.wavelet,
