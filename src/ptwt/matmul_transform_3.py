@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import sys
-from functools import partial
 from typing import NamedTuple, Optional, Union
 
 import numpy as np
@@ -25,12 +24,7 @@ from .constants import (
     WaveletDetailDict,
 )
 from .conv_transform_3 import _fwt_pad3
-from .matmul_transform import (
-    BaseMatrixWaveDec,
-    BaseMatrixWaveRec,
-    construct_boundary_a,
-    construct_boundary_s,
-)
+from .matmul_transform import BaseMatrixWaveDec, BaseMatrixWaveRec
 from .sparse_math import _batch_dim_mm
 
 
@@ -103,7 +97,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
             odd_coeff_padding_mode=odd_coeff_padding_mode,
         )
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
-        self.fwt_matrix_list: list[list[torch.Tensor]] = []
+        self.fwt_matrix_list: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
 
     def _construct_analysis_matrices(
         self,
@@ -145,19 +139,13 @@ class MatrixWavedec3(BaseMatrixWaveDec):
             self.pad_list.append(pad_tuple)
             self.size_list.append((current_depth, current_height, current_width))
 
-            matrix_construction_fun = partial(
-                construct_boundary_a,
-                wavelet=self.wavelet,
-                orthogonalization=self.orthogonalization,
+            analysis_matrices = self.construct_separable_analysis_matrices(
+                (current_depth, current_height, current_width),
                 device=device,
                 dtype=dtype,
             )
-            analysis_matrics = [
-                matrix_construction_fun(length=dimension_length)
-                for dimension_length in (current_depth, current_height, current_width)
-            ]
 
-            self.fwt_matrix_list.append(analysis_matrics)
+            self.fwt_matrix_list.append(analysis_matrices)
 
             current_depth, current_height, current_width = (
                 current_depth // 2,
@@ -292,7 +280,9 @@ class MatrixWaverec3(BaseMatrixWaveRec):
         super().__init__(
             ndim=3, wavelet=wavelet, axes=axes, orthogonalization=orthogonalization
         )
-        self.ifwt_matrix_list: list[list[torch.Tensor]] = []
+        self.ifwt_matrix_list: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = (
+            []
+        )
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
 
     def _construct_synthesis_matrices(
@@ -331,18 +321,11 @@ class MatrixWaverec3(BaseMatrixWaveRec):
             if any(pad_tuple):
                 self.padded = True
 
-            matrix_construction_fun = partial(
-                construct_boundary_s,
-                wavelet=self.wavelet,
-                orthogonalization=self.orthogonalization,
+            synthesis_matrices = self.construct_separable_synthesis_matrices(
+                (current_depth, current_height, current_width),
                 device=device,
                 dtype=dtype,
             )
-            synthesis_matrices = [
-                matrix_construction_fun(length=dimension_length)
-                for dimension_length in (current_depth, current_height, current_width)
-            ]
-
             self.ifwt_matrix_list.append(synthesis_matrices)
             current_depth, current_height, current_width = (
                 current_depth // 2,
