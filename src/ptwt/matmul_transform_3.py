@@ -11,11 +11,9 @@ import torch
 
 from ._util import (
     Wavelet,
-    _as_wavelet,
     _check_axes_argument,
     _check_same_device_dtype,
     _deprecated_alias,
-    _is_orthogonalize_method_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -28,7 +26,12 @@ from .constants import (
     WaveletDetailDict,
 )
 from .conv_transform_3 import _fwt_pad3
-from .matmul_transform import construct_boundary_a, construct_boundary_s
+from .matmul_transform import (
+    BaseMatrixWaveDec,
+    BaseMatrixWaveRec,
+    construct_boundary_a,
+    construct_boundary_s,
+)
 from .sparse_math import _batch_dim_mm
 
 
@@ -56,7 +59,7 @@ def _matrix_pad_3(
     return depth, height, width, _PadTuple(pad_depth, pad_height, pad_width)
 
 
-class MatrixWavedec3(object):
+class MatrixWavedec3(BaseMatrixWaveDec):
     """Compute 3d separable transforms."""
 
     @_deprecated_alias(boundary="orthogonalization")
@@ -93,27 +96,23 @@ class MatrixWavedec3(object):
             The argument `boundary` has been renamed to `orthogonalization`.
 
         Raises:
-            NotImplementedError: If the chosen orthogonalization method
-                is not implemented.
-            ValueError: If the analysis and synthesis filters do not have
-                the same length.
+            ValueError: If the wavelet filters have different lengths or
+                if axis is not a triple of integers.
         """
-        self.wavelet = _as_wavelet(wavelet)
-        self.level = level
-        self.orthogonalization = orthogonalization
-        self.odd_coeff_padding_mode = odd_coeff_padding_mode
+        super().__init__(
+            wavelet=wavelet,
+            level=level,
+            orthogonalization=orthogonalization,
+            odd_coeff_padding_mode=odd_coeff_padding_mode,
+        )
+
         if len(axes) != 3:
             raise ValueError("3D transforms work with three axes.")
         else:
-            _check_axes_argument(list(axes))
+            _check_axes_argument(axes)
             self.axes = axes
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
         self.fwt_matrix_list: list[list[torch.Tensor]] = []
-
-        if not _is_orthogonalize_method_supported(self.orthogonalization):
-            raise NotImplementedError
-        if self.wavelet.dec_len != self.wavelet.rec_len:
-            raise ValueError("All filters must have the same length")
 
     def _construct_analysis_matrices(
         self,
@@ -273,7 +272,7 @@ class MatrixWavedec3(object):
         return _postprocess_coeffs(coeffs, ndim=3, ds=ds, axes=self.axes)
 
 
-class MatrixWaverec3(object):
+class MatrixWaverec3(BaseMatrixWaveRec):
     """Reconstruct a signal from 3d-separable-fwt coefficients."""
 
     @_deprecated_alias(boundary="orthogonalization")
@@ -300,26 +299,17 @@ class MatrixWaverec3(object):
             The argument `boundary` has been renamed to `orthogonalization`.
 
         Raises:
-            NotImplementedError: If the selected `orthogonalization` mode
-                is not supported.
-            ValueError: If the wavelet filters have different lengths.
+            ValueError: If the wavelet filters have different lengths or
+                if axis is not a triple of integers.
         """
-        self.wavelet = _as_wavelet(wavelet)
+        super().__init__(wavelet=wavelet, orthogonalization=orthogonalization)
         if len(axes) != 3:
             raise ValueError("3D transforms work with three axes")
         else:
-            _check_axes_argument(list(axes))
+            _check_axes_argument(axes)
             self.axes = axes
-        self.orthogonalization = orthogonalization
         self.ifwt_matrix_list: list[list[torch.Tensor]] = []
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
-        self.level: Optional[int] = None
-
-        if not _is_orthogonalize_method_supported(self.orthogonalization):
-            raise NotImplementedError
-
-        if self.wavelet.dec_len != self.wavelet.rec_len:
-            raise ValueError("All filters must have the same length")
 
     def _construct_synthesis_matrices(
         self,
