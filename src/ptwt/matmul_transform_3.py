@@ -106,11 +106,11 @@ class MatrixWavedec3(BaseMatrixWaveDec):
             wavelet=wavelet,
             level=level,
             axes=axes,
+            separable=True,
             orthogonalization=orthogonalization,
             odd_coeff_padding_mode=odd_coeff_padding_mode,
         )
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
-        self.fwt_matrix_list: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = []
 
     def _construct_analysis_matrices(
         self,
@@ -294,10 +294,11 @@ class MatrixWaverec3(BaseMatrixWaveRec):
             The argument `boundary` has been renamed to `orthogonalization`.
         """
         super().__init__(
-            ndim=3, wavelet=wavelet, axes=axes, orthogonalization=orthogonalization
-        )
-        self.ifwt_matrix_list: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]] = (
-            []
+            ndim=3,
+            wavelet=wavelet,
+            axes=axes,
+            separable=True,
+            orthogonalization=orthogonalization,
         )
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
 

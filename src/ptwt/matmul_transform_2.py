@@ -32,11 +32,7 @@ from .constants import (
 )
 from .conv_transform_2 import _construct_2d_filt, _fwt_pad2
 from .matmul_transform import BaseMatrixWaveDec, BaseMatrixWaveRec, orthogonalize
-from .sparse_math import (
-    batch_mm,
-    cat_sparse_identity_matrix,
-    construct_strided_conv2d_matrix,
-)
+from .sparse_math import batch_mm, construct_strided_conv2d_matrix
 
 
 def _construct_a_2(
@@ -309,56 +305,14 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             ndim=2,
             wavelet=wavelet,
             axes=axes,
+            separable=separable,
             level=level,
             orthogonalization=orthogonalization,
             odd_coeff_padding_mode=odd_coeff_padding_mode,
         )
 
-        self.separable = separable
         self.input_signal_shape: Optional[tuple[int, int]] = None
-        self.fwt_matrix_list: list[
-            Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]
-        ] = []
         self.pad_list: list[tuple[bool, bool]] = []
-
-    @property
-    def sparse_fwt_operator(self) -> torch.Tensor:
-        """Compute the operator matrix for padding-free cases.
-
-        This property exists to make the transformation matrix available.
-        To benefit from code handling odd-length levels call the object.
-
-        Returns:
-            The sparse 2d FWT operator matrix.
-
-        Raises:
-            NotImplementedError: if a separable transformation was used or if padding
-                had to be used in the creation of the transformation matrices.
-            ValueError: If no level transformation matrices are stored (most likely
-                since the object was not called yet).
-        """
-        if self.separable:
-            raise NotImplementedError
-
-        # in the non-separable case the list entries are tensors
-        fwt_matrix_list = cast(list[torch.Tensor], self.fwt_matrix_list)
-
-        if len(fwt_matrix_list) == 1:
-            return fwt_matrix_list[0]
-        elif len(fwt_matrix_list) > 1:
-            if self.padded:
-                raise NotImplementedError
-
-            fwt_matrix = fwt_matrix_list[0]
-            for scale_mat in fwt_matrix_list[1:]:
-                scale_mat = cat_sparse_identity_matrix(scale_mat, fwt_matrix.shape[0])
-                fwt_matrix = torch.sparse.mm(scale_mat, fwt_matrix)
-            return fwt_matrix
-        else:
-            raise ValueError(
-                "Call this object first to create the transformation matrices for each "
-                "level."
-            )
 
     def _construct_analysis_matrices(
         self,
@@ -579,52 +533,13 @@ class MatrixWaverec2(BaseMatrixWaveRec):
             The argument `boundary` has been renamed to `orthogonalization`.
         """
         super().__init__(
-            ndim=2, wavelet=wavelet, axes=axes, orthogonalization=orthogonalization
+            ndim=2,
+            wavelet=wavelet,
+            axes=axes,
+            separable=separable,
+            orthogonalization=orthogonalization,
         )
-        self.separable = separable
-
-        self.ifwt_matrix_list: list[
-            Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]
-        ] = []
         self.input_signal_shape: Optional[tuple[int, int]] = None
-
-    @property
-    def sparse_ifwt_operator(self) -> torch.Tensor:
-        """Compute the iFWT operator matrix for pad-free cases.
-
-        Returns:
-            The sparse 2d iFWT operator matrix.
-
-        Raises:
-            NotImplementedError: if a separable transformation was used or if padding
-                had to be used in the creation of the transformation matrices.
-            ValueError: If no level transformation matrices are stored (most likely
-                since the object was not called yet).
-        """
-        if self.separable:
-            raise NotImplementedError
-
-        # in the non-separable case the list entries are tensors
-        ifwt_matrix_list = cast(list[torch.Tensor], self.ifwt_matrix_list)
-
-        if len(ifwt_matrix_list) == 1:
-            return ifwt_matrix_list[0]
-        elif len(ifwt_matrix_list) > 1:
-            if self.padded:
-                raise NotImplementedError
-
-            ifwt_matrix = ifwt_matrix_list[-1]
-            for scale_mat in ifwt_matrix_list[:-1][::-1]:
-                ifwt_matrix = cat_sparse_identity_matrix(
-                    ifwt_matrix, scale_mat.shape[0]
-                )
-                ifwt_matrix = torch.sparse.mm(scale_mat, ifwt_matrix)
-            return ifwt_matrix
-        else:
-            raise ValueError(
-                "Call this object first to create the transformation matrices for each "
-                "level."
-            )
 
     def _construct_synthesis_matrices(
         self,
