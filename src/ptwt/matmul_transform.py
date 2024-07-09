@@ -169,6 +169,7 @@ class BaseMatrixWaveDec:
 
     fwt_matrix_list: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]]
     input_signal_shape: Optional[torch.Size]
+    _pad_list: list[tuple[bool, ...]]
 
     def __init__(
         self,
@@ -219,7 +220,7 @@ class BaseMatrixWaveDec:
         self.padded = False
         self.level: Optional[int] = level
         self.fwt_matrix_list = []
-
+        self._pad_list = []
         self.input_signal_shape: Optional[torch.Size] = None
 
         if isinstance(axes, int):
@@ -402,15 +403,13 @@ class MatrixWavedec(BaseMatrixWaveDec):
             separable=False,
         )
 
-        self.pad_list: list[bool] = []
-
     def _construct_analysis_matrices(
         self, device: Union[torch.device, str], dtype: torch.dtype
     ) -> None:
         if self.level is None or self.input_signal_shape is None:
             raise AssertionError
         self.fwt_matrix_list = []
-        self.pad_list = []
+        self._pad_list = []
         self.padded = False
 
         filt_len = self.wavelet.dec_len
@@ -431,9 +430,9 @@ class MatrixWavedec(BaseMatrixWaveDec):
                 # padding
                 curr_length += 1
                 self.padded = True
-                self.pad_list.append(True)
+                self._pad_list.append((True,))
             else:
-                self.pad_list.append(False)
+                self._pad_list.append((False,))
 
             an = self.construct_separable_analysis_matrices(
                 curr_length, device=device, dtype=dtype
@@ -500,7 +499,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         lo = input_signal.T
         split_list = []
         for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
-            if self.pad_list[scale]:
+            if any(self._pad_list[scale]):
                 # fix odd coefficients lengths for the conv matrix to work.
                 lo = lo.T.unsqueeze(1)
                 lo = _fwt_pad(

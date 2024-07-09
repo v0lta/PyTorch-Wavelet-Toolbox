@@ -156,6 +156,13 @@ def _pad_symmetric(
     return signal
 
 
+def _matrix_pad(*args: int) -> tuple[torch.Size, tuple[bool, ...]]:
+    padding = tuple(dim_size % 2 != 0 for dim_size in args)
+    new_size = torch.Size([size + int(pad) for size, pad in zip(args, padding)])
+
+    return new_size, padding
+
+
 def _fold_axes(data: torch.Tensor, keep_no: int) -> tuple[torch.Tensor, list[int]]:
     """Fold unchanged leading dimensions into a single batch dimension.
 

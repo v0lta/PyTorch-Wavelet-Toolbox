@@ -16,6 +16,7 @@ from ._util import (
     _as_wavelet,
     _check_same_device_dtype,
     _deprecated_alias,
+    _matrix_pad,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -211,17 +212,6 @@ def construct_boundary_s2(
     return orth_s
 
 
-def _matrix_pad_2(height: int, width: int) -> tuple[int, int, tuple[bool, bool]]:
-    pad_tuple = (False, False)
-    if height % 2 != 0:
-        height += 1
-        pad_tuple = (pad_tuple[0], True)
-    if width % 2 != 0:
-        width += 1
-        pad_tuple = (True, pad_tuple[1])
-    return height, width, pad_tuple
-
-
 class MatrixWavedec2(BaseMatrixWaveDec):
     """Experimental sparse matrix 2d wavelet transform.
 
@@ -301,8 +291,6 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             odd_coeff_padding_mode=odd_coeff_padding_mode,
         )
 
-        self.pad_list: list[tuple[bool, bool]] = []
-
     def _construct_analysis_matrices(
         self,
         device: Union[torch.device, str],
@@ -312,7 +300,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             raise AssertionError
         self.fwt_matrix_list = []
         self.size_list = []
-        self.pad_list = []
+        self._pad_list = []
         self.padded = False
 
         filt_len = self.wavelet.dec_len
@@ -330,12 +318,12 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 )
                 break
             # the conv matrices require even length inputs.
-            current_height, current_width, pad_tuple = _matrix_pad_2(
+            (current_height, current_width), pad_tuple = _matrix_pad(
                 current_height, current_width
             )
             if any(pad_tuple):
                 self.padded = True
-            self.pad_list.append(pad_tuple)
+            self._pad_list.append(pad_tuple)
             self.size_list.append((current_height, current_width))
             if self.separable:
                 analysis_matrices = self.construct_separable_analysis_matrices(
@@ -404,16 +392,16 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
-        def _add_padding(signal: torch.Tensor, pad: tuple[bool, bool]) -> torch.Tensor:
-            if pad[0] or pad[1]:
-                padding_0 = (0, 1) if pad[0] else (0, 0)
-                padding_1 = (0, 1) if pad[1] else (0, 0)
-
+        def _add_padding(signal: torch.Tensor, pad: tuple[bool, ...]) -> torch.Tensor:
+            if any(pad):
+                axis_padding = [(0, 1) if pad_axis else (0, 0) for pad_axis in pad]
+                assert len(axis_padding) == 2
+                padding = axis_padding[0] + axis_padding[1]
                 signal = _fwt_pad2(
                     signal,
                     wavelet=self.wavelet,
                     mode=self.odd_coeff_padding_mode,
-                    padding=padding_0 + padding_1,
+                    padding=padding,
                 )
             return signal
 
@@ -422,9 +410,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             ll = input_signal
             for scale, fwt_mats in enumerate(self.fwt_matrix_list):
                 fwt_row_matrix, fwt_col_matrix = fwt_mats
-                pad = self.pad_list[scale]
                 current_height, current_width = self.size_list[scale]
-                ll = _add_padding(ll, pad)
+                ll = _add_padding(ll, pad=self._pad_list[scale])
 
                 ll = batch_mm(fwt_col_matrix, ll.transpose(-2, -1)).transpose(-2, -1)
                 ll = batch_mm(fwt_row_matrix, ll)
@@ -438,9 +425,9 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             ll = input_signal.transpose(-2, -1).reshape([batch_size, -1]).T
             for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
                 fwt_matrix = cast(torch.Tensor, fwt_matrix)
-                pad = self.pad_list[scale]
+                pad = self._pad_list[scale]
                 size = self.size_list[scale]
-                if pad[0] or pad[1]:
+                if any(pad):
                     ll_reshape = ll.T.reshape(
                         batch_size, size[1] - int(pad[0]), size[0] - int(pad[1])
                     ).transpose(2, 1)
@@ -551,7 +538,7 @@ class MatrixWaverec2(BaseMatrixWaveRec):
                     f"is only computed up to the decomposition level {curr_level-1}.\n"
                 )
                 break
-            current_height, current_width, pad_tuple = _matrix_pad_2(
+            (current_height, current_width), pad_tuple = _matrix_pad(
                 current_height, current_width
             )
             if any(pad_tuple):

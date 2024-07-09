@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import NamedTuple, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -12,6 +12,7 @@ from ._util import (
     Wavelet,
     _check_same_device_dtype,
     _deprecated_alias,
+    _matrix_pad,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
@@ -26,30 +27,6 @@ from .constants import (
 from .conv_transform_3 import _fwt_pad3
 from .matmul_transform import BaseMatrixWaveDec, BaseMatrixWaveRec
 from .sparse_math import _batch_dim_mm
-
-
-class _PadTuple(NamedTuple):
-    """Replaces _PadTuple = namedtuple("_PadTuple", ("depth", "height", "width"))."""
-
-    depth: bool
-    height: bool
-    width: bool
-
-
-def _matrix_pad_3(
-    depth: int, height: int, width: int
-) -> tuple[int, int, int, _PadTuple]:
-    pad_depth, pad_height, pad_width = (False, False, False)
-    if height % 2 != 0:
-        height += 1
-        pad_height = True
-    if width % 2 != 0:
-        width += 1
-        pad_width = True
-    if depth % 2 != 0:
-        depth += 1
-        pad_depth = True
-    return depth, height, width, _PadTuple(pad_depth, pad_height, pad_width)
 
 
 class MatrixWavedec3(BaseMatrixWaveDec):
@@ -107,7 +84,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
             raise AssertionError
         self.fwt_matrix_list = []
         self.size_list = []
-        self.pad_list = []
+        self._pad_list = []
         self.padded = False
 
         filt_len = self.wavelet.dec_len
@@ -130,12 +107,12 @@ class MatrixWavedec3(BaseMatrixWaveDec):
                 )
                 break
             # the conv matrices require even length inputs.
-            current_depth, current_height, current_width, pad_tuple = _matrix_pad_3(
-                depth=current_depth, height=current_height, width=current_width
+            (current_depth, current_height, current_width), pad_tuple = _matrix_pad(
+                current_depth, current_height, current_width
             )
             if any(pad_tuple):
                 self.padded = True
-            self.pad_list.append(pad_tuple)
+            self._pad_list.append(pad_tuple)
             self.size_list.append((current_depth, current_height, current_width))
 
             analysis_matrices = self.construct_separable_analysis_matrices(
@@ -192,19 +169,23 @@ class MatrixWavedec3(BaseMatrixWaveDec):
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
+        def _add_padding(signal: torch.Tensor, pad: tuple[bool, ...]) -> torch.Tensor:
+            if any(pad):
+                axis_padding = [(0, 1) if pad_axis else (0, 0) for pad_axis in pad]
+                assert len(axis_padding) == 3
+                padding = axis_padding[0] + axis_padding[1] + axis_padding[2]
+                signal = _fwt_pad3(
+                    signal,
+                    wavelet=self.wavelet,
+                    mode=self.odd_coeff_padding_mode,
+                    padding=padding,
+                )
+            return signal
+
         split_list: list[WaveletDetailDict] = []
         lll = input_signal
         for scale, fwt_mats in enumerate(self.fwt_matrix_list):
-            pad_tuple = self.pad_list[scale]
-            padding_width = (0, 1) if pad_tuple.width else (0, 0)
-            padding_height = (0, 1) if pad_tuple.height else (0, 0)
-            padding_depth = (0, 1) if pad_tuple.depth else (0, 0)
-            lll = _fwt_pad3(
-                lll,
-                wavelet=self.wavelet,
-                mode=self.odd_coeff_padding_mode,
-                padding=padding_width + padding_height + padding_depth,
-            )
+            lll = _add_padding(lll, self._pad_list[scale])
 
             for dim, mat in enumerate(fwt_mats[::-1]):
                 lll = _batch_dim_mm(mat, lll, dim=(-1) * (dim + 1))
@@ -304,8 +285,8 @@ class MatrixWaverec3(BaseMatrixWaveRec):
                 )
                 break
             # the conv matrices require even length inputs.
-            current_depth, current_height, current_width, pad_tuple = _matrix_pad_3(
-                depth=current_depth, height=current_height, width=current_width
+            (current_depth, current_height, current_width), pad_tuple = _matrix_pad(
+                current_depth, current_height, current_width
             )
             if any(pad_tuple):
                 self.padded = True
