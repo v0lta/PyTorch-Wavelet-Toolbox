@@ -168,6 +168,7 @@ class BaseMatrixWaveDec:
     separable: bool
 
     fwt_matrix_list: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]]
+    input_signal_shape: Optional[torch.Size]
 
     def __init__(
         self,
@@ -218,6 +219,8 @@ class BaseMatrixWaveDec:
         self.padded = False
         self.level: Optional[int] = level
         self.fwt_matrix_list = []
+
+        self.input_signal_shape: Optional[torch.Size] = None
 
         if isinstance(axes, int):
             axes = (axes,)
@@ -399,14 +402,13 @@ class MatrixWavedec(BaseMatrixWaveDec):
             separable=False,
         )
 
-        self.input_length: Optional[int] = None
         self.pad_list: list[bool] = []
         self.size_list: list[int] = []
 
     def _construct_analysis_matrices(
         self, device: Union[torch.device, str], dtype: torch.dtype
     ) -> None:
-        if self.level is None or self.input_length is None:
+        if self.level is None or self.input_signal_shape is None:
             raise AssertionError
         self.fwt_matrix_list = []
         self.size_list = []
@@ -414,14 +416,14 @@ class MatrixWavedec(BaseMatrixWaveDec):
         self.padded = False
 
         filt_len = self.wavelet.dec_len
-        curr_length = self.input_length
+        (curr_length,) = self.input_signal_shape
         for curr_level in range(1, self.level + 1):
             if curr_length < filt_len:
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input size {self.input_length}. At "
-                    f"level {curr_level}, the current signal length {curr_length} is "
-                    f"smaller than the filter length {filt_len}. Therefore, the "
+                    f" is too large for the given input size {self.input_signal_shape}."
+                    f" At level {curr_level}, the current signal length {curr_length} "
+                    f"is smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
                     f"{curr_level-1}.\n"
                 )
@@ -481,11 +483,12 @@ class MatrixWavedec(BaseMatrixWaveDec):
                 padding=(0, 1),
             )
 
-        _, length = input_signal.shape
+        input_signal_shape = input_signal.shape[1:]
+        (length,) = input_signal_shape
 
         re_build = False
-        if self.input_length != length:
-            self.input_length = length
+        if self.input_signal_shape != input_signal_shape:
+            self.input_signal_shape = input_signal_shape
             re_build = True
 
         if self.level is None:
@@ -604,6 +607,7 @@ class BaseMatrixWaveRec:
     separable: bool
 
     ifwt_matrix_list: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]]
+    input_signal_shape: Optional[torch.Size]
 
     def __init__(
         self,
@@ -643,6 +647,8 @@ class BaseMatrixWaveRec:
         self.padded = False
         self.level: Optional[int] = None
         self.ifwt_matrix_list = []
+
+        self.input_signal_shape: Optional[torch.Size] = None
 
         if isinstance(axes, int):
             axes = (axes,)
@@ -813,7 +819,6 @@ class MatrixWaverec(BaseMatrixWaveRec):
             separable=False,
             orthogonalization=orthogonalization,
         )
-        self.input_length: Optional[int] = None
 
     def _construct_synthesis_matrices(
         self, device: Union[torch.device, str], dtype: torch.dtype
@@ -821,19 +826,19 @@ class MatrixWaverec(BaseMatrixWaveRec):
         self.ifwt_matrix_list = []
         self.size_list = []
         self.padded = False
-        if self.level is None or self.input_length is None:
+        if self.level is None or self.input_signal_shape is None:
             raise AssertionError
 
         filt_len = self.wavelet.rec_len
-        curr_length = self.input_length
+        (curr_length,) = self.input_signal_shape
 
         for curr_level in range(1, self.level + 1):
             if curr_length < filt_len:
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input size {self.input_length}. At "
-                    f"level {curr_level}, the current signal length {curr_length} is "
-                    f"smaller than the filter length {filt_len}. Therefore, the "
+                    f" is too large for the given input size {self.input_signal_shape}."
+                    f" At level {curr_level}, the current signal length {curr_length} "
+                    f"is smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
                     f"{curr_level-1}.\n"
                 )
@@ -873,12 +878,12 @@ class MatrixWaverec(BaseMatrixWaveRec):
         torch_device, torch_dtype = _check_same_device_dtype(coefficients)
 
         level = len(coefficients) - 1
-        input_length = coefficients[-1].shape[-1] * 2
+        input_signal_shape = torch.Size([coefficients[-1].shape[-1] * 2])
 
         re_build = False
-        if self.level != level or self.input_length != input_length:
+        if self.level != level or self.input_signal_shape != input_signal_shape:
             self.level = level
-            self.input_length = input_length
+            self.input_signal_shape = input_signal_shape
             re_build = True
 
         if not self.ifwt_matrix_list or re_build:

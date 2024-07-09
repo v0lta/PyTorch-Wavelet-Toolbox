@@ -301,7 +301,6 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             odd_coeff_padding_mode=odd_coeff_padding_mode,
         )
 
-        self.input_signal_shape: Optional[tuple[int, int]] = None
         self.pad_list: list[tuple[bool, bool]] = []
 
     def _construct_analysis_matrices(
@@ -382,22 +381,20 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             input_signal, ndim=2, axes=self.axes, add_channel_dim=False
         )
 
-        batch_size, height, width = input_signal.shape
+        batch_size = input_signal.shape[0]
+        input_signal_shape = input_signal.shape[1:]
 
         re_build = False
-        if (
-            self.input_signal_shape is None
-            or self.input_signal_shape[0] != height
-            or self.input_signal_shape[1] != width
-        ):
-            self.input_signal_shape = height, width
+        if self.input_signal_shape != input_signal_shape:
+            self.input_signal_shape = input_signal_shape
             re_build = True
 
         if self.level is None:
             wlen = len(self.wavelet)
-            self.level = int(
-                np.min([np.log2(height / (wlen - 1)), np.log2(width / (wlen - 1))])
+            max_level_per_axis = map(
+                lambda size: np.log2(size / (wlen - 1)), input_signal.shape[1:]
             )
+            self.level = int(min(max_level_per_axis))
             re_build = True
         elif self.level <= 0:
             raise ValueError("level must be a positive integer.")
@@ -529,7 +526,6 @@ class MatrixWaverec2(BaseMatrixWaveRec):
             separable=separable,
             orthogonalization=orthogonalization,
         )
-        self.input_signal_shape: Optional[tuple[int, int]] = None
 
     def _construct_synthesis_matrices(
         self,
@@ -604,19 +600,12 @@ class MatrixWaverec2(BaseMatrixWaveRec):
         torch_device, torch_dtype = _check_same_device_dtype(coefficients)
 
         level = len(coefficients) - 1
-        height, width = tuple(c * 2 for c in coefficients[-1][0].shape[-2:])
+        input_signal_shape = torch.Size([c * 2 for c in coefficients[-1][0].shape[-2:]])
 
         re_build = False
-        if (
-            self.input_signal_shape is None
-            or self.input_signal_shape[0] != height
-            or self.input_signal_shape[1] != width
-        ):
-            self.input_signal_shape = height, width
-            re_build = True
-
-        if self.level != level:
+        if self.level != level or self.input_signal_shape != input_signal_shape:
             self.level = level
+            self.input_signal_shape = input_signal_shape
             re_build = True
 
         if not self.ifwt_matrix_list or re_build:

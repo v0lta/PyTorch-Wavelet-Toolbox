@@ -97,7 +97,6 @@ class MatrixWavedec3(BaseMatrixWaveDec):
             orthogonalization=orthogonalization,
             odd_coeff_padding_mode=odd_coeff_padding_mode,
         )
-        self.input_signal_shape: Optional[tuple[int, int, int]] = None
 
     def _construct_analysis_matrices(
         self,
@@ -171,29 +170,19 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         input_signal, ds = _preprocess_tensor(
             input_signal, ndim=3, axes=self.axes, add_channel_dim=False
         )
-        _, depth, height, width = input_signal.shape
+        input_signal_shape = input_signal.shape[1:]
 
         re_build = False
-        if (
-            self.input_signal_shape is None
-            or self.input_signal_shape[0] != depth
-            or self.input_signal_shape[1] != height
-            or self.input_signal_shape[2] != width
-        ):
-            self.input_signal_shape = depth, height, width
+        if self.input_signal_shape != input_signal_shape:
+            self.input_signal_shape = input_signal_shape
             re_build = True
 
         if self.level is None:
             wlen = len(self.wavelet)
-            self.level = int(
-                np.min(
-                    [
-                        np.log2(depth / (wlen - 1)),
-                        np.log2(height / (wlen - 1)),
-                        np.log2(width / (wlen - 1)),
-                    ]
-                )
+            max_level_per_axis = map(
+                lambda size: np.log2(size / (wlen - 1)), input_signal_shape
             )
+            self.level = int(min(max_level_per_axis))
             re_build = True
         elif self.level <= 0:
             raise ValueError("level must be a positive integer.")
@@ -284,7 +273,6 @@ class MatrixWaverec3(BaseMatrixWaveRec):
             separable=True,
             orthogonalization=orthogonalization,
         )
-        self.input_signal_shape: Optional[tuple[int, int, int]] = None
 
     def _construct_synthesis_matrices(
         self,
@@ -368,25 +356,18 @@ class MatrixWaverec3(BaseMatrixWaveRec):
         torch_device, torch_dtype = _check_same_device_dtype(coefficients)
 
         level = len(coefficients) - 1
-        if type(coefficients[-1]) is dict:
-            depth, height, width = tuple(
-                c * 2 for c in coefficients[-1]["ddd"].shape[-3:]
-            )
-        else:
+
+        if not isinstance(coefficients[-1], dict):
             raise ValueError("Waverec3 expects dicts of tensors.")
 
-        re_build = False
-        if (
-            self.input_signal_shape is None
-            or self.input_signal_shape[0] != depth
-            or self.input_signal_shape[1] != height
-            or self.input_signal_shape[2] != width
-        ):
-            self.input_signal_shape = depth, height, width
-            re_build = True
+        input_signal_shape = torch.Size(
+            [c * 2 for c in coefficients[-1]["ddd"].shape[-3:]]
+        )
 
-        if self.level != level:
+        re_build = False
+        if self.level != level or self.input_signal_shape != input_signal_shape:
             self.level = level
+            self.input_signal_shape = input_signal_shape
             re_build = True
 
         if not self.ifwt_matrix_list or re_build:
