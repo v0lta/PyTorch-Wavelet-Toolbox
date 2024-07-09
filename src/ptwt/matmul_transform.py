@@ -160,15 +160,26 @@ class BaseMatrixWaveDec:
     """A base class for matrix wavedec."""
 
     ndim: int
+    """The number of dimensions to transform."""
     wavelet: Wavelet
+    """A pywt wavelet compatible object."""
     level: Optional[int]
+    """The level up to which to compute the fwt. If None,
+        the maximum level based on the signal length is chosen."""
     orthogonalization: OrthogonalizeMethod
+    """The method used to orthogonalize boundary filters."""
     odd_coeff_padding_mode: BoundaryMode
-    padded: bool
+    """Padding method used for odd-length coefficient dims."""
     separable: bool
+    """Whether a separable transformation is used,
+        i.e. a 1d transformation along each axis."""
 
-    fwt_matrix_list: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]]
-    input_signal_shape: Optional[torch.Size]
+    axes: tuple[int, ...]
+    """The transformed axes."""
+
+    _padded: bool
+    _fwt_matrix_list: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]]
+    _input_signal_shape: Optional[torch.Size]
     _pad_list: list[tuple[bool, ...]]
 
     def __init__(
@@ -219,9 +230,9 @@ class BaseMatrixWaveDec:
 
         self.padded = False
         self.level: Optional[int] = level
-        self.fwt_matrix_list = []
+        self._fwt_matrix_list = []
         self._pad_list = []
-        self.input_signal_shape: Optional[torch.Size] = None
+        self._input_signal_shape: Optional[torch.Size] = None
 
         if isinstance(axes, int):
             axes = (axes,)
@@ -321,7 +332,7 @@ class BaseMatrixWaveDec:
             raise NotImplementedError
 
         # in the non-separable case the list entries are tensors
-        fwt_matrix_list = cast(list[torch.Tensor], self.fwt_matrix_list)
+        fwt_matrix_list = cast(list[torch.Tensor], self._fwt_matrix_list)
 
         if len(fwt_matrix_list) == 1:
             return fwt_matrix_list[0]
@@ -406,20 +417,21 @@ class MatrixWavedec(BaseMatrixWaveDec):
     def _construct_analysis_matrices(
         self, device: Union[torch.device, str], dtype: torch.dtype
     ) -> None:
-        if self.level is None or self.input_signal_shape is None:
+        if self.level is None or self._input_signal_shape is None:
             raise AssertionError
-        self.fwt_matrix_list = []
+        self._fwt_matrix_list = []
         self._pad_list = []
         self.padded = False
 
         filt_len = self.wavelet.dec_len
-        (curr_length,) = self.input_signal_shape
+        (curr_length,) = self._input_signal_shape
         for curr_level in range(1, self.level + 1):
             if curr_length < filt_len:
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input size {self.input_signal_shape}."
-                    f" At level {curr_level}, the current signal length {curr_length} "
+                    " is too large for the given input size "
+                    f"{self._input_signal_shape}. "
+                    f"At level {curr_level}, the current signal length {curr_length} "
                     f"is smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
                     f"{curr_level-1}.\n"
@@ -437,7 +449,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
             an = self.construct_separable_analysis_matrices(
                 curr_length, device=device, dtype=dtype
             )
-            self.fwt_matrix_list.append(an)
+            self._fwt_matrix_list.append(an)
             curr_length = curr_length // 2
 
     def __call__(self, input_signal: torch.Tensor) -> list[torch.Tensor]:
@@ -480,8 +492,8 @@ class MatrixWavedec(BaseMatrixWaveDec):
         (length,) = input_signal_shape
 
         re_build = False
-        if self.input_signal_shape != input_signal_shape:
-            self.input_signal_shape = input_signal_shape
+        if self._input_signal_shape != input_signal_shape:
+            self._input_signal_shape = input_signal_shape
             re_build = True
 
         if self.level is None:
@@ -491,14 +503,14 @@ class MatrixWavedec(BaseMatrixWaveDec):
         elif self.level <= 0:
             raise ValueError("level must be a positive integer.")
 
-        if not self.fwt_matrix_list or re_build:
+        if not self._fwt_matrix_list or re_build:
             self._construct_analysis_matrices(
                 device=input_signal.device, dtype=input_signal.dtype
             )
 
         lo = input_signal.T
         split_list = []
-        for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
+        for scale, fwt_matrix in enumerate(self._fwt_matrix_list):
             if any(self._pad_list[scale]):
                 # fix odd coefficients lengths for the conv matrix to work.
                 lo = lo.T.unsqueeze(1)
@@ -561,7 +573,7 @@ def construct_boundary_s(
     orthogonalization: OrthogonalizeMethod = "qr",
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
-    """Construct a boundary-wavelet filter 1d-synthesis matarix.
+    """Construct a boundary-wavelet filter 1d-synthesis matrix.
 
     Args:
         wavelet (Wavelet or str): A pywt wavelet compatible object or
@@ -593,14 +605,23 @@ class BaseMatrixWaveRec:
     """A base class for matrix waverec."""
 
     ndim: int
+    """The number of dimensions to transform."""
     wavelet: Wavelet
+    """A pywt wavelet compatible object."""
     level: Optional[int]
+    """The level up to which to compute the fwt. If None,
+        the maximum level based on the signal length is chosen."""
     orthogonalization: OrthogonalizeMethod
-    padded: bool
+    """The method used to orthogonalize boundary filters."""
     separable: bool
+    """Whether a separable transformation is used,
+        i.e. a 1d transformation along each axis."""
+    axes: tuple[int, ...]
+    """The transformed axes."""
 
-    ifwt_matrix_list: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]]
-    input_signal_shape: Optional[torch.Size]
+    _padded: bool
+    _ifwt_matrix_list: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]]
+    _input_signal_shape: Optional[torch.Size]
 
     def __init__(
         self,
@@ -639,9 +660,9 @@ class BaseMatrixWaveRec:
 
         self.padded = False
         self.level: Optional[int] = None
-        self.ifwt_matrix_list = []
+        self._ifwt_matrix_list = []
 
-        self.input_signal_shape: Optional[torch.Size] = None
+        self._input_signal_shape: Optional[torch.Size] = None
 
         if isinstance(axes, int):
             axes = (axes,)
@@ -743,7 +764,7 @@ class BaseMatrixWaveRec:
             raise NotImplementedError
 
         # in the non-separable case the list entries are tensors
-        ifwt_matrix_list = cast(list[torch.Tensor], self.ifwt_matrix_list)
+        ifwt_matrix_list = cast(list[torch.Tensor], self._ifwt_matrix_list)
 
         if len(ifwt_matrix_list) == 1:
             return ifwt_matrix_list[0]
@@ -816,20 +837,21 @@ class MatrixWaverec(BaseMatrixWaveRec):
     def _construct_synthesis_matrices(
         self, device: Union[torch.device, str], dtype: torch.dtype
     ) -> None:
-        self.ifwt_matrix_list = []
+        self._ifwt_matrix_list = []
         self.padded = False
-        if self.level is None or self.input_signal_shape is None:
+        if self.level is None or self._input_signal_shape is None:
             raise AssertionError
 
         filt_len = self.wavelet.rec_len
-        (curr_length,) = self.input_signal_shape
+        (curr_length,) = self._input_signal_shape
 
         for curr_level in range(1, self.level + 1):
             if curr_length < filt_len:
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input size {self.input_signal_shape}."
-                    f" At level {curr_level}, the current signal length {curr_length} "
+                    f" is too large for the given input size"
+                    f" {self._input_signal_shape}. "
+                    f"At level {curr_level}, the current signal length {curr_length} "
                     f"is smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
                     f"{curr_level-1}.\n"
@@ -844,7 +866,7 @@ class MatrixWaverec(BaseMatrixWaveRec):
             sn = self.construct_separable_synthesis_matrices(
                 curr_length, device=device, dtype=dtype
             )
-            self.ifwt_matrix_list.append(sn)
+            self._ifwt_matrix_list.append(sn)
             curr_length = curr_length // 2
 
     def __call__(self, coefficients: Sequence[torch.Tensor]) -> torch.Tensor:
@@ -871,12 +893,12 @@ class MatrixWaverec(BaseMatrixWaveRec):
         input_signal_shape = torch.Size([coefficients[-1].shape[-1] * 2])
 
         re_build = False
-        if self.level != level or self.input_signal_shape != input_signal_shape:
+        if self.level != level or self._input_signal_shape != input_signal_shape:
             self.level = level
-            self.input_signal_shape = input_signal_shape
+            self._input_signal_shape = input_signal_shape
             re_build = True
 
-        if not self.ifwt_matrix_list or re_build:
+        if not self._ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
                 device=torch_device,
                 dtype=torch_dtype,
@@ -891,7 +913,7 @@ class MatrixWaverec(BaseMatrixWaveRec):
                 raise ValueError("coefficients must have the same shape")
 
             lo = torch.cat([lo, hi], 0)
-            lo = torch.sparse.mm(self.ifwt_matrix_list[::-1][c_pos], lo)
+            lo = torch.sparse.mm(self._ifwt_matrix_list[::-1][c_pos], lo)
 
             # remove padding
             if c_pos < len(coefficients) - 2:

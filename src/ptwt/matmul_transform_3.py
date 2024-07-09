@@ -80,15 +80,15 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         device: Union[torch.device, str],
         dtype: torch.dtype,
     ) -> None:
-        if self.level is None or self.input_signal_shape is None:
+        if self.level is None or self._input_signal_shape is None:
             raise AssertionError
-        self.fwt_matrix_list = []
+        self._fwt_matrix_list = []
         self.size_list = []
         self._pad_list = []
         self.padded = False
 
         filt_len = self.wavelet.dec_len
-        current_depth, current_height, current_width = self.input_signal_shape
+        current_depth, current_height, current_width = self._input_signal_shape
         for curr_level in range(1, self.level + 1):
             if (
                 current_height < filt_len
@@ -98,8 +98,9 @@ class MatrixWavedec3(BaseMatrixWaveDec):
                 # we have reached the max decomposition depth.
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input shape {self.input_signal_shape}"
-                    f". At level {curr_level}, at least one of the current signal "
+                    f" is too large for the given input shape"
+                    f" {self._input_signal_shape}. "
+                    f"At level {curr_level}, at least one of the current signal "
                     f"depth, height, and width ({current_depth}, {current_height},"
                     f"{current_width}) is smaller "
                     f"then the filter length {filt_len}. Therefore, the transformation "
@@ -121,7 +122,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
                 dtype=dtype,
             )
 
-            self.fwt_matrix_list.append(analysis_matrices)
+            self._fwt_matrix_list.append(analysis_matrices)
 
             current_depth, current_height, current_width = (
                 current_depth // 2,
@@ -150,8 +151,8 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         input_signal_shape = input_signal.shape[1:]
 
         re_build = False
-        if self.input_signal_shape != input_signal_shape:
-            self.input_signal_shape = input_signal_shape
+        if self._input_signal_shape != input_signal_shape:
+            self._input_signal_shape = input_signal_shape
             re_build = True
 
         if self.level is None:
@@ -164,7 +165,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         elif self.level <= 0:
             raise ValueError("level must be a positive integer.")
 
-        if not self.fwt_matrix_list or re_build:
+        if not self._fwt_matrix_list or re_build:
             self._construct_analysis_matrices(
                 device=input_signal.device, dtype=input_signal.dtype
             )
@@ -184,7 +185,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
 
         split_list: list[WaveletDetailDict] = []
         lll = input_signal
-        for scale, fwt_mats in enumerate(self.fwt_matrix_list):
+        for scale, fwt_mats in enumerate(self._fwt_matrix_list):
             lll = _add_padding(lll, self._pad_list[scale])
 
             for dim, mat in enumerate(fwt_mats[::-1]):
@@ -260,12 +261,12 @@ class MatrixWaverec3(BaseMatrixWaveRec):
         device: Union[torch.device, str],
         dtype: torch.dtype,
     ) -> None:
-        self.ifwt_matrix_list = []
+        self._ifwt_matrix_list = []
         self.padded = False
-        if self.level is None or self.input_signal_shape is None:
+        if self.level is None or self._input_signal_shape is None:
             raise AssertionError
 
-        current_depth, current_height, current_width = self.input_signal_shape
+        current_depth, current_height, current_width = self._input_signal_shape
         filt_len = self.wavelet.rec_len
 
         for curr_level in range(1, self.level + 1):
@@ -276,8 +277,9 @@ class MatrixWaverec3(BaseMatrixWaveRec):
             ):
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input shape {self.input_signal_shape}"
-                    f". At level {curr_level}, at least one of the current signal "
+                    " is too large for the given input shape"
+                    f" {self._input_signal_shape}. "
+                    f"At level {curr_level}, at least one of the current signal "
                     f" depth, height and width ({current_depth}, {current_height}, "
                     f"{current_width}) is smaller than the filter length {filt_len}."
                     f" Therefore, the transformation "
@@ -296,7 +298,7 @@ class MatrixWaverec3(BaseMatrixWaveRec):
                 device=device,
                 dtype=dtype,
             )
-            self.ifwt_matrix_list.append(synthesis_matrices)
+            self._ifwt_matrix_list.append(synthesis_matrices)
             current_depth, current_height, current_width = (
                 current_depth // 2,
                 current_height // 2,
@@ -346,12 +348,12 @@ class MatrixWaverec3(BaseMatrixWaveRec):
         )
 
         re_build = False
-        if self.level != level or self.input_signal_shape != input_signal_shape:
+        if self.level != level or self._input_signal_shape != input_signal_shape:
             self.level = level
-            self.input_signal_shape = input_signal_shape
+            self._input_signal_shape = input_signal_shape
             re_build = True
 
-        if not self.ifwt_matrix_list or re_build:
+        if not self._ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
                 device=torch_device,
                 dtype=torch_dtype,
@@ -377,7 +379,7 @@ class MatrixWaverec3(BaseMatrixWaveRec):
             coeff_dict["a" * len(list(coeff_dict.keys())[-1])] = lll
             lll = self._cat_coeff_recursive(coeff_dict)
 
-            for dim, mat in enumerate(self.ifwt_matrix_list[level - 1 - c_pos][::-1]):
+            for dim, mat in enumerate(self._ifwt_matrix_list[level - 1 - c_pos][::-1]):
                 lll = _batch_dim_mm(mat, lll, dim=(-1) * (dim + 1))
 
         return _postprocess_tensor(lll, ndim=3, ds=ds, axes=self.axes)

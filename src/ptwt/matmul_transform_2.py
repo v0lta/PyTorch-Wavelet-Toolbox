@@ -296,22 +296,23 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         device: Union[torch.device, str],
         dtype: torch.dtype,
     ) -> None:
-        if self.level is None or self.input_signal_shape is None:
+        if self.level is None or self._input_signal_shape is None:
             raise AssertionError
-        self.fwt_matrix_list = []
+        self._fwt_matrix_list = []
         self.size_list = []
         self._pad_list = []
         self.padded = False
 
         filt_len = self.wavelet.dec_len
-        current_height, current_width = self.input_signal_shape
+        current_height, current_width = self._input_signal_shape
         for curr_level in range(1, self.level + 1):
             if current_height < filt_len or current_width < filt_len:
                 # we have reached the max decomposition depth.
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input shape {self.input_signal_shape}"
-                    f". At level {curr_level}, at least one of the current signal "
+                    " is too large for the given input shape "
+                    f"{self._input_signal_shape}. "
+                    f"At level {curr_level}, at least one of the current signal "
                     f"height and width ({current_height}, {current_width}) is smaller "
                     f"then the filter length {filt_len}. Therefore, the transformation "
                     f"is only computed up to the decomposition level {curr_level-1}.\n"
@@ -329,7 +330,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 analysis_matrices = self.construct_separable_analysis_matrices(
                     (current_height, current_width), device=device, dtype=dtype
                 )
-                self.fwt_matrix_list.append(analysis_matrices)
+                self._fwt_matrix_list.append(analysis_matrices)
             else:
                 analysis_matrix_2d = construct_boundary_a2(
                     wavelet=self.wavelet,
@@ -339,7 +340,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                     device=device,
                     dtype=dtype,
                 )
-                self.fwt_matrix_list.append(analysis_matrix_2d)
+                self._fwt_matrix_list.append(analysis_matrix_2d)
             current_height = current_height // 2
             current_width = current_width // 2
         self.size_list.append((current_height, current_width))
@@ -373,8 +374,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         input_signal_shape = input_signal.shape[1:]
 
         re_build = False
-        if self.input_signal_shape != input_signal_shape:
-            self.input_signal_shape = input_signal_shape
+        if self._input_signal_shape != input_signal_shape:
+            self._input_signal_shape = input_signal_shape
             re_build = True
 
         if self.level is None:
@@ -387,7 +388,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         elif self.level <= 0:
             raise ValueError("level must be a positive integer.")
 
-        if not self.fwt_matrix_list or re_build:
+        if not self._fwt_matrix_list or re_build:
             self._construct_analysis_matrices(
                 device=input_signal.device, dtype=input_signal.dtype
             )
@@ -408,7 +409,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         split_list: list[WaveletDetailTuple2d] = []
         if self.separable:
             ll = input_signal
-            for scale, fwt_mats in enumerate(self.fwt_matrix_list):
+            for scale, fwt_mats in enumerate(self._fwt_matrix_list):
                 fwt_row_matrix, fwt_col_matrix = fwt_mats
                 current_height, current_width = self.size_list[scale]
                 ll = _add_padding(ll, pad=self._pad_list[scale])
@@ -423,7 +424,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 split_list.append(WaveletDetailTuple2d(lh, hl, hh))
         else:
             ll = input_signal.transpose(-2, -1).reshape([batch_size, -1]).T
-            for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
+            for scale, fwt_matrix in enumerate(self._fwt_matrix_list):
                 fwt_matrix = cast(torch.Tensor, fwt_matrix)
                 pad = self._pad_list[scale]
                 size = self.size_list[scale]
@@ -519,20 +520,21 @@ class MatrixWaverec2(BaseMatrixWaveRec):
         device: Union[torch.device, str],
         dtype: torch.dtype,
     ) -> None:
-        self.ifwt_matrix_list = []
+        self._ifwt_matrix_list = []
         self.padded = False
-        if self.level is None or self.input_signal_shape is None:
+        if self.level is None or self._input_signal_shape is None:
             raise AssertionError
 
-        current_height, current_width = self.input_signal_shape
+        current_height, current_width = self._input_signal_shape
         filt_len = self.wavelet.rec_len
 
         for curr_level in range(1, self.level + 1):
             if current_height < filt_len or current_width < filt_len:
                 sys.stderr.write(
                     f"Warning: The selected number of decomposition levels {self.level}"
-                    f" is too large for the given input shape {self.input_signal_shape}"
-                    f". At level {curr_level}, at least one of the current signal "
+                    " is too large for the given input shape "
+                    f" {self._input_signal_shape}. "
+                    f"At level {curr_level}, at least one of the current signal "
                     f"height and width ({current_height}, {current_width}) is smaller "
                     f"then the filter length {filt_len}. Therefore, the transformation "
                     f"is only computed up to the decomposition level {curr_level-1}.\n"
@@ -547,7 +549,7 @@ class MatrixWaverec2(BaseMatrixWaveRec):
                 synthesis_matrices = self.construct_separable_synthesis_matrices(
                     (current_height, current_width), device=device, dtype=dtype
                 )
-                self.ifwt_matrix_list.append(synthesis_matrices)
+                self._ifwt_matrix_list.append(synthesis_matrices)
             else:
                 synthesis_matrix_2d = construct_boundary_s2(
                     self.wavelet,
@@ -557,7 +559,7 @@ class MatrixWaverec2(BaseMatrixWaveRec):
                     device=device,
                     dtype=dtype,
                 )
-                self.ifwt_matrix_list.append(synthesis_matrix_2d)
+                self._ifwt_matrix_list.append(synthesis_matrix_2d)
             current_height = current_height // 2
             current_width = current_width // 2
 
@@ -590,12 +592,12 @@ class MatrixWaverec2(BaseMatrixWaveRec):
         input_signal_shape = torch.Size([c * 2 for c in coefficients[-1][0].shape[-2:]])
 
         re_build = False
-        if self.level != level or self.input_signal_shape != input_signal_shape:
+        if self.level != level or self._input_signal_shape != input_signal_shape:
             self.level = level
-            self.input_signal_shape = input_signal_shape
+            self._input_signal_shape = input_signal_shape
             re_build = True
 
-        if not self.ifwt_matrix_list or re_build:
+        if not self._ifwt_matrix_list or re_build:
             self._construct_synthesis_matrices(
                 device=torch_device,
                 dtype=torch_dtype,
@@ -621,7 +623,7 @@ class MatrixWaverec2(BaseMatrixWaveRec):
             lh, hl, hh = coeff_tuple
 
             if self.separable:
-                synthesis_matrix_rows, synthesis_matrix_cols = self.ifwt_matrix_list[
+                synthesis_matrix_rows, synthesis_matrix_cols = self._ifwt_matrix_list[
                     ::-1
                 ][c_pos]
                 a_coeffs = torch.cat((ll, lh), -1)
@@ -643,7 +645,7 @@ class MatrixWaverec2(BaseMatrixWaveRec):
                     ],
                     -1,
                 )
-                ifwt_mat = cast(torch.Tensor, self.ifwt_matrix_list[::-1][c_pos])
+                ifwt_mat = cast(torch.Tensor, self._ifwt_matrix_list[::-1][c_pos])
                 ll = cast(torch.Tensor, torch.sparse.mm(ifwt_mat, ll.T))
 
             if not self.separable:
