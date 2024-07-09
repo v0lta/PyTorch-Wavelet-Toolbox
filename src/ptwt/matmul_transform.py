@@ -177,7 +177,7 @@ class BaseMatrixWaveDec:
     axes: tuple[int, ...]
     """The transformed axes."""
 
-    _padded: bool
+    padded: bool
     _fwt_matrix_list: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]]
     _input_signal_shape: Optional[torch.Size]
     _pad_list: list[tuple[bool, ...]]
@@ -619,7 +619,7 @@ class BaseMatrixWaveRec:
     axes: tuple[int, ...]
     """The transformed axes."""
 
-    _padded: bool
+    padded: bool
     _ifwt_matrix_list: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]]
     _input_signal_shape: Optional[torch.Size]
 
