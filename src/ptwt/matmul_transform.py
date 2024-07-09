@@ -403,7 +403,6 @@ class MatrixWavedec(BaseMatrixWaveDec):
         )
 
         self.pad_list: list[bool] = []
-        self.size_list: list[int] = []
 
     def _construct_analysis_matrices(
         self, device: Union[torch.device, str], dtype: torch.dtype
@@ -411,7 +410,6 @@ class MatrixWavedec(BaseMatrixWaveDec):
         if self.level is None or self.input_signal_shape is None:
             raise AssertionError
         self.fwt_matrix_list = []
-        self.size_list = []
         self.pad_list = []
         self.padded = False
 
@@ -437,15 +435,11 @@ class MatrixWavedec(BaseMatrixWaveDec):
             else:
                 self.pad_list.append(False)
 
-            self.size_list.append(curr_length)
-
             an = self.construct_separable_analysis_matrices(
                 curr_length, device=device, dtype=dtype
             )
             self.fwt_matrix_list.append(an)
             curr_length = curr_length // 2
-
-        self.size_list.append(curr_length)
 
     def __call__(self, input_signal: torch.Tensor) -> list[torch.Tensor]:
         """Compute the matrix fwt for the given input signal.
@@ -824,7 +818,6 @@ class MatrixWaverec(BaseMatrixWaveRec):
         self, device: Union[torch.device, str], dtype: torch.dtype
     ) -> None:
         self.ifwt_matrix_list = []
-        self.size_list = []
         self.padded = False
         if self.level is None or self.input_signal_shape is None:
             raise AssertionError
@@ -848,8 +841,6 @@ class MatrixWaverec(BaseMatrixWaveRec):
                 # padding
                 curr_length += 1
                 self.padded = True
-
-            self.size_list.append(curr_length)
 
             sn = self.construct_separable_synthesis_matrices(
                 curr_length, device=device, dtype=dtype
