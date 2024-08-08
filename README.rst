@@ -102,17 +102,15 @@ To test an example, run:
 
 .. code-block:: python
 
-  import ptwt, pywt, torch
-  import numpy as np
-  import scipy.misc
+  import ptwt, torch
+  from scipy import datasets
 
-  face = np.transpose(scipy.datasets.face(),
-                          [2, 0, 1]).astype(np.float64)
-  pytorch_face = torch.tensor(face)
-  coefficients = ptwt.wavedec2(pytorch_face, pywt.Wavelet("haar"),
-                                  level=2, mode="constant")
-  reconstruction = ptwt.waverec2(coefficients, pywt.Wavelet("haar"))
-  np.max(np.abs(face - reconstruction.squeeze(1).numpy()))
+  data = torch.tensor(datasets.face(), dtype=torch.float64)
+  # permute [H, W, C] -> [C, H, W]
+  data = data.permute(2, 0, 1)
+  coefficients = ptwt.wavedec2(face, "haar", level=2, mode="constant")
+  reconstruction = ptwt.waverec2(coefficients, "haar")
+  torch.max(torch.abs(face - reconstruction))
 
 
 **Speed tests**
@@ -134,19 +132,17 @@ Reconsidering the 1d case, try:
 .. code-block:: python
 
   import torch
-  import numpy as np
   import pywt
   import ptwt  # use "from src import ptwt" for a cloned the repo
   
   # generate an input of even length.
-  data = np.array([0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0])
-  data_torch = torch.from_numpy(data.astype(np.float32))
+  data = torch.arange(16, dtype=torch.float32)
   # forward
-  matrix_wavedec = ptwt.MatrixWavedec(pywt.Wavelet("haar"), level=2)
-  coeff = matrix_wavedec(data_torch)
+  matrix_wavedec = ptwt.MatrixWavedec(haar, level=2)
+  coeff = matrix_wavedec(data)
   print(coeff)
   # backward 
-  matrix_waverec = ptwt.MatrixWaverec(pywt.Wavelet("haar"))
+  matrix_waverec = ptwt.MatrixWaverec("haar")
   rec = matrix_waverec(coeff)
   print(rec)
 
@@ -158,7 +154,7 @@ Separable transformations use a 1D transformation along both axes, which might b
 have to be orthogonalized.
 
 
-**Adaptive** **Wavelets**
+**Adaptive Wavelets**
 
 Experimental code to train an adaptive wavelet layer in PyTorch is available in the ``examples`` folder. In addition to static wavelets
 from pywt,

@@ -8,15 +8,14 @@ import torch
 import torch.nn.functional as F  # noqa:N812
 
 from ._util import (
-    Wavelet,
-    _as_wavelet,
     _check_same_device_dtype,
+    _get_filter_tensors,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
 )
-from .conv_transform import _get_filter_tensors
+from .constants import Wavelet, WaveletCoeff1d
 
 
 def _circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Tensor:
@@ -59,19 +58,24 @@ def swt(
 ) -> list[torch.Tensor]:
     """Compute a multilevel 1d stationary wavelet transform.
 
-    This fuctions is equivalent to pywt's swt with `trim_approx=True` and `norm=False`.
+    This fuctions is equivalent to pywt's :func:`pywt.swt`
+    with `trim_approx=True` and `norm=False`.
 
     Args:
-        data (torch.Tensor): The input data of shape ``[batch_size, time]``.
+        data (torch.Tensor): The input time series to transform.
+            By default the last axis is transformed.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        level (int, optional): The number of levels to compute.
-        axis (int): The axis to transform along. Defaults to the last axis.
+        level (int, optional): The maximum decomposition level.
+            If None, the level is computed based on the signal shape.
+            Defaults to None.
+        axis (int): Compute the transform over this axis of the `data` tensor.
+            Defaults to -1.
 
     Returns:
-        Same as wavedec. Equivalent to pywt.swt with trim_approx=True.
+        Same as :func:`wavedec`. Equivalent to :func:`pywt.swt` with trim_approx=True.
     """
     data, ds = _preprocess_tensor(data, ndim=1, axes=axis)
 
@@ -102,29 +106,28 @@ def swt(
 
 
 def iswt(
-    coeffs: Sequence[torch.Tensor],
+    coeffs: WaveletCoeff1d,
     wavelet: Union[pywt.Wavelet, str],
     axis: int = -1,
 ) -> torch.Tensor:
     """Invert a 1d stationary wavelet transform.
 
     Args:
-        coeffs (Sequence[torch.Tensor]): The coefficients as computed
-            by the swt function.
+        coeffs: The wavelet coefficient sequence produced by the forward transform
+            :func:`swt`. See :data:`ptwt.constants.WaveletCoeff1d`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet, as used in the forward transform.
-        axis (int): The axis the forward trasform was computed over.
+        axis (int): Compute the transform over this axis of the `data` tensor.
             Defaults to -1.
 
     Returns:
-        A reconstruction of the original swt input.
+        A reconstruction of the original :func:`swt` input.
     """
     if not isinstance(coeffs, list):
         coeffs = list(coeffs)
     coeffs, ds = _preprocess_coeffs(coeffs, ndim=1, axes=axis)
     torch_device, torch_dtype = _check_same_device_dtype(coeffs)
 
-    wavelet = _as_wavelet(wavelet)
     _, _, rec_lo, rec_hi = _get_filter_tensors(
         wavelet, flip=False, dtype=torch_dtype, device=torch_device
     )

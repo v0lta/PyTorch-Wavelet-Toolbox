@@ -11,24 +11,21 @@ import pywt
 import torch
 
 from ._util import (
-    Wavelet,
+    _adjust_padding_at_reconstruction,
     _as_wavelet,
     _check_same_device_dtype,
+    _get_filter_tensors,
     _get_len,
+    _get_pad,
     _outer,
     _pad_symmetric,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
-)
-from .constants import BoundaryMode, WaveletCoeffNd, WaveletDetailDict
-from .conv_transform import (
-    _adjust_padding_at_reconstruction,
-    _get_filter_tensors,
-    _get_pad,
     _translate_boundary_strings,
 )
+from .constants import BoundaryMode, Wavelet, WaveletCoeffNd, WaveletDetailDict
 
 
 def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
@@ -118,22 +115,23 @@ def wavedec3(
     level: Optional[int] = None,
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> WaveletCoeffNd:
-    """Compute a three-dimensional wavelet transform.
+    """Compute the three-dimensional fast wavelet transformation.
 
     Args:
-        data (torch.Tensor): The input data. For example of shape
-            ``[batch_size, length, height, width]``
+        data (torch.Tensor): The input data tensor with at least three dimensions.
+            By default, the last three axes are transformed.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        mode :
-            The desired padding mode for extending the signal along the edges.
-            Defaults to "zero". See :data:`ptwt.constants.BoundaryMode`.
-        level (Optional[int]): The maximum decomposition level.
-            This argument defaults to None.
-        axes (tuple[int, int, int]): Compute the transform over these axes
-            instead of the last three. Defaults to (-3, -2, -1).
+        mode: The desired padding mode for extending the signal
+            along the edges. See :data:`ptwt.constants.BoundaryMode`.
+            Defaults to ``zero``.
+        level (int, optional): The maximum decomposition level.
+            If None, the level is computed based on the signal shape.
+            Defaults to None.
+        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-3, -2, -1).
 
     Returns:
         A tuple containing the wavelet coefficients,
@@ -189,26 +187,27 @@ def waverec3(
     wavelet: Union[Wavelet, str],
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> torch.Tensor:
-    """Reconstruct a signal from wavelet coefficients.
+    """Reconstruct a 3d signal from wavelet coefficients.
 
     Args:
-        coeffs (WaveletCoeffNd): The wavelet coefficient tuple
-            produced by wavedec3, see :data:`ptwt.constants.WaveletCoeffNd`.
+        coeffs: The wavelet coefficient tuple produced by :func:`ptwt.wavedec3`,
+            see :data:`ptwt.constants.WaveletCoeffNd`.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int, int]): Transform these axes instead of the
-            last three. Defaults to (-3, -2, -1).
+        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
+            tensor. Defaults to (-3, -2, -1).
 
     Returns:
-        The reconstructed four-dimensional signal tensor of shape
-        ``[batch, depth, height, width]``.
+        The reconstructed signal tensor.
+        Its shape depends on the shape of the input to :func:`ptwt.wavedec3`.
 
     Raises:
-        ValueError: If coeffs is not in a shape as returned from wavedec3 or
-            if the dtype is not supported or if the provided axes input has length
-            other than three or if the same axes it repeated three.
+        ValueError: If `coeffs` is not in a shape as returned
+            from :func:`ptwt.wavedec3` or if the dtype is not supported or
+            if the provided axes input has length other than three or
+            if the same axes it repeated three.
 
     Example:
         >>> import ptwt, torch
