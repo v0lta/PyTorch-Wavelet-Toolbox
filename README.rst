@@ -30,7 +30,7 @@ Pytorch Wavelet Toolbox (`ptwt`)
  :target: https://pepy.tech/project/ptwt
 
 
-Welcome to the PyTorch wavelet toolbox. This package implements:
+Welcome to the PyTorch wavelet toolbox. This package implements discrete-(DWT) as well as continuous-(CWT) wavelet transforms:
 
 - the fast wavelet transform (fwt) via ``wavedec`` and its inverse by providing the ``waverec`` function,
 - the two-dimensional fwt is called ``wavedec2`` the synthesis counterpart ``waverec2``,
