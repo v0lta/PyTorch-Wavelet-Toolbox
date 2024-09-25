@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import collections
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable
 from functools import partial
 from itertools import product
 from typing import TYPE_CHECKING, Literal, Optional, Union, overload
@@ -13,7 +13,6 @@ import pywt
 import torch
 
 from ._util import (
-    Wavelet,
     _as_wavelet,
     _deprecated_alias,
     _is_orthogonalize_method_supported,
@@ -24,6 +23,8 @@ from .constants import (
     ExtendedBoundaryMode,
     OrthogonalizeMethod,
     PacketNodeOrder,
+    Wavelet,
+    WaveletCoeff1d,
     WaveletCoeff2d,
     WaveletCoeffNd,
     WaveletDetailTuple2d,
@@ -59,7 +60,7 @@ def _wpfreq(fs: float, level: int) -> list[float]:
 
 
 class WaveletPacket(BaseDict):
-    """Implements a single-dimensional wavelet packets analysis transform."""
+    """Implements a single-dimensional wavelet packet transform."""
 
     @_deprecated_alias(boundary_orthogonalization="orthogonalization")
     def __init__(
@@ -78,26 +79,26 @@ class WaveletPacket(BaseDict):
         of the wavelet packet tree.
 
         Args:
-            data (torch.Tensor, optional): The input data array of shape ``[time]``,
-                ``[batch_size, time]`` or ``[batch_size, channels, time]``.
-                If None, the object is initialized without
-                performing a decomposition.
-                The time axis is transformed by default.
-                Use the ``axis`` argument to choose another dimension.
+            data (torch.Tensor, optional): The input time series to transform.
+                By default the last axis is transformed.
+                Use the `axis` argument to choose another dimension.
+                If None, the object is initialized without performing a decomposition.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            mode : The desired padding method. If you select 'boundary',
-                the sparse matrix backend will be used. Defaults to 'reflect'.
-            maxlevel (int, optional): Value is passed on to `transform`.
+            mode: The desired mode to handle signal boundaries. Select either the
+                the sparse-matrix backend (``boundary``) or a padding mode.
+                See :data:`ptwt.constants.ExtendedBoundaryMode`.
+                Defaults to ``reflect``.
+            maxlevel (int, optional): Value is passed on to :func:`transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
             axis (int): The axis to transform. Defaults to -1.
             orthogonalization: The orthogonalization method
                 to use in the sparse matrix backend,
                 see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Only used if `mode` equals 'boundary'. Defaults to 'qr'.
+                Only used if `mode` equals ``boundary``. Defaults to ``qr``.
 
         .. versionchanged:: 1.10
             The argument `boundary_orthogonalization` has been renamed to
@@ -153,8 +154,9 @@ class WaveletPacket(BaseDict):
         The transform function allows reusing the same object.
 
         Args:
-            data (torch.Tensor): The input data array of shape ``[time]``
-                or ``[batch_size, time]``.
+            data (torch.Tensor): The input time series to transform.
+                By default the last axis is transformed.
+                Use the `axis` argument to choose another dimension.
             maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
@@ -250,7 +252,7 @@ class WaveletPacket(BaseDict):
     def _get_waverec(
         self,
         length: int,
-    ) -> Callable[[Sequence[torch.Tensor]], torch.Tensor]:
+    ) -> Callable[[WaveletCoeff1d], torch.Tensor]:
         if self.mode == "boundary":
             if length not in self._matrix_waverec_dict.keys():
                 self._matrix_waverec_dict[length] = MatrixWaverec(
@@ -269,6 +271,7 @@ class WaveletPacket(BaseDict):
         Args:
             level (int): The depth of the tree.
             order: The order the paths are in.
+                See :data:`ptwt.constants.PacketNodeOrder`.
                 Choose from frequency order (``freq``) and
                 natural order (``natural``).
                 Defaults to ``freq``.
@@ -311,8 +314,8 @@ class WaveletPacket(BaseDict):
 
         Args:
             key (str): The key of the accessed coefficients. The string may only consist
-                of the chars 'a' and 'd' where 'a' denotes the low pass or
-                approximation filter and 'd' the high-pass or detail filter.
+                of the chars ``a`` and ``d`` where ``a`` denotes the low pass or
+                approximation filter and ``d`` the high-pass or detail filter.
 
         Returns:
             The accessed wavelet packet coefficients.
@@ -376,26 +379,25 @@ class WaveletPacket2D(BaseDict):
 
         Args:
             data (torch.tensor, optional): The input data tensor.
-                For example of shape ``[batch_size, height, width]`` or
-                ``[batch_size, channels, height, width]``.
                 If None, the object is initialized without performing
                 a decomposition.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            mode : A string indicating the desired padding mode.
-                If you select 'boundary', the sparse matrix backend is used.
-                Defaults to 'reflect'
-            maxlevel (int, optional): Value is passed on to `transform`.
+            mode: The desired mode to handle signal boundaries. Select either the
+                the sparse-matrix backend (``boundary``) or a padding mode.
+                See :data:`ptwt.constants.ExtendedBoundaryMode`.
+                Defaults to ``reflect``.
+            maxlevel (int, optional): Value is passed on to :func:`transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
             axes ([int, int], optional): The tensor axes that should be transformed.
                 Defaults to (-2, -1).
-            orthogonalization : The orthogonalization method
+            orthogonalization: The orthogonalization method
                 to use in the sparse matrix backend,
                 see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Only used if `mode` equals 'boundary'. Defaults to 'qr'.
+                Only used if `mode` equals ``boundary``. Defaults to ``qr``.
             separable (bool): If true, a separable transform is performed,
                 i.e. each image axis is transformed separately. Defaults to False.
 
@@ -439,8 +441,10 @@ class WaveletPacket2D(BaseDict):
         The transform function allows reusing the same object.
 
         Args:
-            data (torch.tensor): The input data tensor
-                of shape ``[batch_size, height, width]``.
+            data (torch.tensor): The input data tensor of at least two dimensions.
+                By default, the last two axes are transformed.
+                The `axes` class attribute allows other choices.
+
             maxlevel (int, optional): The highest decomposition level to compute.
                 If None, the maximum level is determined from the input data shape.
                 Defaults to None.
@@ -615,10 +619,11 @@ class WaveletPacket2D(BaseDict):
         Args:
             key (str): The key of the accessed coefficients.
                 The string may only consist
-                of the following chars: 'a', 'h', 'v', 'd'
+                of the following chars: ``a``, ``h``, ``v``, ``d``
                 The chars correspond to the selected coefficients for a level
-                where 'a' denotes the approximation coefficients and
-                'h' horizontal, 'v' vertical  and 'd' diagonal details coefficients.
+                where ``a`` denotes the approximation coefficients and
+                ``h`` horizontal, ``v`` vertical  and ``d`` diagonal
+                details coefficients.
 
         Returns:
             The accessed wavelet packet coefficients.
@@ -673,6 +678,7 @@ class WaveletPacket2D(BaseDict):
         Args:
             level (int): The depth of the tree.
             order: The order the paths are in.
+                See :data:`ptwt.constants.PacketNodeOrder`.
                 Choose from frequency order (``freq``) and
                 natural order (``natural``).
                 Defaults to ``freq``.

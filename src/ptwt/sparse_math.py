@@ -44,8 +44,12 @@ def sparse_kron(
 
     Returns:
         The resulting tensor of shape ``[mp, nq]``.
+
+    Raises:
+        ValueError: if the tensors are on different devices.
     """
-    assert sparse_tensor_a.device == sparse_tensor_b.device
+    if sparse_tensor_a.device != sparse_tensor_b.device:
+        raise ValueError("Tensors must be on the same device.")
 
     sparse_tensor_a = sparse_tensor_a.coalesce()
     sparse_tensor_b = sparse_tensor_b.coalesce()
@@ -97,18 +101,29 @@ def cat_sparse_identity_matrix(
     """Concatenate a sparse input matrix and a sparse identity matrix.
 
     Args:
-        sparse_matrix (torch.Tensor): The input matrix.
-        new_length (int):
-            The length up to which the diagonal should be elongated.
+        sparse_matrix (torch.Tensor): The sparse square input matrix.
+        new_length (int): The length up to which the diagonal should be elongated.
 
     Returns:
         Square ``[input, eye]`` matrix of size ``[new_length, new_length]``
+
+    Raises:
+        ValueError: if `sparse_matrix` is not a square 2d sparse matrix
+            of if `new_length` is smaller than the number of
+            rows of `sparse_matrix`.
     """
-    # assert square matrix.
-    assert (
-        sparse_matrix.shape[0] == sparse_matrix.shape[1]
-    ), "Matrices must be square. Odd inputs can cause non-square matrices."
-    assert new_length > sparse_matrix.shape[0], "can't add negatively many entries."
+    if sparse_matrix.dim() != 2 or not sparse_matrix.is_sparse:
+        raise ValueError("Only 2d sparse matrices are supported.")
+    if sparse_matrix.shape[0] != sparse_matrix.shape[1]:
+        raise ValueError(
+            "Matrices must be square. Odd inputs can cause non-square matrices."
+        )
+    if new_length < sparse_matrix.shape[0]:
+        raise ValueError("Cannot add negatively many rows.")
+
+    if new_length == sparse_matrix.shape[0]:
+        return sparse_matrix
+
     x = torch.arange(
         sparse_matrix.shape[0],
         new_length,
@@ -153,7 +168,6 @@ def sparse_diag(
 
     Returns:
         A sparse matrix with a shifted diagonal.
-
     """
     diag_indices = torch.stack(
         [
@@ -189,9 +203,9 @@ def sparse_diag(
 def sparse_replace_row(
     matrix: torch.Tensor, row_index: int, row: torch.Tensor
 ) -> torch.Tensor:
-    """Replace a row within a sparse [rows, cols] matrix.
+    """Replace a row within a sparse ``[rows, cols]`` matrix.
 
-    I.e. matrix[row_no, :] = row.
+    I.e. ``matrix[row_no, :] = row``.
 
     Args:
         matrix (torch.Tensor): A sparse two-dimensional matrix.
@@ -200,11 +214,16 @@ def sparse_replace_row(
 
     Returns:
         A sparse matrix, with the new row inserted at row_index.
+
+    Raises:
+        ValueError: if the size of the last axis of `matrix` and `row`
+            does not match.
     """
     matrix = matrix.coalesce()
-    assert (
-        matrix.shape[-1] == row.shape[-1]
-    ), "matrix and replacement row must share the same column number."
+    if matrix.shape[-1] != row.shape[-1]:
+        raise ValueError(
+            "matrix and replacement row must share the same column number."
+        )
 
     # delete existing indices we dont want
     diag_indices = torch.arange(matrix.shape[0])
@@ -236,7 +255,7 @@ def _orth_by_qr(
     """Orthogonalize a wavelet matrix through qr decomposition.
 
     A dense qr-decomposition is used for GPU-efficiency reasons.
-    If memory becomes a constraint choose _orth_by_gram_schmidt
+    If memory becomes a constraint choose :func:`_orth_by_gram_schmidt`
     instead, which is implemented using only sparse function calls.
 
     Args:
@@ -340,15 +359,16 @@ def construct_conv_matrix(
     Args:
         filter (torch.tensor): The 1D-filter to convolve with.
         input_rows (int): The number of columns in the input.
-        mode : String identifier for the desired padding.
-            Choose 'full', 'valid' or 'same'.
-            Defaults to valid.
+        mode: String identifier for the desired padding.
+            Choose ``full``, ``valid`` or ``same``.
+            Defaults to ``valid``.
 
     Returns:
         The sparse convolution tensor.
 
     Raises:
-        ValueError: If the padding is not 'full', 'same' or 'valid'.
+        ValueError: If an unsupported PaddingMode value is
+            passed as `mode`.
     """
     filter_length = len(filter)
 
@@ -364,7 +384,7 @@ def construct_conv_matrix(
         start_row = filter_length - 1
         stop_row = input_rows - 1
     else:
-        raise ValueError("unkown padding type.")
+        raise ValueError(f"Padding mode '{mode}' not supported.")
 
     product_lst = [
         (row, col)
@@ -388,6 +408,7 @@ def construct_conv2d_matrix(
     filter: torch.Tensor,
     input_rows: int,
     input_columns: int,
+    *,
     mode: PaddingMode = "valid",
     fully_sparse: bool = True,
 ) -> torch.Tensor:
@@ -402,7 +423,8 @@ def construct_conv2d_matrix(
         input_rows (int): The number of rows in the input matrix.
         input_columns (int): The number of columns in the input matrix.
         mode: (str) = The desired padding method. Options are
-            full, same and valid. Defaults to 'valid' or no padding.
+            ``full``, ``same`` and ``valid``.
+            Defaults to ``valid`` or no padding.
         fully_sparse (bool): Use a sparse implementation of the Kronecker
             to save memory. Defaults to True.
 
@@ -410,7 +432,8 @@ def construct_conv2d_matrix(
         A sparse convolution matrix.
 
     Raises:
-        ValueError: If the padding mode is neither full, same or valid.
+        ValueError: If the padding mode is neither ``full``, ``same``
+            or ``valid``.
     """
     if fully_sparse:
         kron = sparse_kron
@@ -431,7 +454,7 @@ def construct_conv2d_matrix(
         diag_index = kernel_column_number - 1
         kronecker_rows = input_columns - kernel_column_number + 1
     else:
-        raise ValueError("unknown conv mode.")
+        raise ValueError(f"Padding mode '{mode}' not supported.")
 
     block_matrix_list = []
     for i in range(matrix_block_number):
@@ -460,7 +483,7 @@ def construct_strided_conv_matrix(
     input_rows: int,
     stride: int = 2,
     *,
-    mode: PaddingMode = "valid"
+    mode: PaddingMode = "valid",
 ) -> torch.Tensor:
     """Construct a strided convolution matrix.
 
@@ -469,18 +492,18 @@ def construct_strided_conv_matrix(
         input_rows (int): The number of rows in the input vector.
         stride (int): The step size of the convolution.
             Defaults to two.
-        mode : Choose 'valid', 'same' or 'sameshift'.
-            Defaults to 'valid'.
+        mode: Choose ``valid``, ``same`` or ``sameshift``.
+            Defaults to ``valid``.
 
     Returns:
         The strided sparse convolution matrix.
     """
     conv_matrix = construct_conv_matrix(filter, input_rows, mode=mode)
     if mode == "sameshift":
-        # find conv_matrix[1:stride, :] sparsely
+        # find conv_matrix[1::stride, :] sparsely
         select_rows = torch.arange(1, conv_matrix.shape[0], stride)
     else:
-        # find conv_matrix[:stride, :] sparsely
+        # find conv_matrix[::stride, :] sparsely
         select_rows = torch.arange(0, conv_matrix.shape[0], stride)
     selection_matrix = torch.sparse_coo_tensor(
         torch.stack([torch.arange(0, len(select_rows)), select_rows]),
@@ -497,18 +520,19 @@ def construct_strided_conv2d_matrix(
     input_rows: int,
     input_columns: int,
     stride: int = 2,
+    *,
     mode: PaddingMode = "full",
 ) -> torch.Tensor:
     """Create a strided sparse two-dimensional convolution matrix.
 
     Args:
         filter (torch.Tensor): The two-dimensional convolution filter.
-        input_rows (int): The number of rows in the 2d-input matrix.
-        input_columns (int): The number of columns in the 2d- input matrix.
+        input_rows (int): The number of rows in the 2d input matrix.
+        input_columns (int): The number of columns in the 2d input matrix.
         stride (int): The stride between the filter positions.
             Defaults to 2.
-        mode : The convolution type.
-            Defaults to 'full'. Sameshift starts at 1 instead of 0.
+        mode: The convolution type.
+            Defaults to ``full``. ``sameshift`` starts at 1 instead of 0.
 
     Returns:
         The sparse convolution tensor.
