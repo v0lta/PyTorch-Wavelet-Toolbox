@@ -14,11 +14,11 @@ operations are often written in matrix form. Consequently, we aim to find a matr
 the computation of the fast wavelet transform :cite:`strang1996wavelets`:
 
 .. math::
-    \mathbf{b} = \mathbf{A}\mathbf{x}.
+    \mathbf{b} = \dots \mathbf{A}\mathbf{x}  .
 
 :math:`\mathbf{A}` is a product of multiple scale matrices. The non-zero elements in :math:`\mathbf{A}` are
 populated with the coefficients from the selected filter pair.
-Given the wavelet filter degree $d$, each filter has $N = 2d$ coefficients.
+Given the wavelet filter degree :math:`d`, each filter has :math:`N = 2d` coefficients.
 Repeating diagonals compute convolution operations with the so-called analysis filter vector pair
 :math:`\mathbf{f}_\mathcal{L}` and :math:`\mathbf{f}_\mathcal{H}`, where the filters are arranged
 as vectors in :math:`\mathbb{R}^N`. The subscripts :math:`\mathcal{L}` denote the one-dimensional
@@ -43,10 +43,10 @@ Overall one observes the pattern :cite:`strang1996wavelets`
     \end{pmatrix}.
 
 
-The equation describes the first two FWT-matrices. Instead of the dots, we can imagine additional analysis matrices.
+The equation describes the first two FWT-matrices. Instead of the dots, we can imagine additional scale matrices.
 The analysis matrix :math:`\mathbf{A}` records all operations by matrix multiplication.
 The :py:meth:`ptwt.MatrixWavedec` function provides access to the matrix form of the analysis operation.
-Including boundary filter treatment.
+Including boundary filter treatment, which we will discuss in an upcoming section.
 
 
 .. _fig-conv-analysis:
@@ -145,12 +145,9 @@ and specific filters on the boundary.
 The disadvantage of zero-padding or periodic extensions is that discontinuities
 are artificially created at the border. With symmetrization,
 discontinuities of the first derivative arise at the border :cite:`jensen2001ripples`.
-For large images, the boundary effects might be negligible.
-However, for the employed multi-scale approach of wavelet-packets,
-as introduced in the next subsection, the artifacts become too severe.
-Furthermore, zero-padding increases the number of coefficients,
+Furthermore, padding increases the number of coefficients,
 which is sometimes undesirable in neural-network applications.
-Therefore, we employ special boundary filters in the form of the
+Therefore, we provide code for special boundary filters in the form of the
 so-called Gram-Schmidt boundary filters :cite:`jensen2001ripples`.
 
 
