@@ -9,8 +9,7 @@ Development workflow:
 ---------------------
 We use nox to run our unit tests. Before creating your pull request follow these three steps.
 
-1. Make sure all unit tests are passing.
-    Run:
+1. Make sure all unit tests are passing. Run:
     .. code-block:: bash
 
         nox -s test
