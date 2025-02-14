@@ -19,5 +19,5 @@ If you use this work in a scientific context, please cite the following paper:
    }
 
 
-This work builds upon `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_ 
+This work builds upon `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_
 please consider citing them as well.

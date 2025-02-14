@@ -24,7 +24,7 @@ We use nox to run our unit tests. Before creating your pull request follow these
 
     to take care of linting issues, with an automatic fix.
 
-3. Afterward, run 
+3. Afterward, run
     .. code-block:: bash
 
         nox -s lint

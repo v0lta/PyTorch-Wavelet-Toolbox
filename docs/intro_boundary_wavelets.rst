@@ -4,16 +4,28 @@
 Introduction to boundary wavelet filters
 ========================================
 
-This intro provides a brief introduction to the concept of boundary wavelets based on material from :cite:`wolter2022wavelet`. The key idea here is to work with the matrix form of the FWT.
+This intro provides a brief introduction to the concept of boundary wavelets based on
+material from :cite:`wolter2022wavelet`. The key idea here is to work with the matrix form of the FWT.
 
-The **Fast Wavelet Transform (FWT)** :cite:`mallat1999wavelet` utilizes convolutions to decompose an input signal into its frequency components. Repeated applications of the wavelet transform result in a multi-scale analysis. Convolution is here a linear operation and linear operations are often written in matrix form. Consequently, we aim to find a matrix that allows the computation of the fast wavelet transform :cite:`strang1996wavelets`:
+The **Fast Wavelet Transform (FWT)** :cite:`mallat1999wavelet` utilizes convolutions to
+decompose an input signal into its frequency components. Repeated applications of the wavelet
+transform result in a multi-scale analysis. Convolution is here a linear operation and linear
+operations are often written in matrix form. Consequently, we aim to find a matrix that allows
+the computation of the fast wavelet transform :cite:`strang1996wavelets`:
 
 .. math::
     \mathbf{b} = \mathbf{A}\mathbf{x}.
 
-:math:`\mathbf{A}` is a product of multiple scale-matrices. The non-zero elements in :math:`\mathbf{A}` are populated with the coefficients from the selected filter pair.
-Given the wavelet filter degree $d$, each filter has $N = 2d$ coefficients. Repeating diagonals compute convolution operations with the so-called analysis filter vector pair :math:`\mathbf{f}_\mathcal{L}` and :math:`\mathbf{f}_\mathcal{H}`, where the filters are arranged as vectors in :math:`\mathbb{R}^N`. The subscripts :math:`\mathcal{L}` denote the one-dimensional low-pass and :math:`\mathcal{H}` the high pass filter, respectively.
-The filter pair appears within the diagonal patterns of the stride two convolution matrices :math:`\mathbf{H}_\mathcal{L}` and :math:`\mathbf{H}_\mathcal{H}`. Overall one observes the pattern :cite:`strang1996wavelets`
+:math:`\mathbf{A}` is a product of multiple scale-matrices. The non-zero elements in :math:`\mathbf{A}` are
+populated with the coefficients from the selected filter pair.
+Given the wavelet filter degree $d$, each filter has $N = 2d$ coefficients.
+Repeating diagonals compute convolution operations with the so-called analysis filter vector pair
+:math:`\mathbf{f}_\mathcal{L}` and :math:`\mathbf{f}_\mathcal{H}`, where the filters are arranged
+as vectors in :math:`\mathbb{R}^N`. The subscripts :math:`\mathcal{L}` denote the one-dimensional
+low-pass and :math:`\mathcal{H}` the high pass filter, respectively.
+The filter pair appears within the diagonal patterns of the stride two convolution matrices
+:math:`\mathbf{H}_\mathcal{L}` and :math:`\mathbf{H}_\mathcal{H}`.
+Overall one observes the pattern :cite:`strang1996wavelets`
 
 
 .. math::
@@ -32,8 +44,9 @@ The filter pair appears within the diagonal patterns of the stride two convoluti
 
 
 The equation describes the first two FWT-matrices. Instead of the dots, we can imagine additional analysis matrices.
-The analysis matrix :math:`\mathbf{A}` records all operations by matrix multiplication. The :py:meth:`ptwt.MatrixWavedec`
-function provides access to the matrix form of the analysis operation. Including boundary filter treatment.
+The analysis matrix :math:`\mathbf{A}` records all operations by matrix multiplication.
+The :py:meth:`ptwt.MatrixWavedec` function provides access to the matrix form of the analysis operation.
+Including boundary filter treatment.
 
 
 .. _fig-conv-analysis:
@@ -43,7 +56,7 @@ function provides access to the matrix form of the analysis operation. Including
   :alt: Truncated single-dimensional analysis convolution matrices for a signal of length 32.
   :align: center
 
-  Truncated single-dimensional analysis convolution matrices for a signal of length 32 using for 
+  Truncated single-dimensional analysis convolution matrices for a signal of length 32 using for
   example a Daubechies-two wavelet. The decomposition level increases from right to left.
   On the leftmost side the product of the first three is shown.
   We are looking at truncated versions of the infinite matrices described by the equation above.
@@ -52,25 +65,39 @@ function provides access to the matrix form of the analysis operation. Including
 
 
 In Figure :numref:`fig-conv-analysis` we illustrate a level three transform,
-where we see the above equation at work. Ideally, :math:`\mathbf{A}` is infinitely large and orthogonal. For finite signals, the ideal matrices have to be truncated. :math:`\mathbf{C}` denotes finite length untreated convolution matrices, subscript :math:`a` and :math:`s` mark analysis, and transposed synthesis convolutions. Second-degree wavelet coefficients from four filters populate the convolution matrices.
-The identity tail of the individual matrices grows as scales complete. The final convolution matrix is shown on the left. Supplementary section~\ref{subsec:ifwt} presents the construction of the synthesis matrices, which undo the analysis steps.
+where we see the above equation at work. Ideally, :math:`\mathbf{A}` is infinitely large and orthogonal.
+For finite signals, the ideal matrices have to be truncated. :math:`\mathbf{C}` denotes finite length
+untreated convolution matrices, subscript :math:`a` and :math:`s` mark analysis, and transposed synthesis convolutions.
+Second-degree wavelet coefficients from four filters populate the convolution matrices.
+The identity tail of the individual matrices grows as scales complete.
+The final convolution matrix is shown on the left.
 
 Common choices for 1D wavelets are the Daubechies-wavelets `db` and their less asymmetrical variant, the Symlets `sym`.
 We refer the reader to :cite:`mallat2009wavelet` for an in-depth discussion.
-Note that the FWT is invertible, to construct the synthesis matrix :math:`\mathbf{S}` for :math:`\mathbf{S} \mathbf{A}~=~\mathbf{I}`, we require the synthesis filter pair :math:`\mathbf{f}_\mathcal{L}, \mathbf{f}_\mathcal{H}`. The filter coefficients populate transposed convolution matrices. To ensure the transform is invertible and visualizations interpretable, not just any filter will do.The perfect reconstruction and anti-aliasing conditions must hold. 
+Note that the FWT is invertible, to construct the synthesis matrix
+:math:`\mathbf{S}` for :math:`\mathbf{S} \mathbf{A}~=~\mathbf{I}`,
+we require the synthesis filter pair :math:`\mathbf{f}_\mathcal{L}, \mathbf{f}_\mathcal{H}`.
+The filter coefficients populate transposed convolution matrices.
+To ensure the transform is invertible and visualizations interpretable,
+not just any filter will do.The perfect reconstruction and anti-aliasing conditions must hold.
 
 .. _subsec:ifwt:
 
 Inverting the transform
 ------------------------
 
-Earlier, we saw the structure of the Analysis matrix :math:`\mathbf{A}`. Its inverse is again a linear operation. We can write:
+Earlier, we saw the structure of the Analysis matrix :math:`\mathbf{A}`.
+Its inverse is again a linear operation. We can write:
 
 .. math::
   \mathbf{S}\mathbf{b} = \mathbf{x}.
 
-The synthesis matrix :math:`\mathbf{S}` reverts the operations in :math:`\mathbf{A}`. To construct it one requires the synthesis filter pair :math:`\mathbf{f}_\mathcal{L}, \mathbf{f}_\mathcal{H}` :cite:`strang1996wavelets`. Structurally the synthesis matrices are transposed in comparison to their analysis counterparts.
-Using the transposed convolution matrices :math:`\mathbf{F}_\mathcal{L}` and :math:`\mathbf{F}_\mathcal{H}`, :math:`\mathbf{S}`, one builds:
+The synthesis matrix :math:`\mathbf{S}` reverts the operations in :math:`\mathbf{A}`.
+To construct it one requires the synthesis filter pair :math:`\mathbf{f}_\mathcal{L}, \mathbf{f}_\mathcal{H}`
+:cite:`strang1996wavelets`. Structurally the synthesis matrices are transposed
+in comparison to their analysis counterparts.
+Using the transposed convolution matrices :math:`\mathbf{F}_\mathcal{L}` and
+:math:`\mathbf{F}_\mathcal{H}`, :math:`\mathbf{S}`, one builds:
 
 .. math::
   \mathbf{S}=
@@ -85,7 +112,7 @@ Using the transposed convolution matrices :math:`\mathbf{F}_\mathcal{L}` and :ma
   \end{pmatrix}
   \dots .
 
-The pattern here is analog to the one we saw in  for the analysis equation. The :py:meth:`ptwt.MatrixWaverec`
+The pattern here is analogous to the one we saw for the analysis equation. The :py:meth:`ptwt.MatrixWaverec`
 function provides access to the matrix form of the analysis operation.
 
 .. _fig-conv-synthesis:
@@ -99,8 +126,10 @@ function provides access to the matrix form of the analysis operation.
   On the very left the product of all three is shown.
   The pattern occurs for second degree wavelets.
 
-In Figure :numref:`fig-conv-synthesis` we show a truncated example. In comparison to Figure :numref:`fig-conv-analysis` the structure is transposed.
-Note, in order to guarantee invertibility one must have :math:`\mathbf{S} \mathbf{A}~=~\mathbf{I}`. Which is the case for infinitely large matrices.
+In Figure :numref:`fig-conv-synthesis` we show a truncated example.
+In comparison to Figure :numref:`fig-conv-analysis` the structure is transposed.
+Note, in order to guarantee invertibility one must have :math:`\mathbf{S} \mathbf{A}~=~\mathbf{I}`.
+Which is the case for infinitely large matrices.
 When working with real truncated matrices, one requires boundary wavelet treatment.
 
 
@@ -109,34 +138,56 @@ Boundary filter treatment
 
 So far, we have described the wavelet transform without considering the finite size of the images.
 For example, the simple Haar wavelets can be used without modifications in such a case.
-But, for the transform to preserve all information and be invertible, higher-order wavelets require modifications at the boundary :cite:`strang1996wavelets`.
-There are different ways to handle the boundary, including zero-padding, symmetrization, periodic extension, and specific filters on the boundary. The disadvantage of zero-padding or periodic extensions is that discontinuities are artificially created at the border. With symmetrization, discontinuities of the first derivative arise at the border :cite:`jensen2001ripples`. For large images, the boundary effects might be negligible. However, for the employed multi-scale approach of wavelet-packets, as introduced in the next subsection, the artifacts become too severe. Furthermore, zero-padding increases the number of coefficients, which in our application would need different neural network architectures per wavelet. Therefore we employ special boundary filters in the form of the so-called Gram-Schmidt boundary filters :cite:`jensen2001ripples`.
+But, for the transform to preserve all information and be invertible, higher-order wavelets
+require modifications at the boundary :cite:`strang1996wavelets`.
+There are different ways to handle the boundary, including zero-padding, symmetrization, periodic extension,
+and specific filters on the boundary.
+The disadvantage of zero-padding or periodic extensions is that discontinuities
+are artificially created at the border. With symmetrization,
+discontinuities of the first derivative arise at the border :cite:`jensen2001ripples`.
+For large images, the boundary effects might be negligible.
+However, for the employed multi-scale approach of wavelet-packets,
+as introduced in the next subsection, the artifacts become too severe.
+Furthermore, zero-padding increases the number of coefficients,
+which in our application would need different neural network architectures per wavelet.
+Therefore we employ special boundary filters in the form of the
+so-called Gram-Schmidt boundary filters :cite:`jensen2001ripples`.
 
 
 .. _fig-raw:
 .. figure:: ./figures/raw.png
   :width: 40%
   :align: left
-  :alt: The effect of boundary wavelet treatment. Single-dimensional Transformation-Matrices of shape 32 by 32 are constructed. This plot shows the element-wise absolute values of :math:`\mathbf{C_s} \cdot \mathbf{C_a}`.
+  :alt: The effect of boundary wavelet treatment.
 
-  The effect of boundary wavelet treatment. Single-dimensional Transformation-Matrices of shape 32 by 32 are constructed. This plot shows the element-wise absolute values of :math:`\mathbf{C_s} \cdot \mathbf{C_a}`.
+  The effect of boundary wavelet treatment.
+  Single-dimensional Transformation-Matrices of shape 32 by 32 are constructed.
+  This plot shows the element-wise absolute values of :math:`\mathbf{C_s} \cdot \mathbf{C_a}`.
 
 
 
-The idea is now to replace the filters at the boundary with specially constructed, shorter filters that preserve both the length and the perfect reconstruction property or other properties of the wavelet transform.
-Figure :numref:`fig-raw` illustrates, why the procedure is required, it illustrates the sparsity pattern of the matrix  :math:`\mathbf{C_s} \cdot \mathbf{C_a}`. The two matrices should invert each other, therefore
-we would have expected to see the diagonal pattern of the identity matrix. As described above Gram-Schmidt allows us to correct both matrices.
+The idea is now to replace the filters at the boundary with specially constructed,
+shorter filters that preserve both the length and the perfect reconstruction property or other properties
+of the wavelet transform.
+Figure :numref:`fig-raw` illustrates, why the procedure is required,
+it illustrates the sparsity pattern of the matrix  :math:`\mathbf{C_s} \cdot \mathbf{C_a}`.
+The two matrices should invert each other, therefore
+we would have expected to see the diagonal pattern of the identity matrix.
+As described above Gram-Schmidt allows us to correct both matrices.
 
 
 .. _fig-boundary:
 .. figure:: ./figures/boundary.png
   :width: 40%
   :align: right
-  :alt: The effect of boundary wavelet treatment. The plot above shows the element-wise absolute values of :math:`\mathbf{S} \cdot \mathbf{A}` for orthogonalized analysis and synthesis matrices.
+  :alt: The effect of boundary wavelet treatment.
 
-  This plot illustrates the element-wise absolute values of :math:`\mathbf{S} \cdot \mathbf{A}` for orthogonalized analysis and synthesis matrices. The identity matrix indicates that our matrices have been correctly assembled.
+  This plot illustrates the element-wise absolute values of :math:`\mathbf{S} \cdot \mathbf{A}`
+  for orthogonalized analysis and synthesis matrices.
+  The identity matrix indicates that our matrices have been correctly assembled.
 
-We illustrate the impact of the procedure in Figure :numref:`fig-boundary`, the product of the corrected boundary wavelet matrices :math:`\mathbf{S} \cdot \mathbf{A}` are shown.
+We illustrate the impact of the procedure in Figure :numref:`fig-boundary`,
+the product of the corrected boundary wavelet matrices :math:`\mathbf{S} \cdot \mathbf{A}` are shown.
 
 
 Sparsity patterns of boundary wavelet matrices
@@ -148,10 +199,12 @@ Sparsity patterns of boundary wavelet matrices
   :alt: Sparsity pattern of a 32 by 32 boundary wavelet analysis matrix, and its scale components.
 
   Sparsity pattern of a 32 by 32 boundary wavelet analysis matrix, and its scale components.
-  This pattern occurs for second degree wavelets. All non-zero entries are shown. Additional entries appear in comparison to the raw-convolution matrix.
+  This pattern occurs for second degree wavelets. All non-zero entries are shown.
+  Additional entries appear in comparison to the raw-convolution matrix.
 
-Figure :numref:`fig-conv-analysis` presented the single dimensional truncated analysis convolution matrices. The plot above shows the sparsity pattern
-of an orthogonalized matrix. This is an example pattern of an invertible matrix that :py:meth:`ptwt.MatrixWavedec` would actually use.
+Figure :numref:`fig-conv-analysis` presented the single dimensional truncated analysis convolution matrices.
+The plot above shows the sparsity pattern of an orthogonalized matrix.
+This is an example pattern of an invertible matrix that :py:meth:`ptwt.MatrixWavedec` would actually use.
 
 
 .. figure:: ./figures/synthesis.png
@@ -167,8 +220,12 @@ Similarly the plot above shows an example sparsity pattern of a synthesis matrix
 Two dimensional sparse-transformation matrix plots
 --------------------------------------------------
 
-The :ref:`sec-fwt-2d` section introduced the two-dimensional wavelet transform. The toolbox constructs filter quadruples from the original filter pairs to process two-dimensional inputs. The process uses outer products :cite:`vyas2018multiscale`. We can construct convolution matrices from the 
-two-dimensional filter quadruples. The toolbox provides the functions :py:meth:`ptwt.MatrixWavedec2` and :py:meth:`ptwt.MatrixWaverec2` to access the matrix form of the two-dimensional wavelet transform.
+The :ref:`sec-fwt-2d` section introduced the two-dimensional wavelet transform.
+The toolbox constructs filter quadruples from the original filter pairs to process two-dimensional inputs.
+The process uses outer products :cite:`vyas2018multiscale`. We can construct convolution matrices from the
+two-dimensional filter quadruples.
+The toolbox provides the functions :py:meth:`ptwt.MatrixWavedec2` and :py:meth:`ptwt.MatrixWaverec2`
+to access the matrix form of the two-dimensional wavelet transform.
 
 .. _fig-boundary-analysis2d:
 
@@ -180,15 +237,15 @@ two-dimensional filter quadruples. The toolbox provides the functions :py:meth:`
   The transformation matrix on the left is the matrix-product of all three scale-matrices.
 
 
-Figure :numref:`fig-boundary-analysis2d` shows the sparsity pattern of a two-dimensional orthogonalized analysis matrix, constructed with
-:py:meth:`ptwt.MatrixWavedec2`.
+Figure :numref:`fig-boundary-analysis2d` shows the sparsity pattern of a two-dimensional
+orthogonalized analysis matrix, constructed with :py:meth:`ptwt.MatrixWavedec2`.
 
 
 .. _fig-boundary-synthesis2d:
 
 .. figure:: ./figures/synthesis2d.png
   :width: 100%
-  :alt: Sparsity patterns of two-dimensional synthesis or IFWT matrices. Upper indices indicate individual scale matrices.
+  :alt: Sparsity patterns of two-dimensional synthesis or IFWT matrices.
 
   Sparsity patterns of two-dimensional synthesis or IFWT matrices. Upper indices indicate individual scale matrices.
   The transformation matrix on the left is the matrix-product of all three scale-matrices.

@@ -25,20 +25,8 @@ jump to the :ref:`examples <sec-examples>` or the :ref:`API documentation <ref-i
 ``ptwt`` is built to be `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_ compatible.
 It should be possible to switch back and forth with relative ease.
 
-If you use this work in a scientific context, please cite the following paper:
-
-.. code-block::
-
-   @article{JMLR:v25:23-0636,
-   author  = {Moritz Wolter and Felix Blanke and Jochen Garcke and Charles Tapley Hoyt},
-   title   = {ptwt - The PyTorch Wavelet Toolbox},
-   journal = {Journal of Machine Learning Research},
-   year    = {2024},
-   volume  = {25},
-   number  = {80},
-   pages   = {1--7},
-   url     = {http://jmlr.org/papers/v25/23-0636.html}
-   }
+If you use this work in a scientific context, please cite us!
+We have a  BibTeX entry on the :ref:`citation`-page.
 
 
 .. toctree::
@@ -69,3 +57,4 @@ If you use this work in a scientific context, please cite the following paper:
 
    citation
    contributing
+   release_notes

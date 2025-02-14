@@ -755,7 +755,7 @@ def _deprecated_alias(
 
     def rename_kwargs(
         func_name: str,
-        kwargs: Param.kwargs,
+        kwargs: Param.kwargs,  # type: ignore
         aliases: dict[str, str],
     ) -> None:
         """Rename deprecated kwarg."""
