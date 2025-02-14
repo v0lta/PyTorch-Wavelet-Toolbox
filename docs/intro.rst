@@ -6,7 +6,7 @@ See, for example, :cite:`strang1996wavelets,mallat1999wavelet`
 or :cite:`jensen2001ripples` for excellent detailed introductions to the topic.
 This text is partially based material from :cite:`wolter2022wavelet`.
 
-The fwt relies on convolution operations with filter pairs.
+The **Fast Wavelet Transform (FWT)** relies on convolution operations with filter pairs.
 
 .. _fig-fwt:
 
@@ -15,31 +15,35 @@ The fwt relies on convolution operations with filter pairs.
    :alt: fast wavelet transform computation diagram.
    :align: center
 
-   Overview of the fwt computation.
+   Overview of the FWT computation.
 
 
-:numref:`fig-fwt` illustrates the process. :math:`\mathbf{h}_\mathcal{A}` denotes the analysis low-pass filter.
-:math:`\mathbf{h}_\mathcal{D}` the analysis high pass filter.
-:math:`\mathbf{f}_\mathcal{A}` and :math:`\mathbf{f}_\mathcal{D}` the synthesis filer pair.
+:numref:`fig-fwt` illustrates the process in one dimension.
+:math:`\mathbf{x}` denotes the input signal,
+:math:`\mathbf{h}_\mathcal{A}` and :math:`\mathbf{h}_\mathcal{D}` the analysis low-pass filter and high-pass filter,
+:math:`\mathbf{f}_\mathcal{A}` and :math:`\mathbf{f}_\mathcal{D}` the synthesis filter pair.
 :math:`\downarrow_2` denotes downsampling with a factor of two, :math:`\uparrow_2` means upsampling.
 In machine learning terms, the analysis transform relies on stride two convolutions.
 The synthesis or inverse transform on the right works with stride two transposed convolutions.
 :math:`\mathbf{H}_{k}` and :math:`\mathbf{F}_{k}` with :math:`k \in [\mathcal{A}, \mathcal{D}]`
 denote the corresponding convolution operators.
 
+The FWT can be described as a multiscale approach.
+The signal is decomposed into approximation coefficients (denoted by :math:`\mathcal{A}`)
+and detail coefficients (:math:`\mathcal{D}`).
+This is repeated on multiple levels by decomposing the approximation coefficients of the previous level, i.e.
+
 .. math::
-  \mathbf{x}_s * \mathbf{h}_k = \mathbf{c}_{k, s+1}
+   \mathbf{c}_{k, s+1} = \downarrow_2(\mathbf{c}_{\mathcal{A}, s} * \mathbf{h}_k) \qquad \text{for}\ k \in [\mathcal{A}, \mathcal{D}]
 
-with :math:`k \in [\mathcal{A}, \mathcal{D}]` and :math:`s \in \mathbb{N}_0` the set of natural numbers,
-where :math:`\mathbf{x}_0` is equal to
-the original input signal :math:`\mathbf{x}`. At higher scales, the fwt uses the low-pass filtered result as input,
-:math:`\mathbf{x}_s = \mathbf{c}_{\mathcal{A}, s}` if :math:`s > 0`.
-The dashed arrow indicates that we could continue to expand the fwt tree here.
-:py:meth:`ptwt.conv_transform.wavedec` implements this transformation.
-:py:meth:`ptwt.conv_transform.waverec` provides the inverse functionality visible
-on the right side of Figure :numref:`fig-fwt`.
+where :math:`s \in \mathbb{N}_0` denotes the level and :math:`\mathbf{c}_{\mathcal{A}, 0}:= \mathbf{x}`
+is the original input signal.
+Each decomposition step halves the size of the coefficients as a downsampling is applied on each level.
+The 1d FWT is imlemented in :py:meth:`ptwt.wavedec`.
+:py:meth:`ptwt.waverec` provides the inverse functionality visible
+on the righthand side of :numref:`fig-fwt`.
 
-The wavelet packet transform (pwt) additionally expands the high-frequency part of the tree.
+The **Wavelet Packet Transform (WPT)** additionally expands the high-frequency part of the tree.
 The figure below depicts the idea.
 
 .. _fig-wpt:
@@ -49,15 +53,16 @@ The figure below depicts the idea.
    :alt: wavelet packet transform computation diagram.
    :align: center
 
-   Scematic drawing of the full wpt in a single dimension. Compared to :numref:`fig-fwt`, the high-pass filtered side of the tree is expanded, too.
+   Scematic drawing of the full WPT in a single dimension. Compared to :numref:`fig-fwt`, the high-pass filtered side of the tree is expanded, too.
 
 Whole expansion is not the only possible way to construct a wavelet packet tree.
 See :cite:`jensen2001ripples` for a discussion of other options.
+
 In :numref:`fig-fwt` and :numref:`fig-wpt`, capital letters denote convolution operators.
-These may be expressed as Toeplitz matrices :cite:`strang1996wavelets`.
+These may also be expressed as Toeplitz matrices :cite:`strang1996wavelets`.
 The matrix nature of these operators explains the capital boldface notation.
 Coefficient subscripts record the path that leads to a particular coefficient.
-:py:meth:`ptwt.packets.WaveletPacket` provides this functionality for single dimensional inputs.
+:py:meth:`ptwt.WaveletPacket` provides this functionality for single dimensional inputs.
 
 .. _sec-fwt-2d:
 
@@ -99,7 +104,7 @@ The figure below illustrates the process.
    reconstruction respectively.
 
 
-:py:meth:`ptwt.conv_transform_2.wavedec2` and :py:meth:`ptwt.conv_transform_2.waverec2` support forward
+:py:meth:`ptwt.wavedec2` and :py:meth:`ptwt.waverec2` support forward
 and backward transforms respectively. Potential further decomposition of all coefficient leads us to
 wavelet packets.
 
@@ -116,7 +121,7 @@ wavelet packets.
 :numref:`fig-wpt2d` illustrates the computation of a full two-dimensional wavelet packet tree.
 At higher scales, all resulting coefficients from previous scales serve as inputs.
 The four filters repeatedly convolved with all outputs to build the full tree. The inverse transforms work analogously.
-:py:meth:`ptwt.packets.WaveletPacket2D` provides this functionality.
+:py:meth:`ptwt.WaveletPacket2D` provides this functionality.
 We refer to the standard literature :cite:`jensen2001ripples,strang1996wavelets` for an extended discussion.
 
 Compared to the FWT, the high-frequency half of the tree is subdivided into more bins,
@@ -124,59 +129,4 @@ yielding a fine-grained view of the entire spectrum.
 We always show analysis and synthesis transforms to stress that all wavelet transforms are lossless.
 Synthesis transforms reconstruct the original input based on the results from the analysis transform.
 
-Common wavelets and their properties
-------------------------------------
-
-A key property of the wavelet transform is its invertibility. Additionally, we expect an alias-free representation.
-Standard literature like :cite:`strang1996wavelets` formulates the perfect reconstruction
-and alias cancellation conditions to satisfy both requirements.
-For an analysis filter coefficient vector :math:`\mathbf{h}`
-the equations below use the polynomial :math:`H(z) = \sum_n h(n)z^{-n}`.
-We construct :math:`F(z)` the same way using the synthesis filter coefficients in :math:`\mathbf{f}`.
-To guarantee perfect reconstruction the filters must respect
-
-.. math::
-    H_\mathcal{A}(z)F_\mathcal{A}(z) + H_\mathcal{D}(-z)F_\mathcal{D}(z) = 2z^{-l}.
-
-Similarly
-
-.. _eq-alias:
-
-.. math::
-  F_\mathcal{A}(z)H_\mathcal{A}(-z) + F_\mathcal{D}(z)H_\mathcal{D}(-z) = 0
-
-guarantees alias cancellation.
-
-Filters that satisfy both equations qualify as wavelets. Lets consider i.e. a Daubechies wavelet and a Symlet:
-
-.. _fig-sym6:
-
-.. figure:: figures/sym6.png
-   :scale: 45 %
-   :alt: sym6 filter values
-   :align: center
-
-   Visualization of the Symlet 6 filter coefficients.
-
-
-.. _fig-db6:
-
-.. figure:: figures/db6.png
-   :scale: 45 %
-   :alt: 2d wavelet packet transform computation diagram.
-   :align: center
-
-   Visualization of the Daubechies 6 filter coefficients.
-
-:numref:`fig-sym6` and :numref:`fig-db6` visualize the Daubechies and Symlet filters of 6th degree.
-Compared to the Daubechies Wavelet family, their Symlet cousins have more mass at the center.
-:numref:`fig-sym6` illustrates this fact. Large deviations occur around the fifth filter in the center,
-unlike the Daubechies' six filters in :numref:`fig-db6`.
-Consider the sign patterns in :numref:`fig-db6`.
-The decomposition highpass (orange) and the reconstruction lowpass (green) filters display an alternating sign pattern.
-This behavior is a possible solution to the alias cancellation condition.
-To understand why substitute :math:`F_\mathcal{A}(z) = H_\mathcal{D}(-z)` and :math:`F_\mathcal{D} = -H_\mathcal{A}(-z)`
-into the perfect reconstruction condition :cite:`strang1996wavelets`.
-:math:`F_\mathcal{A}(z) = H_\mathcal{D}(-z)` requires an opposing sign
-at even and equal signs at odd powers of the polynomial.
-
+See also :ref:`common-wavelets` for a discussion of common wavelets and their properties.

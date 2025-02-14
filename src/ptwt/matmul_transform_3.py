@@ -10,7 +10,6 @@ import numpy as np
 import torch
 
 from ._util import (
-    Wavelet,
     _as_wavelet,
     _check_axes_argument,
     _check_same_device_dtype,
@@ -24,11 +23,16 @@ from ._util import (
 from .constants import (
     BoundaryMode,
     OrthogonalizeMethod,
+    Wavelet,
     WaveletCoeffNd,
     WaveletDetailDict,
 )
 from .conv_transform_3 import _fwt_pad3
-from .matmul_transform import construct_boundary_a, construct_boundary_s
+from .matmul_transform import (
+    BaseMatrixWaveDec,
+    construct_boundary_a,
+    construct_boundary_s,
+)
 from .sparse_math import _batch_dim_mm
 
 
@@ -56,14 +60,25 @@ def _matrix_pad_3(
     return depth, height, width, _PadTuple(pad_depth, pad_height, pad_width)
 
 
-class MatrixWavedec3(object):
-    """Compute 3d separable transforms."""
+class MatrixWavedec3(BaseMatrixWaveDec):
+    """Compute 3d separable transforms.
+
+    Note:
+        On each level of the transform both axis of
+        the convolved signal are required to be of even length.
+        This transform uses zero padding to transform coefficients
+        with an odd length.
+        To avoid padding consider transforming signals
+        with dimensions divisable by :math:`2^L`
+        for a :math:`L`-level transform.
+    """
 
     @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
+        *,
         axes: tuple[int, int, int] = (-3, -2, -1),
         orthogonalization: OrthogonalizeMethod = "qr",
         odd_coeff_padding_mode: BoundaryMode = "zero",
@@ -80,14 +95,16 @@ class MatrixWavedec3(object):
                 for possible choices.
             level (int, optional): The desired decomposition level.
                 Defaults to None.
+            axes (tuple[int, int, int]): Compute the transform over these axes
+                of the data tensor. Defaults to (-3, -2, -1).
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Defaults to 'qr'.
+                Defaults to ``qr``.
             odd_coeff_padding_mode: The constructed FWT matrices require inputs
                 with even lengths. Thus, any odd-length approximation coefficients
                 are padded to an even length using this mode,
                 see :data:`ptwt.constants.BoundaryMode`.
-                Defaults to 'zero'.
+                Defaults to ``zero``.
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
@@ -177,14 +194,16 @@ class MatrixWavedec3(object):
         self.size_list.append((current_depth, current_height, current_width))
 
     def __call__(self, input_signal: torch.Tensor) -> WaveletCoeffNd:
-        """Compute a separable 3d-boundary wavelet transform.
+        """Compute a separable 3d FWT using boundary wavelets.
 
         Args:
-            input_signal (torch.Tensor): An input signal. For example
-                of shape ``[batch_size, depth, height, width]``.
+            input_signal (torch.Tensor): The input data tensor with
+                at least three dimensions.
+                By default the last three axes are transformed.
+                The ``axes`` class attribute allows other choices.
 
         Returns:
-            The resulting coefficients for each level are stored in a tuple,
+            A tuple containing the wavelet coefficients,
             see :data:`ptwt.constants.WaveletCoeffNd`.
 
         Raises:
@@ -260,7 +279,7 @@ class MatrixWavedec3(object):
             _split_rec(lll, "", 3, coeff_dict)
             lll = coeff_dict["aaa"]
             result_keys = list(
-                filter(lambda x: len(x) == 3 and not x == "aaa", coeff_dict.keys())
+                filter(lambda x: len(x) == 3 and x != "aaa", coeff_dict.keys())
             )
             coeff_dict = {
                 key: tensor for key, tensor in coeff_dict.items() if key in result_keys
@@ -274,12 +293,13 @@ class MatrixWavedec3(object):
 
 
 class MatrixWaverec3(object):
-    """Reconstruct a signal from 3d-separable-fwt coefficients."""
+    """Reconstruct a signal from 3d separable FWT coefficients."""
 
     @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
+        *,
         axes: tuple[int, int, int] = (-3, -2, -1),
         orthogonalization: OrthogonalizeMethod = "qr",
     ):
@@ -290,11 +310,11 @@ class MatrixWaverec3(object):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            axes (tuple[int, int, int]): Transform these axes instead of the
-                last three. Defaults to (-3, -2, -1).
+            axes (tuple[int, int, int]): Compute the transform over these axes
+                of the data tensor. Defaults to (-3, -2, -1).
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Defaults to 'qr'.
+                Defaults to ``qr``.
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
@@ -378,7 +398,7 @@ class MatrixWaverec3(object):
 
     def _cat_coeff_recursive(self, input_dict: WaveletDetailDict) -> torch.Tensor:
         done_dict = {}
-        a_initial_keys = list(filter(lambda x: x[0] == "a", input_dict.keys()))
+        a_initial_keys = filter(lambda x: x[0] == "a", input_dict.keys())
         for a_key in a_initial_keys:
             d_key = "d" + a_key[1:]
             cat_d = input_dict[d_key]
@@ -396,8 +416,7 @@ class MatrixWaverec3(object):
         """Reconstruct a batched 3d-signal from its coefficients.
 
         Args:
-            coefficients (WaveletCoeffNd):
-                The output from the `MatrixWavedec3` object,
+            coefficients: The output from the :class:`MatrixWavedec3` object,
                 see :data:`ptwt.constants.WaveletCoeffNd`.
 
         Returns:
@@ -454,7 +473,7 @@ class MatrixWaverec3(object):
                         "All coefficients on each level must have the same shape"
                     )
 
-            coeff_dict["a" * len(list(coeff_dict.keys())[-1])] = lll
+            coeff_dict["aaa"] = lll
             lll = self._cat_coeff_recursive(coeff_dict)
 
             for dim, mat in enumerate(self.ifwt_matrix_list[level - 1 - c_pos][::-1]):

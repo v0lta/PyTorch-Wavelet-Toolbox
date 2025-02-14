@@ -48,7 +48,7 @@ def generate_mackey(
         # print('Mackey initial state is random.')
         x0 += torch.empty(x0.shape, device=device).uniform_(-0.1, 0.1)
     else:
-        x0 += [-0.01, 0.02]
+        x0 += [-0.01, 0.02]  # type: ignore
 
     x = x0
     # forward_euler

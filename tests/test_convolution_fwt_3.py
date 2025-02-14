@@ -14,7 +14,7 @@ from ptwt.constants import BoundaryMode
 
 
 def _expand_dims(
-    batch_list: list[Union[npt.NDArray[Any], dict[Any, Any]]]
+    batch_list: list[Union[npt.NDArray[Any], dict[Any, Any]]],
 ) -> list[Any]:
     for pos, bel in enumerate(batch_list):
         if isinstance(bel, np.ndarray):

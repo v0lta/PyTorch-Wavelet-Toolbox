@@ -110,8 +110,3 @@ frequency resolution, with different wavelets offering advantages in specific ap
     Efficient algorithms, such as Fast Fourier Transform (FFT),
     are often utilized for numerical computations.
 
-
-Bibliography
-------------
-
-.. bibliography::

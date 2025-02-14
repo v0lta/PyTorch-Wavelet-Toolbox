@@ -19,7 +19,8 @@ sys.path.insert(0, os.path.abspath("../src"))
 # -- Project information -----------------------------------------------------
 
 project = "PyTorch-Wavelet-Toolbox"
-copyright = "2024, the ptwt-team"
+copyright = "2025"
+author = "Moritz Wolter, Felix Blanke, Jochen Garcke and Charles Tapley Hoyt"
 
 # -- General configuration ---------------------------------------------------
 
@@ -86,4 +87,7 @@ autodoc_type_aliases = {
     "WaveletCoeff2dSeparable": "ptwt.constants.WaveletCoeff2dSeparable",
     "WaveletCoeffNd": "ptwt.constants.WaveletCoeffNd",
     "BaseMatrixWaveDec": "ptwt.matmul_transform.BaseMatrixWaveDec",
+    "BoundaryMode": "ptwt.constants.BoundaryMode",
+    "ExtendedBoundaryMode": "ptwt.constants.ExtendedBoundaryMode",
+    "OrthogonalizeMethod": "ptwt.constants.OrthogonalizeMethod",
 }

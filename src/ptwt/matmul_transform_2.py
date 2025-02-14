@@ -12,11 +12,11 @@ import numpy as np
 import torch
 
 from ._util import (
-    Wavelet,
     _as_wavelet,
     _check_axes_argument,
     _check_same_device_dtype,
     _deprecated_alias,
+    _get_filter_tensors,
     _is_orthogonalize_method_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -27,10 +27,10 @@ from .constants import (
     BoundaryMode,
     OrthogonalizeMethod,
     PaddingMode,
+    Wavelet,
     WaveletCoeff2d,
     WaveletDetailTuple2d,
 )
-from .conv_transform import _get_filter_tensors
 from .conv_transform_2 import _construct_2d_filt, _fwt_pad2
 from .matmul_transform import (
     BaseMatrixWaveDec,
@@ -63,7 +63,7 @@ def _construct_a_2(
         device (torch.device or str): Where to place the matrix.
         dtype (torch.dtype, optional): Desired matrix data type.
             Defaults to torch.float64.
-        mode : The convolution type.
+        mode: The convolution type.
             Options are 'full', 'valid', 'same' and 'sameshift'.
             Defaults to 'sameshift'.
 
@@ -113,7 +113,7 @@ def _construct_s_2(
             usually CPU or GPU.
         dtype (torch.dtype, optional): The data type the matrix should have.
             Defaults to torch.float64.
-        mode : The convolution type.
+        mode: The convolution type.
             Options are 'full', 'valid', 'same' and 'sameshift'.
             Defaults to 'sameshift'.
 
@@ -234,32 +234,40 @@ def _matrix_pad_2(height: int, width: int) -> tuple[int, int, tuple[bool, bool]]
 
 
 class MatrixWavedec2(BaseMatrixWaveDec):
-    """Experimental sparse matrix 2d wavelet transform.
+    """Compute the 2d fast wavelet transform using sparse matrices.
 
-    For a completely pad-free transform,
-    input images are expected to be divisible by two.
-    For multiscale transforms all intermediate
-    scale dimensions should be divisible
-    by two, i.e. ``128, 128 -> 64, 64 -> 32, 32`` would work
-    well for a level three transform.
-    In this case multiplication with the `sparse_fwt_operator`
-    property is equivalent.
+    This transform is the sparse matrix correspondant to
+    :func:`ptwt.wavedec2`. The convolution operations are
+    implemented as a matrix-vector product between a
+    sparse transformation matrix and the input signal.
+    This transform uses boundary wavelets instead of padding to
+    handle the signal boundaries, see the
+    :ref:`boundary wavelet docs <modes.boundary wavelets>`.
 
     Note:
-        Constructing the sparse fwt-matrix is expensive.
+        Constructing the sparse FWT matrix is expensive.
         For longer wavelets, high-level transforms, and large
         input images this may take a while.
         The matrix is therefore constructed only once.
         In the non-separable case, it can be accessed via
-        the sparse_fwt_operator property.
+        the :attr:`sparse_fwt_operator` property.
+
+    Note:
+        On each level of the transform both axis of
+        the convolved signal are required to be of even length.
+        This transform uses zero padding to transform coefficients
+        with an odd length.
+        To avoid padding consider transforming signals
+        with dimensions divisable by :math:`2^L`
+        for a :math:`L`-level transform.
 
     Example:
-        >>> import ptwt, torch, pywt
+        >>> import ptwt, torch
         >>> import numpy as np
         >>> from scipy import datasets
         >>> face = datasets.face()[:256, :256, :].astype(np.float32)
         >>> pt_face = torch.tensor(face).permute([2, 0, 1])
-        >>> matrixfwt = ptwt.MatrixWavedec2(pywt.Wavelet("haar"), level=2)
+        >>> matrixfwt = ptwt.MatrixWavedec2("haar", level=2)
         >>> mat_coeff = matrixfwt(pt_face)
     """
 
@@ -268,6 +276,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         self,
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
+        *,
         axes: tuple[int, int] = (-2, -1),
         orthogonalization: OrthogonalizeMethod = "qr",
         separable: bool = True,
@@ -280,14 +289,14 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            level (int, optional): The level up to which to compute the fwt. If None,
-                the maximum level based on the signal length is chosen. Defaults to
-                None.
-            axes (int, int): A tuple with the axes to transform.
-                Defaults to (-2, -1).
+            level (int, optional): The maximum decomposition level.
+                If None, the level is computed based on the signal shape.
+                Defaults to None.
+            axes (tuple[int, int]): Compute the transform over these axes of the data
+                tensor. Defaults to (-2, -1).
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Defaults to 'qr'.
+                Defaults to ``qr``.
             separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis.
                 Matrix construction is significantly faster for separable
@@ -297,7 +306,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 with even lengths. Thus, any odd-length approximation coefficients
                 are padded to an even length using this mode,
                 see :data:`ptwt.constants.BoundaryMode`.
-                Defaults to 'zero'.
+                Defaults to ``zero``.
 
         .. versionchanged:: 1.10
             The argument `boundary` has been renamed to `orthogonalization`.
@@ -338,7 +347,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         To benefit from code handling odd-length levels call the object.
 
         Returns:
-            The sparse 2d-fwt operator matrix.
+            The sparse 2d FWT operator matrix.
 
         Raises:
             NotImplementedError: if a separable transformation was used or if padding
@@ -436,17 +445,16 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         self.size_list.append((current_height, current_width))
 
     def __call__(self, input_signal: torch.Tensor) -> WaveletCoeff2d:
-        """Compute the fwt for the given input signal.
+        """Compute the FWT for the given input signal.
 
-        The fwt matrix is set up during the first call
+        The FWT matrix is set up during the first call
         and stored for future use.
 
         Args:
-            input_signal (torch.Tensor): An input signal of shape
-                ``[batch_size, height, width]``.
-                2d inputs are interpreted as ``[height, width]``.
-                4d inputs as ``[batch_size, channels, height, width]``.
-                This transform affects the last two dimensions.
+            input_signal (torch.Tensor): The input data tensor with
+                at least two dimensions.
+                By default the last two axes are transformed.
+                The `axes` class attribute allows other choices.
 
         Returns:
             The resulting coefficients per level are stored in a pywt style tuple,
@@ -574,6 +582,7 @@ class MatrixWaverec2(object):
     def __init__(
         self,
         wavelet: Union[Wavelet, str],
+        *,
         axes: tuple[int, int] = (-2, -1),
         orthogonalization: OrthogonalizeMethod = "qr",
         separable: bool = True,
@@ -585,11 +594,11 @@ class MatrixWaverec2(object):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            axes (int, int): The axes transformed by waverec2.
+            axes (tuple[int, int]): Compute the transform over these axes.
                 Defaults to (-2, -1).
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
-                Defaults to 'qr'.
+                Defaults to ``qr``.
             separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis. This is significantly
                 faster than a non-separable transformation since only a small constant-
@@ -631,10 +640,10 @@ class MatrixWaverec2(object):
 
     @property
     def sparse_ifwt_operator(self) -> torch.Tensor:
-        """Compute the ifwt operator matrix for pad-free cases.
+        """Compute the iFWT operator matrix for pad-free cases.
 
         Returns:
-            The sparse 2d ifwt operator matrix.
+            The sparse 2d iFWT operator matrix.
 
         Raises:
             NotImplementedError: if a separable transformation was used or if padding
@@ -735,19 +744,17 @@ class MatrixWaverec2(object):
 
         Args:
             coefficients (WaveletCoeff2d): The coefficient tuple as returned
-                by the `MatrixWavedec2` object,
+                by the :class:`MatrixWavedec2` object,
                 see :data:`ptwt.constants.WaveletCoeff2d`.
 
         Returns:
-            The original signal reconstruction. For example of shape
-            ``[batch_size, height, width]`` or ``[batch_size, channels, height, width]``
-            depending on the input to the forward transform and the value
-            of the `axis` argument.
+            The original signal reconstruction.
+            Its shape depends on the shape of the input to :class:`ptwt.MatrixWavedec2`.
 
         Raises:
             ValueError: If the decomposition level is not a positive integer or if the
                 coefficients are not in the shape as it is returned from a
-                `MatrixWavedec2` object.
+                :class:`MatrixWavedec2` object.
         """
         coefficients, ds = _preprocess_coeffs(coefficients, ndim=2, axes=self.axes)
         torch_device, torch_dtype = _check_same_device_dtype(coefficients)
