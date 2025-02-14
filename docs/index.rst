@@ -8,9 +8,9 @@
 PyTorch Wavelet Toolbox (``ptwt``)
 ==================================
 
-``ptwt`` brings wavelet transforms to PyTorch. The code is open-source, follow the GitHub link above
+``ptwt`` brings wavelet transforms to PyTorch. The code is open-source. Follow the GitHub link above
 to go to the source. This package is listed in the Python Package Index (PyPI). It's best installed via pip.
-GPU support depends on PyTorch. To take advantage of GPU-processing follow the `PyTorch install instructions`_.
+GPU support depends on PyTorch. To take advantage of GPU-processing, follow the `PyTorch install instructions`_.
 Install the version that best suits your system's hardware setup. Once PyTorch is set up, type the following
 to get started:
 
