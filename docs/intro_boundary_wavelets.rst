@@ -214,7 +214,8 @@ This is an example pattern of an invertible matrix that :py:meth:`ptwt.MatrixWav
   Sparsity pattern of a 32 by 32 boundary wavelet synthesis matrix, and its scale components.
   Its synthesis counterpart with a transposed diagonal pattern is visible in Figure :numref:`fig-conv-synthesis`.
 
-Similarly, the plot above shows an example of a sparsity pattern of a synthesis matrix from :py:meth:`ptwt.MatrixWaverec`.
+Similarly, the plot above shows an example of a sparsity pattern
+of a synthesis matrix from :py:meth:`ptwt.MatrixWaverec`.
 
 
 Two-dimensional sparse-transformation matrix plots
