@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath("../src"))
 # -- Project information -----------------------------------------------------
 
 project = "PyTorch-Wavelet-Toolbox"
-copyright = "2024"
-author = "the ptwt-team"
+copyright = "2025"
+author = "Moritz Wolter, Felix Blanke, Jochen Garcke and Charles Tapley Hoyt"
 
 # -- General configuration ---------------------------------------------------
 
