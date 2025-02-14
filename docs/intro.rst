@@ -39,8 +39,8 @@ This is repeated on multiple levels by decomposing the approximation coefficient
 where :math:`s \in \mathbb{N}_0` denotes the level and :math:`\mathbf{c}_{\mathcal{A}, 0}:= \mathbf{x}`
 is the original input signal.
 Each decomposition step halves the size of the coefficients as a downsampling is applied on each level.
-The 1d FWT is imlemented in :py:meth:`ptwt.conv_transform.wavedec`.
-:py:meth:`ptwt.conv_transform.waverec` provides the inverse functionality visible
+The 1d FWT is imlemented in :py:meth:`ptwt.wavedec`.
+:py:meth:`ptwt.waverec` provides the inverse functionality visible
 on the righthand side of :numref:`fig-fwt`.
 
 The **Wavelet Packet Transform (WPT)** additionally expands the high-frequency part of the tree.
@@ -62,7 +62,7 @@ In :numref:`fig-fwt` and :numref:`fig-wpt`, capital letters denote convolution o
 These may also be expressed as Toeplitz matrices :cite:`strang1996wavelets`.
 The matrix nature of these operators explains the capital boldface notation.
 Coefficient subscripts record the path that leads to a particular coefficient.
-:py:meth:`ptwt.packets.WaveletPacket` provides this functionality for single dimensional inputs.
+:py:meth:`ptwt.WaveletPacket` provides this functionality for single dimensional inputs.
 
 .. _sec-fwt-2d:
 
@@ -104,7 +104,7 @@ The figure below illustrates the process.
    reconstruction respectively.
 
 
-:py:meth:`ptwt.conv_transform_2.wavedec2` and :py:meth:`ptwt.conv_transform_2.waverec2` support forward
+:py:meth:`ptwt.wavedec2` and :py:meth:`ptwt.waverec2` support forward
 and backward transforms respectively. Potential further decomposition of all coefficient leads us to
 wavelet packets.
 
@@ -121,7 +121,7 @@ wavelet packets.
 :numref:`fig-wpt2d` illustrates the computation of a full two-dimensional wavelet packet tree.
 At higher scales, all resulting coefficients from previous scales serve as inputs.
 The four filters repeatedly convolved with all outputs to build the full tree. The inverse transforms work analogously.
-:py:meth:`ptwt.packets.WaveletPacket2D` provides this functionality.
+:py:meth:`ptwt.WaveletPacket2D` provides this functionality.
 We refer to the standard literature :cite:`jensen2001ripples,strang1996wavelets` for an extended discussion.
 
 Compared to the FWT, the high-frequency half of the tree is subdivided into more bins,
@@ -129,59 +129,4 @@ yielding a fine-grained view of the entire spectrum.
 We always show analysis and synthesis transforms to stress that all wavelet transforms are lossless.
 Synthesis transforms reconstruct the original input based on the results from the analysis transform.
 
-Common wavelets and their properties
-------------------------------------
-
-A key property of the wavelet transform is its invertibility. Additionally, we expect an alias-free representation.
-Standard literature like :cite:`strang1996wavelets` formulates the perfect reconstruction
-and alias cancellation conditions to satisfy both requirements.
-For an analysis filter coefficient vector :math:`\mathbf{h}`
-the equations below use the polynomial :math:`H(z) = \sum_n h(n)z^{-n}`.
-We construct :math:`F(z)` the same way using the synthesis filter coefficients in :math:`\mathbf{f}`.
-To guarantee perfect reconstruction the filters must respect
-
-.. math::
-    H_\mathcal{A}(z)F_\mathcal{A}(z) + H_\mathcal{D}(-z)F_\mathcal{D}(z) = 2z^{-l}.
-
-Similarly
-
-.. _eq-alias:
-
-.. math::
-  F_\mathcal{A}(z)H_\mathcal{A}(-z) + F_\mathcal{D}(z)H_\mathcal{D}(-z) = 0
-
-guarantees alias cancellation.
-
-Filters that satisfy both equations qualify as wavelets. Lets consider i.e. a Daubechies wavelet and a Symlet:
-
-.. _fig-sym6:
-
-.. figure:: figures/sym6.png
-   :scale: 45 %
-   :alt: sym6 filter values
-   :align: center
-
-   Visualization of the Symlet 6 filter coefficients.
-
-
-.. _fig-db6:
-
-.. figure:: figures/db6.png
-   :scale: 45 %
-   :alt: 2d wavelet packet transform computation diagram.
-   :align: center
-
-   Visualization of the Daubechies 6 filter coefficients.
-
-:numref:`fig-sym6` and :numref:`fig-db6` visualize the Daubechies and Symlet filters of 6th degree.
-Compared to the Daubechies Wavelet family, their Symlet cousins have more mass at the center.
-:numref:`fig-sym6` illustrates this fact. Large deviations occur around the fifth filter in the center,
-unlike the Daubechies' six filters in :numref:`fig-db6`.
-Consider the sign patterns in :numref:`fig-db6`.
-The decomposition highpass (orange) and the reconstruction lowpass (green) filters display an alternating sign pattern.
-This behavior is a possible solution to the alias cancellation condition.
-To understand why substitute :math:`F_\mathcal{A}(z) = H_\mathcal{D}(-z)` and :math:`F_\mathcal{D} = -H_\mathcal{A}(-z)`
-into the perfect reconstruction condition :cite:`strang1996wavelets`.
-:math:`F_\mathcal{A}(z) = H_\mathcal{D}(-z)` requires an opposing sign
-at even and equal signs at odd powers of the polynomial.
-
+See also :ref:`common-wavelets` for a discussion of common wavelets and their properties.

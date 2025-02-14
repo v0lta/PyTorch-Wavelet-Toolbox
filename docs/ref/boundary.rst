@@ -29,6 +29,11 @@ The following modes of padding are supported:
 Boundary wavelets
 -----------------
 
+Boundary filters are another way to deal with signals of finite length.
+The :ref:`getting started section <sec-boundary-wavelets>`
+of the docs provide and introduction to the main concepts.
+
+
 .. _`modes.boundary wavelets`:
 
 .. autodata:: ExtendedBoundaryMode

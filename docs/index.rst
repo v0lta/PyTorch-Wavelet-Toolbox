@@ -40,13 +40,17 @@ If you use this work in a scientific context, please cite the following paper:
    url     = {http://jmlr.org/papers/v25/23-0636.html}
    }
 
+
 .. toctree::
    :hidden:
    :maxdepth: 1
    :caption: Getting Started
 
    intro
+   intro_boundary_wavelets
+   common_wavelets
    intro_cwt
+   literature
    examples
 
 
@@ -56,3 +60,12 @@ If you use this work in a scientific context, please cite the following paper:
    :caption: Public API
 
    ref/index
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+   :caption: Community
+
+   citation
+   contributing
