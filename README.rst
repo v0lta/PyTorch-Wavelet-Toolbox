@@ -44,7 +44,7 @@ Welcome to the PyTorch wavelet toolbox. This package implements discrete-(DWT) a
 - finally, this package provides adaptive wavelet support (experimental).
 
 This toolbox extends `PyWavelets <https://pywavelets.readthedocs.io/en/latest/>`_. In addition to boundary wavelets, we provide GPU and gradient support via a PyTorch backend.
-Complete documentation is available at: https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/ptwt.html
+Complete documentation of our Python API is available at: https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/ptwt.html
 
 This toolbox is independent work. Meta or the PyTorch team have not endorsed it.
 
