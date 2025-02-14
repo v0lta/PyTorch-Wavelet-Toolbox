@@ -212,12 +212,12 @@ def _integrate_wavelet(
         return _integrate(psi, step), x
 
     elif len(functions_approximations) == 3:  # orthogonal wavelet
-        _, psi, x = functions_approximations
+        _, psi, x = functions_approximations # type: ignore
         step = x[1] - x[0]
         return _integrate(psi, step), x
 
     else:  # biorthogonal wavelet
-        _, psi_d, _, psi_r, x = functions_approximations
+        _, psi_d, _, psi_r, x = functions_approximations # type: ignore
         step = x[1] - x[0]
         return _integrate(psi_d, step), _integrate(psi_r, step), x
 
@@ -267,8 +267,8 @@ class _DifferentiableContinuousWavelet(
         """Define a grid and evaluate the wavelet on it."""
         length = 2**precision
         # load the bounds from untyped pywt code.
-        lower_bound: float = float(self.lower_bound)
-        upper_bound: float = float(self.upper_bound)
+        lower_bound: float = float(self.lower_bound) # type: ignore
+        upper_bound: float = float(self.upper_bound) # type: ignore
         grid = torch.linspace(
             lower_bound,
             upper_bound,
