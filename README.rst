@@ -7,7 +7,7 @@ Pytorch Wavelet Toolbox (`ptwt`)
     :alt: GitHub Actions
 
 .. image:: https://readthedocs.org/projects/pytorch-wavelet-toolbox/badge/?version=latest
-    :target: https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/ptwt.html
+    :target: https://pytorch-wavelet-toolbox.readthedocs.io/en/latest/
     :alt: Documentation Status
 
 .. image:: https://img.shields.io/pypi/pyversions/ptwt
