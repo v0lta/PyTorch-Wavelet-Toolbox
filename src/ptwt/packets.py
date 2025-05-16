@@ -177,7 +177,11 @@ class WaveletPacket(BaseDict):
             return self._matrix_wavedec_dict[length]
         else:
             return partial(
-                wavedec, wavelet=self.wavelet, level=1, mode=self.mode, axis=self.axis # type: ignore
+                wavedec,
+                wavelet=self.wavelet,
+                level=1,
+                mode=self.mode,
+                axis=self.axis,  # type: ignore
             )
 
     def _get_waverec(

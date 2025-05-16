@@ -196,7 +196,7 @@ def _integrate_wavelet(
         if type(arr) is np.ndarray:
             integral = np.cumsum(arr)
         elif type(arr) is torch.Tensor:
-            integral = torch.cumsum(arr, -1) # type: ignore
+            integral = torch.cumsum(arr, -1)  # type: ignore
         else:
             raise TypeError("Only ndarrays or tensors are integratable.")
         integral *= step
