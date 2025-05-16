@@ -105,7 +105,7 @@ class WaveletPacket(BaseDict):
             if len(data.shape) == 1:
                 # add a batch dimension.
                 data = data.unsqueeze(0)
-            self.transform(data, maxlevel)  # type: ignore
+            self.transform(data, maxlevel)
         else:
             self.data = {}
 
@@ -177,7 +177,7 @@ class WaveletPacket(BaseDict):
             return self._matrix_wavedec_dict[length]
         else:
             return partial(
-                wavedec, wavelet=self.wavelet, level=1, mode=self.mode, axis=self.axis
+                wavedec, wavelet=self.wavelet, level=1, mode=self.mode, axis=self.axis # type: ignore
             )
 
     def _get_waverec(

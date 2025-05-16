@@ -205,7 +205,7 @@ def wavedec3(
         result_lst = _map_result(result_lst, _unfold_axes_fn)
 
     if tuple(axes) != (-3, -2, -1):
-        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
+        undo_swap_fn = partial(_undo_swap_axes, axes=list(axes))
         result_lst = _map_result(result_lst, undo_swap_fn)
 
     return result_lst

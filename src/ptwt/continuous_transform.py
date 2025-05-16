@@ -196,7 +196,7 @@ def _integrate_wavelet(
         if type(arr) is np.ndarray:
             integral = np.cumsum(arr)
         elif type(arr) is torch.Tensor:
-            integral = torch.cumsum(arr, -1)
+            integral = torch.cumsum(arr, -1) # type: ignore
         else:
             raise TypeError("Only ndarrays or tensors are integratable.")
         integral *= step
@@ -272,8 +272,8 @@ class _DifferentiableContinuousWavelet(
         """Define a grid and evaluate the wavelet on it."""
         length = 2**precision
         # load the bounds from untyped pywt code.
-        lower_bound: float = float(self.lower_bound)
-        upper_bound: float = float(self.upper_bound)
+        lower_bound: float = float(self.lower_bound)  # type: ignore
+        upper_bound: float = float(self.upper_bound)  # type: ignore
         grid = torch.linspace(
             lower_bound,
             upper_bound,
@@ -292,10 +292,10 @@ class _ShannonWavelet(_DifferentiableContinuousWavelet):
         shannon = (
             torch.sqrt(self.bandwidth)
             * (
-                torch.sin(torch.pi * self.bandwidth * grid_values)  # type: ignore
+                torch.sin(torch.pi * self.bandwidth * grid_values)
                 / (torch.pi * self.bandwidth * grid_values)
             )
-            * torch.exp(1j * 2 * torch.pi * self.center * grid_values)  # type: ignore
+            * torch.exp(1j * 2 * torch.pi * self.center * grid_values)
         )
         return shannon
 
@@ -307,8 +307,8 @@ class _ComplexMorletWavelet(_DifferentiableContinuousWavelet):
         """Return numerical values for the wavelet on a grid."""
         morlet = (
             1.0
-            / torch.sqrt(torch.pi * self.bandwidth)  # type: ignore
+            / torch.sqrt(torch.pi * self.bandwidth)
             * torch.exp(-(grid_values**2) / self.bandwidth)
-            * torch.exp(1j * 2 * torch.pi * self.center * grid_values)  # type: ignore
+            * torch.exp(1j * 2 * torch.pi * self.center * grid_values)
         )
         return morlet

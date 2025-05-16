@@ -139,7 +139,7 @@ class MatrixWavedec3(object):
             matrix_construction_fun = partial(
                 construct_boundary_a,
                 wavelet=self.wavelet,
-                boundary=self.boundary,
+                boundary=self.boundary,  # type: ignore
                 device=device,
                 dtype=dtype,
             )
@@ -267,7 +267,7 @@ class MatrixWavedec3(object):
             split_list = _map_result(split_list, _unfold_axes_fn)
 
         if self.axes != (-3, -2, -1):
-            undo_swap_fn = partial(_undo_swap_axes, axes=self.axes)
+            undo_swap_fn = partial(_undo_swap_axes, axes=list(self.axes))
             split_list = _map_result(split_list, undo_swap_fn)
 
         return split_list[::-1]
