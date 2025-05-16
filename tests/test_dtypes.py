@@ -1,4 +1,5 @@
 """Test dtype support for the fwt code."""
+
 # Written by moritz ( @ wolter.tech ) in 2025
 import numpy as np
 import pytest
@@ -6,15 +7,14 @@ import pywt
 import torch
 from scipy import datasets
 
-from src.ptwt.conv_transform import (
-    _flatten_2d_coeff_lst,
-    wavedec,
-    waverec,
-)
+from src.ptwt.conv_transform import _flatten_2d_coeff_lst
 from src.ptwt.conv_transform_2 import wavedec2, waverec2
 
+
 @pytest.mark.slow
-@pytest.mark.parametrize("dtype", [torch.float64, torch.float32, torch.float16, torch.bfloat16])
+@pytest.mark.parametrize(
+    "dtype", [torch.float64, torch.float32, torch.float16, torch.bfloat16]
+)
 def test_2d_wavedec_rec(dtype):
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
 

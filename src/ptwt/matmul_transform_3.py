@@ -1,4 +1,5 @@
 """Implement 3D separable boundary transforms."""
+
 # Written by the Pytorch wavelet toolbox team in 2024
 
 import sys
@@ -122,7 +123,8 @@ class MatrixWavedec3(object):
                     f"depth, height, and width ({current_depth}, {current_height},"
                     f"{current_width}) is smaller "
                     f"then the filter length {filt_len}. Therefore, the transformation "
-                    f"is only computed up to the decomposition level {curr_level-1}.\n"
+                    f"is only computed up to the "
+                    f" decomposition level {curr_level - 1}.\n"
                 )
                 break
             # the conv matrices require even length inputs.
@@ -340,7 +342,8 @@ class MatrixWaverec3(object):
                     f" depth, height and width ({current_depth}, {current_height}, "
                     f"{current_width}) is smaller than the filter length {filt_len}."
                     f" Therefore, the transformation "
-                    f"is only computed up to the decomposition level {curr_level-1}.\n"
+                    f"is only computed up to the "
+                    f"decomposition level {curr_level - 1}.\n"
                 )
                 break
             # the conv matrices require even length inputs.

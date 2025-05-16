@@ -6,6 +6,7 @@ The implementation is based on the description
 in Strang Nguyen (p. 32), as well as the description
 of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
+
 # Created by moritz (wolter@cs.uni-bonn.de) at 14.04.20
 import sys
 from typing import List, Optional, Union
@@ -281,7 +282,7 @@ class MatrixWavedec(object):
                     f"level {curr_level}, the current signal length {curr_length} is "
                     f"smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
-                    f"{curr_level-1}.\n"
+                    f"{curr_level - 1}.\n"
                 )
                 break
 
@@ -563,7 +564,7 @@ class MatrixWaverec(object):
                     f"level {curr_level}, the current signal length {curr_length} is "
                     f"smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
-                    f"{curr_level-1}.\n"
+                    f"{curr_level - 1}.\n"
                 )
                 break
 

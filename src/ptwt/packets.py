@@ -1,4 +1,5 @@
 """Compute analysis wavelet packet representations."""
+
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 
 import collections
@@ -382,9 +383,7 @@ class WaveletPacket2D(BaseDict):
         """
         return ["".join(p) for p in product(["a", "h", "v", "d"], repeat=level)]
 
-    def _get_wavedec(
-        self, shape: Tuple[int, ...]
-    ) -> Callable[
+    def _get_wavedec(self, shape: Tuple[int, ...]) -> Callable[
         [torch.Tensor],
         List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]],
     ]:
@@ -415,9 +414,7 @@ class WaveletPacket2D(BaseDict):
                 wavedec2, wavelet=self.wavelet, level=1, mode=self.mode, axes=self.axes
             )
 
-    def _get_waverec(
-        self, shape: Tuple[int, ...]
-    ) -> Callable[
+    def _get_waverec(self, shape: Tuple[int, ...]) -> Callable[
         [List[Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]]],
         torch.Tensor,
     ]:
@@ -471,7 +468,7 @@ class WaveletPacket2D(BaseDict):
         def _fsdict_func(
             coeffs: List[
                 Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor, torch.Tensor]]
-            ]
+            ],
         ) -> torch.Tensor:
             a, (h, v, d) = coeffs
             return fsdict_func([cast(torch.Tensor, a), {"ad": h, "da": v, "dd": d}])
