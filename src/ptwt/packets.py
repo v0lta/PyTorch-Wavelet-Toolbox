@@ -180,8 +180,8 @@ class WaveletPacket(BaseDict):
                 wavedec,
                 wavelet=self.wavelet,
                 level=1,
-                mode=self.mode,
-                axis=self.axis,  # type: ignore
+                mode=self.mode,  # type: ignore
+                axis=self.axis, 
             )
 
     def _get_waverec(
