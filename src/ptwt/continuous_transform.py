@@ -24,10 +24,10 @@ def _next_fast_len(n: int) -> int:
 
 def cwt(
     data: torch.Tensor,
-    scales: Union[np.ndarray, torch.Tensor],  # type: ignore
+    scales: Union[np.ndarray, torch.Tensor],
     wavelet: Union[ContinuousWavelet, str],
     sampling_period: float = 1.0,
-) -> tuple[torch.Tensor, np.ndarray]:  # type: ignore
+) -> tuple[torch.Tensor, np.ndarray]:
     """Compute the single-dimensional continuous wavelet transform.
 
     This function is a PyTorch port of pywt.cwt as found at:
@@ -185,13 +185,13 @@ def _integrate_wavelet(
     """
 
     def _integrate(
-        arr: Union[np.ndarray, torch.Tensor],  # type: ignore
-        step: Union[np.ndarray, torch.Tensor],  # type: ignore
-    ) -> Union[np.ndarray, torch.Tensor]:  # type: ignore
+        arr: Union[np.ndarray, torch.Tensor],
+        step: Union[np.ndarray, torch.Tensor],
+    ) -> Union[np.ndarray, torch.Tensor]:
         if type(arr) is np.ndarray:
-            integral = np.cumsum(arr)
+            integral: Any = np.cumsum(arr)
         elif type(arr) is torch.Tensor:
-            integral = torch.cumsum(arr, -1)
+            integral = torch.cumsum(arr, -1) # type: ignore
         else:
             raise TypeError("Only ndarrays or tensors are integratable.")
         integral *= step
@@ -212,12 +212,12 @@ def _integrate_wavelet(
         return _integrate(psi, step), x
 
     elif len(functions_approximations) == 3:  # orthogonal wavelet
-        _, psi, x = functions_approximations
+        _, psi, x = functions_approximations # type: ignore
         step = x[1] - x[0]
         return _integrate(psi, step), x
 
     else:  # biorthogonal wavelet
-        _, psi_d, _, psi_r, x = functions_approximations
+        _, psi_d, _, psi_r, x = functions_approximations # type: ignore
         step = x[1] - x[0]
         return _integrate(psi_d, step), _integrate(psi_r, step), x
 
