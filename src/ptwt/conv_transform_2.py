@@ -27,6 +27,8 @@ from ._util import (
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeff2d, WaveletDetailTuple2d
 
+__all__ = ["wavedec2", "waverec2"]
+
 
 def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     """Construct two-dimensional filters using outer products.

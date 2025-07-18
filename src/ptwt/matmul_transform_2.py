@@ -44,6 +44,13 @@ from .sparse_math import (
     construct_strided_conv2d_matrix,
 )
 
+__all__ = [
+    "construct_boundary_a2",
+    "construct_boundary_s2",
+    "MatrixWavedec2",
+    "MatrixWaverec2",
+]
+
 
 def _construct_a_2(
     wavelet: Union[Wavelet, str],

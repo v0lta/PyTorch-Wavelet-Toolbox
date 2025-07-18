@@ -26,6 +26,8 @@ from ._util import (
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeff1d
 
+__all__ = ["wavedec", "waverec"]
+
 
 def _fwt_pad(
     data: torch.Tensor,

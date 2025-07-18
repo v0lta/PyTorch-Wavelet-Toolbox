@@ -44,7 +44,7 @@ def test_as_wavelet(wavelet: str) -> None:
 def test_failed_as_wavelet(wavelet: str) -> None:
     """Test expected errors for invalid input to _as_wavelet."""
     with pytest.raises(ValueError):
-        wavelet = _as_wavelet(wavelet)
+        wavelet = _as_wavelet(wavelet)  # type: ignore
 
 
 @pytest.mark.parametrize("size", [[5], [12], [19]])

@@ -39,6 +39,8 @@ from .sparse_math import (
     construct_strided_conv_matrix,
 )
 
+__all__ = ["orthogonalize", "MatrixWavedec", "MatrixWaverec"]
+
 
 def _construct_a(
     wavelet: Union[Wavelet, str],

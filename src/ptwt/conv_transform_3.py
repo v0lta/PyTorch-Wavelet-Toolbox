@@ -27,6 +27,8 @@ from ._util import (
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeffNd, WaveletDetailDict
 
+__all__ = ["wavedec3", "waverec3"]
+
 
 def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     """Construct three-dimensional filters using outer products.

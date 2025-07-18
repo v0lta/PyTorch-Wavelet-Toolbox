@@ -1,6 +1,6 @@
 """Test code for the 2d boundary wavelets."""
 
-from typing import Type
+from typing import Any, Type
 
 import numpy as np
 import pytest
@@ -63,7 +63,7 @@ def test_matrix_analysis_fwt_2d_haar(size: tuple[int, int], level: int) -> None:
     flat_conv_coeff = np.concatenate(_flatten_2d_coeff_lst(conv_coeff), -1)
     test = np.allclose(flat_mat_coeff.numpy(), flat_conv_coeff)
     test2 = np.allclose(mat_coeff[0].squeeze(0).numpy(), conv_coeff[0])
-    test3 = np.allclose(mat_coeff[1][0].squeeze(0).numpy(), conv_coeff[1][0])
+    test3 = np.allclose(mat_coeff[1][0].squeeze(0).numpy(), conv_coeff[1][0])  # type: ignore
     assert test and test2 and test3
 
 
@@ -213,7 +213,7 @@ def test_batch_channel_2d_haar(size: list[int]) -> None:
             assert np.allclose(ptwtc.numpy(), pywtc)
         else:
             test = [
-                np.allclose(ptwtcel, pywtcel) for ptwtcel, pywtcel in zip(ptwtc, pywtc)
+                np.allclose(ptwtcel, pywtcel) for ptwtcel, pywtcel in zip(ptwtc, pywtc)  # type: ignore
             ]
             assert all(test)
 
@@ -222,7 +222,7 @@ def test_batch_channel_2d_haar(size: list[int]) -> None:
 
 
 @pytest.mark.parametrize("operator", [MatrixWavedec2, MatrixWavedec])
-def test_empty_operators(operator: Type[BaseMatrixWaveDec]) -> None:
+def test_empty_operators(operator: Any) -> None:
     """Check if the error is thrown properly if no matrix was ever built."""
     if operator is MatrixWavedec2:
         matrixfwt = operator(wavelet="haar", separable=False)
@@ -233,7 +233,7 @@ def test_empty_operators(operator: Type[BaseMatrixWaveDec]) -> None:
 
 
 @pytest.mark.parametrize("operator", [MatrixWaverec2, MatrixWaverec])
-def test_empty_inverse_operators(operator: Type[BaseMatrixWaveDec]) -> None:
+def test_empty_inverse_operators(operator: Any) -> None:
     """Check if the error is thrown properly if no matrix was ever built."""
     if operator is MatrixWaverec2:
         matrixifwt = operator(wavelet="haar", separable=False)
@@ -264,4 +264,4 @@ def test_axes_2d(axes: tuple[int, int]) -> None:
 def test_deprecation() -> None:
     """Ensure the deprecation warning is raised."""
     with pytest.warns(DeprecationWarning):
-        MatrixWavedec2("haar", 3, boundary="qr")
+        MatrixWavedec2("haar", 3, orthogonalization="qr")

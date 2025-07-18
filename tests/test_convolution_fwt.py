@@ -12,7 +12,8 @@ from scipy import datasets
 
 from ptwt._util import _flatten_2d_coeff_lst, _outer
 from ptwt.constants import BoundaryMode
-from ptwt.conv_transform import _translate_boundary_strings, wavedec, waverec
+from ptwt.conv_transform import _translate_boundary_strings  # type: ignore
+from ptwt.conv_transform import wavedec, waverec
 from ptwt.conv_transform_2 import wavedec2, waverec2
 from ptwt.wavelets_learnable import SoftOrthogonalWavelet
 from tests._mackey_glass import MackeyGenerator
@@ -131,7 +132,7 @@ def test_orth_wavelet() -> None:
         torch.tensor(wavelet.dec_lo),
         torch.tensor(wavelet.dec_hi),
     )
-    res = waverec(wavedec(mackey_data_1, orthwave), orthwave)
+    res = waverec(wavedec(mackey_data_1, orthwave), orthwave)  # type: ignore
     assert np.allclose(res.detach().numpy(), mackey_data_1.numpy())
 
 
@@ -257,13 +258,13 @@ def test_2d_wavedec_rec(
                 ), "pywt and ptwt should produce the same shapes."
         else:
             assert (
-                coeffs.shape == coeff2d[pos].shape
+                coeffs.shape == coeff2d[pos].shape  # type: ignore
             ), "pywt and ptwt should produce the same shapes."
     flat_coeff_list_pywt = np.concatenate(_flatten_2d_coeff_lst(pywt_coeff2d), -1)
     flat_coeff_list_ptwt = torch.cat(_flatten_2d_coeff_lst(coeff2d), -1)
     assert np.allclose(flat_coeff_list_pywt, flat_coeff_list_ptwt.numpy())
-    rec = waverec2(coeff2d, wavelet)
-    rec = rec.numpy().squeeze()
+    rec_pt = waverec2(coeff2d, wavelet)
+    rec = rec_pt.numpy().squeeze()
     assert np.allclose(face, rec[:, : face.shape[1], : face.shape[2]])
 
 
@@ -273,7 +274,7 @@ def test_2d_wavedec_rec(
 @pytest.mark.parametrize("level", [1, None])
 @pytest.mark.parametrize("wavelet", ["haar", "sym3"])
 def test_input_4d(
-    size: tuple[int, int, int, int], level: Optional[str], wavelet: str
+    size: tuple[int, int, int, int], level: Optional[int], wavelet: str
 ) -> None:
     """Test the error for 4d inputs to wavedec2."""
     data = torch.randn(*size).type(torch.float64)
@@ -292,7 +293,7 @@ def test_input_4d(
                 )
             )
         else:
-            assert np.allclose(ptwtcs, pywtcs)
+            assert np.allclose(ptwtcs.numpy(), pywtcs)  # type: ignore
 
     # test reconstruction.
     assert np.allclose(
@@ -392,7 +393,7 @@ def test_2d_axis_error_axes_count() -> None:
     """Check the error for too many axes."""
     with pytest.raises(ValueError):
         data = torch.randn([32, 32, 32, 32], dtype=torch.float64)
-        wavedec2(data, "haar", level=1, axes=(1, 2, 3))
+        wavedec2(data, "haar", level=1, axes=(1, 2, 3))  # type: ignore
 
 
 def test_2d_axis_error_axes_repetition() -> None:

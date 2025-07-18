@@ -14,7 +14,9 @@ from tests._mackey_glass import MackeyGenerator
 
 
 def _to_jit_wavedec_fun(
-    data: torch.Tensor, wavelet: Union[ptwt.Wavelet, str], level: Optional[int]
+    data: torch.Tensor,
+    wavelet: Union[ptwt.constants.Wavelet, str],
+    level: Optional[int],
 ) -> list[torch.Tensor]:
     return ptwt.wavedec(data, wavelet, mode="reflect", level=level)
 
@@ -75,7 +77,7 @@ def _to_jit_waverec_2(
     d_unstack: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]] = [data[0]]
     for c in data[1:]:
         d_unstack.append(tuple(sc.squeeze(0) for sc in torch.split(c, 1, dim=0)))
-    rec = ptwt.waverec2(d_unstack, wavelet)
+    rec = ptwt.waverec2(tuple(d_unstack), wavelet)
     return rec
 
 

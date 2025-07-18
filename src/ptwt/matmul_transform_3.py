@@ -35,6 +35,8 @@ from .matmul_transform import (
 )
 from .sparse_math import _batch_dim_mm
 
+__all__ = ["MatrixWavedec3", "MatrixWaverec3"]
+
 
 class _PadTuple(NamedTuple):
     """Replaces _PadTuple = namedtuple("_PadTuple", ("depth", "height", "width"))."""

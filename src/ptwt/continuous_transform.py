@@ -11,6 +11,8 @@ from pywt import ContinuousWavelet, DiscreteContinuousWavelet, Wavelet
 from pywt._functions import scale2frequency
 from torch.fft import fft, ifft
 
+__all__ = ["cwt"]
+
 
 def _next_fast_len(n: int) -> int:
     """Round up size to the nearest power of two.
@@ -191,7 +193,7 @@ def _integrate_wavelet(
         if type(arr) is np.ndarray:
             integral: Any = np.cumsum(arr)
         elif type(arr) is torch.Tensor:
-            integral = torch.cumsum(arr, -1) # type: ignore
+            integral = torch.cumsum(arr, -1)
         else:
             raise TypeError("Only ndarrays or tensors are integratable.")
         integral *= step
@@ -212,12 +214,12 @@ def _integrate_wavelet(
         return _integrate(psi, step), x
 
     elif len(functions_approximations) == 3:  # orthogonal wavelet
-        _, psi, x = functions_approximations # type: ignore
+        _, psi, x = functions_approximations  # type: ignore
         step = x[1] - x[0]
         return _integrate(psi, step), x
 
     else:  # biorthogonal wavelet
-        _, psi_d, _, psi_r, x = functions_approximations # type: ignore
+        _, psi_d, _, psi_r, x = functions_approximations  # type: ignore
         step = x[1] - x[0]
         return _integrate(psi_d, step), _integrate(psi_r, step), x
 
