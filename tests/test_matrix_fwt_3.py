@@ -121,4 +121,4 @@ def test_axes_arg_matrix_3d(axes: tuple[int, int, int], level: int) -> None:
 def test_deprecation() -> None:
     """Ensure the deprecation warning is raised."""
     with pytest.warns(DeprecationWarning):
-        MatrixWavedec3("haar", 3, orthogonalization="qr")
+        MatrixWavedec3("haar", 3, boundary="qr")  # type: ignore
