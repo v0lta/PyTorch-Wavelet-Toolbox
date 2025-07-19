@@ -320,18 +320,18 @@ def test_mode_error_2d() -> None:
     """Test the invalid padding-error."""
     test_filter = torch.rand([3, 3])
     with pytest.raises(ValueError):
-        _ = construct_conv2d_matrix(test_filter, 32, 32, mode="invalid_mode")
+        _ = construct_conv2d_matrix(test_filter, 32, 32, mode="invalid_mode")  # type: ignore
     with pytest.raises(ValueError):
-        _ = construct_strided_conv2d_matrix(test_filter, 32, 32, mode="invalid_mode")
+        _ = construct_strided_conv2d_matrix(test_filter, 32, 32, mode="invalid_mode")  # type: ignore
 
 
 def test_mode_error() -> None:
     """Test the invalid padding-error."""
     test_filter = torch.rand([3, 3])
     with pytest.raises(ValueError):
-        _ = construct_conv_matrix(test_filter, 32, mode="invalid_mode")
+        _ = construct_conv_matrix(test_filter, 32, mode="invalid_mode")  # type: ignore
     with pytest.raises(ValueError):
-        _ = construct_strided_conv_matrix(test_filter, 32, mode="invalid_mode")
+        _ = construct_strided_conv_matrix(test_filter, 32, mode="invalid_mode")  # type: ignore
 
 
 def test_shape_error() -> None:

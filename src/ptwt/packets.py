@@ -41,6 +41,9 @@ else:
     BaseDict = collections.UserDict
 
 
+__all__ = ["WaveletPacket", "WaveletPacket2D"]
+
+
 def _wpfreq(fs: float, level: int) -> list[float]:
     """Compute the frequencies for a fully decomposed 1d packet tree.
 

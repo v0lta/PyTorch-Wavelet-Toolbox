@@ -1,0 +1,58 @@
+[tool.pdm]
+package-dir = "src"
+
+[project]
+name = "ptwt"
+description = "Differentiable and gpu enabled fast wavelet transforms in PyTorch"
+version = "0.1.10-dev"
+keywords = ["Wavelets", "Wavelet Transform", "Fast Wavelet Transform", "Boundary Wavelets", "PyTorch"]
+readme = "README.rst"
+authors = [
+    {name = "Moritz Wolter and Felix Blanke", email = "moritz@wolter.tech"},
+]
+maintainers = [
+    {name = "Moritz Wolter and Felix Blanke", email = "moritz@wolter.tech"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: European Union Public Licence 1.2 (EUPL 1.2)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "PyWavelets",
+    "numpy",
+    "torch",
+]
+license = {text = "EUPL-1.2"}
+
+[project.urls]
+Homepage = "https://github.com/v0lta/PyTorch-Wavelet-Toolbox"
+Downloads = "https://github.com/v0lta/PyTorch-Wavelet-Toolbox/releases"
+"Bug Tracker" = "https://github.com/v0lta/PyTorch-Wavelet-Toolbox/issues"
+"Source Code" = "https://github.com/v0lta/PyTorch-Wavelet-Toolbox"
+
+[project.optional-dependencies]
+tests = [
+    "pooch",
+    "pytest",
+    "scipy>=1.10",
+]
+typing = [
+    "mypy>=1.11",
+    "pytest",
+]
+examples = [
+    "matplotlib",
+]
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

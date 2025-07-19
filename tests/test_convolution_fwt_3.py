@@ -9,8 +9,8 @@ import pytest
 import pywt
 import torch
 
-import ptwt
 from ptwt.constants import BoundaryMode
+from ptwt.conv_transform_3 import wavedec3, waverec3
 
 
 def _expand_dims(
@@ -71,7 +71,7 @@ def test_waverec3(
     """Ensure the 3d analysis transform is invertible."""
     data = np.random.randn(*shape)
     data_t = torch.from_numpy(data)
-    ptwc = ptwt.wavedec3(data_t, wavelet, level=level, mode=mode)
+    ptwc = wavedec3(data_t, wavelet, level=level, mode=mode)
     batch_list = []
     for batch_no in range(data_t.shape[0]):
         pywc = pywt.wavedecn(data_t[batch_no].numpy(), wavelet, level=level, mode=mode)
@@ -84,12 +84,14 @@ def test_waverec3(
         if type(a) is torch.Tensor:
             test_list.append(np.allclose(a, b))
         else:
-            test_list.extend([np.allclose(a[key], b[key]) for key in a.keys()])
+            test_list.extend(
+                [np.allclose(a[key], b[key]) for key in a.keys()]  # type: ignore
+            )
 
     assert all(test_list)
 
     # ensure the transforms are invertible.
-    rec = ptwt.waverec3(ptwc, wavelet)
+    rec = waverec3(ptwc, wavelet)
     assert np.allclose(
         rec.numpy()[..., : shape[1], : shape[2], : shape[3]], data_t.numpy()
     )
@@ -102,10 +104,12 @@ def test_waverec3(
 @pytest.mark.parametrize("level", [1, 2, None])
 @pytest.mark.parametrize("wavelet", ["haar", "sym3", "db3"])
 @pytest.mark.parametrize("mode", ["zero", "symmetric", "reflect"])
-def test_multidim_input(size: list[int], level: int, wavelet: str, mode: str) -> None:
+def test_multidim_input(
+    size: list[int], level: int, wavelet: str, mode: BoundaryMode
+) -> None:
     """Ensure correct folding of multidimensional inputs."""
     data = torch.randn(size, dtype=torch.float64)
-    ptwc = ptwt.wavedec3(data, wavelet, level=level, mode=mode)
+    ptwc = wavedec3(data, wavelet, level=level, mode=mode)
     # batch_list = []
     # for batch_no in range(data.shape[0]):
     #     pywc = pywt.wavedecn(data[batch_no].numpy(), wavelet, level=level, mode=mode)
@@ -119,11 +123,13 @@ def test_multidim_input(size: list[int], level: int, wavelet: str, mode: str) ->
         if type(a) is torch.Tensor:
             test_list.append(np.allclose(a, b))
         else:
-            test_list.extend([np.allclose(a[key], b[key]) for key in a.keys()])
+            test_list.extend(
+                [np.allclose(a[key], b[key]) for key in a.keys()]  # type: ignore
+            )
 
     assert all(test_list)
 
-    rec = ptwt.waverec3(ptwc, wavelet)
+    rec = waverec3(ptwc, wavelet)
     assert np.allclose(
         rec.numpy()[..., : size[-3], : size[-2], : size[-1]], data.numpy()
     )
@@ -139,7 +145,7 @@ def test_axes_arg_3d(
     """Test axes argument support."""
     wavelet = "db3"
     data = torch.randn([16, 16, 16, 16, 16], dtype=torch.float64)
-    ptwc = ptwt.wavedec3(data, wavelet, level=level, mode=mode, axes=axes)
+    ptwc = wavedec3(data, wavelet, level=level, mode=mode, axes=axes)
     cat_pywc = pywt.wavedecn(data, wavelet, level=level, mode=mode, axes=axes)
 
     # ensure ptwt and pywt coefficients are identical.
@@ -148,11 +154,13 @@ def test_axes_arg_3d(
         if type(a) is torch.Tensor:
             test_list.append(np.allclose(a, b))
         else:
-            test_list.extend([np.allclose(a[key], b[key]) for key in a.keys()])
+            test_list.extend(
+                [np.allclose(a[key], b[key]) for key in a.keys()]  # type: ignore
+            )
 
     assert all(test_list)
 
-    rec = ptwt.waverec3(ptwc, wavelet, axes=axes)
+    rec = waverec3(ptwc, wavelet, axes=axes)
     assert np.allclose(data, rec)
 
 
@@ -160,11 +168,11 @@ def test_2d_dimerror() -> None:
     """Check the error for too many axes."""
     with pytest.raises(ValueError):
         data = torch.randn([32, 32], dtype=torch.float64)
-        ptwt.wavedec3(data, "haar")
+        wavedec3(data, "haar")
 
 
 def test_1d_dimerror() -> None:
     """Check the error for too many axes."""
     with pytest.raises(ValueError):
         data = torch.randn([32], dtype=torch.float64)
-        ptwt.wavedec3(data, "haar")
+        wavedec3(data, "haar")

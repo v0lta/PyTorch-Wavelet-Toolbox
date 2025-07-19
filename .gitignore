@@ -4,6 +4,7 @@ coverage_html_report/
 htmlcov
 .noseids
 log/
+.virtual_python
 examples/deepfake_analysis/ffhq_style_gan/
 
 

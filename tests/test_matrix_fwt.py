@@ -104,10 +104,10 @@ def test_boundary_filter_analysis_and_synthethis_matrices(
 ) -> None:
     """Check 1d the 1d-fwt matrices for orthogonality and invertability."""
     analysis_matrix = construct_boundary_a(
-        wavelet, size, boundary="gramschmidt"
+        wavelet, size, orthogonalization="gramschmidt"
     ).to_dense()
     synthesis_matrix = construct_boundary_s(
-        wavelet, size, boundary="gramschmidt"
+        wavelet, size, orthogonalization="gramschmidt"
     ).to_dense()
     # s_db2 = construct_s(pywt.Wavelet("db8"), size)
     # test_eye_inv = torch.sparse.mm(a_db8, s_db2.to_dense()).numpy()
@@ -197,7 +197,8 @@ def test_matrix_transform_1d_rebuild(
 def test_4d_invalid_axis_error() -> None:
     """Test the error for 1d axis arguments."""
     with pytest.raises(ValueError):
-        MatrixWavedec("haar", axis=(1, 2))
+        # its supposed to crash ignore typecheck.
+        MatrixWavedec("haar", axis=(1, 2))  # type: ignore
 
 
 @pytest.mark.parametrize("size", [[2, 3, 32], [5, 32], [32], [1, 1, 64]])
@@ -241,4 +242,4 @@ def test_axis_1d(axis: int) -> None:
 def test_deprecation() -> None:
     """Ensure the deprecation warning is raised."""
     with pytest.warns(DeprecationWarning):
-        MatrixWavedec("haar", 3, boundary="qr")
+        MatrixWavedec("haar", 3, boundary="qr")  # type: ignore

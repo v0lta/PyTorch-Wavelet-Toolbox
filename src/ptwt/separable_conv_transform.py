@@ -31,6 +31,8 @@ from .constants import (
 )
 from .conv_transform import wavedec, waverec
 
+__all__ = ["fswavedec2", "fswavedec3"]
+
 
 def _separable_conv_dwtn_(
     rec_dict: WaveletDetailDict,

@@ -78,8 +78,8 @@ def format(session):
     """Fix common convention problems automatically."""
     session.install("black")
     session.install("isort")
-    session.run("isort", ".")
-    session.run("black", ".")
+    session.run("isort", "src", "tests", "noxfile.py")
+    session.run("black", "src", "tests", "noxfile.py")
 
 
 @nox.session(name="coverage")
@@ -98,27 +98,6 @@ def check_coverage(session):
 def clean_coverage(session):
     """Remove the code coverage website."""
     session.run("rm", "-r", "htmlcov", external=True)
-
-
-@nox.session(name="build")
-def build(session):
-    """Build a pip package."""
-    session.install("wheel")
-    session.install("setuptools")
-    session.run("python", "setup.py", "-q", "sdist", "bdist_wheel")
-
-
-@nox.session(name="finish")
-def finish(session):
-    """Finish this version increase the version number and upload to pypi."""
-    session.install("bump2version")
-    session.install("twine")
-    session.run("bumpversion", "release", external=True)
-    build(session)
-    session.run("twine", "upload", "--skip-existing", "dist/*", external=True)
-    session.run("git", "push", external=True)
-    session.run("bumpversion", "patch", external=True)
-    session.run("git", "push", external=True)
 
 
 @nox.session(name="check-package")

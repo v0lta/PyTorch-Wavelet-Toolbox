@@ -2,7 +2,7 @@
 
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 
-from typing import Optional
+from typing import Literal, Optional
 
 import numpy as np
 import pytest
@@ -46,7 +46,7 @@ def _compare_trees1(
     if multiple_transforms:
         twp.transform(torch.from_numpy(data), maxlevel=max_lev)
 
-    torch_res = torch.cat([twp[node] for node in twp.get_level(twp.maxlevel)], axis)
+    torch_res = torch.cat([twp[node] for node in twp.get_level(twp.maxlevel)], axis)  # type: ignore
 
     wp = pywt.WaveletPacket(
         data=data,
@@ -117,7 +117,7 @@ def _compare_trees2(
     packets_pt = torch.stack(
         [
             ptwt_wp_tree[node]
-            for node in ptwt_wp_tree.get_natural_order(ptwt_wp_tree.maxlevel)
+            for node in ptwt_wp_tree.get_natural_order(ptwt_wp_tree.maxlevel)  # type: ignore
         ],
         1,
     )
@@ -197,7 +197,7 @@ def test_boundary_matrix_packets2(
 def test_1d_packets(
     max_lev: int,
     wavelet_str: str,
-    boundary: str,
+    boundary: ExtendedBoundaryMode,
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
@@ -250,7 +250,7 @@ def test_order_1d(level: int, wavelet_str: str, pywt_boundary: str, order: str) 
     )
     # Get the full decomposition
     order_pywt = wp_tree.get_level(level, order)
-    order_ptwt = WaveletPacket.get_level(level, order)
+    order_ptwt = WaveletPacket.get_level(level, order)  # type: ignore
 
     for order_el, order_path in zip(order_pywt, order_ptwt):
         assert order_el.path == order_path
@@ -339,7 +339,7 @@ def test_partial_expansion_1d(wavelet_str: str, boundary: str) -> None:
     lazy_init_packet = WaveletPacket(
         test_signal,
         wavelet_str,
-        mode=boundary,
+        mode=boundary,  # type: ignore
         maxlevel=max_lev,
     )
 
@@ -368,7 +368,7 @@ def test_partial_expansion_1d(wavelet_str: str, boundary: str) -> None:
 
 @pytest.mark.parametrize("wavelet_str", ["haar", "db4"])
 @pytest.mark.parametrize("boundary", ["zero", "reflect", "constant", "boundary"])
-def test_partial_expansion_2d(wavelet_str: str, boundary: str) -> None:
+def test_partial_expansion_2d(wavelet_str: str, boundary: ExtendedBoundaryMode) -> None:
     """Test lazy init in 2d."""
     max_lev = 4
     shape = (128, 128)
@@ -472,7 +472,7 @@ def test_inverse_packet_1d(
 ) -> None:
     """Test the 1d reconstruction code."""
     signal = np.random.randn(*shape)
-    mode = "reflect"
+    mode: Literal["reflect"] = "reflect"
     wp = pywt.WaveletPacket(signal, wavelet, mode=mode, maxlevel=level, axis=axis)
     ptwp = WaveletPacket(
         torch.from_numpy(signal),
@@ -509,7 +509,7 @@ def test_inverse_packet_2d(
 ) -> None:
     """Test the 2d reconstruction code."""
     signal = np.random.randn(*size)
-    mode = "reflect"
+    mode: Literal["reflect"] = "reflect"
     wp = pywt.WaveletPacket2D(signal, wavelet, mode=mode, maxlevel=level, axes=axes)
     ptwp = WaveletPacket2D(
         torch.from_numpy(signal),
@@ -612,6 +612,6 @@ def test_partial_reconstruction() -> None:
 def test_deprecation() -> None:
     """Ensure the deprecation warning is raised."""
     with pytest.warns(DeprecationWarning):
-        WaveletPacket(None, "haar", boundary_orthogonalization="qr")
+        WaveletPacket(None, "haar", boundary_orthogonalization="qr")  # type: ignore
     with pytest.warns(DeprecationWarning):
-        WaveletPacket2D(None, "haar", boundary_orthogonalization="qr")
+        WaveletPacket2D(None, "haar", boundary_orthogonalization="qr")  # type: ignore

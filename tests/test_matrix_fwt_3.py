@@ -25,7 +25,7 @@ def test_single_dim_mm(axis: int, shape: tuple[int, int, int]) -> None:
     )
     haar_mat = construct_boundary_a(pywt.Wavelet("haar"), length=shape[axis - 1])
     mm_res = _batch_dim_mm(haar_mat, test_tensor, dim=axis)
-    dec_lo, dec_hi = mm_res.split(shape[axis - 1] // 2, axis)
+    dec_lo, dec_hi = mm_res.split(shape[axis - 1] // 2, axis)  # type: ignore
     assert np.allclose(pywt_dec_lo, dec_lo.numpy())
     assert np.allclose(pywt_dec_hi, dec_hi.numpy())
 
@@ -64,10 +64,10 @@ def test_boundary_wavedec3_level1_haar(shape: tuple[int, int, int]) -> None:
     test_list = []
     for pywt_el, ptwt_el in zip(pywtres, ptwtres):
         if type(pywt_el) is np.ndarray:
-            test_list.append(np.allclose(pywt_el, ptwt_el.numpy()))
+            test_list.append(np.allclose(pywt_el, ptwt_el.numpy()))  # type: ignore
         else:
             for key in pywt_el.keys():
-                test_list.append(np.allclose(pywt_el[key], ptwt_el[key].numpy()))
+                test_list.append(np.allclose(pywt_el[key], ptwt_el[key].numpy()))  # type: ignore
     assert all(test_list)
 
 
@@ -93,9 +93,9 @@ def test_boundary_wavedec3_inverse(
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("axes", [[-3, -2, -1], [0, 2, 1]])
+@pytest.mark.parametrize("axes", [(-3, -2, -1), (0, 2, 1)])
 @pytest.mark.parametrize("level", [1, 2, None])
-def test_axes_arg_matrix_3d(axes: list[int], level: int) -> None:
+def test_axes_arg_matrix_3d(axes: tuple[int, int, int], level: int) -> None:
     """Test axes 3d matmul argument support."""
     wavelet = "haar"
     data = torch.randn([16, 16, 16, 16, 16], dtype=torch.float64)
@@ -108,8 +108,8 @@ def test_axes_arg_matrix_3d(axes: list[int], level: int) -> None:
         if type(a) is torch.Tensor:
             test_list.append(np.allclose(a, b))
         else:
-            for key in a.keys():
-                test_list.append(np.allclose(b[key], a[key].numpy()))
+            for key in a.keys():  # type: ignore
+                test_list.append(np.allclose(b[key], a[key].numpy()))  # type: ignore
 
     assert all(test_list)
 
@@ -121,4 +121,4 @@ def test_axes_arg_matrix_3d(axes: list[int], level: int) -> None:
 def test_deprecation() -> None:
     """Ensure the deprecation warning is raised."""
     with pytest.warns(DeprecationWarning):
-        MatrixWavedec3("haar", 3, boundary="qr")
+        MatrixWavedec3("haar", 3, boundary="qr")  # type: ignore

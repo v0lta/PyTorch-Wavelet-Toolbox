@@ -103,13 +103,13 @@ def test_conv_mm_2d(
     assert len(fs_conv_coeff) == len(fs_mm_coeff)
     for c_conv, c_mm in zip(fs_conv_coeff, fs_mm_coeff):
         if isinstance(c_conv, torch.Tensor):
-            assert np.allclose(c_conv.numpy(), c_mm.numpy())
+            assert np.allclose(c_conv.numpy(), c_mm.numpy())  # type: ignore
         else:
             # (ll, (lh, hl, hh), ...)
-            c_conv_list = [c_conv[key] for key in ("ad", "da", "dd")]
+            c_conv_list = [c_conv[key] for key in ("ad", "da", "dd")]  # type: ignore
             assert all(
                 np.allclose(c_el_conv.numpy(), c_el_mm.numpy())
-                for c_el_conv, c_el_mm in zip(c_conv_list, c_mm)
+                for c_el_conv, c_el_mm in zip(c_conv_list, c_mm)  # type: ignore
             )
     rec = fswaverec2(fs_conv_coeff, "haar", axes=axes)
     assert np.allclose(data.numpy(), rec.numpy())
@@ -130,9 +130,9 @@ def test_conv_mm_3d(
     assert len(fs_conv_coeff) == len(fs_mm_coeff)
     for c_conv, c_mm in zip(fs_conv_coeff, fs_mm_coeff):
         if isinstance(c_conv, torch.Tensor):
-            assert np.allclose(c_conv.numpy(), c_mm.numpy())
+            assert np.allclose(c_conv.numpy(), c_mm.numpy())  # type: ignore
         else:
-            keys = c_conv.keys()
-            assert all(np.allclose(c_conv[key], c_mm[key]) for key in keys)
+            keys = c_conv.keys()  # type: ignore
+            assert all(np.allclose(c_conv[key], c_mm[key]) for key in keys)  # type: ignore
     rec = fswaverec3(fs_conv_coeff, "haar", axes=axes)
     assert np.allclose(data.numpy(), rec.numpy())
