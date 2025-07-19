@@ -113,3 +113,15 @@ def build(session):
     session.install("build")
     session.install("setuptools")
     session.run("python", "-m", "build")
+
+@nox.session(name="finish")
+def finish(session):
+    """Finish this version increase the version number and upload to pypi."""
+    session.install("bump-my-version")
+    session.install("twine")
+    session.run("bump-my-version", "bump", external=True)
+    build(session)
+    session.run("twine", "upload", "--skip-existing", "dist/*", external=True)
+    session.run("git", "push", external=True)
+    session.run("bump-my-version", "bump", "patch", external=True)
+    session.run("git", "push", external=True)
