@@ -114,6 +114,7 @@ def build(session):
     session.install("setuptools")
     session.run("python", "-m", "build")
 
+
 @nox.session(name="finish")
 def finish(session):
     """Finish this version increase the version number and upload to pypi."""
