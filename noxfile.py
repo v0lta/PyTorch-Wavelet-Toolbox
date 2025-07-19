@@ -105,3 +105,11 @@ def pyroma(session):
     """Run pyroma to check if the package is ok."""
     session.install("pyroma")
     session.run("pyroma", ".")
+
+
+@nox.session(name="build")
+def build(session):
+    """Build a pip package."""
+    session.install("build")
+    session.install("setuptools")
+    session.run("python", "-m", "build")
