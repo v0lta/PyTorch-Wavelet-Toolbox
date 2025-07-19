@@ -125,7 +125,7 @@ def test_multidim_input(
         else:
             test_list.extend(
                 [np.allclose(a[key], b[key]) for key in a.keys()]  # type: ignore
-            )  # type: ignore
+            )
 
     assert all(test_list)
 
@@ -156,7 +156,7 @@ def test_axes_arg_3d(
         else:
             test_list.extend(
                 [np.allclose(a[key], b[key]) for key in a.keys()]  # type: ignore
-            )  # type: ignore
+            )
 
     assert all(test_list)
 
