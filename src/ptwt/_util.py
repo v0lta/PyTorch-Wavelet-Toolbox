@@ -758,7 +758,11 @@ def _deprecated_alias(
         kwargs: Param.kwargs,  # type: ignore
         aliases: dict[str, str],
     ) -> None:
-        """Rename deprecated kwarg."""
+        """Rename deprecated kwarg.
+
+        Raises:
+            TypeError: If both arguments are present.
+        """
         for alias, new in aliases.items():
             if alias in kwargs:
                 if new in kwargs:

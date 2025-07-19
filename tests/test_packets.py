@@ -197,7 +197,7 @@ def test_boundary_matrix_packets2(
 def test_1d_packets(
     max_lev: int,
     wavelet_str: str,
-    boundary: Literal[str],
+    boundary: ExtendedBoundaryMode,
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
@@ -368,7 +368,7 @@ def test_partial_expansion_1d(wavelet_str: str, boundary: str) -> None:
 
 @pytest.mark.parametrize("wavelet_str", ["haar", "db4"])
 @pytest.mark.parametrize("boundary", ["zero", "reflect", "constant", "boundary"])
-def test_partial_expansion_2d(wavelet_str: str, boundary: Literal[str]) -> None:
+def test_partial_expansion_2d(wavelet_str: str, boundary: ExtendedBoundaryMode) -> None:
     """Test lazy init in 2d."""
     max_lev = 4
     shape = (128, 128)
@@ -509,7 +509,7 @@ def test_inverse_packet_2d(
 ) -> None:
     """Test the 2d reconstruction code."""
     signal = np.random.randn(*size)
-    mode: Literal["reflect"] = reflect
+    mode: Literal["reflect"] = "reflect"
     wp = pywt.WaveletPacket2D(signal, wavelet, mode=mode, maxlevel=level, axes=axes)
     ptwp = WaveletPacket2D(
         torch.from_numpy(signal),

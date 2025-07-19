@@ -1,6 +1,6 @@
 """Test code for the 2d boundary wavelets."""
 
-from typing import Any, Type
+from typing import Any
 
 import numpy as np
 import pytest
@@ -10,7 +10,7 @@ import torch
 
 from ptwt._util import _flatten_2d_coeff_lst
 from ptwt.constants import BoundaryMode
-from ptwt.matmul_transform import BaseMatrixWaveDec, MatrixWavedec, MatrixWaverec
+from ptwt.matmul_transform import MatrixWavedec, MatrixWaverec
 from ptwt.matmul_transform_2 import (
     MatrixWavedec2,
     MatrixWaverec2,
@@ -213,7 +213,8 @@ def test_batch_channel_2d_haar(size: list[int]) -> None:
             assert np.allclose(ptwtc.numpy(), pywtc)
         else:
             test = [
-                np.allclose(ptwtcel, pywtcel) for ptwtcel, pywtcel in zip(ptwtc, pywtc)  # type: ignore
+                np.allclose(ptwtcel, pywtcel)
+                for ptwtcel, pywtcel in zip(ptwtc, pywtc)  # type: ignore
             ]
             assert all(test)
 

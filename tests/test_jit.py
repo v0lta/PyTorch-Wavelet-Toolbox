@@ -8,17 +8,20 @@ import pywt
 import torch
 from scipy import signal
 
-import ptwt
-from ptwt.continuous_transform import _ShannonWavelet
+from ptwt.constants import Wavelet, WaveletTensorTuple
+from ptwt.continuous_transform import _ShannonWavelet, cwt
+from ptwt.conv_transform import wavedec, waverec
+from ptwt.conv_transform_2 import wavedec2, waverec2
+from ptwt.conv_transform_3 import wavedec3, waverec3
 from tests._mackey_glass import MackeyGenerator
 
 
 def _to_jit_wavedec_fun(
     data: torch.Tensor,
-    wavelet: Union[ptwt.constants.Wavelet, str],
+    wavelet: Union[Wavelet, str],
     level: Optional[int],
 ) -> list[torch.Tensor]:
-    return ptwt.wavedec(data, wavelet, mode="reflect", level=level)
+    return wavedec(data, wavelet, mode="reflect", level=level)
 
 
 @pytest.mark.slow
@@ -37,7 +40,7 @@ def test_conv_fwt_jit(
 
     mackey_data_1 = torch.squeeze(generator(), -1).type(dtype)
     wavelet = pywt.Wavelet(wavelet_string)
-    wavelet = ptwt.WaveletTensorTuple.from_wavelet(wavelet, dtype)
+    wavelet = WaveletTensorTuple.from_wavelet(wavelet, dtype)
 
     with pytest.warns(Warning):
         jit_wavedec = torch.jit.trace(  # type: ignore
@@ -46,13 +49,13 @@ def test_conv_fwt_jit(
             strict=False,
         )
         ptcoeff = jit_wavedec(mackey_data_1, wavelet, level=torch.tensor(level))
-        jit_waverec = torch.jit.trace(ptwt.waverec, (ptcoeff, wavelet))  # type: ignore
+        jit_waverec = torch.jit.trace(waverec, (ptcoeff, wavelet))  # type: ignore
         res = jit_waverec(ptcoeff, wavelet)
     assert np.allclose(mackey_data_1.numpy(), res.numpy()[:, : mackey_data_1.shape[-1]])
 
 
 def _to_jit_wavedec_2(
-    data: torch.Tensor, wavelet: Union[str, ptwt.Wavelet]
+    data: torch.Tensor, wavelet: Union[str, Wavelet]
 ) -> list[torch.Tensor]:
     """Ensure uniform datatypes in lists for the tracer.
 
@@ -60,7 +63,7 @@ def _to_jit_wavedec_2(
     means we have to stack the lists in the output.
     """
     assert data.shape == (10, 20, 20), "Changing the chape requires re-tracing."
-    coeff = ptwt.wavedec2(data, wavelet, mode="reflect", level=2)
+    coeff = wavedec2(data, wavelet, mode="reflect", level=2)
     coeff2 = []
     for c in coeff:
         if isinstance(c, torch.Tensor):
@@ -71,13 +74,13 @@ def _to_jit_wavedec_2(
 
 
 def _to_jit_waverec_2(
-    data: list[torch.Tensor], wavelet: Union[str, ptwt.Wavelet]
+    data: list[torch.Tensor], wavelet: Union[str, Wavelet]
 ) -> torch.Tensor:
     """Undo the stacking from the jit wavedec2 wrapper."""
     d_unstack: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]] = [data[0]]
     for c in data[1:]:
         d_unstack.append(tuple(sc.squeeze(0) for sc in torch.split(c, 1, dim=0)))
-    rec = ptwt.waverec2(tuple(d_unstack), wavelet)
+    rec = waverec2(tuple(d_unstack), wavelet)  # type: ignore
     return rec
 
 
@@ -89,7 +92,7 @@ def test_conv_fwt_jit_2d() -> None:
     rec = _to_jit_waverec_2(coeff, wavelet)
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy())
 
-    wavelet = ptwt.WaveletTensorTuple.from_wavelet(wavelet, dtype=torch.float64)
+    wavelet = WaveletTensorTuple.from_wavelet(wavelet, dtype=torch.float64)
     with pytest.warns(Warning):
         jit_wavedec2 = torch.jit.trace(  # type: ignore
             _to_jit_wavedec_2,
@@ -112,7 +115,7 @@ def _to_jit_wavedec_3(data: torch.Tensor, wavelet: str) -> list[torch.Tensor]:
     means we have to stack the lists in the output.
     """
     assert data.shape == (10, 20, 20, 20), "Changing the shape requires re-tracing."
-    coeff = ptwt.wavedec3(data, wavelet, mode="reflect", level=2)
+    coeff = wavedec3(data, wavelet, mode="reflect", level=2)
     coeff2 = []
     keys = ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
     for c in coeff:
@@ -131,7 +134,7 @@ def _to_jit_waverec_3(data: list[torch.Tensor], wavelet: pywt.Wavelet) -> torch.
         d_unstack.append(
             {key: sc.squeeze(0) for sc, key in zip(torch.split(c, 1, dim=0), keys)}
         )
-    rec = ptwt.waverec3(d_unstack, wavelet)
+    rec = waverec3(d_unstack, wavelet)  # type: ignore
     return rec
 
 
@@ -143,7 +146,7 @@ def test_conv_fwt_jit_3d() -> None:
     rec = _to_jit_waverec_3(coeff, wavelet)
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy())
 
-    wavelet = ptwt.WaveletTensorTuple.from_wavelet(wavelet, dtype=torch.float64)
+    wavelet = WaveletTensorTuple.from_wavelet(wavelet, dtype=torch.float64)
     with pytest.warns(Warning):
         jit_wavedec3 = torch.jit.trace(  # type: ignore
             _to_jit_wavedec_3,
@@ -163,7 +166,7 @@ def _to_jit_cwt(sig: torch.Tensor) -> torch.Tensor:
     widths = torch.arange(1, 31)
     wavelet = _ShannonWavelet("shan0.1-0.4")
     sampling_period = (4 / 800) * np.pi
-    cwtmatr, _ = ptwt.cwt(sig, widths, wavelet, sampling_period=sampling_period)
+    cwtmatr, _ = cwt(sig, widths, wavelet, sampling_period=sampling_period)
     return cwtmatr
 
 
@@ -175,7 +178,7 @@ def test_cwt_jit() -> None:
         jit_cwt = torch.jit.trace(_to_jit_cwt, (sig), strict=False)  # type: ignore
     jitcwtmatr = jit_cwt(sig)
 
-    cwtmatr, _ = ptwt.cwt(
+    cwtmatr, _ = cwt(
         sig,
         torch.arange(1, 31),
         pywt.ContinuousWavelet("shan0.1-0.4"),

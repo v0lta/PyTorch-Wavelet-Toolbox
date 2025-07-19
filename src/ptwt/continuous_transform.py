@@ -250,7 +250,11 @@ class _DifferentiableContinuousWavelet(
         )
 
     def __call__(self, grid_values: torch.Tensor) -> torch.Tensor:
-        """Return numerical values for the wavelet on a grid."""
+        """Return numerical values for the wavelet on a grid.
+
+        Raises:
+            NotImplementedError: If this call is not overwritten by a child.
+        """
         raise NotImplementedError
 
     @property
