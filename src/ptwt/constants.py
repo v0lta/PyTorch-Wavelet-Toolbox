@@ -23,7 +23,7 @@ __all__ = [
     "WaveletTensorTuple",
 ]
 
-SUPPORTED_DTYPES = {torch.float32, torch.float64, torch.float16, torch.bfloat16}
+SUPPORTED_DTYPES = {torch.float32, torch.float64}
 
 
 class Wavelet(Protocol):
