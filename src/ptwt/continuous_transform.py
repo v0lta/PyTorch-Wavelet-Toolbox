@@ -29,6 +29,7 @@ def cwt(
     scales: Union[np.ndarray, torch.Tensor],
     wavelet: Union[ContinuousWavelet, str],
     sampling_period: float = 1.0,
+    precision: int = 12
 ) -> tuple[torch.Tensor, np.ndarray]:
     """Compute the single-dimensional continuous wavelet transform.
 
@@ -47,6 +48,7 @@ def cwt(
             The values computed for ``coefs`` are independent of the choice of
             ``sampling_period`` (i.e. ``scales`` is not scaled by the sampling
             period).
+        precision (int): Length of the wavelet used for the CWT.
 
     Raises:
         ValueError: If a scale is too small for the input signal.
@@ -81,7 +83,6 @@ def cwt(
         if data.is_cuda:
             wavelet.cuda()
 
-    precision = 10
     int_psi, x = _integrate_wavelet(wavelet, precision=precision)
     if type(wavelet) is ContinuousWavelet:
         int_psi = np.conj(int_psi) if wavelet.complex_cwt else int_psi
