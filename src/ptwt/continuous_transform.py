@@ -29,7 +29,7 @@ def cwt(
     scales: Union[np.ndarray, torch.Tensor],
     wavelet: Union[ContinuousWavelet, str],
     sampling_period: float = 1.0,
-    precision: int = 12
+    precision: int = 12,
 ) -> tuple[torch.Tensor, np.ndarray]:
     """Compute the single-dimensional continuous wavelet transform.
 
