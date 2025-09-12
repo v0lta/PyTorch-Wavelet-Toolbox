@@ -4,7 +4,7 @@ package-dir = "src"
 [project]
 name = "ptwt"
 description = "Differentiable and gpu enabled fast wavelet transforms in PyTorch"
-version = "1.0.1"
+version = "1.0.2-dev"
 keywords = ["Wavelets", "Wavelet Transform", "Fast Wavelet Transform", "Boundary Wavelets", "PyTorch"]
 readme = "README.rst"
 authors = [
