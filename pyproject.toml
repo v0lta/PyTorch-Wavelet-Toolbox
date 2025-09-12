@@ -14,7 +14,7 @@ maintainers = [
     {name = "Moritz Wolter and Felix Blanke", email = "moritz@wolter.tech"},
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: European Union Public Licence 1.2 (EUPL 1.2)",
