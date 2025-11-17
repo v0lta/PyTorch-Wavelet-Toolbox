@@ -12,9 +12,8 @@ import torch
 class WaveletFilter(ABC):
     """Interface for learnable wavelets.
 
-    Each wavelet has a filter bank loss function
-    and comes with functionality that tests the perfect
-    reconstruction and anti-aliasing conditions.
+    Each wavelet has a filter bank loss function and comes with functionality that tests
+    the perfect reconstruction and antialiasing conditions.
     """
 
     @property
@@ -44,13 +43,12 @@ class WaveletFilter(ABC):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the product filter-alias cancellation loss.
 
-        See: Strang+Nguyen 105: $$F_0(z) = H_1(-z); F_1(z) = -H_0(-z)$$
-        Alternating sign convention from 0 to N see Strang overview
-        on the back of the cover.
+        See: Strang+Nguyen 105: $$F_0(z) = H_1(-z); F_1(z) = -H_0(-z)$$ Alternating sign
+        convention from 0 to N see Strang overview on the back of the cover.
 
         Returns:
-            The numerical value of the alias cancellation loss,
-            as well as both loss components for analysis.
+            The numerical value of the alias cancellation loss, as well as both loss
+            components for analysis.
         """
         dec_lo, dec_hi, rec_lo, rec_hi = self.filter_bank
         m1 = torch.tensor([-1], device=dec_lo.device, dtype=dec_lo.dtype)
@@ -78,13 +76,12 @@ class WaveletFilter(ABC):
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return the alias cancellation loss.
 
-        Implementation of the ac-loss as described
-        on page 104 of Strang+Nguyen.
+        Implementation of the ac-loss as described on page 104 of Strang+Nguyen.
         $$F_0(z)H_0(-z) + F_1(z)H_1(-z) = 0$$
 
         Returns:
-            The numerical value of the alias cancellation loss,
-            as well as both loss components for analysis.
+            The numerical value of the alias cancellation loss, as well as both loss
+            components for analysis.
         """
         dec_lo, dec_hi, rec_lo, rec_hi = self.filter_bank
         m1 = torch.tensor([-1], device=dec_lo.device, dtype=dec_lo.dtype)
@@ -120,8 +117,8 @@ class WaveletFilter(ABC):
         """Return the perfect reconstruction loss.
 
         Returns:
-            The numerical value of the alias cancellation loss,
-            as well as both intermediate values for analysis.
+            The numerical value of the alias cancellation loss, as well as both
+            intermediate values for analysis.
         """
         # Strang 107: Assuming alias cancellation holds:
         # P(z) = F(z)H(z)
@@ -174,14 +171,14 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
         dec_hi: torch.Tensor,
         rec_lo: torch.Tensor,
         rec_hi: torch.Tensor,
-    ):
+    ) -> None:
         """Create a Product filter object.
 
         Args:
-            dec_lo (torch.Tensor): Low pass analysis filter.
-            dec_hi (torch.Tensor): High pass analysis filter.
-            rec_lo (torch.Tensor): Low pass synthesis filter.
-            rec_hi (torch.Tensor): High pass synthesis filter.
+            dec_lo : Low pass analysis filter.
+            dec_hi : High pass analysis filter.
+            rec_lo : Low pass synthesis filter.
+            rec_hi : High pass synthesis filter.
         """
         super().__init__()
         self.dec_lo = torch.nn.Parameter(dec_lo)
@@ -223,29 +220,11 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
 class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
     """Orthogonal wavelets with a soft orthogonality constraint."""
 
-    def __init__(
-        self,
-        dec_lo: torch.Tensor,
-        dec_hi: torch.Tensor,
-        rec_lo: torch.Tensor,
-        rec_hi: torch.Tensor,
-    ):
-        """Create a SoftOrthogonalWavelet object.
-
-        Args:
-            dec_lo (torch.Tensor): Low pass analysis filter.
-            dec_hi (torch.Tensor): High pass analysis filter.
-            rec_lo (torch.Tensor): Low pass synthesis filter.
-            rec_hi (torch.Tensor): High pass synthesis filter.
-        """
-        super().__init__(dec_lo, dec_hi, rec_lo, rec_hi)
-
     def rec_lo_orthogonality_loss(self) -> torch.Tensor:
         """Return a Strang inspired soft orthogonality loss.
 
-        See Strang p. 148/149 or Harbo p. 80.
-        Since L is a convolution matrix, LL^T can be evaluated
-        trough convolution.
+        See Strang p. 148/149 or Harbo p. 80. Since L is a convolution matrix, LL^T can
+        be evaluated trough convolution.
 
         Returns:
             A tensor with the orthogonality constraint value.
@@ -276,10 +255,9 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
     def filt_bank_orthogonality_loss(self) -> torch.Tensor:
         """Return a Jensen+Harbo inspired soft orthogonality loss.
 
-        On Page 79 of the Book Ripples in Mathematics
-        by Jensen la Cour-Harbo, the constraint
-        g0[k] = h0[-k] and g1[k] = h1[-k] for orthogonal filters
-        is presented. A measurement is implemented below.
+        On Page 79 of the Book Ripples in Mathematics by Jensen la Cour-Harbo, the
+        constraint g0[k] = h0[-k] and g1[k] = h1[-k] for orthogonal filters is
+        presented. A measurement is implemented below.
 
         Returns:
             A tensor with the orthogonality constraint value.
