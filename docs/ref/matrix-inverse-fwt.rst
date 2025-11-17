@@ -9,22 +9,22 @@ Sparse-matrix based Inverse Fast Wavelet Transform (iFWT)
 ---------------------------------------------
 
 .. autoclass:: MatrixWaverec
-   :members:
-   :special-members: __call__
-   :undoc-members:
+    :members:
+    :special-members: __call__
+    :undoc-members:
 
 2d reconstrucion using :class:`MatrixWaverec2`
 ----------------------------------------------
 
 .. autoclass:: MatrixWaverec2
-   :members:
-   :special-members: __call__
-   :undoc-members:
+    :members:
+    :special-members: __call__
+    :undoc-members:
 
 3d reconstrucion using :class:`MatrixWaverec3`
 ----------------------------------------------
 
 .. autoclass:: MatrixWaverec3
-   :members:
-   :special-members: __call__
-   :undoc-members:
+    :members:
+    :special-members: __call__
+    :undoc-members:

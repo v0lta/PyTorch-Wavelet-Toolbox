@@ -10,7 +10,6 @@ Transforms in one dimension
 
 .. autoclass:: WaveletCoeff1d
 
-
 Transforms in two dimensions
 ----------------------------
 
@@ -21,7 +20,6 @@ Transforms in two dimensions
     :class-doc-from: class
     :show-inheritance:
     :member-order: bysource
-
 
 Transforms in N dimensions
 --------------------------
