@@ -8,10 +8,11 @@ version = "1.0.2-dev"
 keywords = ["Wavelets", "Wavelet Transform", "Fast Wavelet Transform", "Boundary Wavelets", "PyTorch"]
 readme = "README.rst"
 authors = [
-    {name = "Moritz Wolter and Felix Blanke", email = "moritz@wolter.tech"},
+    {name = "Moritz Wolter", email = "moritz@wolter.tech"},
+    {name = "Felix Blanke"},
 ]
 maintainers = [
-    {name = "Moritz Wolter and Felix Blanke", email = "moritz@wolter.tech"},
+    {name = "Moritz Wolter", email = "moritz@wolter.tech"},
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -21,6 +22,8 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
