@@ -17,6 +17,8 @@ from ._util import (
 )
 from .constants import Wavelet, WaveletCoeff1d
 
+__all__ = ["iswt", "swt"]
+
 
 def _circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.Tensor:
     """Pad a tensor in circular mode, more than once if needed."""
@@ -58,19 +60,20 @@ def swt(
 ) -> list[torch.Tensor]:
     """Compute a multilevel 1d stationary wavelet transform.
 
-    This fuctions is equivalent to pywt's :func:`pywt.swt`
-    with `trim_approx=True` and `norm=False`.
+    This fuctions is equivalent to pywt's :func:`pywt.swt` with `trim_approx=True` and
+    `norm=False`.
 
     Args:
         data (torch.Tensor): The input time series to transform.
             By default the last axis is transformed.
+
         wavelet (Wavelet or str): A pywt wavelet compatible object or
-            the name of a pywt wavelet.
-            Refer to the output from ``pywt.wavelist(kind='discrete')``
-            for possible choices.
+            the name of a pywt wavelet. Refer to the output from
+            ``pywt.wavelist(kind='discrete')`` for possible choices.
+
         level (int, optional): The maximum decomposition level.
-            If None, the level is computed based on the signal shape.
-            Defaults to None.
+            If None, the level is computed based on the signal shape. Defaults to None.
+
         axis (int): Compute the transform over this axis of the `data` tensor.
             Defaults to -1.
 
@@ -115,8 +118,10 @@ def iswt(
     Args:
         coeffs: The wavelet coefficient sequence produced by the forward transform
             :func:`swt`. See :data:`ptwt.constants.WaveletCoeff1d`.
+
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet, as used in the forward transform.
+
         axis (int): Compute the transform over this axis of the `data` tensor.
             Defaults to -1.
 

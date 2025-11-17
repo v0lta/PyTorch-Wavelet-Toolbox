@@ -21,6 +21,7 @@ __all__ = [
     "WaveletCoeffNd",
     "WaveletDetailDict",
     "WaveletTensorTuple",
+    "WaveletCoeff1d",
 ]
 
 SUPPORTED_DTYPES = {torch.float32, torch.float64}

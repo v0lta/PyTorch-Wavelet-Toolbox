@@ -123,7 +123,6 @@ class WaveletPacket(BaseDict):
             >>> np_lst = [wp[node] for node in wp.get_level(5)]
             >>> viz = np.stack(np_lst).squeeze()
             >>> plt.imshow(np.abs(viz))
-            >>> plt.show()
         """
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode

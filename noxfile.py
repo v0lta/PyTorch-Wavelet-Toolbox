@@ -17,6 +17,13 @@ def run_test_fast(session):
     session.run("pytest", "-m", "not slow")
 
 
+@nox.session(name="doctests")
+def run_doctests(session):
+    """Run tests in docstrings."""
+    session.install(".[tests]", "xdoctest", "pygments", "matplotlib")
+    session.run("xdoctest", "-m", "ptwt", "--quiet")
+
+
 @nox.session(name="lint")
 def lint(session):
     """Check code conventions."""

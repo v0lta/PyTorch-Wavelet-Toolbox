@@ -180,7 +180,8 @@ def _integrate_wavelet(
         for other wavelets, a tuple (int_psi_d, int_psi_r, x) is returned instead.
 
     Example:
-        >>> from pywt import Wavelet, _integrate_wavelet
+        >>> from pywt import Wavelet
+        >>> from ptwt.continuous_transform import _integrate_wavelet
         >>> wavelet1 = Wavelet('db2')
         >>> [int_psi, x] = _integrate_wavelet(wavelet1, precision=5)
         >>> wavelet2 = Wavelet('bior1.3')
@@ -230,7 +231,8 @@ class _WaveletParameter(torch.nn.Parameter):
 
 
 class _DifferentiableContinuousWavelet(
-    torch.nn.Module, ContinuousWavelet  # type: ignore
+    torch.nn.Module,
+    ContinuousWavelet,  # type: ignore
 ):
     """A base class for learnable Continuous Wavelets."""
 

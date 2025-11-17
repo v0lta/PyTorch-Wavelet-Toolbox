@@ -1,10 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pywt
-import scipy.signal
 import torch
 
-# use from src.ptwt.packets if you cloned the repo instead of using pip.
 from ptwt import WaveletPacket
 
 fs = 1000

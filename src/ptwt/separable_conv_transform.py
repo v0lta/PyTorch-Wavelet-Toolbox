@@ -31,7 +31,7 @@ from .constants import (
 )
 from .conv_transform import wavedec, waverec
 
-__all__ = ["fswavedec2", "fswavedec3"]
+__all__ = ["fswavedec2", "fswavedec3", "fswaverec2", "fswaverec3"]
 
 
 def _separable_conv_dwtn_(
