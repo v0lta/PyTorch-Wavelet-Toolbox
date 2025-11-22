@@ -25,11 +25,13 @@ class WaveletLayer(torch.nn.Module):
         wavelet: WaveletFilter,
         scales: int,
         dropout: float = 0.5,
-        mode: str = "zero"
+        mode: str = "zero",
     ) -> None:
         super().__init__()
 
-        coefficient_lengths = _get_coefficient_lengths(depth=depth, scales=scales, wavelet=wavelet, mode=mode)
+        coefficient_lengths = _get_coefficient_lengths(
+            depth=depth, scales=scales, wavelet=wavelet, mode=mode
+        )
         wave_depth = np.sum(coefficient_lengths)
 
         mul_b = MMDropoutDiagonal(dropout, depth)
@@ -52,7 +54,9 @@ class WaveletLayer(torch.nn.Module):
         return self.sequence(x)
 
 
-def _get_coefficient_lengths(depth: int, scales: int, wavelet: WaveletFilter, mode: str) -> list[int]:
+def _get_coefficient_lengths(
+    depth: int, scales: int, wavelet: WaveletFilter, mode: str
+) -> list[int]:
     coefficient_len_lst = [depth]
     for _ in range(scales):
         coefficient_len_lst.append(
@@ -85,18 +89,18 @@ class MMDropoutDiagonal(torch.nn.Module):
         self.dropout = torch.nn.Dropout(p=dropout)
         self.vec = Parameter(torch.from_numpy(np.ones(depth, np.float32)))
 
-
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return torch.mm(x, self.dropout(torch.diag(self.vec)))
 
 
 class WaveletAnalyzer(torch.nn.Module):
-    def __init__(self, scales: int, coefficient_lengths: list[int], wavelet: WaveletFilter) -> None:
+    def __init__(
+        self, scales: int, coefficient_lengths: list[int], wavelet: WaveletFilter
+    ) -> None:
         super().__init__()
         self.scales = scales
         self.wavelet = wavelet
         self.coefficient_len_lst = coefficient_lengths
-
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute a 1d-analysis transform.
@@ -109,9 +113,9 @@ class WaveletAnalyzer(torch.nn.Module):
         c_lst = wavedec(x.unsqueeze(1), self.wavelet, level=self.scales)
         shape_lst = [c_el.shape[-1] for c_el in c_lst]
         c_tensor = torch.cat([c for c in c_lst], -1)
-        assert shape_lst == self.coefficient_len_lst[::-1], (
-            "Wavelet shape assumptions false. This is a bug."
-        )
+        assert (
+            shape_lst == self.coefficient_len_lst[::-1]
+        ), "Wavelet shape assumptions false. This is a bug."
         return c_tensor
 
 

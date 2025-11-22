@@ -47,7 +47,7 @@ class Net(nn.Module):
         compression: Literal["None", "Wavelet"],
         *,
         wavelet: WaveletFilter | None = None,
-        wave_dropout: float=0.0,
+        wave_dropout: float = 0.0,
     ) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(1, 20, 5, 1)
@@ -331,11 +331,7 @@ def main():
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")
 
-    n_params = sum(
-        np.prod(p.shape)
-        for p in model.parameters()
-        if p.requires_grad
-    )
+    n_params = sum(np.prod(p.shape) for p in model.parameters() if p.requires_grad)
     print(f"the model has {n_params:,} parameters")
 
     # plt.semilogy(test_wvl_lst)
