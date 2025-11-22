@@ -101,9 +101,7 @@ def test_conv_fwt_jit_2d() -> None:
         )
         jit_ptcoeff = jit_wavedec2(data, wavelet)
         # unstack the lists.
-        jit_waverec = torch.jit.trace(
-            _to_jit_waverec_2, (jit_ptcoeff, wavelet)
-        )  # type: ignore
+        jit_waverec = torch.jit.trace(_to_jit_waverec_2, (jit_ptcoeff, wavelet))  # type: ignore
         rec = jit_waverec(jit_ptcoeff, wavelet)
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy(), atol=1e-7)
 
@@ -155,9 +153,7 @@ def test_conv_fwt_jit_3d() -> None:
         )
         jit_ptcoeff = jit_wavedec3(data, wavelet)
         # unstack the lists.
-        jit_waverec = torch.jit.trace(
-            _to_jit_waverec_3, (jit_ptcoeff, wavelet)
-        )  # type: ignore
+        jit_waverec = torch.jit.trace(_to_jit_waverec_3, (jit_ptcoeff, wavelet))  # type: ignore
         rec = jit_waverec(jit_ptcoeff, wavelet)
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy(), atol=1e-7)
 

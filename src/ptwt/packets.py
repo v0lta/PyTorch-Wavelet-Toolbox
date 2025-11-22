@@ -83,14 +83,14 @@ class WaveletPacket(BaseDict):
 
         Args:
             data (torch.Tensor, optional): The input time series to transform.
-                By default the last axis is transformed.
+                By default, the last axis is transformed.
                 Use the `axis` argument to choose another dimension.
                 If None, the object is initialized without performing a decomposition.
             wavelet (Wavelet or str): A pywt wavelet compatible object or
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            mode: The desired mode to handle signal boundaries. Select either the
+            mode: The desired mode to handle signal boundaries. Select either
                 the sparse-matrix backend (``boundary``) or a padding mode.
                 See :data:`ptwt.constants.ExtendedBoundaryMode`.
                 Defaults to ``reflect``.
@@ -112,6 +112,7 @@ class WaveletPacket(BaseDict):
                 is not supported.
 
         Example:
+
             >>> import torch, pywt, ptwt
             >>> import numpy as np
             >>> import scipy.signal
@@ -123,7 +124,6 @@ class WaveletPacket(BaseDict):
             >>> np_lst = [wp[node] for node in wp.get_level(5)]
             >>> viz = np.stack(np_lst).squeeze()
             >>> plt.imshow(np.abs(viz))
-            >>> plt.show()
         """
         self.wavelet = _as_wavelet(wavelet)
         self.mode = mode

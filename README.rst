@@ -71,7 +71,7 @@ convolution. Consider the following example:
   import torch
   import numpy as np
   import pywt
-  import ptwt  # use "from src import ptwt" for a cloned the repo
+  import ptwt
   
   # generate an input of even length.
   data = np.array([0, 1, 2, 3, 4, 5, 6, 7, 7, 6, 5, 4, 3, 2, 1, 0])
@@ -133,7 +133,7 @@ Reconsidering the 1d case, try:
 
   import torch
   import pywt
-  import ptwt  # use "from src import ptwt" for a cloned the repo
+  import ptwt
   
   # generate an input of even length.
   data = torch.arange(16, dtype=torch.float32)

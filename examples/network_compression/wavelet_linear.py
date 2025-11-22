@@ -70,9 +70,9 @@ class WaveletLayer(torch.nn.Module):
         c_lst = wavedec(x.unsqueeze(1), self.wavelet, level=self.scales)
         shape_lst = [c_el.shape[-1] for c_el in c_lst]
         c_tensor = torch.cat([c for c in c_lst], -1)
-        assert (
-            shape_lst == self.coefficient_len_lst[::-1]
-        ), "Wavelet shape assumptions false. This is a bug."
+        assert shape_lst == self.coefficient_len_lst[::-1], (
+            "Wavelet shape assumptions false. This is a bug."
+        )
         return c_tensor
 
     def wavelet_reconstruction(self, x):

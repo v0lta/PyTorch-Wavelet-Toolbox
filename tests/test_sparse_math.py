@@ -22,8 +22,7 @@ from ptwt.sparse_math import (
 def test_kron() -> None:
     """Test the implementation by evaluation.
 
-    The example is taken from
-    https://de.wikipedia.org/wiki/Kronecker-Produkt
+    The example is taken from https://de.wikipedia.org/wiki/Kronecker-Produkt
     """
     a = torch.tensor([[1, 2], [3, 2], [5, 6]]).to_sparse()
     b = torch.tensor([[7, 8], [9, 0]]).to_sparse()

@@ -1,5 +1,4 @@
 import time
-from typing import NamedTuple
 
 import matplotlib.pyplot as plt
 import numpy as np

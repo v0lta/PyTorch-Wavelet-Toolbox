@@ -19,3 +19,34 @@ from .matmul_transform_3 import MatrixWavedec3, MatrixWaverec3
 from .packets import WaveletPacket, WaveletPacket2D
 from .separable_conv_transform import fswavedec2, fswavedec3, fswaverec2, fswaverec3
 from .stationary_transform import iswt, swt
+
+__all__ = [
+    "Wavelet",
+    "WaveletDetailTuple2d",
+    "WaveletCoeff2d",
+    "WaveletCoeff2dSeparable",
+    "WaveletCoeffNd",
+    "WaveletDetailDict",
+    "WaveletTensorTuple",
+    "cwt",
+    "wavedec",
+    "waverec",
+    "wavedec2",
+    "waverec2",
+    "wavedec3",
+    "waverec3",
+    "MatrixWavedec",
+    "MatrixWaverec",
+    "MatrixWavedec2",
+    "MatrixWaverec2",
+    "MatrixWavedec3",
+    "MatrixWaverec3",
+    "WaveletPacket",
+    "WaveletPacket2D",
+    "fswavedec2",
+    "fswavedec3",
+    "fswaverec2",
+    "fswaverec3",
+    "iswt",
+    "swt",
+]
