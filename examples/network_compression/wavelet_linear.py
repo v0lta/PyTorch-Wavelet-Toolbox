@@ -1,65 +1,104 @@
 # Originally created by moritz (wolter@cs.uni-bonn.de)
 # at https://github.com/v0lta/Wavelet-network-compression/blob/master/wavelet_learning/wavelet_linear.py
+
 import numpy as np
 import pywt
 import torch
 from torch.nn.parameter import Parameter
-
-from ptwt.conv_transform import wavedec, waverec
+import torch.nn
+from ptwt import wavedec, waverec
+from ptwt.wavelets_learnable import WaveletFilter
 
 
 class WaveletLayer(torch.nn.Module):
     """
-    Create a learn-able Wavelet layer as described here:
+    Create a learnable Wavelet layer as described here:
     https://arxiv.org/pdf/2004.09569.pdf
     The weights are parametrized by S*W*G*P*W*B
     With S,G,B diagonal matrices, P a random permutation and W a
     learnable-wavelet transform.
     """
 
-    def __init__(self, depth, init_wavelet, scales, p_drop=0.5):
+    def __init__(
+        self,
+        depth: int,
+        wavelet: WaveletFilter,
+        scales: int,
+        dropout: float = 0.5,
+        mode: str = "zero"
+    ) -> None:
         super().__init__()
-        print("wavelet dropout:", p_drop)
-        self.scales = scales
-        self.wavelet = init_wavelet
-        self.mode = "zero"
-        self.coefficient_len_lst = [depth]
-        for _ in range(scales):
-            self.coefficient_len_lst.append(
-                pywt.dwt_coeff_len(
-                    self.coefficient_len_lst[-1],
-                    init_wavelet.dec_lo.shape[-1],
-                    self.mode,
-                )
-            )
-        self.coefficient_len_lst = self.coefficient_len_lst[1:]
-        self.coefficient_len_lst.append(self.coefficient_len_lst[-1])
 
-        wave_depth = np.sum(self.coefficient_len_lst)
-        self.depth = depth
-        self.diag_vec_s = Parameter(torch.from_numpy(np.ones(depth, np.float32)))
-        self.diag_vec_g = Parameter(torch.from_numpy(np.ones(wave_depth, np.float32)))
-        self.diag_vec_b = Parameter(torch.from_numpy(np.ones(depth, np.float32)))
+        coefficient_lengths = _get_coefficient_lengths(depth=depth, scales=scales, wavelet=wavelet, mode=mode)
+        wave_depth = np.sum(coefficient_lengths)
+
+        mul_b = MMDropoutDiagonal(dropout, depth)
+        wavelet_analyzer = WaveletAnalyzer(scales, coefficient_lengths, wavelet)
+        mul_p = Permutator(wave_depth)
+        mul_g = MMDropoutDiagonal(dropout, wave_depth)
+        wavelet_reconstructor = WaveletReconstructor(scales, coefficient_lengths)
+        mul_s = MMDropoutDiagonal(dropout, depth)
+
+        self.sequence = torch.nn.Sequential(
+            mul_b,
+            wavelet_analyzer,
+            mul_p,
+            mul_g,
+            wavelet_reconstructor,
+            mul_s,
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.sequence(x)
+
+
+def _get_coefficient_lengths(depth: int, scales: int, wavelet: WaveletFilter, mode: str) -> list[int]:
+    coefficient_len_lst = [depth]
+    for _ in range(scales):
+        coefficient_len_lst.append(
+            pywt.dwt_coeff_len(
+                coefficient_len_lst[-1],
+                wavelet.filter_bank.dec_lo.shape[-1],
+                mode,
+            )
+        )
+    coefficient_len_lst = coefficient_len_lst[1:]
+    coefficient_len_lst.append(coefficient_len_lst[-1])
+    return coefficient_len_lst
+
+
+class Permutator(torch.nn.Module):
+    def __init__(self, wave_depth: int) -> None:
+        super().__init__()
         perm = np.random.permutation(np.eye(wave_depth, dtype=np.float32))
         self.perm = Parameter(torch.from_numpy(perm), requires_grad=False)
 
-        self.drop_s = torch.nn.Dropout(p=p_drop)
-        self.drop_g = torch.nn.Dropout(p=p_drop)
-        self.drop_b = torch.nn.Dropout(p=p_drop)
-
-    def mul_s(self, x):
-        return torch.mm(x, self.drop_s(torch.diag(self.diag_vec_s)))
-
-    def mul_g(self, x):
-        return torch.mm(x, self.drop_g(torch.diag(self.diag_vec_g)))
-
-    def mul_b(self, x):
-        return torch.mm(x, self.drop_b(torch.diag(self.diag_vec_b)))
-
-    def mul_p(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return torch.mm(x, self.perm)
 
-    def wavelet_analysis(self, x):
+
+class MMDropoutDiagonal(torch.nn.Module):
+    """A module that diagonalizes a vector parameter, applies dropout, then multiples it by the input."""
+
+    def __init__(self, dropout: float, depth: int) -> None:
+        super().__init__()
+        self.dropout = torch.nn.Dropout(p=dropout)
+        self.vec = Parameter(torch.from_numpy(np.ones(depth, np.float32)))
+
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.mm(x, self.dropout(torch.diag(self.vec)))
+
+
+class WaveletAnalyzer(torch.nn.Module):
+    def __init__(self, scales: int, coefficient_lengths: list[int], wavelet: WaveletFilter) -> None:
+        super().__init__()
+        self.scales = scales
+        self.wavelet = wavelet
+        self.coefficient_len_lst = coefficient_lengths
+
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute a 1d-analysis transform.
         Args:
             x (torch.tensor): 2d input tensor
@@ -75,7 +114,14 @@ class WaveletLayer(torch.nn.Module):
         )
         return c_tensor
 
-    def wavelet_reconstruction(self, x):
+
+class WaveletReconstructor(torch.nn.Module):
+    def __init__(self, scales: int, coefficient_lengths: list[int]) -> None:
+        super().__init__()
+        self.scales = scales
+        self.coefficient_lengths = coefficient_lengths
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Reconstruction from a tensor input.
         Args:
             x (torch.Tensor): Analysis coefficient tensor.
@@ -86,40 +132,8 @@ class WaveletLayer(torch.nn.Module):
         start = 0
         # turn tensor into list
         for s in range(self.scales + 1):
-            stop = start + self.coefficient_len_lst[::-1][s]
+            stop = start + self.coefficient_lengths[::-1][s]
             coeff_lst.append(x[..., start:stop])
-            start = self.coefficient_len_lst[s]
+            start = self.coefficient_lengths[s]
         y = waverec(coeff_lst, self.wavelet)
         return y
-
-    def forward(self, x):
-        """Evaluate the wavelet layer.
-        Args:
-            x (torch.tensor): The layer input.
-        Returns:
-            torch.tensor: Layer output.
-        """
-        # test = self.wavelet_analysis(x)
-        step1 = self.mul_b(x)
-        step2 = self.wavelet_analysis(step1)
-        step3 = self.mul_p(step2)
-        step4 = self.mul_g(step3)
-        step5 = self.wavelet_reconstruction(step4)
-        step6 = self.mul_s(step5)
-
-        return step6
-
-    def extra_repr(self):
-        return "depth={}".format(self.depth)
-
-    def get_wavelet_loss(self) -> torch.Tensor:
-        """Returns the wavelet loss for the wavelet in the layer.
-            This value must be added to the cost for the wavelet learning to
-            work.
-
-        Returns:
-            torch.Tensor: The wavelet loss scalar.
-        """
-        prl, _, _ = self.wavelet.perfect_reconstruction_loss()
-        acl, _, _ = self.wavelet.alias_cancellation_loss()
-        return prl + acl

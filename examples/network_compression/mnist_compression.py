@@ -1,12 +1,31 @@
+# /// script
+# requires-python = ">=3.14"
+# dependencies = [
+#     "matplotlib",
+#     "numpy",
+#     "ptwt",
+#     "tensorboard",
+#     "torch",
+#     "torchvision",
+#     "pystow",
+# ]
+#
+# [tool.uv.sources]
+# ptwt = { path = "../../" }
+# ///
+
 # Originally created by moritz (wolter@cs.uni-bonn.de) on 17/12/2019
 # at https://github.com/v0lta/Wavelet-network-compression/blob/master/mnist_compression.py
 # based on https://github.com/pytorch/examples/blob/master/mnist/main.py
 
 import argparse
 import collections
+from typing import Literal
 
+from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import pystow
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,56 +35,60 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from torchvision import datasets, transforms
 from wavelet_linear import WaveletLayer
 
-from ptwt.wavelets_learnable import ProductFilter
+from ptwt.wavelets_learnable import ProductFilter, WaveletFilter
 
-
-def compute_parameter_total(net):
-    total = 0
-    for p in net.parameters():
-        if p.requires_grad:
-            print(p.shape)
-            total += np.prod(p.shape)
-    return total
+HERE = Path(__file__).parent.resolve()
+MODULE = pystow.module("torchvision", "mnist")
 
 
 class Net(nn.Module):
-    def __init__(self, compression, wavelet=None, wave_dropout=0.0):
-        super(Net, self).__init__()
+    def __init__(
+        self,
+        compression: Literal["None", "Wavelet"],
+        *,
+        wavelet: WaveletFilter | None = None,
+        wave_dropout: float=0.0,
+    ) -> None:
+        super().__init__()
         self.conv1 = nn.Conv2d(1, 20, 5, 1)
         self.conv2 = nn.Conv2d(20, 50, 5, 1)
         self.dropout1 = nn.Dropout2d(0.25)
         self.dropout2 = nn.Dropout2d(0.5)
         self.wavelet = wavelet
-        self.do_dropout = True
         if compression == "None":
             self.fc1 = torch.nn.Linear(4 * 4 * 50, 500)
             self.fc2 = torch.nn.Linear(500, 10)
+            self.do_dropout = True
         elif compression == "Wavelet":
             assert wavelet is not None, "initial wavelet must be set."
             self.fc1 = WaveletLayer(
-                init_wavelet=wavelet, scales=6, depth=800, p_drop=wave_dropout
+                wavelet=wavelet, scales=6, depth=800, dropout=wave_dropout
             )
             self.fc2 = torch.nn.Linear(800, 10)
             self.do_dropout = False
         else:
             raise ValueError("Compression type Unknown.")
 
+        self.log_softmax = torch.nn.LogSoftmax(dim=1)
+        self.max_pool_2s_k2 = torch.nn.MaxPool2d(2)
+        self.flatten = torch.nn.Flatten(start_dim=1)
+        self.relu = torch.nn.ReLU()
+
     def forward(self, x):
         x = self.conv1(x)
-        # x = F.relu(x)
-        x = F.max_pool2d(x, 2)
+        x = self.max_pool_2s_k2(x)
         x = self.conv2(x)
-        x = F.max_pool2d(x, 2)
+        x = self.max_pool_2s_k2(x)
         if self.do_dropout:
             x = self.dropout1(x)
-        x = torch.flatten(x, 1)
+        x = self.flatten(x)
         x = self.fc1(x)
-        x = F.relu(x)
+        x = self.relu(x)
         if self.do_dropout:
             x = self.dropout2(x)
         x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
+        x = self.log_softmax(x)
+        return x
 
     def wavelet_loss(self):
         if self.wavelet is None:
@@ -221,16 +244,24 @@ def main():
 
     args = parser.parse_args()
     print(args)
-    use_cuda = not args.no_cuda and torch.cuda.is_available()
+
+    if args.no_cuda:
+        device = "cpu"
+    elif torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
+        device = "mps"
+    else:
+        device = "cpu"
 
     torch.manual_seed(args.seed)
 
-    device = torch.device("cuda" if use_cuda else "cpu")
+    device = torch.device(device)
 
-    kwargs = {"num_workers": 1, "pin_memory": True} if use_cuda else {}
+    kwargs = {"num_workers": 1, "pin_memory": True} if device == "cuda" else {}
     train_loader = torch.utils.data.DataLoader(
         datasets.MNIST(
-            "../data",
+            MODULE.base,
             train=True,
             download=True,
             transform=transforms.Compose(
@@ -243,7 +274,7 @@ def main():
     )
     test_loader = torch.utils.data.DataLoader(
         datasets.MNIST(
-            "../data",
+            MODULE.base,
             train=False,
             transform=transforms.Compose(
                 [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
@@ -300,7 +331,12 @@ def main():
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")
 
-    print(compute_parameter_total(model))
+    n_params = sum(
+        np.prod(p.shape)
+        for p in model.parameters()
+        if p.requires_grad
+    )
+    print(f"the model has {n_params:,} parameters")
 
     # plt.semilogy(test_wvl_lst)
     # plt.semilogy(test_acc_lst)
@@ -312,8 +348,7 @@ def main():
     plt.plot(model.fc1.wavelet.rec_lo.detach().cpu().numpy(), "-*")
     plt.plot(model.fc1.wavelet.rec_hi.detach().cpu().numpy(), "-*")
     plt.legend(["H_0", "H_1", "F_0", "F_1"])
-    plt.show()
-    print("done")
+    plt.savefig(HERE.joinpath("plot.svg"))
 
 
 if __name__ == "__main__":
