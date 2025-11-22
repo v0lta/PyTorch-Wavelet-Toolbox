@@ -67,7 +67,7 @@ class Net(nn.Module):
             self.fc2 = torch.nn.Linear(800, 10)
             self.do_dropout = False
         else:
-            raise ValueError("Compression type Unknown.")
+            raise ValueError(f"invalid compression: {compression}")
 
         self.log_softmax = torch.nn.LogSoftmax(dim=1)
         self.max_pool_2s_k2 = torch.nn.MaxPool2d(2)
@@ -92,11 +92,10 @@ class Net(nn.Module):
 
     def wavelet_loss(self):
         if self.wavelet is None:
-            return torch.tensor(0.0), torch.tensor(0.0)
-        else:
-            acl, _, _ = self.fc1.wavelet.alias_cancellation_loss()
-            prl, _, _ = self.fc1.wavelet.perfect_reconstruction_loss()
-            return acl, prl
+            raise ValueError
+        acl, _, _ = self.fc1.wavelet.alias_cancellation_loss()
+        prl, _, _ = self.fc1.wavelet.perfect_reconstruction_loss()
+        return acl + prl
 
 
 def train(args, model, device, train_loader, optimizer, epoch):
@@ -105,27 +104,23 @@ def train(args, model, device, train_loader, optimizer, epoch):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        nll_loss = F.nll_loss(output, target)
+        loss = F.nll_loss(output, target)
         if args.compression == "Wavelet":
-            acl, prl = model.wavelet_loss()
-            wvl = acl + prl
-            loss = nll_loss + wvl * args.wave_loss_weight
-        else:
-            wvl = torch.tensor(0.0)
-            loss = nll_loss
+            wvl = model.wavelet_loss()
+            loss = loss + wvl * args.wave_loss_weight
         loss.backward()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
-            print(
-                "Train Epoch: {} [{}/{} ({:.0f}%)], Loss: {:.6f}, wvl-Loss: {:.6f}".format(
-                    epoch,
-                    batch_idx * len(data),
-                    len(train_loader.dataset),
-                    100.0 * batch_idx / len(train_loader),
-                    nll_loss.item(),
-                    wvl.item(),
-                )
+            msg = "Train Epoch: {} [{}/{} ({:.0f}%)], Loss: {:.6f}".format(
+                epoch,
+                batch_idx * len(data),
+                len(train_loader.dataset),
+                100.0 * batch_idx / len(train_loader),
+                loss.item(),
             )
+            if args.compression == "Wavelet":
+                msg += f", wvl-loss: {wvl.item():.6f}"
+            print(msg)
 
 
 def test(args, model, device, test_loader, test_writer, epoch):
