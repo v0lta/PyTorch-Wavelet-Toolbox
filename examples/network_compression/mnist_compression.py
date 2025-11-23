@@ -1,12 +1,31 @@
+# /// script
+# requires-python = ">=3.14"
+# dependencies = [
+#     "matplotlib",
+#     "numpy",
+#     "ptwt",
+#     "tensorboard",
+#     "torch",
+#     "torchvision",
+#     "pystow",
+# ]
+#
+# [tool.uv.sources]
+# ptwt = { path = "../../" }
+# ///
+
 # Originally created by moritz (wolter@cs.uni-bonn.de) on 17/12/2019
 # at https://github.com/v0lta/Wavelet-network-compression/blob/master/mnist_compression.py
 # based on https://github.com/pytorch/examples/blob/master/mnist/main.py
 
 import argparse
 import collections
+from typing import Literal
 
+from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import pystow
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,64 +35,73 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from torchvision import datasets, transforms
 from wavelet_linear import WaveletLayer
 
-from ptwt.wavelets_learnable import ProductFilter
+from ptwt.wavelets_learnable import ProductFilter, WaveletFilter
 
-
-def compute_parameter_total(net):
-    total = 0
-    for p in net.parameters():
-        if p.requires_grad:
-            print(p.shape)
-            total += np.prod(p.shape)
-    return total
+HERE = Path(__file__).parent.resolve()
+MODULE = pystow.module("torchvision", "mnist")
 
 
 class Net(nn.Module):
-    def __init__(self, compression, wavelet=None, wave_dropout=0.0):
-        super(Net, self).__init__()
+    def __init__(
+        self,
+        compression: Literal["None", "Wavelet"],
+        *,
+        wavelet: WaveletFilter | None = None,
+        wave_dropout: float = 0.0,
+    ) -> None:
+        super().__init__()
         self.conv1 = nn.Conv2d(1, 20, 5, 1)
         self.conv2 = nn.Conv2d(20, 50, 5, 1)
-        self.dropout1 = nn.Dropout2d(0.25)
-        self.dropout2 = nn.Dropout2d(0.5)
-        self.wavelet = wavelet
-        self.do_dropout = True
+        self.max_pool_2s_k2 = torch.nn.MaxPool2d(2)
+
+        self.log_softmax = torch.nn.LogSoftmax(dim=1)
+        self.flatten = torch.nn.Flatten(start_dim=1)
+        self.relu = torch.nn.ReLU()
+
         if compression == "None":
-            self.fc1 = torch.nn.Linear(4 * 4 * 50, 500)
-            self.fc2 = torch.nn.Linear(500, 10)
+            fc1 = torch.nn.Linear(4 * 4 * 50, 500)
+            fc2 = torch.nn.Linear(500, 10)
+            self.sequence = torch.nn.Sequential(
+                self.conv1,
+                self.max_pool_2s_k2,
+                self.conv2,
+                self.max_pool_2s_k2,
+                nn.Dropout2d(0.25),
+                self.flatten,
+                fc1,
+                self.relu,
+                nn.Dropout2d(0.5),
+                fc2,
+                self.log_softmax,
+            )
         elif compression == "Wavelet":
             assert wavelet is not None, "initial wavelet must be set."
-            self.fc1 = WaveletLayer(
+            self.wavelet = wavelet
+            fc1 = WaveletLayer(
                 init_wavelet=wavelet, scales=6, depth=800, p_drop=wave_dropout
             )
-            self.fc2 = torch.nn.Linear(800, 10)
-            self.do_dropout = False
+            fc2 = torch.nn.Linear(800, 10)
+            self.sequence = torch.nn.Sequential(
+                self.conv1,
+                self.max_pool_2s_k2,
+                self.conv2,
+                self.max_pool_2s_k2,
+                self.flatten,
+                fc1,
+                self.relu,
+                fc2,
+                self.log_softmax,
+            )
         else:
-            raise ValueError("Compression type Unknown.")
+            raise ValueError(f"invalid compression: {compression}")
 
-    def forward(self, x):
-        x = self.conv1(x)
-        # x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        x = self.conv2(x)
-        x = F.max_pool2d(x, 2)
-        if self.do_dropout:
-            x = self.dropout1(x)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        if self.do_dropout:
-            x = self.dropout2(x)
-        x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.sequence(x)
 
     def wavelet_loss(self):
         if self.wavelet is None:
-            return torch.tensor(0.0), torch.tensor(0.0)
-        else:
-            acl, _, _ = self.fc1.wavelet.alias_cancellation_loss()
-            prl, _, _ = self.fc1.wavelet.perfect_reconstruction_loss()
-            return acl, prl
+            return torch.tensor(0.0)
+        return self.wavelet.wavelet_loss()
 
 
 def train(args, model, device, train_loader, optimizer, epoch):
@@ -82,27 +110,23 @@ def train(args, model, device, train_loader, optimizer, epoch):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = model(data)
-        nll_loss = F.nll_loss(output, target)
+        loss = F.nll_loss(output, target)
         if args.compression == "Wavelet":
-            acl, prl = model.wavelet_loss()
-            wvl = acl + prl
-            loss = nll_loss + wvl * args.wave_loss_weight
-        else:
-            wvl = torch.tensor(0.0)
-            loss = nll_loss
+            wvl = model.wavelet_loss()
+            loss = loss + wvl * args.wave_loss_weight
         loss.backward()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
-            print(
-                "Train Epoch: {} [{}/{} ({:.0f}%)], Loss: {:.6f}, wvl-Loss: {:.6f}".format(
-                    epoch,
-                    batch_idx * len(data),
-                    len(train_loader.dataset),
-                    100.0 * batch_idx / len(train_loader),
-                    nll_loss.item(),
-                    wvl.item(),
-                )
+            msg = "Train Epoch: {} [{}/{} ({:.0f}%)], Loss: {:.6f}".format(
+                epoch,
+                batch_idx * len(data),
+                len(train_loader.dataset),
+                100.0 * batch_idx / len(train_loader),
+                loss.item(),
             )
+            if args.compression == "Wavelet":
+                msg += f", wvl-loss: {wvl.item():.6f}"
+            print(msg)
 
 
 def test(args, model, device, test_loader, test_writer, epoch):
@@ -122,8 +146,8 @@ def test(args, model, device, test_loader, test_writer, epoch):
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
-    acl, prl = model.wavelet_loss()
-    wvl_loss = acl + prl
+
+    wvl_loss = model.wavelet_loss()
 
     print(
         "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
@@ -221,16 +245,24 @@ def main():
 
     args = parser.parse_args()
     print(args)
-    use_cuda = not args.no_cuda and torch.cuda.is_available()
+
+    if args.no_cuda:
+        device = "cpu"
+    elif torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
+        device = "mps"
+    else:
+        device = "cpu"
 
     torch.manual_seed(args.seed)
 
-    device = torch.device("cuda" if use_cuda else "cpu")
+    device = torch.device(device)
 
-    kwargs = {"num_workers": 1, "pin_memory": True} if use_cuda else {}
+    kwargs = {"num_workers": 1, "pin_memory": True} if device == "cuda" else {}
     train_loader = torch.utils.data.DataLoader(
         datasets.MNIST(
-            "../data",
+            MODULE.base,
             train=True,
             download=True,
             transform=transforms.Compose(
@@ -243,7 +275,7 @@ def main():
     )
     test_loader = torch.utils.data.DataLoader(
         datasets.MNIST(
-            "../data",
+            MODULE.base,
             train=False,
             transform=transforms.Compose(
                 [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
@@ -300,20 +332,20 @@ def main():
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")
 
-    print(compute_parameter_total(model))
+    n_params = sum(np.prod(p.shape) for p in model.parameters() if p.requires_grad)
+    print(f"the model has {n_params:,} parameters")
 
     # plt.semilogy(test_wvl_lst)
     # plt.semilogy(test_acc_lst)
     # plt.legend(['wavlet loss', 'accuracy'])
     # plt.show()
 
-    plt.plot(model.fc1.wavelet.dec_lo.detach().cpu().numpy(), "-*")
-    plt.plot(model.fc1.wavelet.dec_hi.detach().cpu().numpy(), "-*")
-    plt.plot(model.fc1.wavelet.rec_lo.detach().cpu().numpy(), "-*")
-    plt.plot(model.fc1.wavelet.rec_hi.detach().cpu().numpy(), "-*")
+    plt.plot(model.wavelet.filter_bank.dec_lo.detach().cpu().numpy(), "-*")
+    plt.plot(model.wavelet.filter_bank.dec_hi.detach().cpu().numpy(), "-*")
+    plt.plot(model.wavelet.filter_bank.rec_lo.detach().cpu().numpy(), "-*")
+    plt.plot(model.wavelet.filter_bank.rec_hi.detach().cpu().numpy(), "-*")
     plt.legend(["H_0", "H_1", "F_0", "F_1"])
-    plt.show()
-    print("done")
+    plt.savefig(HERE.joinpath("plot.svg"))
 
 
 if __name__ == "__main__":
