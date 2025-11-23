@@ -93,8 +93,8 @@ class Net(nn.Module):
     def wavelet_loss(self):
         if self.wavelet is None:
             raise ValueError
-        acl, _, _ = self.fc1.wavelet.alias_cancellation_loss()
-        prl, _, _ = self.fc1.wavelet.perfect_reconstruction_loss()
+        acl, _, _ = self.wavelet.alias_cancellation_loss()
+        prl, _, _ = self.wavelet.perfect_reconstruction_loss()
         return acl + prl
 
 
@@ -140,8 +140,8 @@ def test(args, model, device, test_loader, test_writer, epoch):
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
-    acl, prl = model.wavelet_loss()
-    wvl_loss = acl + prl
+
+    wvl_loss = model.wavelet_loss()
 
     print(
         "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
@@ -334,10 +334,10 @@ def main():
     # plt.legend(['wavlet loss', 'accuracy'])
     # plt.show()
 
-    plt.plot(model.fc1.wavelet.dec_lo.detach().cpu().numpy(), "-*")
-    plt.plot(model.fc1.wavelet.dec_hi.detach().cpu().numpy(), "-*")
-    plt.plot(model.fc1.wavelet.rec_lo.detach().cpu().numpy(), "-*")
-    plt.plot(model.fc1.wavelet.rec_hi.detach().cpu().numpy(), "-*")
+    plt.plot(model.wavelet.filter_bank.dec_lo.detach().cpu().numpy(), "-*")
+    plt.plot(model.wavelet.filter_bank.dec_hi.detach().cpu().numpy(), "-*")
+    plt.plot(model.wavelet.filter_bank.rec_lo.detach().cpu().numpy(), "-*")
+    plt.plot(model.wavelet.filter_bank.rec_hi.detach().cpu().numpy(), "-*")
     plt.legend(["H_0", "H_1", "F_0", "F_1"])
     plt.savefig(HERE.joinpath("plot.svg"))
 
