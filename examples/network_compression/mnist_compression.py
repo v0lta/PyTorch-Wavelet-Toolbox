@@ -100,10 +100,8 @@ class Net(nn.Module):
 
     def wavelet_loss(self):
         if self.wavelet is None:
-            raise ValueError
-        acl, _, _ = self.wavelet.alias_cancellation_loss()
-        prl, _, _ = self.wavelet.perfect_reconstruction_loss()
-        return acl + prl
+            return torch.tensor(0.0)
+        return self.wavelet.wavelet_loss()
 
 
 def train(args, model, device, train_loader, optimizer, epoch):
