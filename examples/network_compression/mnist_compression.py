@@ -52,43 +52,51 @@ class Net(nn.Module):
         super().__init__()
         self.conv1 = nn.Conv2d(1, 20, 5, 1)
         self.conv2 = nn.Conv2d(20, 50, 5, 1)
-        self.dropout1 = nn.Dropout2d(0.25)
-        self.dropout2 = nn.Dropout2d(0.5)
-        self.wavelet = wavelet
-        if compression == "None":
-            self.fc1 = torch.nn.Linear(4 * 4 * 50, 500)
-            self.fc2 = torch.nn.Linear(500, 10)
-            self.do_dropout = True
-        elif compression == "Wavelet":
-            assert wavelet is not None, "initial wavelet must be set."
-            self.fc1 = WaveletLayer(
-                init_wavelet=wavelet, scales=6, depth=800, p_drop=wave_dropout
-            )
-            self.fc2 = torch.nn.Linear(800, 10)
-            self.do_dropout = False
-        else:
-            raise ValueError(f"invalid compression: {compression}")
+        self.max_pool_2s_k2 = torch.nn.MaxPool2d(2)
 
         self.log_softmax = torch.nn.LogSoftmax(dim=1)
-        self.max_pool_2s_k2 = torch.nn.MaxPool2d(2)
         self.flatten = torch.nn.Flatten(start_dim=1)
         self.relu = torch.nn.ReLU()
 
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.max_pool_2s_k2(x)
-        x = self.conv2(x)
-        x = self.max_pool_2s_k2(x)
-        if self.do_dropout:
-            x = self.dropout1(x)
-        x = self.flatten(x)
-        x = self.fc1(x)
-        x = self.relu(x)
-        if self.do_dropout:
-            x = self.dropout2(x)
-        x = self.fc2(x)
-        x = self.log_softmax(x)
-        return x
+        if compression == "None":
+            fc1 = torch.nn.Linear(4 * 4 * 50, 500)
+            fc2 = torch.nn.Linear(500, 10)
+            self.sequence = torch.nn.Sequential(
+                self.conv1,
+                self.max_pool_2s_k2,
+                self.conv2,
+                self.max_pool_2s_k2,
+                nn.Dropout2d(0.25),
+                self.flatten,
+                fc1,
+                self.relu,
+                nn.Dropout2d(0.5),
+                fc2,
+                self.log_softmax,
+            )
+        elif compression == "Wavelet":
+            assert wavelet is not None, "initial wavelet must be set."
+            self.wavelet = wavelet
+            fc1 = WaveletLayer(
+                init_wavelet=wavelet, scales=6, depth=800, p_drop=wave_dropout
+            )
+            fc2 = torch.nn.Linear(800, 10)
+            self.sequence = torch.nn.Sequential(
+                self.conv1,
+                self.max_pool_2s_k2,
+                self.conv2,
+                self.max_pool_2s_k2,
+                self.flatten,
+                fc1,
+                self.relu,
+                fc2,
+                self.log_softmax,
+            )
+        else:
+            raise ValueError(f"invalid compression: {compression}")
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.sequence(x)
 
     def wavelet_loss(self):
         if self.wavelet is None:
