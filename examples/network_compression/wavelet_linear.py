@@ -35,18 +35,18 @@ class WaveletLayer(torch.nn.Module):
         wave_depth = np.sum(coefficient_lengths)
 
         mul_b = MMDropoutDiagonal(dropout, depth)
-        wavelet_analyzer = WaveletAnalyzer(scales, coefficient_lengths, wavelet)
+        wavelet_decomposition = WaveletDecomposition1D(scales, coefficient_lengths, wavelet)
         mul_p = Permutator(wave_depth)
         mul_g = MMDropoutDiagonal(dropout, wave_depth)
-        wavelet_reconstructor = WaveletReconstructor(scales, coefficient_lengths)
+        wavelet_reconstruction = WaveletReconstruction1D(scales, coefficient_lengths)
         mul_s = MMDropoutDiagonal(dropout, depth)
 
         self.sequence = torch.nn.Sequential(
             mul_b,
-            wavelet_analyzer,
+            wavelet_decomposition,
             mul_p,
             mul_g,
-            wavelet_reconstructor,
+            wavelet_reconstruction,
             mul_s,
         )
 
@@ -87,13 +87,13 @@ class MMDropoutDiagonal(torch.nn.Module):
     def __init__(self, dropout: float, depth: int) -> None:
         super().__init__()
         self.dropout = torch.nn.Dropout(p=dropout)
-        self.vec = Parameter(torch.from_numpy(np.ones(depth, np.float32)))
+        self.ones = Parameter(torch.from_numpy(np.ones(depth, np.float32)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return torch.mm(x, self.dropout(torch.diag(self.vec)))
+        return torch.mm(x, self.dropout(torch.diag(self.ones)))
 
 
-class WaveletAnalyzer(torch.nn.Module):
+class WaveletDecomposition1D(torch.nn.Module):
     def __init__(
         self, scales: int, coefficient_lengths: list[int], wavelet: WaveletFilter
     ) -> None:
@@ -119,7 +119,7 @@ class WaveletAnalyzer(torch.nn.Module):
         return c_tensor
 
 
-class WaveletReconstructor(torch.nn.Module):
+class WaveletReconstruction1D(torch.nn.Module):
     def __init__(self, scales: int, coefficient_lengths: list[int]) -> None:
         super().__init__()
         self.scales = scales
