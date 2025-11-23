@@ -73,7 +73,7 @@ class WaveletLayer(torch.nn.Module):
         assert shape_lst == self.coefficient_len_lst[::-1], (
             "Wavelet shape assumptions false. This is a bug."
         )
-        return c_tensor
+        return c_tensor.squeeze(1)
 
     def wavelet_reconstruction(self, x):
         """Reconstruction from a tensor input.
