@@ -116,7 +116,7 @@ class WaveletDecomposition1D(torch.nn.Module):
         assert (
             shape_lst == self.coefficient_len_lst[::-1]
         ), "Wavelet shape assumptions false. This is a bug."
-        return c_tensor
+        return c_tensor.squeeze(1)
 
 
 class WaveletReconstruction1D(torch.nn.Module):
