@@ -22,24 +22,24 @@ class WaveletLayer(torch.nn.Module):
     def __init__(
         self,
         depth: int,
-        wavelet: WaveletFilter,
+        init_wavelet: WaveletFilter,
         scales: int,
-        dropout: float = 0.5,
+        p_drop: float = 0.5,
         mode: str = "zero",
     ) -> None:
         super().__init__()
 
         coefficient_lengths = _get_coefficient_lengths(
-            depth=depth, scales=scales, wavelet=wavelet, mode=mode
+            depth=depth, scales=scales, wavelet=init_wavelet, mode=mode
         )
         wave_depth = np.sum(coefficient_lengths)
 
-        mul_b = MMDropoutDiagonal(dropout, depth)
-        wavelet_decomposition = WaveletDecomposition1D(scales, coefficient_lengths, wavelet)
+        mul_b = MMDropoutDiagonal(p_drop, depth)
+        wavelet_decomposition = WaveletDecomposition1D(scales, coefficient_lengths, init_wavelet)
         mul_p = Permutator(wave_depth)
-        mul_g = MMDropoutDiagonal(dropout, wave_depth)
-        wavelet_reconstruction = WaveletReconstruction1D(scales, coefficient_lengths, wavelet)
-        mul_s = MMDropoutDiagonal(dropout, depth)
+        mul_g = MMDropoutDiagonal(p_drop, wave_depth)
+        wavelet_reconstruction = WaveletReconstruction1D(scales, coefficient_lengths, init_wavelet)
+        mul_s = MMDropoutDiagonal(p_drop, depth)
 
         self.sequence = torch.nn.Sequential(
             mul_b,

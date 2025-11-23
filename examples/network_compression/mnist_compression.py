@@ -62,7 +62,7 @@ class Net(nn.Module):
         elif compression == "Wavelet":
             assert wavelet is not None, "initial wavelet must be set."
             self.fc1 = WaveletLayer(
-                wavelet=wavelet, scales=6, depth=800, dropout=wave_dropout
+                init_wavelet=wavelet, scales=6, depth=800, p_drop=wave_dropout
             )
             self.fc2 = torch.nn.Linear(800, 10)
             self.do_dropout = False
