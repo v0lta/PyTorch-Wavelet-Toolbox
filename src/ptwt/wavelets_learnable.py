@@ -8,6 +8,8 @@ from abc import ABC, abstractmethod
 
 import torch
 
+from .constants import WaveletTensorTuple
+
 
 class WaveletFilter(ABC):
     """Interface for learnable wavelets.
@@ -20,7 +22,7 @@ class WaveletFilter(ABC):
     @abstractmethod
     def filter_bank(
         self,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> WaveletTensorTuple:
         """Return dec_lo, dec_hi, rec_lo, rec_hi."""
         raise NotImplementedError
 
@@ -189,9 +191,9 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
     @property
     def filter_bank(
         self,
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> WaveletTensorTuple:
         """All filters a a tuple."""
-        return self.dec_lo, self.dec_hi, self.rec_lo, self.rec_hi
+        return WaveletTensorTuple(self.dec_lo, self.dec_hi, self.rec_lo, self.rec_hi)
 
     # def parameters(self):
     #     return [self.dec_lo, self.dec_hi, self.rec_lo, self.rec_hi]
