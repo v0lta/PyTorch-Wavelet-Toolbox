@@ -153,7 +153,12 @@ class WaveletReconstruction(torch.nn.Module, Generic[X, Y], ABC):
         raise NotImplementedError
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Reconstruction from a tensor input."""
+        """Reconstruction from a tensor input.
+        Args:
+            x (torch.Tensor): Analysis coefficient tensor.
+        Returns:
+            torch.Tensor: Input reconstruction.
+        """
         coefficients = self.get_coefficients(x)
         y = self.func(coefficients, self.wavelet, self.axis)
         return y
