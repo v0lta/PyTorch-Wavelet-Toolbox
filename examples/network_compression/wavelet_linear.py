@@ -179,14 +179,14 @@ class WaveletReconstruction1d(WaveletReconstruction[WaveletCoeff1d, int]):
 
     def get_coefficients(self, x: torch.Tensor) -> WaveletCoeff1d:
         """Get coefficients for 1D reconstruction."""
-        coefficients = []
+        coeff_lst = []
         start = 0
         # turn tensor into list
         for s in range(self.scales + 1):
             stop = start + self.coefficient_lengths[::-1][s]
-            coefficients.append(x[..., start:stop])
+            coeff_lst.append(x[..., start:stop])
             start = self.coefficient_lengths[s]
-        return coefficients
+        return coeff_lst
 
 
 class WaveletReconstruction2d(WaveletReconstruction[WaveletCoeff2d, tuple[int, int]]):
