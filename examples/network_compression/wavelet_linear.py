@@ -184,7 +184,6 @@ class WaveletReconstruction1d(WaveletReconstruction[WaveletCoeff1d, int]):
         # turn tensor into list
         for s in range(self.scales + 1):
             stop = start + self.coefficient_lengths[::-1][s]
-            coeff_lst.append(x[..., start:stop])
             coefficients.append(x[..., start:stop])
             start = self.coefficient_lengths[s]
         return coefficients
