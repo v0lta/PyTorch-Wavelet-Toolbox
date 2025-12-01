@@ -45,7 +45,7 @@ class WaveletLayer(torch.nn.Module):
         wavelet_decomposition = WaveletDecomposition1D(scales, coefficient_lengths, init_wavelet)
         mul_p = Permutator(wave_depth)
         mul_g = MMDropoutDiagonal(p_drop, wave_depth)
-        wavelet_reconstruction = WaveletReconstruction1D(scales, coefficient_lengths, init_wavelet)
+        wavelet_reconstruction = WaveletReconstruction1d(scales, coefficient_lengths, init_wavelet)
         mul_s = MMDropoutDiagonal(p_drop, depth)
 
         self.sequence = torch.nn.Sequential(
