@@ -207,7 +207,7 @@ class WaveletReconstruction2d(WaveletReconstruction[WaveletCoeff2d, tuple[int, i
             func=waverec2,
         )
 
-    def get_coefficients(self, x: torch.Tensor) -> WaveletCoeff1d:
+    def get_coefficients(self, x: torch.Tensor) -> WaveletCoeff2d:
         """Get coefficients for 2D reconstruction."""
         raise NotImplementedError
 
@@ -232,6 +232,6 @@ class WaveletReconstruction3d(
             func=waverec3,
         )
 
-    def get_coefficients(self, x: torch.Tensor) -> WaveletCoeff1d:
+    def get_coefficients(self, x: torch.Tensor) -> WaveletCoeffNd:
         """Get coefficients for 3D reconstruction."""
         raise NotImplementedError
