@@ -227,7 +227,7 @@ class WaveletReconstruction3d(
         scales: int,
         coefficient_lengths: list[int],
         wavelet: WaveletFilter,
-        axis: tuple[int, int] | None = None,
+        axis: tuple[int, int, int] | None = None,
     ) -> None:
         super().__init__(
             scales=scales,
