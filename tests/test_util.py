@@ -102,7 +102,15 @@ def test_repack_symmetric() -> None:
     ]
 
 
-def test_get_padding_n() -> None:
+def test_get_padding_1d() -> None:
+    """Ensure padding works as expected."""
+    wavelet = pywt.Wavelet("sym4")
+    data = torch.randn(3, 3, 3)
+    padding = _get_padding_n(data, wavelet, 1)
+    assert padding == _get_pad(data.shape[-1], _get_len(wavelet))
+
+
+def test_get_padding_2d() -> None:
     """Ensure padding works as expected."""
     wavelet = pywt.Wavelet("sym4")
     data = torch.randn(3, 3, 3)
@@ -110,3 +118,15 @@ def test_get_padding_n() -> None:
     padl, padr = _get_pad(data.shape[-1], _get_len(wavelet))
     padding = _get_padding_n(data, wavelet, 2)
     assert padding == (padl, padr, padt, padb)
+
+
+def test_get_padding_3d() -> None:
+    """Ensure padding works as expected."""
+    wavelet = pywt.Wavelet("sym4")
+    data = torch.randn(3, 3, 3)
+    _len_wavelet = _get_len(wavelet)
+    assert (
+        *_get_pad(data.shape[-1], _len_wavelet),
+        *_get_pad(data.shape[-2], _len_wavelet),
+        *_get_pad(data.shape[-3], _len_wavelet),
+    ) == _get_padding_n(data, wavelet, 3)

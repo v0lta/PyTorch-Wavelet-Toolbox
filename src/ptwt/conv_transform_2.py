@@ -6,7 +6,7 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 import pywt
 import torch

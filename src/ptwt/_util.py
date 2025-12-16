@@ -809,6 +809,16 @@ def _group_for_symmetric(padding: tuple[int, ...]) -> list[tuple[int, int]]:
     return list(reversed(list(grouper(padding, 2))))  # type:ignore[arg-type]
 
 
+def _get_padding_n(
+    data: torch.Tensor, wavelet: Union[Wavelet, str], n: int
+) -> tuple[int, ...]:
+    wavelet_length = _get_len(wavelet)
+    rv: list[int] = []
+    for i in range(1, n + 1):
+        rv.extend(_get_pad(data.shape[-i], wavelet_length))
+    return tuple(rv)
+
+
 def fwt_pad_n(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
@@ -854,18 +864,3 @@ def fwt_pad_n(
             return _pad_symmetric(data, _group_for_symmetric(padding))
         case _ as pytorch_mode:
             return torch.nn.functional.pad(data, padding, mode=pytorch_mode)
-
-
-def _repack_symmetric(padding: tuple[int, ...]) -> list[tuple[int, int]]:
-    """Repack the padding tuple for symmetric padding."""
-    return list(reversed(list(grouper(padding, 2))))
-
-
-def _get_padding_n(
-    data: torch.Tensor, wavelet: Union[Wavelet, str], n: int
-) -> tuple[int, ...]:
-    wavelet_length = _get_len(wavelet)
-    rv: list[int] = []
-    for i in range(1, n + 1):
-        rv.extend(_get_pad(data.shape[-i], wavelet_length))
-    return tuple(rv)

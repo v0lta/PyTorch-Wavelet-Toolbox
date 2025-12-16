@@ -5,7 +5,7 @@ The functions here are based on torch.nn.functional.conv3d and it's transpose.
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 import pywt
 import torch
@@ -15,8 +15,7 @@ from ._util import (
     _as_wavelet,
     _check_same_device_dtype,
     _get_filter_tensors,
-    _get_len,
-    _get_pad,
+    _get_padding_n,
     _group_for_symmetric,
     _outer,
     _postprocess_coeffs,
