@@ -854,8 +854,7 @@ def fwt_pad_n(
     """
     x = len(data.shape) - 2
     if n != x:
-        raise ValueError(f'{n=} but shoulda been shape={x}')
-
+        raise ValueError
     if padding is None:
         padding = _get_padding_n(data, wavelet, n)
     elif len(padding) != n:
