@@ -408,7 +408,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                     f". At level {curr_level}, at least one of the current signal "
                     f"height and width ({current_height}, {current_width}) is smaller "
                     f"then the filter length {filt_len}. Therefore, the transformation "
-                    f"is only computed up to the decomposition level {curr_level - 1}.\n"
+                    f"is only computed up to the decomposition level {curr_level-1}.\n"
                 )
                 break
             # the conv matrices require even length inputs.
@@ -704,7 +704,7 @@ class MatrixWaverec2(object):
                     f". At level {curr_level}, at least one of the current signal "
                     f"height and width ({current_height}, {current_width}) is smaller "
                     f"then the filter length {filt_len}. Therefore, the transformation "
-                    f"is only computed up to the decomposition level {curr_level - 1}.\n"
+                    f"is only computed up to the decomposition level {curr_level-1}.\n"
                 )
                 break
             current_height, current_width, pad_tuple = _matrix_pad_2(
