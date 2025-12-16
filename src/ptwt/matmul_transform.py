@@ -329,7 +329,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
                     f"level {curr_level}, the current signal length {curr_length} is "
                     f"smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
-                    f"{curr_level-1}.\n"
+                    f"{curr_level - 1}.\n"
                 )
                 break
 
@@ -626,7 +626,7 @@ class MatrixWaverec(object):
                     f"level {curr_level}, the current signal length {curr_length} is "
                     f"smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
-                    f"{curr_level-1}.\n"
+                    f"{curr_level - 1}.\n"
                 )
                 break
 

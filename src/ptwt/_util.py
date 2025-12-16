@@ -26,8 +26,23 @@ from .constants import (
     WaveletDetailTuple2d,
 )
 
+PyTorchBoundaryMode = Literal["replicate", "constant", "reflect", "circular"]
+ExtendedPyTorchBoundaryMode = PyTorchBoundaryMode | Literal["symmetric"]
 
-def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
+translation_dict: dict[BoundaryMode, ExtendedPyTorchBoundaryMode] = {
+    "constant": "replicate",
+    "zero": "constant",
+    "reflect": "reflect",
+    "periodic": "circular",
+    # pytorch does not support symmetric mode,
+    # we have our own implementation.
+    "symmetric": "symmetric",
+}
+
+
+def _translate_boundary_strings(
+    pywt_mode: BoundaryMode | None,
+) -> ExtendedPyTorchBoundaryMode:
     """Translate pywt mode strings to PyTorch mode strings.
 
     We support ``constant``, ``zero``, ``reflect``,
@@ -38,15 +53,8 @@ def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
     Raises:
         ValueError: If the padding mode is not supported.
     """
-    translation_dict = {
-        "constant": "replicate",
-        "zero": "constant",
-        "reflect": "reflect",
-        "periodic": "circular",
-        # pytorch does not support symmetric mode,
-        # we have our own implementation.
-        "symmetric": "symmetric",
-    }
+    if pywt_mode is None:
+        return translation_dict["reflect"]
     if pywt_mode in translation_dict:
         return translation_dict[pywt_mode]
     else:
@@ -207,7 +215,7 @@ def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
     padr = (2 * filt_len - 3) // 2
     padl = (2 * filt_len - 3) // 2
 
-    # pad to even singal length.
+    # pad to even signal length.
     padr += data_len % 2
 
     return padl, padr
@@ -795,3 +803,57 @@ def _deprecated_alias(
 def _group_for_symmetric(padding: tuple[int, ...]) -> list[tuple[int, int]]:
     """Repack the padding tuple for symmetric padding."""
     return list(reversed(list(grouper(padding, 2))))  # type:ignore[arg-type]
+
+
+def fwt_pad_n(
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    n: int,
+    *,
+    mode: BoundaryMode | None = None,
+    padding: Optional[tuple[int, ...]] = None,
+) -> torch.Tensor:
+    """Pad data for the n-dimensional FWT.
+
+    This function pads the last n axes.
+
+    Args:
+        data (torch.Tensor): Input data with N+1 dimensions.
+        wavelet : A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
+        n : the number of axes to pad
+        mode: The desired padding mode for extending the signal along the edges.
+            See :data:`ptwt.constants.BoundaryMode`.
+        padding : A tuple
+            with the number of padded values on the respective side of the
+            last ``n`` axes of `data`.
+            If None, the padding values are computed based
+            on the signal shape and the wavelet length. Defaults to None.
+
+    Returns:
+        The padded output tensor.
+    """
+    if padding is None:
+        padding = _unpack_padding(data, wavelet, n)
+    elif len(padding) != n:
+        raise ValueError
+
+    # TODO check dimensions of data?
+
+    match _translate_boundary_strings(mode):
+        case "symmetric":
+            return _pad_symmetric(data, _group_for_symmetric(padding))
+        case _ as pytorch_mode:
+            return torch.nn.functional.pad(data, padding, mode=pytorch_mode)
+
+
+def _unpack_padding(data, wavelet, d: int) -> tuple[int, ...]:
+    wl = _get_len(wavelet)
+    rv = []
+    for i in range(1, d + 1):
+        a, b = _get_pad(data.shape[-i], wl)
+        rv.append(b)
+        rv.append(a)
+    return tuple(rv)

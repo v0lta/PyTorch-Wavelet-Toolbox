@@ -20,9 +20,9 @@
 
 import argparse
 import collections
+from pathlib import Path
 from typing import Literal
 
-from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pystow
@@ -287,7 +287,7 @@ def main():
     )
 
     if args.compression == "Wavelet":
-        CustomWavelet = collections.namedtuple(
+        collections.namedtuple(
             "Wavelet", ["dec_lo", "dec_hi", "rec_lo", "rec_hi", "name"]
         )
         # init_wavelet = ProductFilter(

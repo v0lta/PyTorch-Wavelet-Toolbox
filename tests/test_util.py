@@ -8,9 +8,9 @@ import torch
 from ptwt._util import (
     _as_wavelet,
     _fold_axes,
+    _group_for_symmetric,
     _pad_symmetric,
     _pad_symmetric_1d,
-    _group_for_symmetric,
     _unfold_axes,
 )
 
