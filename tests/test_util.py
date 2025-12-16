@@ -8,13 +8,13 @@ import torch
 from ptwt._util import (
     _as_wavelet,
     _fold_axes,
+    _get_len,
+    _get_pad,
+    _get_padding_n,
     _group_for_symmetric,
     _pad_symmetric,
     _pad_symmetric_1d,
     _unfold_axes,
-    _get_pad,
-    _get_len,
-    _get_padding_n,
 )
 
 
