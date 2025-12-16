@@ -157,7 +157,7 @@ The following entries (``cD_n`` - ``cD1``) are the detail coefficient tensors
 of the respective level.
 
 Note that this type always contains an approximation coefficient tensor but does not
-necesseraily contain any detail coefficients.
+necessarily contain any detail coefficients.
 
 Alias of ``Sequence[torch.Tensor]``
 """
@@ -215,7 +215,7 @@ of decomposition. ``Tl`` is a tuple of detail coefficients for level ``l``,
 see :class:`ptwt.constants.WaveletDetailTuple2d`.
 
 Note that this type always contains an approximation coefficient tensor but does not
-necesseraily contain any detail coefficients.
+necessarily contain any detail coefficients.
 
 Alias of ``tuple[torch.Tensor, *tuple[WaveletDetailTuple2d, ...]]``
 """
@@ -235,7 +235,7 @@ of decomposition. ``Dl`` is a dictionary of detail coefficients for level ``l``,
 see :data:`ptwt.constants.WaveletDetailDict`.
 
 Note that this type always contains an approximation coefficient tensor but does not
-necesseraily contain any detail coefficients.
+necessarily contain any detail coefficients.
 
 Alias of ``tuple[torch.Tensor, *tuple[WaveletDetailDict, ...]]``
 """

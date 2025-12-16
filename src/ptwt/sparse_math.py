@@ -1,6 +1,7 @@
 """Efficiently construct fwt operations using sparse matrices."""
 
 from itertools import product
+from typing import cast
 
 import torch
 
@@ -246,7 +247,7 @@ def sparse_replace_row(
         dtype=matrix.dtype,
     )
     result = torch.sparse.mm(removal_matrix, matrix) + addition_matrix
-    return result
+    return cast(torch.Tensor, result)
 
 
 def _orth_by_qr(
@@ -293,7 +294,7 @@ def _orth_by_qr(
         device=matrix.device,
         dtype=matrix.dtype,
     )
-    result = torch.sparse.mm(removal_matrix, matrix)
+    result: torch.Tensor = torch.sparse.mm(removal_matrix, matrix)
     for pos, row in enumerate(q_rows):
         row = row.unsqueeze(0).coalesce()
         addition_matrix = torch.sparse_coo_tensor(
@@ -512,7 +513,7 @@ def construct_strided_conv_matrix(
         dtype=conv_matrix.dtype,
         device=conv_matrix.device,
     )
-    return torch.sparse.mm(selection_matrix, conv_matrix)
+    return cast(torch.Tensor, torch.sparse.mm(selection_matrix, conv_matrix))
 
 
 def construct_strided_conv2d_matrix(
@@ -583,7 +584,7 @@ def construct_strided_conv2d_matrix(
         size=[len(strided_rows), convolution_matrix.shape[0]],
     )
     # return convolution_matrix.index_select(0, strided_rows)
-    return torch.sparse.mm(selection_eye, convolution_matrix)
+    return cast(torch.Tensor, torch.sparse.mm(selection_eye, convolution_matrix))
 
 
 def batch_mm(matrix: torch.Tensor, matrix_batch: torch.Tensor) -> torch.Tensor:
@@ -629,4 +630,7 @@ def _batch_dim_mm(
     permuted_tensor = batch_tensor.transpose(dim, -1)
     permuted_shape = permuted_tensor.shape
     res = torch.sparse.mm(matrix, permuted_tensor.reshape(-1, dim_length).T).T
-    return res.reshape(list(permuted_shape[:-1]) + [matrix.shape[0]]).transpose(-1, dim)
+    return cast(
+        torch.Tensor,
+        res.reshape(list(permuted_shape[:-1]) + [matrix.shape[0]]).transpose(-1, dim),
+    )
