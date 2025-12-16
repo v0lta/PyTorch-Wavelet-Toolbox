@@ -861,7 +861,5 @@ def _get_padding_n(data, wavelet, n: int) -> tuple[int, ...]:
     wavelet_length = _get_len(wavelet)
     rv = []
     for i in range(1, n + 1):
-        right, left = _get_pad(data.shape[-i], wavelet_length)
-        rv.append(left)
-        rv.append(right)
+        rv.extend(_get_pad(data.shape[-i], wavelet_length))
     return tuple(rv)
