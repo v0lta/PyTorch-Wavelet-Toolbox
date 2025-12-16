@@ -12,6 +12,7 @@ from typing import Any, Literal, Optional, Union, cast, overload
 import numpy as np
 import pywt
 import torch
+from more_itertools import grouper
 from typing_extensions import ParamSpec, TypeVar
 
 from .constants import (
@@ -209,7 +210,7 @@ def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
     # pad to even singal length.
     padr += data_len % 2
 
-    return padr, padl
+    return padl, padr
 
 
 def _adjust_padding_at_reconstruction(
@@ -789,3 +790,8 @@ def _deprecated_alias(
         return wrapper
 
     return deco
+
+
+def _group_for_symmetric(padding: tuple[int, ...]) -> list[tuple[int, int]]:
+    """Repack the padding tuple for symmetric padding."""
+    return list(reversed(list(grouper(padding, 2))))  # type:ignore[arg-type]

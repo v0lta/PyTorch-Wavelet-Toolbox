@@ -10,6 +10,7 @@ from ptwt._util import (
     _fold_axes,
     _pad_symmetric,
     _pad_symmetric_1d,
+    _group_for_symmetric,
     _unfold_axes,
 )
 
@@ -78,3 +79,21 @@ def test_fold(keep_no: int, size: list[int]) -> None:
     assert len(folded.shape) == keep_no + 1
     rec = _unfold_axes(folded, size, keep_no)
     np.allclose(array.numpy(), rec.numpy())
+
+
+def test_repack_symmetric() -> None:
+    """Ensure channel folding works as expected."""
+    padl, padr = padding = tuple(range(2))
+    assert _group_for_symmetric(padding) == [(padl, padr)]
+
+    padl, padr, padt, padb = padding = tuple(range(4))
+    assert _group_for_symmetric(padding) == [(padt, padb), (padl, padr)]
+
+    pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back = padding = tuple(
+        range(6)
+    )
+    assert _group_for_symmetric(padding) == [
+        (pad_front, pad_back),
+        (pad_top, pad_bottom),
+        (pad_left, pad_right),
+    ]
