@@ -17,6 +17,7 @@ from ._util import (
     _get_filter_tensors,
     _get_len,
     _get_pad,
+    _get_padding_n,
     _group_for_symmetric,
     _pad_symmetric,
     _postprocess_coeffs,
@@ -58,7 +59,7 @@ def _fwt_pad(
     pytorch_mode = _translate_boundary_strings(mode)
 
     if padding is None:
-        padding = _get_pad(data.shape[-1], _get_len(wavelet))
+        padding = _get_padding_n(data, wavelet, n=1)
     if pytorch_mode == "symmetric":
         data_pad = _pad_symmetric(data, _group_for_symmetric(padding))
     else:

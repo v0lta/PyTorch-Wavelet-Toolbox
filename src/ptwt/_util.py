@@ -807,3 +807,13 @@ def _deprecated_alias(
 def _group_for_symmetric(padding: tuple[int, ...]) -> list[tuple[int, int]]:
     """Repack the padding tuple for symmetric padding."""
     return list(reversed(list(grouper(padding, 2))))  # type:ignore[arg-type]
+
+
+def _get_padding_n(
+    data: torch.Tensor, wavelet: Union[Wavelet, str], n: int
+) -> tuple[int, ...]:
+    wavelet_length = _get_len(wavelet)
+    rv: list[int] = []
+    for i in range(1, n + 1):
+        rv.extend(_get_pad(data.shape[-i], wavelet_length))
+    return tuple(rv)
