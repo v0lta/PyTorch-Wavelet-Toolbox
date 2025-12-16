@@ -55,9 +55,6 @@ def _fwt_pad(
     Returns:
         A PyTorch tensor with the padded input data
     """
-    # convert pywt to pytorch convention.
-    if mode is None:
-        mode = "reflect"
     pytorch_mode = _translate_boundary_strings(mode)
 
     if padding is None:
