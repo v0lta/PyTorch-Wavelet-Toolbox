@@ -219,7 +219,7 @@ def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
     padr = (2 * filt_len - 3) // 2
     padl = (2 * filt_len - 3) // 2
 
-    # pad to even singal length.
+    # pad to even signal length.
     padr += data_len % 2
 
     return padl, padr
@@ -817,3 +817,51 @@ def _get_padding_n(
     for i in range(1, n + 1):
         rv.extend(_get_pad(data.shape[-i], wavelet_length))
     return tuple(rv)
+
+
+def fwt_pad_n(
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    n: int,
+    *,
+    mode: BoundaryMode | None = None,
+    padding: Optional[tuple[int, ...]] = None,
+) -> torch.Tensor:
+    """Pad data for the n-dimensional FWT.
+
+    This function pads the last n axes.
+
+    Args:
+        data (torch.Tensor): Input data with N+1 dimensions.
+        wavelet : A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+            Refer to the output from ``pywt.wavelist(kind='discrete')``
+            for possible choices.
+        n : the number of axes to pad
+        mode: The desired padding mode for extending the signal along the edges.
+            See :data:`ptwt.constants.BoundaryMode`.
+        padding : A tuple
+            with the number of padded values on the respective side of the
+            last ``n`` axes of `data`.
+            If None, the padding values are computed based
+            on the signal shape and the wavelet length. Defaults to None.
+
+    Returns:
+        The padded output tensor.
+
+    Raises:
+        ValueError: if the padding is the wrong size
+    """
+    x = len(data.shape) - 2
+    if n != x:
+        raise ValueError
+    if padding is None:
+        padding = _get_padding_n(data, wavelet, n)
+    elif len(padding) != n:
+        raise ValueError
+
+    match _translate_boundary_strings(mode):
+        case "symmetric":
+            return _pad_symmetric(data, _group_for_symmetric(padding))
+        case _ as pytorch_mode:
+            return torch.nn.functional.pad(data, padding, mode=pytorch_mode)

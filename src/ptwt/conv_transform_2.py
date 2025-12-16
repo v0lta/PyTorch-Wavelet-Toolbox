@@ -6,7 +6,7 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 from __future__ import annotations
 
-from typing import Optional, Union, cast
+from typing import Optional, Union
 
 import pywt
 import torch
@@ -15,15 +15,12 @@ from ._util import (
     _adjust_padding_at_reconstruction,
     _check_same_device_dtype,
     _get_filter_tensors,
-    _get_padding_n,
-    _group_for_symmetric,
     _outer,
-    _pad_symmetric,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
-    _translate_boundary_strings,
+    fwt_pad_n,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeff2d, WaveletDetailTuple2d
 
@@ -83,15 +80,7 @@ def _fwt_pad2(
         The padded output tensor.
 
     """
-    pytorch_mode = _translate_boundary_strings(mode)
-
-    if padding is None:
-        padding = cast(tuple[int, int, int, int], _get_padding_n(data, wavelet, n=2))
-    if pytorch_mode == "symmetric":
-        data_pad = _pad_symmetric(data, _group_for_symmetric(padding))
-    else:
-        data_pad = torch.nn.functional.pad(data, padding, mode=pytorch_mode)
-    return data_pad
+    return fwt_pad_n(data, wavelet, n=2, mode=mode, padding=padding)
 
 
 def wavedec2(

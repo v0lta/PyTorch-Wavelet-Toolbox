@@ -287,7 +287,7 @@ def main():
     )
 
     if args.compression == "Wavelet":
-        CustomWavelet = collections.namedtuple(
+        collections.namedtuple(
             "Wavelet", ["dec_lo", "dec_hi", "rec_lo", "rec_hi", "name"]
         )
         # init_wavelet = ProductFilter(
