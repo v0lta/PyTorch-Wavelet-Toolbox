@@ -106,7 +106,7 @@ def test_get_padding_n() -> None:
     """Ensure padding works as expected."""
     wavelet = pywt.Wavelet("sym4")
     data = torch.randn(3, 3, 3)
-    padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
-    padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
+    padt, padb = _get_pad(data.shape[-2], _get_len(wavelet))
+    padl, padr = _get_pad(data.shape[-1], _get_len(wavelet))
     padding = _get_padding_n(data, wavelet, 2)
     assert padding == (padl, padr, padt, padb)
