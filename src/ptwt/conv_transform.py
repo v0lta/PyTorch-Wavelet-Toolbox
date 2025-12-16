@@ -6,7 +6,7 @@ and its transpose. This module treats boundaries with edge-padding.
 
 from __future__ import annotations
 
-from typing import Optional, Union, cast
+from typing import Optional, Union
 
 import pywt
 import torch
@@ -15,14 +15,10 @@ from ._util import (
     _adjust_padding_at_reconstruction,
     _check_same_device_dtype,
     _get_filter_tensors,
-    _get_padding_n,
-    _group_for_symmetric,
-    _pad_symmetric,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
     _preprocess_tensor,
-    _translate_boundary_strings,
     fwt_pad_n,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeff1d
