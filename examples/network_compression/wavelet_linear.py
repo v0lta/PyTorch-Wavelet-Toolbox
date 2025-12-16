@@ -4,8 +4,9 @@
 import numpy as np
 import pywt
 import torch
-from torch.nn.parameter import Parameter
 import torch.nn
+from torch.nn.parameter import Parameter
+
 from ptwt import wavedec, waverec
 from ptwt.wavelets_learnable import WaveletFilter
 

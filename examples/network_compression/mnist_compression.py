@@ -20,9 +20,9 @@
 
 import argparse
 import collections
+from pathlib import Path
 from typing import Literal
 
-from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pystow
