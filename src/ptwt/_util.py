@@ -836,7 +836,7 @@ def fwt_pad_n(
         The padded output tensor.
     """
     if padding is None:
-        padding = _unpack_padding(data, wavelet, n)
+        padding = _get_padding_n(data, wavelet, n)
     elif len(padding) != n:
         raise ValueError
 
@@ -849,11 +849,16 @@ def fwt_pad_n(
             return torch.nn.functional.pad(data, padding, mode=pytorch_mode)
 
 
-def _unpack_padding(data, wavelet, d: int) -> tuple[int, ...]:
-    wl = _get_len(wavelet)
+def _repack_symmetric(padding: tuple[int, ...]) -> list[tuple[int, int]]:
+    """Repack the padding tuple for symmetric padding."""
+    return list(reversed(list(grouper(padding, 2))))
+
+
+def _get_padding_n(data, wavelet, n: int) -> tuple[int, ...]:
+    wavelet_length = _get_len(wavelet)
     rv = []
-    for i in range(1, d + 1):
-        a, b = _get_pad(data.shape[-i], wl)
-        rv.append(b)
-        rv.append(a)
+    for i in range(1, n + 1):
+        right, left = _get_pad(data.shape[-i], wavelet_length)
+        rv.append(left)
+        rv.append(right)
     return tuple(rv)
