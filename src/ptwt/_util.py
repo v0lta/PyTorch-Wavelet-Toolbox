@@ -26,7 +26,11 @@ from .constants import (
     WaveletDetailTuple2d,
 )
 
+#: All the PyTorch boundary modes for :func:`torch.nn.functional.pad`
 PyTorchBoundaryMode = Literal["replicate", "constant", "reflect", "circular"]
+
+#: All the PyTorch boundary modes for :func:`torch.nn.functional.pad`
+#: plus `symmetric` for the custom ptwt boundary
 ExtendedPyTorchBoundaryMode = PyTorchBoundaryMode | Literal["symmetric"]
 
 translation_dict: dict[BoundaryMode, ExtendedPyTorchBoundaryMode] = {
