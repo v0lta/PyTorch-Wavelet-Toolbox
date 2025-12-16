@@ -857,9 +857,11 @@ def _repack_symmetric(padding: tuple[int, ...]) -> list[tuple[int, int]]:
     return list(reversed(list(grouper(padding, 2))))
 
 
-def _get_padding_n(data, wavelet, n: int) -> tuple[int, ...]:
+def _get_padding_n(
+    data: torch.Tensor, wavelet: Union[Wavelet, str], n: int
+) -> tuple[int, ...]:
     wavelet_length = _get_len(wavelet)
-    rv = []
+    rv: list[int] = []
     for i in range(1, n + 1):
         rv.extend(_get_pad(data.shape[-i], wavelet_length))
     return tuple(rv)
