@@ -51,7 +51,7 @@ def _fwt_pad(
     Returns:
         A PyTorch tensor with the padded input data
     """
-    return fwt_pad_n(data, wavelet, n=2, mode=mode, padding=padding)
+    return fwt_pad_n(data, wavelet, n=1, mode=mode, padding=padding)
 
 
 def wavedec(
