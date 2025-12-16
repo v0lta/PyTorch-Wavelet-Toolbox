@@ -8,7 +8,7 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
 
 import sys
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 import numpy as np
 import torch
@@ -131,7 +131,7 @@ def _get_to_orthogonalize(matrix: torch.Tensor, filt_len: int) -> torch.Tensor:
     unique, count = torch.unique_consecutive(
         matrix.coalesce().indices()[0, :], return_counts=True
     )
-    return unique[count != filt_len]
+    return cast(torch.Tensor, unique[count != filt_len])
 
 
 def orthogonalize(

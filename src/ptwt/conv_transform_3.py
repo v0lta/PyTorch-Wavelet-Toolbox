@@ -41,7 +41,7 @@ def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     Returns:
         Stacked 3d filters of dimension::
 
-        [8, 1, length, height, width].
+        [2^3, 1, length, height, width].
 
         The four filters are ordered ll, lh, hl, hh.
     """

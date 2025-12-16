@@ -41,7 +41,7 @@ def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     Returns:
         Stacked 2d-filters of dimension
 
-        [filt_no, 1, height, width].
+        [2^2, 1, height, width].
 
         The four filters are ordered ll, lh, hl, hh.
 
