@@ -24,6 +24,7 @@ from ._util import (
     _preprocess_coeffs,
     _preprocess_tensor,
     _translate_boundary_strings,
+    _group_for_symmetric,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeffNd, WaveletDetailDict
 
@@ -95,12 +96,8 @@ def _fwt_pad3(
         pad_top, pad_bottom = _get_pad(data.shape[-2], _get_len(wavelet))
         pad_left, pad_right = _get_pad(data.shape[-1], _get_len(wavelet))
         padding = pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back
-    else:
-        pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back = padding
     if pytorch_mode == "symmetric":
-        data_pad = _pad_symmetric(
-            data, [(pad_front, pad_back), (pad_top, pad_bottom), (pad_left, pad_right)]
-        )
+        data_pad = _pad_symmetric(data, _group_for_symmetric(padding))
     else:
         data_pad = torch.nn.functional.pad(data, padding, mode=pytorch_mode)
     return data_pad
