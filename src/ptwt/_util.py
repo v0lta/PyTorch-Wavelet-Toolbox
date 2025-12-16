@@ -852,12 +852,14 @@ def fwt_pad_n(
     Raises:
         ValueError: if the padding is the wrong size
     """
+    x = len(data.shape) - 2
+    if n != x:
+        raise ValueError(f'{n=} but shoulda been shape={x}')
+
     if padding is None:
         padding = _get_padding_n(data, wavelet, n)
     elif len(padding) != n:
         raise ValueError
-
-    # TODO check dimensions of data?
 
     match _translate_boundary_strings(mode):
         case "symmetric":
