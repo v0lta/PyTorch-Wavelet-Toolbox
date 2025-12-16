@@ -209,7 +209,7 @@ def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
     # pad to even singal length.
     padr += data_len % 2
 
-    return padr, padl
+    return padl, padr
 
 
 def _adjust_padding_at_reconstruction(
