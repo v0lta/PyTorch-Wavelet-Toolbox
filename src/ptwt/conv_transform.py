@@ -6,7 +6,7 @@ and its transpose. This module treats boundaries with edge-padding.
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 import pywt
 import torch
@@ -15,8 +15,7 @@ from ._util import (
     _adjust_padding_at_reconstruction,
     _check_same_device_dtype,
     _get_filter_tensors,
-    _get_len,
-    _get_pad,
+    _get_padding_n,
     _group_for_symmetric,
     _pad_symmetric,
     _postprocess_coeffs,
@@ -58,7 +57,7 @@ def _fwt_pad(
     pytorch_mode = _translate_boundary_strings(mode)
 
     if padding is None:
-        padding = _get_pad(data.shape[-1], _get_len(wavelet))
+        padding = cast(tuple[int, int], _get_padding_n(data, wavelet, n=1))
     if pytorch_mode == "symmetric":
         data_pad = _pad_symmetric(data, _group_for_symmetric(padding))
     else:
