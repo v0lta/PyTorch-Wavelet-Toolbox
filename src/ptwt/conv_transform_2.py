@@ -89,9 +89,11 @@ def _fwt_pad2(
     pytorch_mode = _translate_boundary_strings(mode)
 
     if padding is None:
-        padt, padb = _get_pad(data.shape[-2], _get_len(wavelet))
-        padl, padr = _get_pad(data.shape[-1], _get_len(wavelet))
-        padding = padl, padr, padt, padb
+        _len_wavelet = _get_len(wavelet)
+        padding = (
+            *_get_pad(data.shape[-1], _len_wavelet),
+            *_get_pad(data.shape[-2], _len_wavelet),
+        )
     if pytorch_mode == "symmetric":
         data_pad = _pad_symmetric(data, _group_for_symmetric(padding))
     else:
