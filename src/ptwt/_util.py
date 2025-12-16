@@ -834,6 +834,9 @@ def fwt_pad_n(
 
     Returns:
         The padded output tensor.
+
+    Raises:
+        ValueError: if the padding is the wrong size
     """
     if padding is None:
         padding = _get_padding_n(data, wavelet, n)
