@@ -84,8 +84,6 @@ def _fwt_pad2(
         The padded output tensor.
 
     """
-    if mode is None:
-        mode = "reflect"
     pytorch_mode = _translate_boundary_strings(mode)
 
     if padding is None:

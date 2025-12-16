@@ -26,8 +26,27 @@ from .constants import (
     WaveletDetailTuple2d,
 )
 
+#: All the PyTorch boundary modes for :func:`torch.nn.functional.pad`
+PyTorchBoundaryMode = Literal["replicate", "constant", "reflect", "circular"]
 
-def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
+#: All the PyTorch boundary modes for :func:`torch.nn.functional.pad`
+#: plus `symmetric` for the custom ptwt boundary
+ExtendedPyTorchBoundaryMode = PyTorchBoundaryMode | Literal["symmetric"]
+
+translation_dict: dict[BoundaryMode, ExtendedPyTorchBoundaryMode] = {
+    "constant": "replicate",
+    "zero": "constant",
+    "reflect": "reflect",
+    "periodic": "circular",
+    # pytorch does not support symmetric mode,
+    # we have our own implementation.
+    "symmetric": "symmetric",
+}
+
+
+def _translate_boundary_strings(
+    pywt_mode: BoundaryMode | None,
+) -> ExtendedPyTorchBoundaryMode:
     """Translate pywt mode strings to PyTorch mode strings.
 
     We support ``constant``, ``zero``, ``reflect``,
@@ -38,15 +57,8 @@ def _translate_boundary_strings(pywt_mode: BoundaryMode) -> str:
     Raises:
         ValueError: If the padding mode is not supported.
     """
-    translation_dict = {
-        "constant": "replicate",
-        "zero": "constant",
-        "reflect": "reflect",
-        "periodic": "circular",
-        # pytorch does not support symmetric mode,
-        # we have our own implementation.
-        "symmetric": "symmetric",
-    }
+    if pywt_mode is None:
+        return translation_dict["reflect"]
     if pywt_mode in translation_dict:
         return translation_dict[pywt_mode]
     else:
