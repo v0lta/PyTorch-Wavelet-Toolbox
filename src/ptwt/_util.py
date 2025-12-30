@@ -864,5 +864,3 @@ def _get_dec_lo_hi(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
     return data, ds, dec_lo, dec_hi
-
-

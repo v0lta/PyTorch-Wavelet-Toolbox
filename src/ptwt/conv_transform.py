@@ -23,7 +23,6 @@ from ._util import (
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
-    _preprocess_tensor,
     _translate_boundary_strings,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeff1d

@@ -24,7 +24,6 @@ from ._util import (
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
-    _preprocess_tensor,
     _translate_boundary_strings,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeffNd, WaveletDetailDict
@@ -101,14 +100,6 @@ def _fwt_pad3(
     else:
         data_pad = torch.nn.functional.pad(data, padding, mode=pytorch_mode)
     return data_pad
-
-
-def _get_dec_lo_hi(data, wavelet, axes, ndim=3):
-    data, ds = _preprocess_tensor(data, ndim=ndim, axes=axes)
-    dec_lo, dec_hi, _, _ = _get_filter_tensors(
-        wavelet, flip=True, device=data.device, dtype=data.dtype
-    )
-    return dec_lo, dec_hi
 
 
 def wavedec3(
