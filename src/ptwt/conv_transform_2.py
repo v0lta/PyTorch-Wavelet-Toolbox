@@ -15,44 +15,20 @@ from ._util import (
     AxisHint,
     _adjust_padding_at_reconstruction,
     _check_same_device_dtype,
+    _construct_2d_filt,
     _get_filter_tensors,
     _get_padding_n,
     _group_for_symmetric,
-    _outer,
     _pad_symmetric,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
-    _preprocess_tensor,
+    _preprocess_deconstruction,
     _translate_boundary_strings,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeff2d, WaveletDetailTuple2d
 
 __all__ = ["wavedec2", "waverec2"]
-
-
-def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct two-dimensional filters using outer products.
-
-    Args:
-        lo (torch.Tensor): Low-pass input filter.
-        hi (torch.Tensor): High-pass input filter
-
-    Returns:
-        Stacked 2d-filters of dimension
-
-        [2^2, 1, height, width].
-
-        The four filters are ordered ll, lh, hl, hh.
-
-    """
-    ll = _outer(lo, lo)
-    lh = _outer(hi, lo)
-    hl = _outer(lo, hi)
-    hh = _outer(hi, hi)
-    filt = torch.stack([ll, lh, hl, hh], 0)
-    filt = filt.unsqueeze(1)
-    return filt
 
 
 def _fwt_pad2(
@@ -154,11 +130,9 @@ def wavedec2(
         >>> coefficients = ptwt.wavedec2(data, "haar", level=2, mode="zero")
 
     """
-    data, ds = _preprocess_tensor(data, ndim=2, axes=axes)
-    dec_lo, dec_hi, _, _ = _get_filter_tensors(
-        wavelet, flip=True, device=data.device, dtype=data.dtype
+    data, ds, dec_lo, dec_hi, dec_filt = _preprocess_deconstruction(
+        data, wavelet, axes=axes, ndim=2
     )
-    dec_filt = _construct_2d_filt(lo=dec_lo, hi=dec_hi)
 
     if level is None:
         level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)

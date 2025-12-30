@@ -15,6 +15,7 @@ from ._util import (
     AxisHint,
     _as_wavelet,
     _check_same_device_dtype,
+    _construct_2d_filt,
     _deprecated_alias,
     _ensure_axes,
     _get_filter_tensors,
@@ -32,7 +33,7 @@ from .constants import (
     WaveletCoeff2d,
     WaveletDetailTuple2d,
 )
-from .conv_transform_2 import _construct_2d_filt, _fwt_pad2
+from .conv_transform_2 import _fwt_pad2
 from .matmul_transform import (
     BaseMatrixWaveDec,
     construct_boundary_a,

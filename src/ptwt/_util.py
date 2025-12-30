@@ -850,3 +850,87 @@ def _get_default_axes(n: int) -> tuple[int, ...]:
     if n < 1:
         raise ValueError(f"only natural number dimensions are allowed. given: {n}")
     return tuple(range(-n, 0))
+
+
+def _preprocess_deconstruction(
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    *,
+    ndim: int,
+    axes: AxisHint = None,
+) -> tuple[torch.Tensor, list[int], torch.Tensor, torch.Tensor, torch.Tensor]:
+    data, ds = _preprocess_tensor(data, ndim=ndim, axes=axes)
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
+        wavelet, flip=True, device=data.device, dtype=data.dtype
+    )
+    dec_filt = _construct_nd_filt(dec_lo, dec_hi, n=ndim)
+    return data, ds, dec_lo, dec_hi, dec_filt
+
+
+def _construct_nd_filt(lo: torch.Tensor, hi: torch.Tensor, n: int) -> torch.Tensor:
+    if n == 1:
+        return _construct_1d_filt(lo, hi)
+    elif n == 2:
+        return _construct_2d_filt(lo, hi)
+    elif n == 3:
+        return _construct_3d_filt(lo, hi)
+    else:
+        raise NotImplementedError()
+
+
+def _construct_1d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
+    """Construct one-dimensional filters."""
+    return torch.stack([lo, hi], 0)
+
+
+def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
+    """Construct two-dimensional filters using outer products.
+
+    Args:
+        lo (torch.Tensor): Low-pass input filter.
+        hi (torch.Tensor): High-pass input filter
+
+    Returns:
+        Stacked 2d-filters of dimension
+
+        [2^2, 1, height, width].
+
+        The four filters are ordered ll, lh, hl, hh.
+
+    """
+    ll = _outer(lo, lo)
+    lh = _outer(hi, lo)
+    hl = _outer(lo, hi)
+    hh = _outer(hi, hi)
+    filt = torch.stack([ll, lh, hl, hh], 0)
+    filt = filt.unsqueeze(1)
+    return filt
+
+
+def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
+    """Construct three-dimensional filters using outer products.
+
+    Args:
+        lo (torch.Tensor): Low-pass input filter.
+        hi (torch.Tensor): High-pass input filter
+
+    Returns:
+        Stacked 3d filters of dimension::
+
+        [2^3, 1, length, height, width].
+
+        The four filters are ordered ll, lh, hl, hh.
+    """
+    dim_size = lo.shape[-1]
+    size = [dim_size] * 3
+    lll = _outer(lo, _outer(lo, lo)).reshape(size)
+    llh = _outer(lo, _outer(lo, hi)).reshape(size)
+    lhl = _outer(lo, _outer(hi, lo)).reshape(size)
+    lhh = _outer(lo, _outer(hi, hi)).reshape(size)
+    hll = _outer(hi, _outer(lo, lo)).reshape(size)
+    hlh = _outer(hi, _outer(lo, hi)).reshape(size)
+    hhl = _outer(hi, _outer(hi, lo)).reshape(size)
+    hhh = _outer(hi, _outer(hi, hi)).reshape(size)
+    filt = torch.stack([lll, llh, lhl, lhh, hll, hlh, hhl, hhh], 0)
+    filt = filt.unsqueeze(1)
+    return filt

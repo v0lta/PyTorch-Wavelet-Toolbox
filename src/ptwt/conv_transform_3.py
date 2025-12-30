@@ -15,49 +15,20 @@ from ._util import (
     _adjust_padding_at_reconstruction,
     _as_wavelet,
     _check_same_device_dtype,
+    _construct_3d_filt,
     _get_filter_tensors,
     _get_padding_n,
     _group_for_symmetric,
-    _outer,
     _pad_symmetric,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
-    _preprocess_tensor,
+    _preprocess_deconstruction,
     _translate_boundary_strings,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeffNd, WaveletDetailDict
 
 __all__ = ["wavedec3", "waverec3"]
-
-
-def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct three-dimensional filters using outer products.
-
-    Args:
-        lo (torch.Tensor): Low-pass input filter.
-        hi (torch.Tensor): High-pass input filter
-
-    Returns:
-        Stacked 3d filters of dimension::
-
-        [2^3, 1, length, height, width].
-
-        The four filters are ordered ll, lh, hl, hh.
-    """
-    dim_size = lo.shape[-1]
-    size = [dim_size] * 3
-    lll = _outer(lo, _outer(lo, lo)).reshape(size)
-    llh = _outer(lo, _outer(lo, hi)).reshape(size)
-    lhl = _outer(lo, _outer(hi, lo)).reshape(size)
-    lhh = _outer(lo, _outer(hi, hi)).reshape(size)
-    hll = _outer(hi, _outer(lo, lo)).reshape(size)
-    hlh = _outer(hi, _outer(lo, hi)).reshape(size)
-    hhl = _outer(hi, _outer(hi, lo)).reshape(size)
-    hhh = _outer(hi, _outer(hi, hi)).reshape(size)
-    filt = torch.stack([lll, llh, lhl, lhh, hll, hlh, hhl, hhh], 0)
-    filt = filt.unsqueeze(1)
-    return filt
 
 
 def _fwt_pad3(
@@ -137,13 +108,10 @@ def wavedec3(
         >>> data = torch.randn(5, 16, 16, 16)
         >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
     """
-    data, ds = _preprocess_tensor(data, ndim=3, axes=axes)
-
     wavelet = _as_wavelet(wavelet)
-    dec_lo, dec_hi, _, _ = _get_filter_tensors(
-        wavelet, flip=True, device=data.device, dtype=data.dtype
+    data, ds, dec_lo, dec_hi, dec_filt = _preprocess_deconstruction(
+        data, wavelet, axes=axes, ndim=3
     )
-    dec_filt = _construct_3d_filt(lo=dec_lo, hi=dec_hi)
 
     if level is None:
         level = pywt.dwtn_max_level(
