@@ -15,6 +15,7 @@ from ._util import (
     _adjust_padding_at_reconstruction,
     _as_wavelet,
     _check_same_device_dtype,
+    _get_dec_lo_hi,
     _get_filter_tensors,
     _get_padding_n,
     _group_for_symmetric,
@@ -102,6 +103,14 @@ def _fwt_pad3(
     return data_pad
 
 
+def _get_dec_lo_hi(data, wavelet, axes, ndim=3):
+    data, ds = _preprocess_tensor(data, ndim=ndim, axes=axes)
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
+        wavelet, flip=True, device=data.device, dtype=data.dtype
+    )
+    return dec_lo, dec_hi
+
+
 def wavedec3(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
@@ -137,12 +146,8 @@ def wavedec3(
         >>> data = torch.randn(5, 16, 16, 16)
         >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
     """
-    data, ds = _preprocess_tensor(data, ndim=3, axes=axes)
-
     wavelet = _as_wavelet(wavelet)
-    dec_lo, dec_hi, _, _ = _get_filter_tensors(
-        wavelet, flip=True, device=data.device, dtype=data.dtype
-    )
+    data, ds, dec_lo, dec_hi = _get_dec_lo_hi(data, wavelet, axes=axes, ndim=3)
     dec_filt = _construct_3d_filt(lo=dec_lo, hi=dec_hi)
 
     if level is None:

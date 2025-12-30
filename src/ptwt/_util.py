@@ -850,3 +850,19 @@ def _get_default_axes(n: int) -> tuple[int, ...]:
     if n < 1:
         raise ValueError(f"only natural number dimensions are allowed. given: {n}")
     return tuple(range(-n, 0))
+
+
+def _get_dec_lo_hi(
+    data: torch.Tensor,
+    wavelet: Union[Wavelet, str],
+    *,
+    ndim: int,
+    axes: AxisHint = None,
+) -> tuple[torch.Tensor, list[int], torch.Tensor, torch.Tensor]:
+    data, ds = _preprocess_tensor(data, ndim=ndim, axes=axes)
+    dec_lo, dec_hi, _, _ = _get_filter_tensors(
+        wavelet, flip=True, device=data.device, dtype=data.dtype
+    )
+    return data, ds, dec_lo, dec_hi
+
+

@@ -15,6 +15,7 @@ from ._util import (
     AxisHint,
     _adjust_padding_at_reconstruction,
     _check_same_device_dtype,
+    _get_dec_lo_hi,
     _get_filter_tensors,
     _get_padding_n,
     _group_for_symmetric,
@@ -28,6 +29,11 @@ from ._util import (
 from .constants import BoundaryMode, Wavelet, WaveletCoeff1d
 
 __all__ = ["wavedec", "waverec"]
+
+
+def _construct_1d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
+    """Construct one-dimensional filters."""
+    return torch.stack([lo, hi], 0)
 
 
 def _fwt_pad(
@@ -91,7 +97,7 @@ def wavedec(
 
     Args:
         data (torch.Tensor): The input time series to transform.
-            By default the last axis is transformed.
+            By default, the last axis is transformed.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Please consider the output from ``pywt.wavelist(kind='discrete')``
@@ -122,22 +128,18 @@ def wavedec(
         >>> # compute the forward fwt coefficients
         >>> ptwt.wavedec(data, 'haar', mode='zero', level=2)
     """
-    data, ds = _preprocess_tensor(data, ndim=1, axes=axis)
-
-    dec_lo, dec_hi, _, _ = _get_filter_tensors(
-        wavelet, flip=True, device=data.device, dtype=data.dtype
-    )
-    filt_len = dec_lo.shape[-1]
-    filt = torch.stack([dec_lo, dec_hi], 0)
+    data, ds, dec_lo, dec_hi = _get_dec_lo_hi(data, wavelet, axes=axis, ndim=1)
+    dec_filt = _construct_1d_filt(dec_lo, dec_hi)
 
     if level is None:
+        filt_len = dec_lo.shape[-1]
         level = pywt.dwt_max_level(data.shape[-1], filt_len)
 
     result_list = []
     res_lo = data
     for _ in range(level):
         res_lo = _fwt_pad(res_lo, wavelet, mode=mode)
-        res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
+        res = torch.nn.functional.conv1d(res_lo, dec_filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)
         result_list.append(res_hi.squeeze(1))
     result_list.append(res_lo.squeeze(1))

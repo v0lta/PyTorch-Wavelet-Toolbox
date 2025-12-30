@@ -15,6 +15,7 @@ from ._util import (
     AxisHint,
     _adjust_padding_at_reconstruction,
     _check_same_device_dtype,
+    _get_dec_lo_hi,
     _get_filter_tensors,
     _get_padding_n,
     _group_for_symmetric,
@@ -154,10 +155,7 @@ def wavedec2(
         >>> coefficients = ptwt.wavedec2(data, "haar", level=2, mode="zero")
 
     """
-    data, ds = _preprocess_tensor(data, ndim=2, axes=axes)
-    dec_lo, dec_hi, _, _ = _get_filter_tensors(
-        wavelet, flip=True, device=data.device, dtype=data.dtype
-    )
+    data, ds, dec_lo, dec_hi = _get_dec_lo_hi(data, wavelet, axes=axes, ndim=2)
     dec_filt = _construct_2d_filt(lo=dec_lo, hi=dec_hi)
 
     if level is None:
