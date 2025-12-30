@@ -7,7 +7,7 @@ import typing
 import warnings
 from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Any, Literal, Optional, Union, cast, overload
+from typing import Any, Literal, Optional, TypeAlias, Union, cast, overload
 
 import numpy as np
 import pywt
@@ -42,6 +42,9 @@ translation_dict: dict[BoundaryMode, ExtendedPyTorchBoundaryMode] = {
     # we have our own implementation.
     "symmetric": "symmetric",
 }
+
+#: A hint for axes
+AxisHint: TypeAlias = int | Sequence[int] | None
 
 
 def _translate_boundary_strings(
@@ -452,7 +455,7 @@ def _coeff_tree_map(
 def _preprocess_coeffs(
     coeffs: list[torch.Tensor],
     ndim: Literal[1],
-    axes: int,
+    axes: AxisHint = ...,
     add_channel_dim: bool = False,
 ) -> tuple[list[torch.Tensor], list[int]]: ...
 
@@ -462,7 +465,7 @@ def _preprocess_coeffs(
 def _preprocess_coeffs(
     coeffs: WaveletCoeff2d,
     ndim: Literal[2],
-    axes: tuple[int, int],
+    axes: AxisHint = ...,
     add_channel_dim: bool = False,
 ) -> tuple[WaveletCoeff2d, list[int]]: ...
 
@@ -472,7 +475,7 @@ def _preprocess_coeffs(
 def _preprocess_coeffs(
     coeffs: WaveletCoeffNd,
     ndim: int,
-    axes: tuple[int, ...],
+    axes: AxisHint = ...,
     add_channel_dim: bool = False,
 ) -> tuple[WaveletCoeffNd, list[int]]: ...
 
@@ -482,7 +485,7 @@ def _preprocess_coeffs(
 def _preprocess_coeffs(
     coeffs: list[torch.Tensor],
     ndim: int,
-    axes: Union[tuple[int, ...], int],
+    axes: AxisHint = ...,
     add_channel_dim: bool = False,
 ) -> tuple[list[torch.Tensor], list[int]]: ...
 
@@ -494,7 +497,7 @@ def _preprocess_coeffs(
         WaveletCoeffNd,
     ],
     ndim: int,
-    axes: Union[tuple[int, ...], int],
+    axes: AxisHint = None,
     add_channel_dim: bool = False,
 ) -> tuple[
     Union[
@@ -509,7 +512,7 @@ def _preprocess_coeffs(
     For each coefficient tensor in `coeffs` the transformed axes
     as specified by `axes` are moved to be the last.
     Adds a batch dim if a coefficient tensor has none.
-    If it has has multiple batch dimensions, they are folded into a single
+    If it has multiple batch dimensions, they are folded into a single
     batch dimension.
 
     Args:
@@ -520,7 +523,7 @@ def _preprocess_coeffs(
             :data:`ptwt.constants.WaveletCoeffNd` (Nd case).
         ndim (int): The number of axes :math:`N` on which the transformation
             was applied.
-        axes (int or tuple of ints): Axes on which the transform was calculated.
+        axes : Axes on which the transform was calculated.
         add_channel_dim (bool): If True, ensures that all returned coefficients
             have at least `:math:`N + 2` axes by potentially adding a new axis at dim 1.
             Defaults to False.
@@ -536,23 +539,18 @@ def _preprocess_coeffs(
         ValueError: If the input dtype is unsupported or `ndim` does not
             fit to the passed `axes` or `coeffs` dimensions.
     """
-    if isinstance(axes, int):
-        axes = (axes,)
+    if ndim <= 0:
+        raise ValueError("Number of dimensions must be positive")
 
     torch_dtype = _check_if_tensor(coeffs[0]).dtype
     if not _is_dtype_supported(torch_dtype):
         raise ValueError(f"Input dtype {torch_dtype} not supported")
 
-    if ndim <= 0:
-        raise ValueError("Number of dimensions must be positive")
-
-    if tuple(axes) != tuple(range(-ndim, 0)):
-        if len(axes) != ndim:
-            raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
-        else:
-            # for all tensors in `coeffs`: swap the axes
-            swap_fn = partial(_swap_axes, axes=axes)
-            coeffs = _coeff_tree_map(coeffs, swap_fn)
+    axes = _ensure_axes(axes=axes, dim=ndim)
+    if axes != _get_default_axes(ndim):
+        # for all tensors in `coeffs`: swap the axes
+        swap_fn = partial(_swap_axes, axes=axes)
+        coeffs = _coeff_tree_map(coeffs, swap_fn)
 
     # Fold axes for the wavelets
     ds = list(coeffs[0].shape)
@@ -578,7 +576,7 @@ def _postprocess_coeffs(
     coeffs: list[torch.Tensor],
     ndim: Literal[1],
     ds: list[int],
-    axes: int,
+    axes: AxisHint = ...,
 ) -> list[torch.Tensor]: ...
 
 
@@ -588,7 +586,7 @@ def _postprocess_coeffs(
     coeffs: WaveletCoeff2d,
     ndim: Literal[2],
     ds: list[int],
-    axes: tuple[int, int],
+    axes: AxisHint = ...,
 ) -> WaveletCoeff2d: ...
 
 
@@ -598,7 +596,7 @@ def _postprocess_coeffs(
     coeffs: WaveletCoeffNd,
     ndim: int,
     ds: list[int],
-    axes: tuple[int, ...],
+    axes: AxisHint = ...,
 ) -> WaveletCoeffNd: ...
 
 
@@ -608,7 +606,7 @@ def _postprocess_coeffs(
     coeffs: list[torch.Tensor],
     ndim: int,
     ds: list[int],
-    axes: Union[tuple[int, ...], int],
+    axes: AxisHint = ...,
 ) -> list[torch.Tensor]: ...
 
 
@@ -620,7 +618,7 @@ def _postprocess_coeffs(
     ],
     ndim: int,
     ds: list[int],
-    axes: Union[tuple[int, ...], int],
+    axes: AxisHint = None,
 ) -> Union[
     list[torch.Tensor],
     WaveletCoeff2d,
@@ -645,7 +643,7 @@ def _postprocess_coeffs(
             applied.
         ds (list of ints): The shape of the original first coefficient before
             preprocessing, i.e. of ``coeffs[0]``.
-        axes (int or tuple of ints): Axes on which the transform was calculated.
+        axes : Axes on which the transform was calculated.
 
     Returns:
         The result of undoing the preprocessing operations on `coeffs`.
@@ -654,11 +652,10 @@ def _postprocess_coeffs(
         ValueError: If `ndim` does not fit to the passed `axes`
             or `coeffs` dimensions.
     """
-    if isinstance(axes, int):
-        axes = (axes,)
-
     if ndim <= 0:
         raise ValueError("Number of dimensions must be positive")
+
+    axes = _ensure_axes(axes=axes, dim=ndim)
 
     # Fold axes for the wavelets
     if len(ds) < ndim:
@@ -671,13 +668,10 @@ def _postprocess_coeffs(
         unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=ndim)
         coeffs = _coeff_tree_map(coeffs, unfold_axes_fn)
 
-    if tuple(axes) != tuple(range(-ndim, 0)):
-        if len(axes) != ndim:
-            raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
-        else:
-            # for all tensors in `coeffs`: undo axes swapping
-            undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-            coeffs = _coeff_tree_map(coeffs, undo_swap_fn)
+    if axes != _get_default_axes(ndim):
+        # for all tensors in `coeffs`: undo axes swapping
+        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
+        coeffs = _coeff_tree_map(coeffs, undo_swap_fn)
 
     return coeffs
 
@@ -685,7 +679,8 @@ def _postprocess_coeffs(
 def _preprocess_tensor(
     data: torch.Tensor,
     ndim: int,
-    axes: Union[tuple[int, ...], int],
+    *,
+    axes: AxisHint = None,
     add_channel_dim: bool = True,
 ) -> tuple[torch.Tensor, list[int]]:
     """Preprocess input tensor dimensions.
@@ -699,7 +694,7 @@ def _preprocess_tensor(
         data (torch.Tensor): An input tensor with at least `ndim` axes.
         ndim (int): The number of axes :math:`N` on which the transformation is
             applied.
-        axes (int or tuple of ints): Axes on which the transform is calculated.
+        axes : Axes on which the transform is calculated.
         add_channel_dim (bool): If True, ensures that the return has at
             least :math:`N + 2` axes by potentially adding a new axis at dim 1.
             Defaults to True.
@@ -720,7 +715,7 @@ def _preprocess_tensor(
 
 
 def _postprocess_tensor(
-    data: torch.Tensor, ndim: int, ds: list[int], axes: Union[tuple[int, ...], int]
+    data: torch.Tensor, ndim: int, ds: list[int], axes: AxisHint | None = None
 ) -> torch.Tensor:
     """Postprocess input tensor dimensions.
 
@@ -737,7 +732,7 @@ def _postprocess_tensor(
             applied.
         ds (list of ints): The shape of the original input tensor before
             preprocessing.
-        axes (int or tuple of ints): Axes on which the transform was calculated.
+        axes : Axes on which the transform was calculated.
 
     Returns:
         The result of undoing the preprocessing operations on `data`.
@@ -817,3 +812,41 @@ def _get_padding_n(
     for i in range(1, n + 1):
         rv.extend(_get_pad(data.shape[-i], wavelet_length))
     return tuple(rv)
+
+
+def _ensure_axes(*, axes: AxisHint = None, dim: int) -> tuple[int, ...]:
+    if axes is None:
+        return _get_default_axes(dim)
+    if isinstance(axes, int):
+        if dim != 1:
+            raise ValueError(f"tried passing single axis to {dim}D transform")
+        return (axes,)
+    if len(axes) != dim:
+        raise ValueError(f"tried passing {len(axes)}D axes {axes} to {dim}D transform")
+    _check_axes_argument(axes)
+    return tuple(axes)
+
+
+def _get_default_axes(n: int) -> tuple[int, ...]:
+    """Get the default axes for a transformation.
+
+    Args:
+        n: The number of dimensions of the convolution
+
+    Returns:
+        A sequence of the default axes
+
+    Raises:
+        ValueError: If the dimension is not a natural number
+
+    Examples:
+        >>> _get_default_axes(1)
+        (-1,)
+        >>> _get_default_axes(2)
+        (-2, -1)
+        >>> _get_default_axes(3)
+        (-3, -2, -1)
+    """
+    if n < 1:
+        raise ValueError(f"only natural number dimensions are allowed. given: {n}")
+    return tuple(range(-n, 0))

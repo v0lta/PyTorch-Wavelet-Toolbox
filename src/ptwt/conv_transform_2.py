@@ -12,6 +12,7 @@ import pywt
 import torch
 
 from ._util import (
+    AxisHint,
     _adjust_padding_at_reconstruction,
     _check_same_device_dtype,
     _get_filter_tensors,
@@ -185,7 +186,8 @@ def wavedec2(
 def waverec2(
     coeffs: WaveletCoeff2d,
     wavelet: Union[Wavelet, str],
-    axes: tuple[int, int] = (-2, -1),
+    *,
+    axes: AxisHint = None,
 ) -> torch.Tensor:
     """Reconstruct a 2d signal from wavelet coefficients.
 
@@ -196,8 +198,7 @@ def waverec2(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int]): Compute the transform over these axes of the `data`
-            tensor. Defaults to (-2, -1).
+        axes : Compute the transform over these axes. If none, the last 2 are used.
 
     Returns:
         The reconstructed signal tensor.

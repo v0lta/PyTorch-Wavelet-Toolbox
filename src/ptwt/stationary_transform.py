@@ -8,6 +8,7 @@ import torch
 import torch.nn.functional as F  # noqa:N812
 
 from ._util import (
+    AxisHint,
     _check_same_device_dtype,
     _get_filter_tensors,
     _postprocess_coeffs,
@@ -56,16 +57,17 @@ def swt(
     data: torch.Tensor,
     wavelet: Union[Wavelet, str],
     level: Optional[int] = None,
-    axis: int = -1,
+    *,
+    axis: AxisHint = None,
 ) -> list[torch.Tensor]:
     """Compute a multilevel 1d stationary wavelet transform.
 
-    This fuctions is equivalent to pywt's :func:`pywt.swt` with `trim_approx=True` and
+    This fuction is equivalent to pywt's :func:`pywt.swt` with `trim_approx=True` and
     `norm=False`.
 
     Args:
         data (torch.Tensor): The input time series to transform.
-            By default the last axis is transformed.
+            By default, the last axis is transformed.
 
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet. Refer to the output from
@@ -74,8 +76,8 @@ def swt(
         level (int, optional): The maximum decomposition level.
             If None, the level is computed based on the signal shape. Defaults to None.
 
-        axis (int): Compute the transform over this axis of the `data` tensor.
-            Defaults to -1.
+        axis : Compute the transform over this axis. If none, the last is used.
+
 
     Returns:
         Same as :func:`wavedec`. Equivalent to :func:`pywt.swt` with trim_approx=True.
@@ -111,7 +113,8 @@ def swt(
 def iswt(
     coeffs: WaveletCoeff1d,
     wavelet: Union[pywt.Wavelet, str],
-    axis: int = -1,
+    *,
+    axis: AxisHint = None,
 ) -> torch.Tensor:
     """Invert a 1d stationary wavelet transform.
 
@@ -122,8 +125,7 @@ def iswt(
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet, as used in the forward transform.
 
-        axis (int): Compute the transform over this axis of the `data` tensor.
-            Defaults to -1.
+        axis : Compute the transform over this axis. If none, the last is used.
 
     Returns:
         A reconstruction of the original :func:`swt` input.
