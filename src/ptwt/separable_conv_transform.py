@@ -14,11 +14,22 @@ from typing import Optional, Union
 import numpy as np
 import torch
 
-from ._util import (AxisHint, _as_wavelet, _check_same_device_dtype,
-                    _postprocess_coeffs, _postprocess_tensor,
-                    _preprocess_coeffs, _preprocess_tensor)
-from .constants import (BoundaryMode, Wavelet, WaveletCoeff2dSeparable,
-                        WaveletCoeffNd, WaveletDetailDict)
+from ._util import (
+    AxisHint,
+    _as_wavelet,
+    _check_same_device_dtype,
+    _postprocess_coeffs,
+    _postprocess_tensor,
+    _preprocess_coeffs,
+    _preprocess_tensor,
+)
+from .constants import (
+    BoundaryMode,
+    Wavelet,
+    WaveletCoeff2dSeparable,
+    WaveletCoeffNd,
+    WaveletDetailDict,
+)
 from .conv_transform import wavedec, waverec
 
 __all__ = ["fswavedec2", "fswavedec3", "fswaverec2", "fswaverec3"]

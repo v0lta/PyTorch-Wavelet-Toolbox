@@ -12,12 +12,25 @@ import numpy as np
 import pywt
 import torch
 
-from ._util import (AxisHint, _as_wavelet, _deprecated_alias, _ensure_axes,
-                    _is_orthogonalize_method_supported, _swap_axes,
-                    _undo_swap_axes)
-from .constants import (ExtendedBoundaryMode, OrthogonalizeMethod,
-                        PacketNodeOrder, Wavelet, WaveletCoeff1d,
-                        WaveletCoeff2d, WaveletCoeffNd, WaveletDetailTuple2d)
+from ._util import (
+    AxisHint,
+    _as_wavelet,
+    _deprecated_alias,
+    _ensure_axes,
+    _is_orthogonalize_method_supported,
+    _swap_axes,
+    _undo_swap_axes,
+)
+from .constants import (
+    ExtendedBoundaryMode,
+    OrthogonalizeMethod,
+    PacketNodeOrder,
+    Wavelet,
+    WaveletCoeff1d,
+    WaveletCoeff2d,
+    WaveletCoeffNd,
+    WaveletDetailTuple2d,
+)
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
 from .matmul_transform import MatrixWavedec, MatrixWaverec

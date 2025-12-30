@@ -15,9 +15,16 @@ import torch
 from more_itertools import grouper
 from typing_extensions import ParamSpec, TypeVar
 
-from .constants import (SUPPORTED_DTYPES, BoundaryMode, OrthogonalizeMethod,
-                        Wavelet, WaveletCoeff2d, WaveletCoeffNd,
-                        WaveletDetailDict, WaveletDetailTuple2d)
+from .constants import (
+    SUPPORTED_DTYPES,
+    BoundaryMode,
+    OrthogonalizeMethod,
+    Wavelet,
+    WaveletCoeff2d,
+    WaveletCoeffNd,
+    WaveletDetailDict,
+    WaveletDetailTuple2d,
+)
 
 #: All the PyTorch boundary modes for :func:`torch.nn.functional.pad`
 PyTorchBoundaryMode = Literal["replicate", "constant", "reflect", "circular"]

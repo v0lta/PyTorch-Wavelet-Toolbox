@@ -11,18 +11,39 @@ from typing import Optional, Union, cast
 import numpy as np
 import torch
 
-from ._util import (AxisHint, _as_wavelet, _check_same_device_dtype,
-                    _deprecated_alias, _ensure_axes, _get_filter_tensors,
-                    _is_orthogonalize_method_supported, _postprocess_coeffs,
-                    _postprocess_tensor, _preprocess_coeffs,
-                    _preprocess_tensor)
-from .constants import (BoundaryMode, OrthogonalizeMethod, PaddingMode,
-                        Wavelet, WaveletCoeff2d, WaveletDetailTuple2d)
+from ._util import (
+    AxisHint,
+    _as_wavelet,
+    _check_same_device_dtype,
+    _deprecated_alias,
+    _ensure_axes,
+    _get_filter_tensors,
+    _is_orthogonalize_method_supported,
+    _postprocess_coeffs,
+    _postprocess_tensor,
+    _preprocess_coeffs,
+    _preprocess_tensor,
+)
+from .constants import (
+    BoundaryMode,
+    OrthogonalizeMethod,
+    PaddingMode,
+    Wavelet,
+    WaveletCoeff2d,
+    WaveletDetailTuple2d,
+)
 from .conv_transform_2 import _construct_2d_filt, _fwt_pad2
-from .matmul_transform import (BaseMatrixWaveDec, construct_boundary_a,
-                               construct_boundary_s, orthogonalize)
-from .sparse_math import (batch_mm, cat_sparse_identity_matrix,
-                          construct_strided_conv2d_matrix)
+from .matmul_transform import (
+    BaseMatrixWaveDec,
+    construct_boundary_a,
+    construct_boundary_s,
+    orthogonalize,
+)
+from .sparse_math import (
+    batch_mm,
+    cat_sparse_identity_matrix,
+    construct_strided_conv2d_matrix,
+)
 
 __all__ = [
     "construct_boundary_a2",

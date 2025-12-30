@@ -9,16 +9,31 @@ from typing import NamedTuple, Optional, Union
 import numpy as np
 import torch
 
-from ._util import (AxisHint, _as_wavelet, _check_same_device_dtype,
-                    _deprecated_alias, _ensure_axes,
-                    _is_orthogonalize_method_supported, _postprocess_coeffs,
-                    _postprocess_tensor, _preprocess_coeffs,
-                    _preprocess_tensor)
-from .constants import (BoundaryMode, OrthogonalizeMethod, Wavelet,
-                        WaveletCoeffNd, WaveletDetailDict)
+from ._util import (
+    AxisHint,
+    _as_wavelet,
+    _check_same_device_dtype,
+    _deprecated_alias,
+    _ensure_axes,
+    _is_orthogonalize_method_supported,
+    _postprocess_coeffs,
+    _postprocess_tensor,
+    _preprocess_coeffs,
+    _preprocess_tensor,
+)
+from .constants import (
+    BoundaryMode,
+    OrthogonalizeMethod,
+    Wavelet,
+    WaveletCoeffNd,
+    WaveletDetailDict,
+)
 from .conv_transform_3 import _fwt_pad3
-from .matmul_transform import (BaseMatrixWaveDec, construct_boundary_a,
-                               construct_boundary_s)
+from .matmul_transform import (
+    BaseMatrixWaveDec,
+    construct_boundary_a,
+    construct_boundary_s,
+)
 from .sparse_math import _batch_dim_mm
 
 __all__ = ["MatrixWavedec3", "MatrixWaverec3"]

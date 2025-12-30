@@ -13,17 +13,33 @@ from typing import Optional, Union, cast
 import numpy as np
 import torch
 
-from ._util import (AxisHint, _as_wavelet, _check_same_device_dtype,
-                    _deprecated_alias, _ensure_axes, _get_filter_tensors,
-                    _is_orthogonalize_method_supported, _postprocess_coeffs,
-                    _postprocess_tensor, _preprocess_coeffs,
-                    _preprocess_tensor)
-from .constants import (BoundaryMode, OrthogonalizeMethod, PaddingMode,
-                        Wavelet, WaveletCoeff1d)
+from ._util import (
+    AxisHint,
+    _as_wavelet,
+    _check_same_device_dtype,
+    _deprecated_alias,
+    _ensure_axes,
+    _get_filter_tensors,
+    _is_orthogonalize_method_supported,
+    _postprocess_coeffs,
+    _postprocess_tensor,
+    _preprocess_coeffs,
+    _preprocess_tensor,
+)
+from .constants import (
+    BoundaryMode,
+    OrthogonalizeMethod,
+    PaddingMode,
+    Wavelet,
+    WaveletCoeff1d,
+)
 from .conv_transform import _fwt_pad
-from .sparse_math import (_orth_by_gram_schmidt, _orth_by_qr,
-                          cat_sparse_identity_matrix,
-                          construct_strided_conv_matrix)
+from .sparse_math import (
+    _orth_by_gram_schmidt,
+    _orth_by_qr,
+    cat_sparse_identity_matrix,
+    construct_strided_conv_matrix,
+)
 
 __all__ = ["orthogonalize", "MatrixWavedec", "MatrixWaverec"]
 
