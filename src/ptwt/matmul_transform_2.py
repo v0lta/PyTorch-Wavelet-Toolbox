@@ -11,40 +11,18 @@ from typing import Optional, Union, cast
 import numpy as np
 import torch
 
-from ._util import (
-    AxisHint,
-    _as_wavelet,
-    _check_axes_argument,
-    _check_same_device_dtype,
-    _deprecated_alias,
-    _ensure_axes,
-    _get_filter_tensors,
-    _is_orthogonalize_method_supported,
-    _postprocess_coeffs,
-    _postprocess_tensor,
-    _preprocess_coeffs,
-    _preprocess_tensor,
-)
-from .constants import (
-    BoundaryMode,
-    OrthogonalizeMethod,
-    PaddingMode,
-    Wavelet,
-    WaveletCoeff2d,
-    WaveletDetailTuple2d,
-)
+from ._util import (AxisHint, _as_wavelet, _check_same_device_dtype,
+                    _deprecated_alias, _ensure_axes, _get_filter_tensors,
+                    _is_orthogonalize_method_supported, _postprocess_coeffs,
+                    _postprocess_tensor, _preprocess_coeffs,
+                    _preprocess_tensor)
+from .constants import (BoundaryMode, OrthogonalizeMethod, PaddingMode,
+                        Wavelet, WaveletCoeff2d, WaveletDetailTuple2d)
 from .conv_transform_2 import _construct_2d_filt, _fwt_pad2
-from .matmul_transform import (
-    BaseMatrixWaveDec,
-    construct_boundary_a,
-    construct_boundary_s,
-    orthogonalize,
-)
-from .sparse_math import (
-    batch_mm,
-    cat_sparse_identity_matrix,
-    construct_strided_conv2d_matrix,
-)
+from .matmul_transform import (BaseMatrixWaveDec, construct_boundary_a,
+                               construct_boundary_s, orthogonalize)
+from .sparse_math import (batch_mm, cat_sparse_identity_matrix,
+                          construct_strided_conv2d_matrix)
 
 __all__ = [
     "construct_boundary_a2",
@@ -598,15 +576,14 @@ class MatrixWaverec2(object):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            axes (tuple[int, int]): Compute the transform over these axes.
-                Defaults to (-2, -1).
+            axes : Compute the transform over these axes. If none, the last 2 are used.
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to ``qr``.
             separable (bool): If this flag is set, a separable transformation
                 is used, i.e. a 1d transformation along each axis. This is significantly
-                faster than a non-separable transformation since only a small constant-
-                size part of the matrices must be orthogonalized.
+                faster than a non-separable transformation since only a small
+                constant-size part of the matrices must be orthogonalized.
                 For invertibility, the analysis and synthesis values must be identical!
                 Defaults to True.
 

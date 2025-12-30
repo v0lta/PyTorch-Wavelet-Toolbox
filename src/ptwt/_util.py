@@ -15,16 +15,9 @@ import torch
 from more_itertools import grouper
 from typing_extensions import ParamSpec, TypeVar
 
-from .constants import (
-    SUPPORTED_DTYPES,
-    BoundaryMode,
-    OrthogonalizeMethod,
-    Wavelet,
-    WaveletCoeff2d,
-    WaveletCoeffNd,
-    WaveletDetailDict,
-    WaveletDetailTuple2d,
-)
+from .constants import (SUPPORTED_DTYPES, BoundaryMode, OrthogonalizeMethod,
+                        Wavelet, WaveletCoeff2d, WaveletCoeffNd,
+                        WaveletDetailDict, WaveletDetailTuple2d)
 
 #: All the PyTorch boundary modes for :func:`torch.nn.functional.pad`
 PyTorchBoundaryMode = Literal["replicate", "constant", "reflect", "circular"]
@@ -523,7 +516,7 @@ def _preprocess_coeffs(
             :data:`ptwt.constants.WaveletCoeffNd` (Nd case).
         ndim (int): The number of axes :math:`N` on which the transformation
             was applied.
-        axes (int or tuple of ints): Axes on which the transform was calculated.
+        axes : Axes on which the transform was calculated.
         add_channel_dim (bool): If True, ensures that all returned coefficients
             have at least `:math:`N + 2` axes by potentially adding a new axis at dim 1.
             Defaults to False.
@@ -643,7 +636,7 @@ def _postprocess_coeffs(
             applied.
         ds (list of ints): The shape of the original first coefficient before
             preprocessing, i.e. of ``coeffs[0]``.
-        axes (int or tuple of ints): Axes on which the transform was calculated.
+        axes : Axes on which the transform was calculated.
 
     Returns:
         The result of undoing the preprocessing operations on `coeffs`.
@@ -694,7 +687,7 @@ def _preprocess_tensor(
         data (torch.Tensor): An input tensor with at least `ndim` axes.
         ndim (int): The number of axes :math:`N` on which the transformation is
             applied.
-        axes (int or tuple of ints): Axes on which the transform is calculated.
+        axes : Axes on which the transform is calculated.
         add_channel_dim (bool): If True, ensures that the return has at
             least :math:`N + 2` axes by potentially adding a new axis at dim 1.
             Defaults to True.
@@ -828,17 +821,24 @@ def _ensure_axes(*, axes: AxisHint = None, dim: int) -> tuple[int, ...]:
 
 
 def _get_default_axes(n: int) -> tuple[int, ...]:
-    """Get the default axes for a convolution.
+    """Get the default axes for a transformation.
 
-    :param n: The number of dimensions of the convolution
-    :returns: A sequence of the default axes
+    Args:
+        n: The number of dimensions of the convolution
 
-    >>> _get_default_axes(1)
-    (-1,)
-    >>> _get_default_axes(2)
-    (-2, -1)
-    >>> _get_default_axes(3)
-    (-3, -2, -1)
+    Returns:
+        A sequence of the default axes
+
+    Raises:
+        ValueError: If the dimension is not a natural number
+
+    Examples:
+        >>> _get_default_axes(1)
+        (-1,)
+        >>> _get_default_axes(2)
+        (-2, -1)
+        >>> _get_default_axes(3)
+        (-3, -2, -1)
     """
     if n < 1:
         raise ValueError(f"only natural number dimensions are allowed. given: {n}")

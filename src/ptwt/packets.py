@@ -12,25 +12,12 @@ import numpy as np
 import pywt
 import torch
 
-from ._util import (
-    AxisHint,
-    _as_wavelet,
-    _deprecated_alias,
-    _ensure_axes,
-    _is_orthogonalize_method_supported,
-    _swap_axes,
-    _undo_swap_axes,
-)
-from .constants import (
-    ExtendedBoundaryMode,
-    OrthogonalizeMethod,
-    PacketNodeOrder,
-    Wavelet,
-    WaveletCoeff1d,
-    WaveletCoeff2d,
-    WaveletCoeffNd,
-    WaveletDetailTuple2d,
-)
+from ._util import (AxisHint, _as_wavelet, _deprecated_alias, _ensure_axes,
+                    _is_orthogonalize_method_supported, _swap_axes,
+                    _undo_swap_axes)
+from .constants import (ExtendedBoundaryMode, OrthogonalizeMethod,
+                        PacketNodeOrder, Wavelet, WaveletCoeff1d,
+                        WaveletCoeff2d, WaveletCoeffNd, WaveletDetailTuple2d)
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
 from .matmul_transform import MatrixWavedec, MatrixWaverec
@@ -399,7 +386,7 @@ class WaveletPacket2D(BaseDict):
             maxlevel (int, optional): Value is passed on to :func:`transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
-            axis : Compute the transform over these axes. If none, the last 2 are used.
+            axes : Compute the transform over these axes. If none, the last 2 are used.
             orthogonalization: The orthogonalization method
                 to use in the sparse matrix backend,
                 see :data:`ptwt.constants.OrthogonalizeMethod`.

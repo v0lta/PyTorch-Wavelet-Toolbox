@@ -14,22 +14,11 @@ from typing import Optional, Union
 import numpy as np
 import torch
 
-from ._util import (
-    AxisHint,
-    _as_wavelet,
-    _check_same_device_dtype,
-    _postprocess_coeffs,
-    _postprocess_tensor,
-    _preprocess_coeffs,
-    _preprocess_tensor,
-)
-from .constants import (
-    BoundaryMode,
-    Wavelet,
-    WaveletCoeff2dSeparable,
-    WaveletCoeffNd,
-    WaveletDetailDict,
-)
+from ._util import (AxisHint, _as_wavelet, _check_same_device_dtype,
+                    _postprocess_coeffs, _postprocess_tensor,
+                    _preprocess_coeffs, _preprocess_tensor)
+from .constants import (BoundaryMode, Wavelet, WaveletCoeff2dSeparable,
+                        WaveletCoeffNd, WaveletDetailDict)
 from .conv_transform import wavedec, waverec
 
 __all__ = ["fswavedec2", "fswavedec3", "fswaverec2", "fswaverec3"]
@@ -373,7 +362,8 @@ def _fswavedecn(
         mode: The desired padding mode for extending the signal along the edges.
             See :data:`ptwt.constants.BoundaryMode`. Defaults to ``reflect``.
         level (int, optional): The number of desired scales. Defaults to None.
-        axes : Compute the transform over these axes. If none, the last :math:`N` are used.
+        axes : Compute the transform over these axes.
+            If none, the last :math:`N` are used.
 
     Returns:
         A tuple starting with the approximation coefficient tensor
@@ -420,7 +410,8 @@ def _fswaverecn(
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
         ndim (int): The number of dimentsions :math:`N`.
-        axes : Compute the transform over these axes. If none, the last :math:`N` are used.
+        axes : Compute the transform over these axes.
+            If none, the last :math:`N` are used.
 
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
