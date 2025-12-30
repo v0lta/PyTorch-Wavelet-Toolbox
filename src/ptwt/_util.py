@@ -455,7 +455,7 @@ def _coeff_tree_map(
 def _preprocess_coeffs(
     coeffs: list[torch.Tensor],
     ndim: Literal[1],
-    axes: int,
+    axes: AxisHint = ...,
     add_channel_dim: bool = False,
 ) -> tuple[list[torch.Tensor], list[int]]: ...
 
@@ -465,7 +465,7 @@ def _preprocess_coeffs(
 def _preprocess_coeffs(
     coeffs: WaveletCoeff2d,
     ndim: Literal[2],
-    axes: tuple[int, int],
+    axes: AxisHint = ...,
     add_channel_dim: bool = False,
 ) -> tuple[WaveletCoeff2d, list[int]]: ...
 
