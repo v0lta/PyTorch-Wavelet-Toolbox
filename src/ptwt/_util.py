@@ -547,13 +547,10 @@ def _preprocess_coeffs(
         raise ValueError(f"Input dtype {torch_dtype} not supported")
 
     axes = _ensure_axes(axes=axes, dim=ndim)
-    if tuple(axes) != tuple(range(-ndim, 0)):
-        if len(axes) != ndim:
-            raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
-        else:
-            # for all tensors in `coeffs`: swap the axes
-            swap_fn = partial(_swap_axes, axes=axes)
-            coeffs = _coeff_tree_map(coeffs, swap_fn)
+    if axes != _get_default_axes(ndim):
+        # for all tensors in `coeffs`: swap the axes
+        swap_fn = partial(_swap_axes, axes=axes)
+        coeffs = _coeff_tree_map(coeffs, swap_fn)
 
     # Fold axes for the wavelets
     ds = list(coeffs[0].shape)
@@ -671,13 +668,10 @@ def _postprocess_coeffs(
         unfold_axes_fn = partial(_unfold_axes, ds=ds, keep_no=ndim)
         coeffs = _coeff_tree_map(coeffs, unfold_axes_fn)
 
-    if tuple(axes) != tuple(range(-ndim, 0)):
-        if len(axes) != ndim:
-            raise ValueError(f"{ndim}D transforms work with {ndim} axes.")
-        else:
-            # for all tensors in `coeffs`: undo axes swapping
-            undo_swap_fn = partial(_undo_swap_axes, axes=axes)
-            coeffs = _coeff_tree_map(coeffs, undo_swap_fn)
+    if axes != _get_default_axes(ndim):
+        # for all tensors in `coeffs`: undo axes swapping
+        undo_swap_fn = partial(_undo_swap_axes, axes=axes)
+        coeffs = _coeff_tree_map(coeffs, undo_swap_fn)
 
     return coeffs
 
@@ -822,28 +816,28 @@ def _get_padding_n(
 
 def _ensure_axes(*, axes: AxisHint = None, dim: int) -> tuple[int, ...]:
     if axes is None:
-        return get_convolution_axes(dim)
+        return _get_default_axes(dim)
     if isinstance(axes, int):
         if dim != 1:
-            raise ValueError
+            raise ValueError(f"tried passing single axis to {dim}D transform")
         return (axes,)
     if len(axes) != dim:
-        raise ValueError
+        raise ValueError(f"tried passing {len(axes)}D axes {axes} to {dim}D transform")
     _check_axes_argument(axes)
     return tuple(axes)
 
 
-def get_convolution_axes(n: int) -> tuple[int, ...]:
+def _get_default_axes(n: int) -> tuple[int, ...]:
     """Get the default axes for a convolution.
 
     :param n: The number of dimensions of the convolution
     :returns: A sequence of the default axes
 
-    >>> get_convolution_axes(1)
+    >>> _get_default_axes(1)
     (-1,)
-    >>> get_convolution_axes(2)
+    >>> _get_default_axes(2)
     (-2, -1)
-    >>> get_convolution_axes(3)
+    >>> _get_default_axes(3)
     (-3, -2, -1)
     """
     if n < 1:
