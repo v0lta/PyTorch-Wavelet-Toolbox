@@ -15,7 +15,6 @@ from ._util import (
     AxisHint,
     _adjust_padding_at_reconstruction,
     _check_same_device_dtype,
-    _get_dec_lo_hi,
     _get_filter_tensors,
     _get_padding_n,
     _group_for_symmetric,
@@ -23,16 +22,12 @@ from ._util import (
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
+    _preprocess_deconstruction,
     _translate_boundary_strings,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeff1d
 
 __all__ = ["wavedec", "waverec"]
-
-
-def _construct_1d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct one-dimensional filters."""
-    return torch.stack([lo, hi], 0)
 
 
 def _fwt_pad(
@@ -127,8 +122,9 @@ def wavedec(
         >>> # compute the forward fwt coefficients
         >>> ptwt.wavedec(data, 'haar', mode='zero', level=2)
     """
-    data, ds, dec_lo, dec_hi = _get_dec_lo_hi(data, wavelet, axes=axis, ndim=1)
-    dec_filt = _construct_1d_filt(dec_lo, dec_hi)
+    data, ds, dec_lo, dec_hi, dec_filt = _preprocess_deconstruction(
+        data, wavelet, axes=axis, ndim=1
+    )
 
     if level is None:
         filt_len = dec_lo.shape[-1]
