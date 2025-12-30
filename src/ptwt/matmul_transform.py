@@ -214,7 +214,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         *,
-        axis: int = -1,
+        axis: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
         odd_coeff_padding_mode: BoundaryMode = "zero",
     ) -> None:
@@ -251,11 +251,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         self.level = level
         self.odd_coeff_padding_mode = odd_coeff_padding_mode
         self.orthogonalization = orthogonalization
-
-        if isinstance(axis, int):
-            self.axis = axis
-        else:
-            raise ValueError("MatrixWavedec transforms a single axis only.")
+        self.axis = _ensure_axes(axes=axis, dim=1)[0]
 
         self.input_length: Optional[int] = None
         self.fwt_matrix_list: list[torch.Tensor] = []
@@ -531,7 +527,7 @@ class MatrixWaverec(object):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            axis (int): The axis transformed by the original decomposition
+            axis : The axis transformed by the original decomposition
                 defaults to -1 or the last axis.
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.

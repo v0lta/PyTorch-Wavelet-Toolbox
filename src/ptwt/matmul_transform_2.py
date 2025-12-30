@@ -587,7 +587,7 @@ class MatrixWaverec2(object):
         self,
         wavelet: Union[Wavelet, str],
         *,
-        axes: tuple[int, int] = (-2, -1),
+        axes: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
         separable: bool = True,
     ):
@@ -621,12 +621,7 @@ class MatrixWaverec2(object):
         self.wavelet = _as_wavelet(wavelet)
         self.orthogonalization = orthogonalization
         self.separable = separable
-
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            _check_axes_argument(axes)
-            self.axes = axes
+        self.axes = _ensure_axes(axes=axes, dim=2)
 
         self.ifwt_matrix_list: list[
             Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]

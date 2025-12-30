@@ -83,7 +83,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         *,
-        axes: tuple[int, int, int] = (-3, -2, -1),
+        axes: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
         odd_coeff_padding_mode: BoundaryMode = "zero",
     ):
@@ -123,11 +123,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         self.level = level
         self.orthogonalization = orthogonalization
         self.odd_coeff_padding_mode = odd_coeff_padding_mode
-        if len(axes) != 3:
-            raise ValueError("3D transforms work with three axes.")
-        else:
-            _check_axes_argument(list(axes))
-            self.axes = axes
+        self.axes = _ensure_axes(axes=axes, dim=3)
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
         self.fwt_matrix_list: list[list[torch.Tensor]] = []
 
