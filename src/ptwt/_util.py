@@ -848,4 +848,4 @@ def get_convolution_axes(n: int) -> tuple[int, ...]:
     """
     if n < 1:
         raise ValueError(f"only natural number dimensions are allowed. given: {n}")
-    return tuple(-i for i in range(n, 1, -1))
+    return tuple(range(-n, 0))
