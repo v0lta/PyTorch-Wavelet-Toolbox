@@ -12,10 +12,12 @@ import numpy as np
 import torch
 
 from ._util import (
+    AxisHint,
     _as_wavelet,
     _check_axes_argument,
     _check_same_device_dtype,
     _deprecated_alias,
+    _ensure_axes,
     _get_filter_tensors,
     _is_orthogonalize_method_supported,
     _postprocess_coeffs,
@@ -284,7 +286,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         *,
-        axes: tuple[int, int] = (-2, -1),
+        axes: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
         separable: bool = True,
         odd_coeff_padding_mode: BoundaryMode = "zero",
@@ -299,8 +301,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             level (int, optional): The maximum decomposition level.
                 If None, the level is computed based on the signal shape.
                 Defaults to None.
-            axes (tuple[int, int]): Compute the transform over these axes of the data
-                tensor. Defaults to (-2, -1).
+            axes : Compute the transform over these axes. If none, the last 2 are used.
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to ``qr``.
@@ -324,11 +325,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
             ValueError: If the wavelet filters have different lengths.
         """
         self.wavelet = _as_wavelet(wavelet)
-        if len(axes) != 2:
-            raise ValueError("2D transforms work with two axes.")
-        else:
-            _check_axes_argument(axes)
-            self.axes = axes
+        self.axes = _ensure_axes(axes=axes, dim=2)
         self.level = level
         self.orthogonalization = orthogonalization
         self.odd_coeff_padding_mode = odd_coeff_padding_mode

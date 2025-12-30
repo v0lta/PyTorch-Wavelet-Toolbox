@@ -6,15 +6,17 @@ import collections
 from collections.abc import Callable, Iterable
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Literal, Optional, Union, overload
+from typing import TYPE_CHECKING, Literal, Optional, Union, cast, overload
 
 import numpy as np
 import pywt
 import torch
 
 from ._util import (
+    AxisHint,
     _as_wavelet,
     _deprecated_alias,
+    _ensure_axes,
     _is_orthogonalize_method_supported,
     _swap_axes,
     _undo_swap_axes,
@@ -70,9 +72,10 @@ class WaveletPacket(BaseDict):
         self,
         data: Optional[torch.Tensor],
         wavelet: Union[Wavelet, str],
+        *,
         mode: ExtendedBoundaryMode = "reflect",
         maxlevel: Optional[int] = None,
-        axis: int = -1,
+        axis: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
     ) -> None:
         """Create a wavelet packet decomposition object.
@@ -97,7 +100,7 @@ class WaveletPacket(BaseDict):
             maxlevel (int, optional): Value is passed on to :func:`transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
-            axis (int): The axis to transform. Defaults to -1.
+            axis : Compute the transform over this axis. If none, the last is used.
             orthogonalization: The orthogonalization method
                 to use in the sparse matrix backend,
                 see :data:`ptwt.constants.OrthogonalizeMethod`.
@@ -131,7 +134,7 @@ class WaveletPacket(BaseDict):
         self._matrix_wavedec_dict: dict[int, MatrixWavedec] = {}
         self._matrix_waverec_dict: dict[int, MatrixWaverec] = {}
         self.maxlevel: Optional[int] = None
-        self.axis = axis
+        self.axis = _ensure_axes(axes=axis, dim=1)[0]
 
         self._filter_keys = {"a", "d"}
 
@@ -368,9 +371,10 @@ class WaveletPacket2D(BaseDict):
         self,
         data: Optional[torch.Tensor],
         wavelet: Union[Wavelet, str],
+        *,
         mode: ExtendedBoundaryMode = "reflect",
         maxlevel: Optional[int] = None,
-        axes: tuple[int, int] = (-2, -1),
+        axes: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
         separable: bool = False,
     ) -> None:
@@ -388,15 +392,14 @@ class WaveletPacket2D(BaseDict):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            mode: The desired mode to handle signal boundaries. Select either the
+            mode: The desired mode to handle signal boundaries. Select either
                 the sparse-matrix backend (``boundary``) or a padding mode.
                 See :data:`ptwt.constants.ExtendedBoundaryMode`.
                 Defaults to ``reflect``.
             maxlevel (int, optional): Value is passed on to :func:`transform`.
                 The highest decomposition level to compute. If None, the maximum level
                 is determined from the input data shape. Defaults to None.
-            axes ([int, int], optional): The tensor axes that should be transformed.
-                Defaults to (-2, -1).
+            axis : Compute the transform over these axes. If none, the last 2 are used.
             orthogonalization: The orthogonalization method
                 to use in the sparse matrix backend,
                 see :data:`ptwt.constants.OrthogonalizeMethod`.
@@ -418,7 +421,7 @@ class WaveletPacket2D(BaseDict):
         self.separable = separable
         self.matrix_wavedec2_dict: dict[tuple[int, ...], MatrixWavedec2] = {}
         self.matrix_waverec2_dict: dict[tuple[int, ...], MatrixWaverec2] = {}
-        self.axes = axes
+        self.axes = cast(tuple[int, int], _ensure_axes(axes=axes, dim=2))
         self._filter_keys = {"a", "h", "v", "d"}
 
         if not _is_orthogonalize_method_supported(self.orthogonalization):

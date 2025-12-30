@@ -11,6 +11,7 @@ import pywt
 import torch
 
 from ._util import (
+    AxisHint,
     _adjust_padding_at_reconstruction,
     _as_wavelet,
     _check_same_device_dtype,
@@ -179,7 +180,8 @@ def wavedec3(
 def waverec3(
     coeffs: WaveletCoeffNd,
     wavelet: Union[Wavelet, str],
-    axes: tuple[int, int, int] = (-3, -2, -1),
+    *,
+    axes: AxisHint = None,
 ) -> torch.Tensor:
     """Reconstruct a 3d signal from wavelet coefficients.
 
@@ -190,8 +192,8 @@ def waverec3(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
-            tensor. Defaults to (-3, -2, -1).
+        axes : Compute the transform over these axes. If none, the last 3 are used.
+
 
     Returns:
         The reconstructed signal tensor.

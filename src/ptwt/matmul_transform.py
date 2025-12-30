@@ -14,9 +14,11 @@ import numpy as np
 import torch
 
 from ._util import (
+    AxisHint,
     _as_wavelet,
     _check_same_device_dtype,
     _deprecated_alias,
+    _ensure_axes,
     _get_filter_tensors,
     _is_orthogonalize_method_supported,
     _postprocess_coeffs,
@@ -519,7 +521,7 @@ class MatrixWaverec(object):
         self,
         wavelet: Union[Wavelet, str],
         *,
-        axis: int = -1,
+        axis: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
     ) -> None:
         """Create the inverse matrix-based fast wavelet transformation.
@@ -546,11 +548,7 @@ class MatrixWaverec(object):
         """
         self.wavelet = _as_wavelet(wavelet)
         self.orthogonalization = orthogonalization
-        if isinstance(axis, int):
-            self.axis = axis
-        else:
-            raise ValueError("MatrixWaverec transforms a single axis only.")
-
+        self.axis = _ensure_axes(axes=axis, dim=1)
         self.ifwt_matrix_list: list[torch.Tensor] = []
         self.level: Optional[int] = None
         self.input_length: Optional[int] = None

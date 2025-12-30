@@ -15,6 +15,7 @@ import numpy as np
 import torch
 
 from ._util import (
+    AxisHint,
     _as_wavelet,
     _check_same_device_dtype,
     _postprocess_coeffs,
@@ -189,7 +190,7 @@ def fswavedec2(
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-    axes: tuple[int, int] = (-2, -1),
+    axes: AxisHint = None,
 ) -> WaveletCoeff2dSeparable:
     """Compute a fully separable 2D-padded analysis wavelet transform.
 
@@ -209,8 +210,7 @@ def fswavedec2(
         level (int, optional): The maximum decomposition level.
             If None, the level is computed based on the signal shape.
             Defaults to None.
-        axes (tuple[int, int]): Compute the transform over these axes of the `data`
-            tensor. Defaults to (-2, -1).
+        axes : Compute the transform over these axes. If none, the last 2 are used.
 
     Returns:
         A tuple starting with the approximation coefficient tensor
@@ -237,7 +237,7 @@ def fswavedec3(
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-    axes: tuple[int, int, int] = (-3, -2, -1),
+    axes: AxisHint = None,
 ) -> WaveletCoeffNd:
     """Compute a fully separable 3D-padded analysis wavelet transform.
 
@@ -257,8 +257,7 @@ def fswavedec3(
         level (int, optional): The maximum decomposition level.
             If None, the level is computed based on the signal shape.
             Defaults to None.
-        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
-            tensor. Defaults to (-3, -2, -1).
+        axes : Compute the transform over these axes. If none, the last 3 are used.
 
     Returns:
         A tuple starting with the approximation coefficient tensor
@@ -282,7 +281,8 @@ def fswavedec3(
 def fswaverec2(
     coeffs: WaveletCoeff2dSeparable,
     wavelet: Union[Wavelet, str],
-    axes: tuple[int, int] = (-2, -1),
+    *,
+    axes: AxisHint = None,
 ) -> torch.Tensor:
     """Compute a fully separable 2D-padded synthesis wavelet transform.
 
@@ -298,8 +298,7 @@ def fswaverec2(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int]): Compute the transform over these axes of the `data`
-            tensor. Defaults to (-2, -1).
+        axes : Compute the transform over these axes. If none, the last 2 are used.
 
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
@@ -317,7 +316,8 @@ def fswaverec2(
 def fswaverec3(
     coeffs: WaveletCoeffNd,
     wavelet: Union[Wavelet, str],
-    axes: tuple[int, int, int] = (-3, -2, -1),
+    *,
+    axes: AxisHint = None,
 ) -> torch.Tensor:
     """Compute a fully separable 3D-padded synthesis wavelet transform.
 
@@ -333,8 +333,7 @@ def fswaverec3(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
-            tensor. Defaults to (-3, -2, -1).
+        axes : Compute the transform over these axes. If none, the last 3 are used.
 
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
@@ -356,7 +355,7 @@ def _fswavedecn(
     *,
     mode: BoundaryMode = "reflect",
     level: Optional[int] = None,
-    axes: Optional[tuple[int, ...]] = None,
+    axes: AxisHint = None,
 ) -> WaveletCoeffNd:
     """Compute a fully separable :math:`N`-dimensional padded FWT.
 
@@ -374,9 +373,7 @@ def _fswavedecn(
         mode: The desired padding mode for extending the signal along the edges.
             See :data:`ptwt.constants.BoundaryMode`. Defaults to ``reflect``.
         level (int, optional): The number of desired scales. Defaults to None.
-        axes (tuple[int, ...], optional): Compute the transform over these axes
-            instead of the last :math:`N`. If None, the last :math:`N`
-            axes are transformed. Defaults to None.
+        axes : Compute the transform over these axes. If none, the last :math:`N` are used.
 
     Returns:
         A tuple starting with the approximation coefficient tensor
@@ -404,7 +401,8 @@ def _fswaverecn(
     coeffs: WaveletCoeffNd,
     wavelet: Union[Wavelet, str],
     ndim: int,
-    axes: Optional[tuple[int, ...]] = None,
+    *,
+    axes: AxisHint = None,
 ) -> torch.Tensor:
     """Invert a fully separable :math:`N`-dimensional padded FWT.
 
@@ -422,9 +420,7 @@ def _fswaverecn(
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
         ndim (int): The number of dimentsions :math:`N`.
-        axes (tuple[int, ...], optional): Compute the transform over these axes
-            instead of the last :math:`N`. If None, the last :math:`N`
-            axes are transformed. Defaults to None.
+        axes : Compute the transform over these axes. If none, the last :math:`N` are used.
 
     Returns:
         A reconstruction of the signal encoded in the wavelet coefficients.
@@ -440,9 +436,6 @@ def _fswaverecn(
     Note:
         ND-Transforms are generally out of this project's scope.
     """
-    if axes is None:
-        axes = tuple(range(-ndim, 0))
-
     coeffs, ds = _preprocess_coeffs(coeffs, ndim=ndim, axes=axes)
     _check_same_device_dtype(coeffs)
 
