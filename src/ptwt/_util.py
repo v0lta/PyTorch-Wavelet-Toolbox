@@ -863,7 +863,7 @@ def _preprocess_deconstruction(
     dec_lo, dec_hi, _, _ = _get_filter_tensors(
         wavelet, flip=True, device=data.device, dtype=data.dtype
     )
-    dec_filt = _construct_nd_filt(dec_lo, dec_hi)
+    dec_filt = _construct_nd_filt(dec_lo, dec_hi, n=ndim)
     return data, ds, dec_lo, dec_hi, dec_filt
 
 
