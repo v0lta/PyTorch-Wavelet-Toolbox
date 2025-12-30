@@ -198,7 +198,7 @@ def test_4d_invalid_axis_error() -> None:
     """Test the error for 1d axis arguments."""
     with pytest.raises(ValueError):
         # its supposed to crash ignore typecheck.
-        MatrixWavedec("haar", axis=(1, 2))  # type: ignore
+        MatrixWavedec("haar", axis=(1, 2))
 
 
 @pytest.mark.parametrize("size", [[2, 3, 32], [5, 32], [32], [1, 1, 64]])
