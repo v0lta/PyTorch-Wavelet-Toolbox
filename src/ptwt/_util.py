@@ -366,7 +366,10 @@ def _swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
 def _undo_swap_axes(data: torch.Tensor, axes: Sequence[int]) -> torch.Tensor:
     _check_axes_argument(axes)
     front, back = _get_transpose_order(axes, list(data.shape))
-    restore_sorted = torch.argsort(torch.tensor(front + back)).tolist()
+    # Python argsort causes problems with torch.export
+    # restore_sorted = torch.argsort(torch.tensor(front + back)).tolist()
+    order = front + back
+    restore_sorted = sorted(range(len(order)), key=lambda i: order[i])
     return torch.permute(data, restore_sorted)
 
 

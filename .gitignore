@@ -6,7 +6,7 @@ htmlcov
 log/
 .virtual_python
 examples/deepfake_analysis/ffhq_style_gan/
-
+.venv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
