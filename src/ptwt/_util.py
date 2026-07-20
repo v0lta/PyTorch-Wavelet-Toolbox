@@ -280,10 +280,10 @@ def _fold_axes(data: torch.Tensor, keep_no: int) -> tuple[torch.Tensor, list[int
         folded result array, and input_shape the shape of the original input.
     """
     dshape = list(data.shape)
-    return (
-        torch.reshape(data, [int(np.prod(dshape[:-keep_no]))] + dshape[-keep_no:]),
-        dshape,
-    )
+    folded_size = 1
+    for s in dshape[:-keep_no]:
+        folded_size = folded_size * s
+    return torch.reshape(data, [folded_size] + dshape[-keep_no:]), dshape
 
 
 def _unfold_axes(data: torch.Tensor, ds: list[int], keep_no: int) -> torch.Tensor:
