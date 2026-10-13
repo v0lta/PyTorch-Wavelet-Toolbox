@@ -45,7 +45,7 @@ class WaveletLayer(torch.nn.Module):
         wavelet_decomposition = WaveletDecomposition1D(scales, coefficient_lengths, init_wavelet)
         mul_p = Permutator(wave_depth)
         mul_g = MMDropoutDiagonal(p_drop, wave_depth)
-        wavelet_reconstruction = WaveletReconstruction1d(scales, coefficient_lengths, init_wavelet)
+        wavelet_reconstruction = WaveletReconstruction1D(scales, coefficient_lengths, init_wavelet)
         mul_s = MMDropoutDiagonal(p_drop, depth)
 
         self.sequence = torch.nn.Sequential(
@@ -164,7 +164,7 @@ class WaveletReconstruction(torch.nn.Module, Generic[X, Y], ABC):
         return y
 
 
-class WaveletReconstruction1d(WaveletReconstruction[WaveletCoeff1d, int]):
+class WaveletReconstruction1D(WaveletReconstruction[WaveletCoeff1d, int]):
     """A module for 1D wavelet construction."""
 
     def __init__(
@@ -194,7 +194,7 @@ class WaveletReconstruction1d(WaveletReconstruction[WaveletCoeff1d, int]):
         return coeff_lst
 
 
-class WaveletReconstruction2d(WaveletReconstruction[WaveletCoeff2d, tuple[int, int]]):
+class WaveletReconstruction2D(WaveletReconstruction[WaveletCoeff2d, tuple[int, int]]):
     """A module for 2D wavelet construction."""
 
     def __init__(
@@ -217,7 +217,7 @@ class WaveletReconstruction2d(WaveletReconstruction[WaveletCoeff2d, tuple[int, i
         raise NotImplementedError
 
 
-class WaveletReconstruction3d(
+class WaveletReconstruction3D(
     WaveletReconstruction[WaveletCoeffNd, tuple[int, int, int]]
 ):
     """A module for 3D wavelet construction."""
