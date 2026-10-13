@@ -15,6 +15,7 @@ from ptwt.wavelets_learnable import WaveletFilter
 
 X = TypeVar("X")
 Y = TypeVar("Y")
+Reconstruction: TypeAlias = Callable[[X, WaveletFilter, Y], torch.Tensor]
 
 
 class WaveletLayer(torch.nn.Module):
@@ -124,9 +125,6 @@ class WaveletDecomposition1D(torch.nn.Module):
             shape_lst == self.coefficient_len_lst[::-1]
         ), "Wavelet shape assumptions false. This is a bug."
         return c_tensor.squeeze(1)
-
-
-Reconstruction: TypeAlias = Callable[[X, WaveletFilter, Y], torch.Tensor]
 
 
 class WaveletReconstruction(torch.nn.Module, Generic[X, Y], ABC):
