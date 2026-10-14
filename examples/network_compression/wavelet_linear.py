@@ -16,7 +16,7 @@ from ptwt.wavelets_learnable import WaveletFilter
 
 CoefficientsType = TypeVar("CoefficientsType")
 AxisType = TypeVar("AxisType")
-Reconstruction: TypeAlias = Callable[[CoefficientsType, WaveletFilter, AxisType], torch.Tensor]
+ReconstructionFunction: TypeAlias = Callable[[CoefficientsType, WaveletFilter, AxisType], torch.Tensor]
 
 
 class WaveletLayer(torch.nn.Module):
@@ -140,7 +140,7 @@ class WaveletReconstruction(torch.nn.Module, Generic[CoefficientsType, AxisType]
         scales: int,
         coefficient_lengths: list[int],
         wavelet: WaveletFilter,
-        func: Reconstruction[CoefficientsType, AxisType],
+        func: ReconstructionFunction[CoefficientsType, AxisType],
         axis: AxisType,
     ) -> None:
         super().__init__()
