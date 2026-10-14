@@ -14,9 +14,9 @@ from ptwt import wavedec, waverec, waverec2, waverec3
 from ptwt.constants import WaveletCoeff1d, WaveletCoeff2d, WaveletCoeffNd
 from ptwt.wavelets_learnable import WaveletFilter
 
-X = TypeVar("X")
-Y = TypeVar("Y")
-Reconstruction: TypeAlias = Callable[[X, WaveletFilter, Y], torch.Tensor]
+CoefficientsType = TypeVar("CoefficientsType")
+AxisType = TypeVar("AxisType")
+Reconstruction: TypeAlias = Callable[[CoefficientsType, WaveletFilter, AxisType], torch.Tensor]
 
 
 class WaveletLayer(torch.nn.Module):
@@ -132,7 +132,7 @@ class WaveletDecomposition1D(torch.nn.Module):
         return c_tensor.squeeze(1)
 
 
-class WaveletReconstruction(torch.nn.Module, Generic[X, Y], ABC):
+class WaveletReconstruction(torch.nn.Module, Generic[CoefficientsType, AxisType], ABC):
     """Am abstract wavelet reconstruction module."""
 
     def __init__(
@@ -140,8 +140,8 @@ class WaveletReconstruction(torch.nn.Module, Generic[X, Y], ABC):
         scales: int,
         coefficient_lengths: list[int],
         wavelet: WaveletFilter,
-        func: Reconstruction[X, Y],
-        axis: Y,
+        func: Reconstruction[CoefficientsType, AxisType],
+        axis: AxisType,
     ) -> None:
         super().__init__()
         self.scales = scales
@@ -151,7 +151,7 @@ class WaveletReconstruction(torch.nn.Module, Generic[X, Y], ABC):
         self.func = func
 
     @abstractmethod
-    def get_coefficients(self, x: torch.Tensor) -> X:
+    def get_coefficients(self, x: torch.Tensor) -> CoefficientsType:
         """Get coefficients."""
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
