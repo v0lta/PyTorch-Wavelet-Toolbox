@@ -6,22 +6,23 @@ and its transpose. This module treats boundaries with edge-padding.
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 import pywt
 import torch
 
 from ._util import (
+    AxisHint,
     _adjust_padding_at_reconstruction,
     _check_same_device_dtype,
     _get_filter_tensors,
-    _get_len,
-    _get_pad,
+    _get_padding_n,
+    _group_for_symmetric,
     _pad_symmetric,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
-    _preprocess_tensor,
+    _preprocess_deconstruction,
     _translate_boundary_strings,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeff1d
@@ -54,19 +55,14 @@ def _fwt_pad(
     Returns:
         A PyTorch tensor with the padded input data
     """
-    # convert pywt to pytorch convention.
-    if mode is None:
-        mode = "reflect"
     pytorch_mode = _translate_boundary_strings(mode)
 
     if padding is None:
-        padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
-    else:
-        padl, padr = padding
+        padding = cast(tuple[int, int], _get_padding_n(data, wavelet, n=1))
     if pytorch_mode == "symmetric":
-        data_pad = _pad_symmetric(data, [(padl, padr)])
+        data_pad = _pad_symmetric(data, _group_for_symmetric(padding))
     else:
-        data_pad = torch.nn.functional.pad(data, [padl, padr], mode=pytorch_mode)
+        data_pad = torch.nn.functional.pad(data, padding, mode=pytorch_mode)
     return data_pad
 
 
@@ -95,7 +91,7 @@ def wavedec(
 
     Args:
         data (torch.Tensor): The input time series to transform.
-            By default the last axis is transformed.
+            By default, the last axis is transformed.
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
             Please consider the output from ``pywt.wavelist(kind='discrete')``
@@ -126,22 +122,19 @@ def wavedec(
         >>> # compute the forward fwt coefficients
         >>> ptwt.wavedec(data, 'haar', mode='zero', level=2)
     """
-    data, ds = _preprocess_tensor(data, ndim=1, axes=axis)
-
-    dec_lo, dec_hi, _, _ = _get_filter_tensors(
-        wavelet, flip=True, device=data.device, dtype=data.dtype
+    data, ds, dec_lo, dec_hi, dec_filt = _preprocess_deconstruction(
+        data, wavelet, axes=axis, ndim=1
     )
-    filt_len = dec_lo.shape[-1]
-    filt = torch.stack([dec_lo, dec_hi], 0)
 
     if level is None:
+        filt_len = dec_lo.shape[-1]
         level = pywt.dwt_max_level(data.shape[-1], filt_len)
 
     result_list = []
     res_lo = data
     for _ in range(level):
         res_lo = _fwt_pad(res_lo, wavelet, mode=mode)
-        res = torch.nn.functional.conv1d(res_lo, filt, stride=2)
+        res = torch.nn.functional.conv1d(res_lo, dec_filt, stride=2)
         res_lo, res_hi = torch.split(res, 1, 1)
         result_list.append(res_hi.squeeze(1))
     result_list.append(res_lo.squeeze(1))
@@ -151,7 +144,7 @@ def wavedec(
 
 
 def waverec(
-    coeffs: WaveletCoeff1d, wavelet: Union[Wavelet, str], axis: int = -1
+    coeffs: WaveletCoeff1d, wavelet: Union[Wavelet, str], *, axis: AxisHint = None
 ) -> torch.Tensor:
     """Reconstruct a 1d signal from wavelet coefficients.
 
@@ -162,8 +155,7 @@ def waverec(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axis (int): Compute the transform over this axis of the `data` tensor.
-            Defaults to -1.
+        axis : Compute the transform over this axis. If none, the last is used.
 
     Returns:
         The reconstructed signal tensor.

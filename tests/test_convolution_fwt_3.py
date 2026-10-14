@@ -23,10 +23,8 @@ def _expand_dims(
             for key, item in bel.items():
                 batch_list[pos][key] = np.expand_dims(item, 0)
         else:
-            raise TypeError(
-                "Argument type not supported,\
-                             batch_list element should have been a dict."
-            )
+            raise TypeError("Argument type not supported,\
+                             batch_list element should have been a dict.")
     return batch_list
 
 

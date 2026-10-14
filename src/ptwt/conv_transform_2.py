@@ -6,52 +6,29 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 import pywt
 import torch
 
 from ._util import (
+    AxisHint,
     _adjust_padding_at_reconstruction,
     _check_same_device_dtype,
+    _construct_2d_filt,
     _get_filter_tensors,
-    _get_len,
-    _get_pad,
-    _outer,
+    _get_padding_n,
+    _group_for_symmetric,
     _pad_symmetric,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
-    _preprocess_tensor,
+    _preprocess_deconstruction,
     _translate_boundary_strings,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeff2d, WaveletDetailTuple2d
 
 __all__ = ["wavedec2", "waverec2"]
-
-
-def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct two-dimensional filters using outer products.
-
-    Args:
-        lo (torch.Tensor): Low-pass input filter.
-        hi (torch.Tensor): High-pass input filter
-
-    Returns:
-        Stacked 2d-filters of dimension
-
-        [filt_no, 1, height, width].
-
-        The four filters are ordered ll, lh, hl, hh.
-
-    """
-    ll = _outer(lo, lo)
-    lh = _outer(hi, lo)
-    hl = _outer(lo, hi)
-    hh = _outer(hi, hi)
-    filt = torch.stack([ll, lh, hl, hh], 0)
-    filt = filt.unsqueeze(1)
-    return filt
 
 
 def _fwt_pad2(
@@ -83,21 +60,14 @@ def _fwt_pad2(
         The padded output tensor.
 
     """
-    if mode is None:
-        mode = "reflect"
     pytorch_mode = _translate_boundary_strings(mode)
 
     if padding is None:
-        padb, padt = _get_pad(data.shape[-2], _get_len(wavelet))
-        padr, padl = _get_pad(data.shape[-1], _get_len(wavelet))
-    else:
-        padl, padr, padt, padb = padding
+        padding = cast(tuple[int, int, int, int], _get_padding_n(data, wavelet, n=2))
     if pytorch_mode == "symmetric":
-        data_pad = _pad_symmetric(data, [(padt, padb), (padl, padr)])
+        data_pad = _pad_symmetric(data, _group_for_symmetric(padding))
     else:
-        data_pad = torch.nn.functional.pad(
-            data, [padl, padr, padt, padb], mode=pytorch_mode
-        )
+        data_pad = torch.nn.functional.pad(data, padding, mode=pytorch_mode)
     return data_pad
 
 
@@ -160,11 +130,9 @@ def wavedec2(
         >>> coefficients = ptwt.wavedec2(data, "haar", level=2, mode="zero")
 
     """
-    data, ds = _preprocess_tensor(data, ndim=2, axes=axes)
-    dec_lo, dec_hi, _, _ = _get_filter_tensors(
-        wavelet, flip=True, device=data.device, dtype=data.dtype
+    data, ds, dec_lo, dec_hi, dec_filt = _preprocess_deconstruction(
+        data, wavelet, axes=axes, ndim=2
     )
-    dec_filt = _construct_2d_filt(lo=dec_lo, hi=dec_hi)
 
     if level is None:
         level = pywt.dwtn_max_level([data.shape[-1], data.shape[-2]], wavelet)
@@ -192,7 +160,8 @@ def wavedec2(
 def waverec2(
     coeffs: WaveletCoeff2d,
     wavelet: Union[Wavelet, str],
-    axes: tuple[int, int] = (-2, -1),
+    *,
+    axes: AxisHint = None,
 ) -> torch.Tensor:
     """Reconstruct a 2d signal from wavelet coefficients.
 
@@ -203,8 +172,7 @@ def waverec2(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int]): Compute the transform over these axes of the `data`
-            tensor. Defaults to (-2, -1).
+        axes : Compute the transform over these axes. If none, the last 2 are used.
 
     Returns:
         The reconstructed signal tensor.

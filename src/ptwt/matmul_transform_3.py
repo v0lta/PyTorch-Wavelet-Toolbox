@@ -10,10 +10,11 @@ import numpy as np
 import torch
 
 from ._util import (
+    AxisHint,
     _as_wavelet,
-    _check_axes_argument,
     _check_same_device_dtype,
     _deprecated_alias,
+    _ensure_axes,
     _is_orthogonalize_method_supported,
     _postprocess_coeffs,
     _postprocess_tensor,
@@ -81,7 +82,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         wavelet: Union[Wavelet, str],
         level: Optional[int] = None,
         *,
-        axes: tuple[int, int, int] = (-3, -2, -1),
+        axes: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
         odd_coeff_padding_mode: BoundaryMode = "zero",
     ):
@@ -97,8 +98,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
                 for possible choices.
             level (int, optional): The desired decomposition level.
                 Defaults to None.
-            axes (tuple[int, int, int]): Compute the transform over these axes
-                of the data tensor. Defaults to (-3, -2, -1).
+            axes : Compute the transform over these axes. If none, the last 3 are used.
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to ``qr``.
@@ -121,11 +121,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         self.level = level
         self.orthogonalization = orthogonalization
         self.odd_coeff_padding_mode = odd_coeff_padding_mode
-        if len(axes) != 3:
-            raise ValueError("3D transforms work with three axes.")
-        else:
-            _check_axes_argument(list(axes))
-            self.axes = axes
+        self.axes = _ensure_axes(axes=axes, dim=3)
         self.input_signal_shape: Optional[tuple[int, int, int]] = None
         self.fwt_matrix_list: list[list[torch.Tensor]] = []
 
@@ -302,7 +298,7 @@ class MatrixWaverec3(object):
         self,
         wavelet: Union[Wavelet, str],
         *,
-        axes: tuple[int, int, int] = (-3, -2, -1),
+        axes: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
     ):
         """Compute a three-dimensional separable boundary wavelet synthesis transform.
@@ -312,8 +308,7 @@ class MatrixWaverec3(object):
                 the name of a pywt wavelet.
                 Refer to the output from ``pywt.wavelist(kind='discrete')``
                 for possible choices.
-            axes (tuple[int, int, int]): Compute the transform over these axes
-                of the data tensor. Defaults to (-3, -2, -1).
+            axes : Compute the transform over these axes. If none, the last 3 are used.
             orthogonalization: The method used to orthogonalize
                 boundary filters, see :data:`ptwt.constants.OrthogonalizeMethod`.
                 Defaults to ``qr``.
@@ -327,11 +322,7 @@ class MatrixWaverec3(object):
             ValueError: If the wavelet filters have different lengths.
         """
         self.wavelet = _as_wavelet(wavelet)
-        if len(axes) != 3:
-            raise ValueError("3D transforms work with three axes")
-        else:
-            _check_axes_argument(list(axes))
-            self.axes = axes
+        self.axes = _ensure_axes(axes=axes, dim=3)
         self.orthogonalization = orthogonalization
         self.ifwt_matrix_list: list[list[torch.Tensor]] = []
         self.input_signal_shape: Optional[tuple[int, int, int]] = None

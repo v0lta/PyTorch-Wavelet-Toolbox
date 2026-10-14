@@ -5,58 +5,30 @@ The functions here are based on torch.nn.functional.conv3d and it's transpose.
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 import pywt
 import torch
 
 from ._util import (
+    AxisHint,
     _adjust_padding_at_reconstruction,
     _as_wavelet,
     _check_same_device_dtype,
+    _construct_3d_filt,
     _get_filter_tensors,
-    _get_len,
-    _get_pad,
-    _outer,
+    _get_padding_n,
+    _group_for_symmetric,
     _pad_symmetric,
     _postprocess_coeffs,
     _postprocess_tensor,
     _preprocess_coeffs,
-    _preprocess_tensor,
+    _preprocess_deconstruction,
     _translate_boundary_strings,
 )
 from .constants import BoundaryMode, Wavelet, WaveletCoeffNd, WaveletDetailDict
 
 __all__ = ["wavedec3", "waverec3"]
-
-
-def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
-    """Construct three-dimensional filters using outer products.
-
-    Args:
-        lo (torch.Tensor): Low-pass input filter.
-        hi (torch.Tensor): High-pass input filter
-
-    Returns:
-        Stacked 3d filters of dimension::
-
-        [8, 1, length, height, width].
-
-        The four filters are ordered ll, lh, hl, hh.
-    """
-    dim_size = lo.shape[-1]
-    size = [dim_size] * 3
-    lll = _outer(lo, _outer(lo, lo)).reshape(size)
-    llh = _outer(lo, _outer(lo, hi)).reshape(size)
-    lhl = _outer(lo, _outer(hi, lo)).reshape(size)
-    lhh = _outer(lo, _outer(hi, hi)).reshape(size)
-    hll = _outer(hi, _outer(lo, lo)).reshape(size)
-    hlh = _outer(hi, _outer(lo, hi)).reshape(size)
-    hhl = _outer(hi, _outer(hi, lo)).reshape(size)
-    hhh = _outer(hi, _outer(hi, hi)).reshape(size)
-    filt = torch.stack([lll, llh, lhl, lhh, hll, hlh, hhl, hhh], 0)
-    filt = filt.unsqueeze(1)
-    return filt
 
 
 def _fwt_pad3(
@@ -91,21 +63,13 @@ def _fwt_pad3(
     pytorch_mode = _translate_boundary_strings(mode)
 
     if padding is None:
-        pad_back, pad_front = _get_pad(data.shape[-3], _get_len(wavelet))
-        pad_bottom, pad_top = _get_pad(data.shape[-2], _get_len(wavelet))
-        pad_right, pad_left = _get_pad(data.shape[-1], _get_len(wavelet))
-    else:
-        pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back = padding
+        padding = cast(
+            tuple[int, int, int, int, int, int], _get_padding_n(data, wavelet, n=3)
+        )
     if pytorch_mode == "symmetric":
-        data_pad = _pad_symmetric(
-            data, [(pad_front, pad_back), (pad_top, pad_bottom), (pad_left, pad_right)]
-        )
+        data_pad = _pad_symmetric(data, _group_for_symmetric(padding))
     else:
-        data_pad = torch.nn.functional.pad(
-            data,
-            [pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back],
-            mode=pytorch_mode,
-        )
+        data_pad = torch.nn.functional.pad(data, padding, mode=pytorch_mode)
     return data_pad
 
 
@@ -144,13 +108,10 @@ def wavedec3(
         >>> data = torch.randn(5, 16, 16, 16)
         >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
     """
-    data, ds = _preprocess_tensor(data, ndim=3, axes=axes)
-
     wavelet = _as_wavelet(wavelet)
-    dec_lo, dec_hi, _, _ = _get_filter_tensors(
-        wavelet, flip=True, device=data.device, dtype=data.dtype
+    data, ds, dec_lo, dec_hi, dec_filt = _preprocess_deconstruction(
+        data, wavelet, axes=axes, ndim=3
     )
-    dec_filt = _construct_3d_filt(lo=dec_lo, hi=dec_hi)
 
     if level is None:
         level = pywt.dwtn_max_level(
@@ -187,7 +148,8 @@ def wavedec3(
 def waverec3(
     coeffs: WaveletCoeffNd,
     wavelet: Union[Wavelet, str],
-    axes: tuple[int, int, int] = (-3, -2, -1),
+    *,
+    axes: AxisHint = None,
 ) -> torch.Tensor:
     """Reconstruct a 3d signal from wavelet coefficients.
 
@@ -198,8 +160,8 @@ def waverec3(
             the name of a pywt wavelet.
             Refer to the output from ``pywt.wavelist(kind='discrete')``
             for possible choices.
-        axes (tuple[int, int, int]): Compute the transform over these axes of the `data`
-            tensor. Defaults to (-3, -2, -1).
+        axes : Compute the transform over these axes. If none, the last 3 are used.
+
 
     Returns:
         The reconstructed signal tensor.

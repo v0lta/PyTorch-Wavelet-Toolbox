@@ -8,6 +8,10 @@ import torch
 from ptwt._util import (
     _as_wavelet,
     _fold_axes,
+    _get_len,
+    _get_pad,
+    _get_padding_n,
+    _group_for_symmetric,
     _pad_symmetric,
     _pad_symmetric_1d,
     _unfold_axes,
@@ -78,3 +82,51 @@ def test_fold(keep_no: int, size: list[int]) -> None:
     assert len(folded.shape) == keep_no + 1
     rec = _unfold_axes(folded, size, keep_no)
     np.allclose(array.numpy(), rec.numpy())
+
+
+def test_repack_symmetric() -> None:
+    """Ensure channel folding works as expected."""
+    padl, padr = padding = tuple(range(2))
+    assert _group_for_symmetric(padding) == [(padl, padr)]
+
+    padl, padr, padt, padb = padding = tuple(range(4))
+    assert _group_for_symmetric(padding) == [(padt, padb), (padl, padr)]
+
+    pad_left, pad_right, pad_top, pad_bottom, pad_front, pad_back = padding = tuple(
+        range(6)
+    )
+    assert _group_for_symmetric(padding) == [
+        (pad_front, pad_back),
+        (pad_top, pad_bottom),
+        (pad_left, pad_right),
+    ]
+
+
+def test_get_padding_1d() -> None:
+    """Ensure padding works as expected."""
+    wavelet = pywt.Wavelet("sym4")
+    data = torch.randn(3, 3, 3)
+    padding = _get_padding_n(data, wavelet, 1)
+    assert padding == _get_pad(data.shape[-1], _get_len(wavelet))
+
+
+def test_get_padding_2d() -> None:
+    """Ensure padding works as expected."""
+    wavelet = pywt.Wavelet("sym4")
+    data = torch.randn(3, 3, 3)
+    padt, padb = _get_pad(data.shape[-2], _get_len(wavelet))
+    padl, padr = _get_pad(data.shape[-1], _get_len(wavelet))
+    padding = _get_padding_n(data, wavelet, 2)
+    assert padding == (padl, padr, padt, padb)
+
+
+def test_get_padding_3d() -> None:
+    """Ensure padding works as expected."""
+    wavelet = pywt.Wavelet("sym4")
+    data = torch.randn(3, 3, 3)
+    _len_wavelet = _get_len(wavelet)
+    assert (
+        *_get_pad(data.shape[-1], _len_wavelet),
+        *_get_pad(data.shape[-2], _len_wavelet),
+        *_get_pad(data.shape[-3], _len_wavelet),
+    ) == _get_padding_n(data, wavelet, 3)

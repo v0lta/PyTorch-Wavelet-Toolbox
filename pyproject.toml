@@ -33,6 +33,7 @@ dependencies = [
     "PyWavelets",
     "numpy",
     "torch",
+    "more-itertools",
 ]
 license = {text = "EUPL-1.2"}
 
