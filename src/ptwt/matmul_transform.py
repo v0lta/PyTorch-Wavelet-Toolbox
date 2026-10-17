@@ -695,7 +695,9 @@ class MatrixWaverec:
                     lo = lo[:-1, :]
                     pred_len = lo.shape[0]
                     if pred_len != next_len:
-                        raise RuntimeError("padding error, please open an issue on GitHub")
+                        raise RuntimeError(
+                            "padding error, please open an issue on GitHub"
+                        )
 
         res_lo = lo.T
 
