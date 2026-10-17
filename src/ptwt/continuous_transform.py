@@ -193,11 +193,15 @@ def _integrate_wavelet(wavelet: ContinuousWavelet | str, precision: int = 8) -> 
     def _integrate(
         arr: np.ndarray | torch.Tensor, step: np.ndarray | torch.Tensor
     ) -> np.ndarray | torch.Tensor:
-        if isinstance(arr, np.ndarray) and isinstance(step, np.ndarray):
+        if isinstance(arr, np.ndarray):
+            if not isinstance(step, np.ndarray):
+                step = step.numpy()
             np_integral = np.cumsum(arr)
             np_integral *= step
             return np_integral
-        elif isinstance(arr, torch.Tensor) and isinstance(step, torch.Tensor):
+        elif isinstance(arr, torch.Tensor):
+            if isinstance(step, np.ndarray):
+                step = torch.from_numpy(step)
             torch_integral: torch.Tensor = torch.cumsum(arr, -1)
             torch_integral *= step
             return torch_integral
