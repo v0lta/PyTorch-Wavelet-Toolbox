@@ -194,10 +194,8 @@ def test_separable_haar_2d() -> None:
     ptwtres = [tensor for tensor_list in ptwtres_nested for tensor in tensor_list]
 
     assert all(
-        [
-            np.allclose(pywt_test, ptwt_test.numpy())
-            for pywt_test, ptwt_test in zip(pywtres, ptwtres)
-        ]
+        np.allclose(pywt_test, ptwt_test.numpy())
+        for pywt_test, ptwt_test in zip(pywtres, ptwtres)
     )
 
 

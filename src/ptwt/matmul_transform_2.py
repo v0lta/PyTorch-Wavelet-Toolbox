@@ -6,7 +6,7 @@ This module uses boundary filters to minimize padding.
 from __future__ import annotations
 
 import sys
-from typing import Optional, Union, cast
+from typing import cast
 
 import numpy as np
 import torch
@@ -47,18 +47,18 @@ from .sparse_math import (
 )
 
 __all__ = [
-    "construct_boundary_a2",
-    "construct_boundary_s2",
     "MatrixWavedec2",
     "MatrixWaverec2",
+    "construct_boundary_a2",
+    "construct_boundary_s2",
 ]
 
 
 def _construct_a_2(
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     height: int,
     width: int,
-    device: Union[torch.device, str],
+    device: torch.device | str,
     dtype: torch.dtype = torch.float64,
     mode: PaddingMode = "sameshift",
 ) -> torch.Tensor:
@@ -98,10 +98,10 @@ def _construct_a_2(
 
 
 def _construct_s_2(
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     height: int,
     width: int,
-    device: Union[torch.device, str],
+    device: torch.device | str,
     dtype: torch.dtype = torch.float64,
     mode: PaddingMode = "sameshift",
 ) -> torch.Tensor:
@@ -152,10 +152,10 @@ def _construct_s_2(
 
 @_deprecated_alias(boundary="orthogonalization")
 def construct_boundary_a2(
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     height: int,
     width: int,
-    device: Union[torch.device, str],
+    device: torch.device | str,
     orthogonalization: OrthogonalizeMethod = "qr",
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
@@ -184,18 +184,16 @@ def construct_boundary_a2(
     """
     wavelet = _as_wavelet(wavelet)
     a = _construct_a_2(wavelet, height, width, device, dtype=dtype, mode="sameshift")
-    orth_a = orthogonalize(
-        a, wavelet.dec_len**2, method=orthogonalization
-    )  # noqa: BLK100
+    orth_a = orthogonalize(a, wavelet.dec_len**2, method=orthogonalization)
     return orth_a
 
 
 @_deprecated_alias(boundary="orthogonalization")
 def construct_boundary_s2(
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     height: int,
     width: int,
-    device: Union[torch.device, str],
+    device: torch.device | str,
     *,
     orthogonalization: OrthogonalizeMethod = "qr",
     dtype: torch.dtype = torch.float64,
@@ -283,8 +281,8 @@ class MatrixWavedec2(BaseMatrixWaveDec):
     @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
-        wavelet: Union[Wavelet, str],
-        level: Optional[int] = None,
+        wavelet: Wavelet | str,
+        level: int | None = None,
         *,
         axes: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
@@ -330,9 +328,9 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         self.orthogonalization = orthogonalization
         self.odd_coeff_padding_mode = odd_coeff_padding_mode
         self.separable = separable
-        self.input_signal_shape: Optional[tuple[int, int]] = None
+        self.input_signal_shape: tuple[int, int] | None = None
         self.fwt_matrix_list: list[
-            Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]
+            torch.Tensor | tuple[torch.Tensor, torch.Tensor]
         ] = []
         self.pad_list: list[tuple[bool, bool]] = []
         self.padded = False
@@ -384,7 +382,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
 
     def _construct_analysis_matrices(
         self,
-        device: Union[torch.device, str],
+        device: torch.device | str,
         dtype: torch.dtype,
     ) -> None:
         if self.level is None or self.input_signal_shape is None:
@@ -405,7 +403,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                     f". At level {curr_level}, at least one of the current signal "
                     f"height and width ({current_height}, {current_width}) is smaller "
                     f"then the filter length {filt_len}. Therefore, the transformation "
-                    f"is only computed up to the decomposition level {curr_level-1}.\n"
+                    f"is only computed up to the decomposition level {curr_level - 1}.\n"
                 )
                 break
             # the conv matrices require even length inputs.
@@ -567,7 +565,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         return result
 
 
-class MatrixWaverec2(object):
+class MatrixWaverec2:
     """Synthesis or inverse matrix based-wavelet transformation object.
 
     Example:
@@ -585,7 +583,7 @@ class MatrixWaverec2(object):
     @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
-        wavelet: Union[Wavelet, str],
+        wavelet: Wavelet | str,
         *,
         axes: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
@@ -623,10 +621,10 @@ class MatrixWaverec2(object):
         self.axes = _ensure_axes(axes=axes, dim=2)
 
         self.ifwt_matrix_list: list[
-            Union[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]
+            torch.Tensor | tuple[torch.Tensor, torch.Tensor]
         ] = []
-        self.level: Optional[int] = None
-        self.input_signal_shape: Optional[tuple[int, int]] = None
+        self.level: int | None = None
+        self.input_signal_shape: tuple[int, int] | None = None
 
         self.padded = False
 
@@ -676,7 +674,7 @@ class MatrixWaverec2(object):
 
     def _construct_synthesis_matrices(
         self,
-        device: Union[torch.device, str],
+        device: torch.device | str,
         dtype: torch.dtype,
     ) -> None:
         self.ifwt_matrix_list = []
@@ -695,7 +693,7 @@ class MatrixWaverec2(object):
                     f". At level {curr_level}, at least one of the current signal "
                     f"height and width ({current_height}, {current_width}) is smaller "
                     f"then the filter length {filt_len}. Therefore, the transformation "
-                    f"is only computed up to the decomposition level {curr_level-1}.\n"
+                    f"is only computed up to the decomposition level {curr_level - 1}.\n"
                 )
                 break
             current_height, current_width, pad_tuple = _matrix_pad_2(

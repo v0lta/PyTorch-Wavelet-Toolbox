@@ -1,7 +1,5 @@
 """Generate artificial time-series data for debugging purposes."""
 
-from typing import Optional, Union
-
 import torch
 
 
@@ -10,7 +8,7 @@ def generate_mackey(
     tmax: float = 200,
     delta_t: float = 1.0,
     rnd: bool = True,
-    device: Union[torch.device, str] = "cuda",
+    device: torch.device | str = "cuda",
 ) -> torch.Tensor:
     """Generate synthetic training data using the Mackey system of equations.
 
@@ -67,9 +65,9 @@ class MackeyGenerator:
         batch_size: int,
         tmax: float,
         delta_t: float,
-        block_size: Optional[int] = None,
+        block_size: int | None = None,
         restore_and_plot: bool = False,
-        device: Union[torch.device, str] = "cuda",
+        device: torch.device | str = "cuda",
     ) -> None:
         """Create a Mackey-Glass simulator.
 

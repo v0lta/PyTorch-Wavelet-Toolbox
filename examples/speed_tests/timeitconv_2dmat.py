@@ -8,7 +8,7 @@ import torch
 import ptwt
 
 if __name__ == "__main__":
-    repetitions = int(100)
+    repetitions = 100
     length = 1e3
 
     pywt_time_cpu = []

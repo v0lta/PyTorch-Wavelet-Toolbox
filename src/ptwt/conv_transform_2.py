@@ -6,7 +6,7 @@ torch.nn.functional.conv_transpose2d under the hood.
 
 from __future__ import annotations
 
-from typing import Optional, Union, cast
+from typing import cast
 
 import pywt
 import torch
@@ -33,10 +33,10 @@ __all__ = ["wavedec2", "waverec2"]
 
 def _fwt_pad2(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
-    mode: Optional[BoundaryMode] = None,
-    padding: Optional[tuple[int, int, int, int]] = None,
+    mode: BoundaryMode | None = None,
+    padding: tuple[int, int, int, int] | None = None,
 ) -> torch.Tensor:
     """Pad data for the 2d FWT.
 
@@ -73,10 +73,10 @@ def _fwt_pad2(
 
 def wavedec2(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     mode: BoundaryMode = "reflect",
-    level: Optional[int] = None,
+    level: int | None = None,
     axes: tuple[int, int] = (-2, -1),
 ) -> WaveletCoeff2d:
     r"""Compute the two-dimensional fast wavelet transformation.
@@ -130,7 +130,7 @@ def wavedec2(
         >>> coefficients = ptwt.wavedec2(data, "haar", level=2, mode="zero")
 
     """
-    data, ds, dec_lo, dec_hi, dec_filt = _preprocess_deconstruction(
+    data, ds, _dec_lo, _dec_hi, dec_filt = _preprocess_deconstruction(
         data, wavelet, axes=axes, ndim=2
     )
 
@@ -159,7 +159,7 @@ def wavedec2(
 
 def waverec2(
     coeffs: WaveletCoeff2d,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     axes: AxisHint = None,
 ) -> torch.Tensor:

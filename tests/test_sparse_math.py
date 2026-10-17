@@ -30,7 +30,7 @@ def test_kron() -> None:
     dense_result = torch.kron(a.to_dense(), b.to_dense())
     err = torch.sum(torch.abs(sparse_result.to_dense() - dense_result))
     condition = np.allclose(sparse_result.to_dense().numpy(), dense_result.numpy())
-    print("error {:2.2f}".format(err), condition)
+    print(f"error {err:2.2f}", condition)
     assert condition
 
 
@@ -91,9 +91,9 @@ def test_strided_conv_matrix(
     ).squeeze()
     error = torch.sum(torch.abs(mm_conv_res - torch_conv_res))
     print(
-        "filter shape {:2}".format(tuple(test_filter.shape)[0]),
-        "signal shape {:2}".format(tuple(input_signal.shape)[0]),
-        "error {:2.2e}".format(error.item()),
+        f"filter shape {next(iter(test_filter.shape)):2}",
+        f"signal shape {next(iter(input_signal.shape)):2}",
+        f"error {error.item():2.2e}",
     )
     assert np.allclose(mm_conv_res.numpy(), torch_conv_res.numpy())
 

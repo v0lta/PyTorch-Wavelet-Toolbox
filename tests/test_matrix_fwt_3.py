@@ -1,7 +1,5 @@
 """Test the 3d matrix-fwt code."""
 
-from typing import Optional
-
 import numpy as np
 import pytest
 import pywt
@@ -66,7 +64,7 @@ def test_boundary_wavedec3_level1_haar(shape: tuple[int, int, int]) -> None:
         if type(pywt_el) is np.ndarray:
             test_list.append(np.allclose(pywt_el, ptwt_el.numpy()))  # type: ignore
         else:
-            for key in pywt_el.keys():
+            for key in pywt_el:
                 test_list.append(np.allclose(pywt_el[key], ptwt_el[key].numpy()))  # type: ignore
     assert all(test_list)
 
@@ -80,7 +78,7 @@ def test_boundary_wavedec3_level1_haar(shape: tuple[int, int, int]) -> None:
     "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
 )
 def test_boundary_wavedec3_inverse(
-    level: Optional[int], shape: tuple[int, int, int], mode: BoundaryMode
+    level: int | None, shape: tuple[int, int, int], mode: BoundaryMode
 ) -> None:
     """Test the 3d matrix wavedec and the padding for odd axes."""
     batch_size = 1
@@ -108,7 +106,7 @@ def test_axes_arg_matrix_3d(axes: tuple[int, int, int], level: int) -> None:
         if type(a) is torch.Tensor:
             test_list.append(np.allclose(a, b))
         else:
-            for key in a.keys():  # type: ignore
+            for key in a:  # type: ignore
                 test_list.append(np.allclose(b[key], a[key].numpy()))  # type: ignore
 
     assert all(test_list)

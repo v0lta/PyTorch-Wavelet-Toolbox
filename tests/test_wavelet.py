@@ -36,8 +36,7 @@ def test_wavelet_lst(lst: list[str], is_orth: bool) -> None:
         orth = orthwave.filt_bank_orthogonality_loss()
         print(
             ws,
-            "prl, %.5f | acl, %.5f | pfacl, %.5f | orth, %.5f "
-            % (prl.item(), acl.item(), pacl.item(), orth.item()),
+            f"prl, {prl.item():.5f} | acl, {acl.item():.5f} | pfacl, {pacl.item():.5f} | orth, {orth.item():.5f} ",
         )
         if is_orth is True:
             assert orth < 1e-10
