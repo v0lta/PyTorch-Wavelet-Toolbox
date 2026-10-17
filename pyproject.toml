@@ -60,3 +60,9 @@ examples = [
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
+
+# Pytest, see https://docs.pytest.org/en/stable/reference/customize.html#pyproject-toml
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
