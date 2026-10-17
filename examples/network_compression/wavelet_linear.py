@@ -2,7 +2,8 @@
 # at https://github.com/v0lta/Wavelet-network-compression/blob/master/wavelet_learning/wavelet_linear.py
 
 from abc import ABC, abstractmethod
-from typing import Callable, TypeVar, Generic, TypeAlias
+from collections.abc import Callable
+from typing import Generic, TypeAlias, TypeVar
 
 import numpy as np
 import pywt
@@ -16,7 +17,9 @@ from ptwt.wavelets_learnable import WaveletFilter
 
 CoefficientsType = TypeVar("CoefficientsType")
 AxisType = TypeVar("AxisType")
-ReconstructionFunction: TypeAlias = Callable[[CoefficientsType, WaveletFilter, AxisType], torch.Tensor]
+ReconstructionFunction: TypeAlias = Callable[
+    [CoefficientsType, WaveletFilter, AxisType], torch.Tensor
+]
 
 
 class WaveletLayer(torch.nn.Module):
@@ -132,7 +135,7 @@ class WaveletDecomposition1D(torch.nn.Module):
         return c_tensor.squeeze(1)
 
 
-class WaveletReconstruction(torch.nn.Module, Generic[CoefficientsType, AxisType], ABC):
+class WaveletReconstruction(torch.nn.Module, ABC, Generic[CoefficientsType, AxisType]):
     """Am abstract wavelet reconstruction module."""
 
     def __init__(
