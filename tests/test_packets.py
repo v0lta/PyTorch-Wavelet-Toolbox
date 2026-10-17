@@ -66,6 +66,7 @@ def _compare_trees1(
 def _compare_trees2(
     wavelet_str: str,
     max_lev: int | None,
+    *,
     pywt_boundary: str = "zero",
     ptwt_boundary: ExtendedBoundaryMode = "zero",
     height: int = 256,
@@ -74,6 +75,7 @@ def _compare_trees2(
     transform_mode: bool = False,
     multiple_transforms: bool = False,
     axes: tuple[int, int] = (-2, -1),
+    separable: bool,
 ) -> None:
     face = datasets.face()[:height, :width].astype(np.float64).mean(-1)
     data = torch.stack([torch.from_numpy(face)] * batch_size, 0)
@@ -99,7 +101,11 @@ def _compare_trees2(
     # get the PyTorch decomposition
     if transform_mode:
         ptwt_wp_tree = WaveletPacket2D(
-            None, wavelet=wavelet_str, mode=ptwt_boundary, axes=axes
+            None,
+            wavelet=wavelet_str,
+            mode=ptwt_boundary,
+            axes=axes,
+            separable=separable,
         ).transform(data, maxlevel=max_lev)
     else:
         ptwt_wp_tree = WaveletPacket2D(
@@ -108,6 +114,7 @@ def _compare_trees2(
             mode=ptwt_boundary,
             maxlevel=max_lev,
             axes=axes,
+            separable=separable,
         )
 
     # if multiple_transform flag is set, recalculcate the packets
@@ -136,6 +143,7 @@ def _compare_trees2(
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (1, 2), (2, 0), (0, 2)])
+@pytest.mark.parametrize("separable", [False, True])
 def test_2d_packets(
     max_lev: int | None,
     wavelet_str: str,
@@ -144,6 +152,7 @@ def test_2d_packets(
     transform_mode: bool,
     multiple_transforms: bool,
     axes: tuple[int, int],
+    separable: bool,
 ) -> None:
     """Ensure pywt and ptwt produce equivalent wavelet 2d packet trees."""
     _compare_trees2(
@@ -155,6 +164,7 @@ def test_2d_packets(
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
         axes=axes,
+        separable=separable,
     )
 
 
@@ -164,23 +174,26 @@ def test_2d_packets(
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (1, 2), (2, 0), (0, 2)])
+@pytest.mark.parametrize("separable", [False, True])
 def test_boundary_matrix_packets2(
     max_lev: int | None,
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
     axes: tuple[int, int],
+    separable: bool,
 ) -> None:
     """Ensure the 2d - sparse matrix haar tree and pywt-tree are the same."""
     _compare_trees2(
         "db1",
         max_lev,
-        "zero",
-        "boundary",
+        pywt_boundary="zero",
+        ptwt_boundary="boundary",
         batch_size=batch_size,
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
         axes=axes,
+        separable=separable,
     )
 
 

@@ -43,7 +43,6 @@ def test_separable_conv(shape: Sequence[int], level: int) -> None:
             ptwt_dict[key]
             for ptwt_dict in ptwt_res[1:]
             for key in sorted(ptwt_dict.keys())
-            if len(key) == len(shape)
         ]
     )
     flat_ptwt_res = [
