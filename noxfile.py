@@ -27,17 +27,8 @@ def run_doctests(session):
 @nox.session(name="lint")
 def lint(session):
     """Check code conventions."""
-    session.install("flake8")
-    session.install(
-        "flake8-black",
-        "flake8-docstrings",
-        "flake8-bugbear",
-        "flake8-broken-line",
-        "pep8-naming",
-        "pydocstyle",
-        "darglint",
-    )
-    session.run("flake8", "src", "tests", "noxfile.py")
+    session.install("ruff")
+    session.run("ruff", "check", "src", "tests", "noxfile.py")
 
     session.install("sphinx", "doc8")
     session.run("doc8", "--max-line-length", "120", "docs/")
@@ -83,10 +74,10 @@ def docs(session):
 @nox.session(name="format")
 def format(session):
     """Fix common convention problems automatically."""
-    session.install("black")
+    session.install("ruff")
     session.install("isort")
-    session.run("isort", "src", "tests", "noxfile.py")
-    session.run("black", "src", "tests", "noxfile.py")
+    session.run("ruff", "format")
+    session.run("ruff", "check", "--fix", "--unsafe-fixes")
 
 
 @nox.session(name="coverage")

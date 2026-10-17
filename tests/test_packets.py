@@ -2,7 +2,7 @@
 
 # Created on Fri Apr 6 2021 by moritz (wolter@cs.uni-bonn.de)
 
-from typing import Literal, Optional
+from typing import Literal
 
 import numpy as np
 import pytest
@@ -17,7 +17,7 @@ from ptwt.packets import WaveletPacket, WaveletPacket2D
 
 def _compare_trees1(
     wavelet_str: str,
-    max_lev: Optional[int] = 3,
+    max_lev: int | None = 3,
     pywt_boundary: str = "zero",
     ptwt_boundary: ExtendedBoundaryMode = "zero",
     length: int = 256,
@@ -65,7 +65,7 @@ def _compare_trees1(
 
 def _compare_trees2(
     wavelet_str: str,
-    max_lev: Optional[int],
+    max_lev: int | None,
     pywt_boundary: str = "zero",
     ptwt_boundary: ExtendedBoundaryMode = "zero",
     height: int = 256,
@@ -137,7 +137,7 @@ def _compare_trees2(
 @pytest.mark.parametrize("multiple_transforms", [False, True])
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (1, 2), (2, 0), (0, 2)])
 def test_2d_packets(
-    max_lev: Optional[int],
+    max_lev: int | None,
     wavelet_str: str,
     boundary: ExtendedBoundaryMode,
     batch_size: int,
@@ -165,7 +165,7 @@ def test_2d_packets(
 @pytest.mark.parametrize("multiple_transforms", [False, True])
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (1, 2), (2, 0), (0, 2)])
 def test_boundary_matrix_packets2(
-    max_lev: Optional[int],
+    max_lev: int | None,
     batch_size: int,
     transform_mode: bool,
     multiple_transforms: bool,
@@ -221,7 +221,7 @@ def test_1d_packets(
 @pytest.mark.parametrize("transform_mode", [False, True])
 @pytest.mark.parametrize("multiple_transforms", [False, True])
 def test_boundary_matrix_packets1(
-    max_lev: Optional[int],
+    max_lev: int | None,
     transform_mode: bool,
     multiple_transforms: bool,
 ) -> None:
@@ -409,7 +409,7 @@ def test_packet_harbo_lvl3() -> None:
     """From Jensen, La Cour-Harbo, Rippels in Mathematics, Chapter 8 (page 89)."""
     data = np.array([56.0, 40.0, 8.0, 24.0, 48.0, 48.0, 40.0, 16.0])
 
-    class _MyHaarFilterBank(object):
+    class _MyHaarFilterBank:
         @property
         def filter_bank(self) -> tuple[list[float], ...]:
             """Unscaled Haar wavelet filters."""

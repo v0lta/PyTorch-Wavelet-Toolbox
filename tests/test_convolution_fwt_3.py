@@ -1,7 +1,7 @@
 """Test our 3d for loop-convolution based fwt code."""
 
 import typing
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -14,7 +14,7 @@ from ptwt.conv_transform_3 import wavedec3, waverec3
 
 
 def _expand_dims(
-    batch_list: list[Union[npt.NDArray[Any], dict[Any, Any]]],
+    batch_list: list[npt.NDArray[Any] | dict[Any, Any]],
 ) -> list[Any]:
     for pos, bel in enumerate(batch_list):
         if isinstance(bel, np.ndarray):
@@ -23,8 +23,9 @@ def _expand_dims(
             for key, item in bel.items():
                 batch_list[pos][key] = np.expand_dims(item, 0)
         else:
-            raise TypeError("Argument type not supported,\
-                             batch_list element should have been a dict.")
+            raise TypeError(
+                "Argument type not supported, batch_list element should have been a dict."
+            )
     return batch_list
 
 
@@ -83,7 +84,7 @@ def test_waverec3(
             test_list.append(np.allclose(a, b))
         else:
             test_list.extend(
-                [np.allclose(a[key], b[key]) for key in a.keys()]  # type: ignore
+                [np.allclose(a[key], b[key]) for key in a]  # type: ignore
             )
 
     assert all(test_list)
@@ -122,7 +123,7 @@ def test_multidim_input(
             test_list.append(np.allclose(a, b))
         else:
             test_list.extend(
-                [np.allclose(a[key], b[key]) for key in a.keys()]  # type: ignore
+                [np.allclose(a[key], b[key]) for key in a]  # type: ignore
             )
 
     assert all(test_list)
@@ -153,7 +154,7 @@ def test_axes_arg_3d(
             test_list.append(np.allclose(a, b))
         else:
             test_list.extend(
-                [np.allclose(a[key], b[key]) for key in a.keys()]  # type: ignore
+                [np.allclose(a[key], b[key]) for key in a]  # type: ignore
             )
 
     assert all(test_list)

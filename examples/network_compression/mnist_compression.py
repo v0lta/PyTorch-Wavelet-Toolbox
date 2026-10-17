@@ -27,9 +27,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pystow
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
+from torch import nn, optim
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard.writer import SummaryWriter
 from torchvision import datasets, transforms
@@ -117,13 +116,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
         loss.backward()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
-            msg = "Train Epoch: {} [{}/{} ({:.0f}%)], Loss: {:.6f}".format(
-                epoch,
-                batch_idx * len(data),
-                len(train_loader.dataset),
-                100.0 * batch_idx / len(train_loader),
-                loss.item(),
-            )
+            msg = f"Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} ({100.0 * batch_idx / len(train_loader):.0f}%)], Loss: {loss.item():.6f}"
             if args.compression == "Wavelet":
                 msg += f", wvl-loss: {wvl.item():.6f}"
             print(msg)
@@ -150,12 +143,7 @@ def test(args, model, device, test_loader, test_writer, epoch):
     wvl_loss = model.wavelet_loss()
 
     print(
-        "\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n".format(
-            test_loss,
-            correct,
-            len(test_loader.dataset),
-            100.0 * correct / len(test_loader.dataset),
-        )
+        f"\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)} ({100.0 * correct / len(test_loader.dataset):.0f}%)\n"
     )
 
     test_writer.add_scalar("test_correct", correct, epoch)
@@ -287,7 +275,7 @@ def main():
     )
 
     if args.compression == "Wavelet":
-        CustomWavelet = collections.namedtuple(
+        collections.namedtuple(
             "Wavelet", ["dec_lo", "dec_hi", "rec_lo", "rec_hi", "name"]
         )
         # init_wavelet = ProductFilter(

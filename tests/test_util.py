@@ -78,7 +78,7 @@ def test_pad_symmetric(size: list[int], pad_list: list[tuple[int, int]]) -> None
 def test_fold(keep_no: int, size: list[int]) -> None:
     """Ensure channel folding works as expected."""
     array = torch.randn(*size).type(torch.float64)
-    folded, ds = _fold_axes(array, keep_no)
+    folded, _ds = _fold_axes(array, keep_no)
     assert len(folded.shape) == keep_no + 1
     rec = _unfold_axes(folded, size, keep_no)
     np.allclose(array.numpy(), rec.numpy())

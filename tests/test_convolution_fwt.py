@@ -1,7 +1,6 @@
 """Test the conv-fwt code."""
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 # Written by moritz ( @ wolter.tech ) in 2021
 import numpy as np
@@ -29,7 +28,7 @@ from tests._mackey_glass import MackeyGenerator
 @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
 def test_conv_fwt1d(
     wavelet_string: str,
-    level: Optional[int],
+    level: int | None,
     mode: BoundaryMode,
     length: int,
     batch_size: int,
@@ -69,10 +68,8 @@ def test_conv_fwt1d_channel(size: list[int], wavelet: str) -> None:
     ptwt_coeff = wavedec(data, wavelet)
     pywt_coeff = pywt.wavedec(data.numpy(), wavelet, mode="reflect")
     assert all(
-        [
-            np.allclose(ptwtc.numpy(), pywtc)
-            for ptwtc, pywtc in zip(ptwt_coeff, pywt_coeff)
-        ]
+        np.allclose(ptwtc.numpy(), pywtc)
+        for ptwtc, pywtc in zip(ptwt_coeff, pywt_coeff)
     )
     rec = waverec(ptwt_coeff, wavelet)
     assert np.allclose(data.numpy(), rec.numpy())
@@ -86,10 +83,8 @@ def test_conv_fwt1d_nobatch(size: list[int], wavelet: str) -> None:
     ptwt_coeff = wavedec(data, wavelet)
     pywt_coeff = pywt.wavedec(data.numpy(), wavelet, mode="reflect")
     assert all(
-        [
-            np.allclose(ptwtc.numpy(), pywtc)
-            for ptwtc, pywtc in zip(ptwt_coeff, pywt_coeff)
-        ]
+        np.allclose(ptwtc.numpy(), pywtc)
+        for ptwtc, pywtc in zip(ptwt_coeff, pywt_coeff)
     )
     rec = waverec(ptwt_coeff, wavelet)
     assert np.allclose(data.numpy(), rec.numpy())
@@ -137,7 +132,7 @@ def test_orth_wavelet() -> None:
 
 @pytest.mark.parametrize("level", [1, 2, 3, None])
 @pytest.mark.parametrize("shape", [(64,), (1, 64), (3, 2, 64), (4, 3, 2, 64)])
-def test_1d_multibatch(level: Optional[int], shape: Sequence[int]) -> None:
+def test_1d_multibatch(level: int | None, shape: Sequence[int]) -> None:
     """Test 1D conv support for multiple inert batch dimensions."""
     data = torch.randn(*shape, dtype=torch.float64)
     ptwt_coeff = wavedec(data, "haar", level=level)
@@ -237,7 +232,7 @@ def test_outer() -> None:
     "mode", ["reflect", "zero", "constant", "periodic", "symmetric"]
 )
 def test_2d_wavedec_rec(
-    wavelet_str: str, level: Optional[int], size: tuple[int, int], mode: BoundaryMode
+    wavelet_str: str, level: int | None, size: tuple[int, int], mode: BoundaryMode
 ) -> None:
     """Ensure pywt.wavedec2 and ptwt.wavedec2 produce the same coefficients.
 
@@ -252,9 +247,9 @@ def test_2d_wavedec_rec(
     for pos, coeffs in enumerate(pywt_coeff2d):
         if type(coeffs) is tuple:
             for tuple_pos, tuple_el in enumerate(coeffs):
-                assert (
-                    tuple_el.shape == coeff2d[pos][tuple_pos].shape
-                ), "pywt and ptwt should produce the same shapes."
+                assert tuple_el.shape == coeff2d[pos][tuple_pos].shape, (
+                    "pywt and ptwt should produce the same shapes."
+                )
         else:
             assert (
                 coeffs.shape == coeff2d[pos].shape  # type: ignore
@@ -273,7 +268,7 @@ def test_2d_wavedec_rec(
 @pytest.mark.parametrize("level", [1, None])
 @pytest.mark.parametrize("wavelet", ["haar", "sym3"])
 def test_input_4d(
-    size: tuple[int, int, int, int], level: Optional[int], wavelet: str
+    size: tuple[int, int, int, int], level: int | None, wavelet: str
 ) -> None:
     """Test the error for 4d inputs to wavedec2."""
     data = torch.randn(*size).type(torch.float64)
@@ -315,8 +310,8 @@ def test_input_1d_dimension_error() -> None:
 
 
 def _compare_coeffs(
-    ptwt_res: Sequence[Union[torch.Tensor, tuple[torch.Tensor, ...]]],
-    pywt_res: Sequence[Union[torch.Tensor, tuple[torch.Tensor, ...]]],
+    ptwt_res: Sequence[torch.Tensor | tuple[torch.Tensor, ...]],
+    pywt_res: Sequence[torch.Tensor | tuple[torch.Tensor, ...]],
 ) -> list[bool]:
     """Compare coefficient lists.
 

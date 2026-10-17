@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 from functools import partial
-from typing import NamedTuple, Optional, Union
+from typing import NamedTuple
 
 import numpy as np
 import torch
@@ -79,8 +79,8 @@ class MatrixWavedec3(BaseMatrixWaveDec):
     @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
-        wavelet: Union[Wavelet, str],
-        level: Optional[int] = None,
+        wavelet: Wavelet | str,
+        level: int | None = None,
         *,
         axes: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
@@ -122,7 +122,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         self.orthogonalization = orthogonalization
         self.odd_coeff_padding_mode = odd_coeff_padding_mode
         self.axes = _ensure_axes(axes=axes, dim=3)
-        self.input_signal_shape: Optional[tuple[int, int, int]] = None
+        self.input_signal_shape: tuple[int, int, int] | None = None
         self.fwt_matrix_list: list[list[torch.Tensor]] = []
 
         if not _is_orthogonalize_method_supported(self.orthogonalization):
@@ -132,7 +132,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
 
     def _construct_analysis_matrices(
         self,
-        device: Union[torch.device, str],
+        device: torch.device | str,
         dtype: torch.dtype,
     ) -> None:
         if self.level is None or self.input_signal_shape is None:
@@ -158,7 +158,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
                     f"depth, height, and width ({current_depth}, {current_height},"
                     f"{current_width}) is smaller "
                     f"then the filter length {filt_len}. Therefore, the transformation "
-                    f"is only computed up to the decomposition level {curr_level-1}.\n"
+                    f"is only computed up to the decomposition level {curr_level - 1}.\n"
                 )
                 break
             # the conv matrices require even length inputs.
@@ -290,13 +290,13 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         return _postprocess_coeffs(coeffs, ndim=3, ds=ds, axes=self.axes)
 
 
-class MatrixWaverec3(object):
+class MatrixWaverec3:
     """Reconstruct a signal from 3d separable FWT coefficients."""
 
     @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
-        wavelet: Union[Wavelet, str],
+        wavelet: Wavelet | str,
         *,
         axes: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
@@ -325,8 +325,8 @@ class MatrixWaverec3(object):
         self.axes = _ensure_axes(axes=axes, dim=3)
         self.orthogonalization = orthogonalization
         self.ifwt_matrix_list: list[list[torch.Tensor]] = []
-        self.input_signal_shape: Optional[tuple[int, int, int]] = None
-        self.level: Optional[int] = None
+        self.input_signal_shape: tuple[int, int, int] | None = None
+        self.level: int | None = None
 
         if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
@@ -336,7 +336,7 @@ class MatrixWaverec3(object):
 
     def _construct_synthesis_matrices(
         self,
-        device: Union[torch.device, str],
+        device: torch.device | str,
         dtype: torch.dtype,
     ) -> None:
         self.ifwt_matrix_list = []
@@ -360,7 +360,7 @@ class MatrixWaverec3(object):
                     f" depth, height and width ({current_depth}, {current_height}, "
                     f"{current_width}) is smaller than the filter length {filt_len}."
                     f" Therefore, the transformation "
-                    f"is only computed up to the decomposition level {curr_level-1}.\n"
+                    f"is only computed up to the decomposition level {curr_level - 1}.\n"
                 )
                 break
             # the conv matrices require even length inputs.

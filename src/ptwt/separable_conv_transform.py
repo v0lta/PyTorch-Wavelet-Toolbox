@@ -9,8 +9,6 @@ using torch.nn.functional.conv1d and it's transpose.
 
 from __future__ import annotations
 
-from typing import Optional, Union
-
 import numpy as np
 import torch
 
@@ -38,7 +36,7 @@ __all__ = ["fswavedec2", "fswavedec3", "fswaverec2", "fswaverec3"]
 def _separable_conv_dwtn_(
     rec_dict: WaveletDetailDict,
     input_arg: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     mode: BoundaryMode = "reflect",
     key: str = "",
@@ -73,7 +71,7 @@ def _separable_conv_dwtn_(
 
 
 def _separable_conv_idwtn(
-    in_dict: WaveletDetailDict, wavelet: Union[Wavelet, str]
+    in_dict: WaveletDetailDict, wavelet: Wavelet | str
 ) -> torch.Tensor:
     """Separable single level inverse fast wavelet transform.
 
@@ -113,10 +111,10 @@ def _separable_conv_idwtn(
 
 def _separable_conv_wavedecn(
     input: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     mode: BoundaryMode = "reflect",
-    level: Optional[int] = None,
+    level: int | None = None,
 ) -> WaveletCoeffNd:
     """Compute a multilevel separable padded wavelet analysis transform.
 
@@ -155,7 +153,7 @@ def _separable_conv_wavedecn(
 
 def _separable_conv_waverecn(
     coeffs: WaveletCoeffNd,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
 ) -> torch.Tensor:
     """Separable n-dimensional wavelet synthesis transform.
 
@@ -169,12 +167,12 @@ def _separable_conv_waverecn(
         The reconstruction of the original signal.
 
     Raises:
-        ValueError: If the coeffs is not structured as expected.
+        TypeError: If the coeffs is not structured as expected.
     """
     if not isinstance(coeffs[0], torch.Tensor):
-        raise ValueError("approximation tensor must be first in coefficient list.")
-    if not all(map(lambda x: isinstance(x, dict), coeffs[1:])):
-        raise ValueError("All entries after approximation tensor must be dicts.")
+        raise TypeError("approximation tensor must be first in coefficient list.")
+    if not all(isinstance(x, dict) for x in coeffs[1:]):
+        raise TypeError("All entries after approximation tensor must be dicts.")
 
     approx: torch.Tensor = coeffs[0]
     for level_dict in coeffs[1:]:
@@ -186,10 +184,10 @@ def _separable_conv_waverecn(
 
 def fswavedec2(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     mode: BoundaryMode = "reflect",
-    level: Optional[int] = None,
+    level: int | None = None,
     axes: AxisHint = None,
 ) -> WaveletCoeff2dSeparable:
     """Compute a fully separable 2D-padded analysis wavelet transform.
@@ -233,10 +231,10 @@ def fswavedec2(
 
 def fswavedec3(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     mode: BoundaryMode = "reflect",
-    level: Optional[int] = None,
+    level: int | None = None,
     axes: AxisHint = None,
 ) -> WaveletCoeffNd:
     """Compute a fully separable 3D-padded analysis wavelet transform.
@@ -280,7 +278,7 @@ def fswavedec3(
 
 def fswaverec2(
     coeffs: WaveletCoeff2dSeparable,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     axes: AxisHint = None,
 ) -> torch.Tensor:
@@ -315,7 +313,7 @@ def fswaverec2(
 
 def fswaverec3(
     coeffs: WaveletCoeffNd,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     axes: AxisHint = None,
 ) -> torch.Tensor:
@@ -350,11 +348,11 @@ def fswaverec3(
 
 def _fswavedecn(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     ndim: int,
     *,
     mode: BoundaryMode = "reflect",
-    level: Optional[int] = None,
+    level: int | None = None,
     axes: AxisHint = None,
 ) -> WaveletCoeffNd:
     """Compute a fully separable :math:`N`-dimensional padded FWT.
@@ -400,7 +398,7 @@ def _fswavedecn(
 
 def _fswaverecn(
     coeffs: WaveletCoeffNd,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     ndim: int,
     *,
     axes: AxisHint = None,

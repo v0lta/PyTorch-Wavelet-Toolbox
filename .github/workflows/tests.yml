@@ -39,7 +39,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: pip install nox
-      - name: Run flake8
+      - name: Lint with Ruff
         run: nox -s lint
   typing:
     name: typing
