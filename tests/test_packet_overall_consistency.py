@@ -15,7 +15,18 @@ WAVELET = "haar"
 
 PRECISION_ESP = np.finfo(np.float32).resolution
 
-# natural order uses flat int positions, freq order (row, col) positions.
+# natural order uses flat int positions.
+# [(0, 0), (0, 1), (1, 0), (1, 1)]
+# means [a, v, h, d]
+# see also https://github.com/PyWavelets/pywt/blob/c9b542b2d2c37d28ed1d9bd49d178d2769608905/pywt/_multidim.py#L153
+#
+# {'aa': <coeffs>  # A(LL) - approx. on 1st dim, approx. on 2nd dim
+#  'ad': <coeffs>  # V(LH) - approx. on 1st dim, det. on 2nd dim
+#  'da': <coeffs>  # H(HL) - det. on 1st dim, approx. on 2nd dim
+#  'dd': <coeffs>  # D(HH) - det. on 1st dim, det. on 2nd dim
+# }
+
+
 GridPos = int | tuple[int, int]
 Grid = dict[GridPos, tuple[str, float]]
 
@@ -70,7 +81,6 @@ def pywt_grid(wp: Any, order: str) -> Grid:
 
 def ptwt_grid(wp: ptwt.WaveletPacket2D, order: str) -> Grid:
     """ptwt.WaveletPacket2D, level 1, order='natural' (flat) or 'freq' (rows x cols)."""
-    # get_level is overloaded on the literal order, so call it per branch.
     if order == "freq":
         return {
             (r, c): (node, wp[node].abs().sum().item())
@@ -157,7 +167,3 @@ def test_consistency() -> None:
                 mode,
                 separable,
             )
-
-
-if __name__ == "__main__":
-    test_consistency()
