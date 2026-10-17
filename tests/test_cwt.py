@@ -38,6 +38,9 @@ cmor_wavelets = [
     "cmor2.0-1.5",
 ]
 
+FLOAT32_RTOL = float(np.finfo(np.float32).resolution)
+
+
 @pytest.mark.parametrize("scales", [np.arange(1, 16), 5.0, torch.arange(1, 15)])
 @pytest.mark.parametrize("samples", [31, 32])
 @pytest.mark.parametrize("wavelet", continuous_wavelets)
@@ -185,11 +188,13 @@ def test_icwt_cdelta_valid(wavelet: str) -> None:
     Fs = 500
     t  = np.linspace(0, 1, Fs, endpoint=False)
     scales_dim = np.geomspace(2, 64, 32)
-    sig    = torch.randn(1, Fs, dtype=torch.float64)
+    sig    = torch.randn(1, Fs, dtype=torch.float32)
     coeffs, _ = cwt(sig, scales_dim * Fs, wavelet, sampling_period=1/Fs)
-    _, C_delta = icwt(t=t, a=scales_dim, W=coeffs, wavelet=wavelet)
+    x_rec, C_delta = icwt(t=t, a=scales_dim, W=coeffs, wavelet=wavelet)
     assert np.isfinite(C_delta)
     assert C_delta > 0
+    assert np.allclose(x_rec.numpy(), sig, rtol=FLOAT32_RTOL), f"mean absolute error: {np.abs(x_rec_np - sig).mean()}"
+
 
 
 @pytest.mark.parametrize("scales", [np.geomspace(2, 64, 32), np.geomspace(2, 32, 16)])
@@ -201,11 +206,11 @@ def test_icwt(wavelet: str, samples: int, scales: np.ndarray) -> None:
     t = np.linspace(-1, 1, samples, endpoint=False)
     sig = signal.chirp(t, f0=1, f1=50, t1=10, method="linear")
     scales_pywt = scales * Fs
-    sig_pt = torch.from_numpy(sig)
+    sig_pt = torch.from_numpy(sig).type(torch.float32)
     cwtmatr_pt, _ = cwt(sig_pt, scales_pywt, wavelet)
     x_rec, C_delta = icwt(t=t, a=scales, W=cwtmatr_pt, wavelet=wavelet)
     x_rec_np = x_rec.numpy()
     assert np.all(np.isfinite(x_rec_np))
     assert np.isfinite(C_delta)
     assert C_delta > 0
-    
+    assert np.allclose(x_rec_np, sig, rtol=FLOAT32_RTOL), f"mean absolute error: {np.abs(x_rec_np - sig).mean()}"
