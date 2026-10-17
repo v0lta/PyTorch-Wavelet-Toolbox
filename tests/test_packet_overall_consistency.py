@@ -1,37 +1,47 @@
 """Test case based on: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/issues/137"""
 
+from collections.abc import Sequence
+from typing import Any
+
 import numpy as np
 import pywt
 import torch
 
 import ptwt
+from ptwt.constants import ExtendedBoundaryMode
 
 H, W = 8, 8
 WAVELET = "haar"
 
 PRECISION_ESP = np.finfo(np.float32).resolution
 
+# natural order uses flat int positions, freq order (row, col) positions.
+GridPos = int | tuple[int, int]
+Grid = dict[GridPos, tuple[str, float]]
 
-def make_varies_along_w():
+
+def make_varies_along_w() -> np.ndarray:
     """Nyquist-frequency pattern across columns, constant down each column."""
     row = np.array([1, -1, 1, -1, 1, -1, 1, -1], dtype=np.float64)
     return np.tile(row, (H, 1))
 
 
-def make_varies_along_h():
+def make_varies_along_h() -> np.ndarray:
     """Nyquist-frequency pattern down rows, constant across each row."""
     col = np.array([1, -1, 1, -1, 1, -1, 1, -1], dtype=np.float64)
     return np.tile(col.reshape(-1, 1), (1, W))
 
 
-def build_pywt_wp(signal_np):
+def build_pywt_wp(signal_np: np.ndarray) -> Any:
     """Build a pywavelet tree."""
     return pywt.WaveletPacket2D(
         data=signal_np, wavelet=WAVELET, mode="reflect", maxlevel=1
     )
 
 
-def build_ptwt_wp(signal_np, mode, separable):
+def build_ptwt_wp(
+    signal_np: np.ndarray, mode: ExtendedBoundaryMode, separable: bool
+) -> ptwt.WaveletPacket2D:
     """Build a pyTorch-Wavelet package tree."""
     signal = torch.from_numpy(signal_np).to(torch.float64)
     return ptwt.WaveletPacket2D(
@@ -44,31 +54,38 @@ def build_ptwt_wp(signal_np, mode, separable):
     )
 
 
-def pywt_grid(wp, order):
+def pywt_grid(wp: Any, order: str) -> Grid:
     """Official pywt.WaveletPacket2D, level 1, order='natural' (flat) or 'freq' (rows x cols)."""
     nodes = wp.get_level(1, order=order)
     if order == "freq":
         return {
-            (r, c): (node.path, np.abs(node.data).sum())
+            (r, c): (node.path, float(np.abs(node.data).sum()))
             for r, row in enumerate(nodes)
             for c, node in enumerate(row)
         }
-    return {i: (node.path, np.abs(node.data).sum()) for i, node in enumerate(nodes)}
+    return {
+        i: (node.path, float(np.abs(node.data).sum())) for i, node in enumerate(nodes)
+    }
 
 
-def ptwt_grid(wp, order):
+def ptwt_grid(wp: ptwt.WaveletPacket2D, order: str) -> Grid:
     """ptwt.WaveletPacket2D, level 1, order='natural' (flat) or 'freq' (rows x cols)."""
-    nodes = wp.get_level(1, order=order)
+    # get_level is overloaded on the literal order, so call it per branch.
     if order == "freq":
         return {
             (r, c): (node, wp[node].abs().sum().item())
-            for r, row in enumerate(nodes)
+            for r, row in enumerate(wp.get_level(1, order="freq"))
             for c, node in enumerate(row)
         }
-    return {i: (node, wp[node].abs().sum().item()) for i, node in enumerate(nodes)}
+    return {
+        i: (node, wp[node].abs().sum().item())
+        for i, node in enumerate(wp.get_level(1, order="natural"))
+    }
 
 
-def _assert_grid_table(title, pywt_g, ptwt_g, positions):
+def _assert_grid_table(
+    title: str, pywt_g: Grid, ptwt_g: Grid, positions: Sequence[GridPos]
+) -> None:
     """Assert that the packages match."""
     print(f"  {title}")
     print(f"    {'pos':<8}{'pywt':<16}{'ptwt':<16}")
@@ -83,7 +100,12 @@ def _assert_grid_table(title, pywt_g, ptwt_g, positions):
         assert np.allclose(pywt_val, ptwt_val, rtol=PRECISION_ESP)
 
 
-def compare(signal_np, label, mode, separable):
+def compare(
+    signal_np: np.ndarray,
+    label: str,
+    mode: ExtendedBoundaryMode,
+    separable: bool,
+) -> None:
     pywt_wp = build_pywt_wp(signal_np)
     ptwt_wp = build_ptwt_wp(signal_np, mode=mode, separable=separable)
 
@@ -99,7 +121,7 @@ def compare(signal_np, label, mode, separable):
     )
     print("  ptwt freq order:", ptwt_wp.get_level(1, order="freq"))
 
-    natural_positions = [0, 1, 2, 3]
+    natural_positions: list[GridPos] = [0, 1, 2, 3]
     _assert_grid_table(
         "natural order comparison:",
         pywt_grid(pywt_wp, order="natural"),
@@ -107,7 +129,7 @@ def compare(signal_np, label, mode, separable):
         natural_positions,
     )
 
-    freq_positions = [(0, 0), (0, 1), (1, 0), (1, 1)]
+    freq_positions: list[GridPos] = [(0, 0), (0, 1), (1, 0), (1, 1)]
     _assert_grid_table(
         "freq order comparison:",
         pywt_grid(pywt_wp, order="freq"),
@@ -116,11 +138,12 @@ def compare(signal_np, label, mode, separable):
     )
 
 
-def test_consistency():
+def test_consistency() -> None:
     varies_along_w = make_varies_along_w()
     varies_along_h = make_varies_along_h()
 
-    for mode in ["reflect", "boundary"]:
+    modes: list[ExtendedBoundaryMode] = ["reflect", "boundary"]
+    for mode in modes:
         for separable in [False, True]:
             compare(
                 varies_along_w,

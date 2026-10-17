@@ -190,8 +190,9 @@ def test_separable_haar_2d() -> None:
     # pywt's (horizontal, vertical, diagonal) detail order
     pywtres = (pywtll, pywthl, pywtlh, pywthh)
 
-    ptwtll, ptwt_details = MatrixWavedec2("haar", 1)(test_data)
-    ptwtres = (ptwtll, *ptwt_details)
+    ptwtll, *ptwt_details = MatrixWavedec2("haar", 1)(test_data)
+    assert len(ptwt_details) == 1
+    ptwtres = (ptwtll, *ptwt_details[0])
 
     assert len(ptwtres) == len(pywtres)
     assert all(
