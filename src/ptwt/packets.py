@@ -602,7 +602,7 @@ class WaveletPacket2D(BaseDict):
             a_coeff, fsdict = fs_dict_data
             return (
                 a_coeff,
-                WaveletDetailTuple2d(fsdict["ad"], fsdict["da"], fsdict["dd"]),
+                WaveletDetailTuple2d(fsdict["da"], fsdict["ad"], fsdict["dd"]),
             )
 
         return _tuple_func
