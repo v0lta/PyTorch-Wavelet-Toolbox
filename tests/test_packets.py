@@ -187,8 +187,8 @@ def test_boundary_matrix_packets2(
     _compare_trees2(
         "db1",
         max_lev,
-        "zero",
-        "boundary",
+        pywt_boundary="zero",
+        ptwt_boundary="boundary",
         batch_size=batch_size,
         transform_mode=transform_mode,
         multiple_transforms=multiple_transforms,
