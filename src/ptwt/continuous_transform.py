@@ -185,23 +185,21 @@ def _integrate_wavelet(wavelet: ContinuousWavelet | str, precision: int = 8) -> 
     """
 
     @overload
-    def _integrate(arr: torch.Tensor, step: torch.Tensor) -> torch.Tensor: ...
+    def _integrate(
+        arr: torch.Tensor, step: np.float64 | torch.Tensor
+    ) -> torch.Tensor: ...
 
     @overload
-    def _integrate(arr: np.ndarray, step: np.ndarray) -> np.ndarray: ...
+    def _integrate(arr: np.ndarray, step: np.float64 | torch.Tensor) -> np.ndarray: ...
 
     def _integrate(
-        arr: np.ndarray | torch.Tensor, step: np.ndarray | torch.Tensor
+        arr: np.ndarray | torch.Tensor, step: np.float64 | torch.Tensor
     ) -> np.ndarray | torch.Tensor:
         if isinstance(arr, np.ndarray):
-            if not isinstance(step, np.ndarray):
-                step = step.numpy()
             np_integral = np.cumsum(arr)
             np_integral *= step
             return np_integral
         elif isinstance(arr, torch.Tensor):
-            if isinstance(step, np.ndarray):
-                step = torch.from_numpy(step)
             torch_integral: torch.Tensor = torch.cumsum(arr, -1)
             torch_integral *= step
             return torch_integral
