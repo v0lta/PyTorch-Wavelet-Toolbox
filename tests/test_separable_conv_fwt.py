@@ -1,7 +1,6 @@
 """Separable transform test code."""
 
 from collections.abc import Sequence
-from typing import Optional
 
 import numpy as np
 import pytest
@@ -53,10 +52,8 @@ def test_separable_conv(shape: Sequence[int], level: int) -> None:
     # pywt and ptwt should produce identical coefficients.
     pywt_fine_scale = list(filter(lambda x: x.shape == approx.shape, flat_pywt_res))
     assert all(
-        [
-            np.allclose(ptwt_array, pywt_array)
-            for ptwt_array, pywt_array in zip(flat_ptwt_res, pywt_fine_scale)
-        ]
+        np.allclose(ptwt_array, pywt_array)
+        for ptwt_array, pywt_array in zip(flat_ptwt_res, pywt_fine_scale)
     )
 
     rec = _separable_conv_waverecn(ptwt_res, "haar")
@@ -91,7 +88,7 @@ def test_example_fs3d(shape: Sequence[int], wavelet: str) -> None:
 )
 @pytest.mark.parametrize("axes", [(-2, -1), (-1, -2), (2, 3), (3, 2)])
 def test_conv_mm_2d(
-    level: Optional[int], shape: Sequence[int], axes: tuple[int, int]
+    level: int | None, shape: Sequence[int], axes: tuple[int, int]
 ) -> None:
     """Compare mm and conv fully separable results."""
     data = torch.randn(*shape).type(torch.float64)
@@ -120,7 +117,7 @@ def test_conv_mm_2d(
 @pytest.mark.parametrize("axes", [(-3, -2, -1), (-1, -2, -3), (2, 3, 1)])
 @pytest.mark.parametrize("shape", [(5, 64, 128, 256)])
 def test_conv_mm_3d(
-    level: Optional[int], axes: tuple[int, int, int], shape: tuple[int, ...]
+    level: int | None, axes: tuple[int, int, int], shape: tuple[int, ...]
 ) -> None:
     """Compare mm and conv 3d fully separable results."""
     data = torch.randn(*shape).type(torch.float64)

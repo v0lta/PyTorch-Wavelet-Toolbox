@@ -7,7 +7,7 @@ import typing
 import warnings
 from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Any, Literal, Optional, TypeAlias, Union, cast, overload
+from typing import Any, Literal, TypeAlias, cast, overload
 
 import numpy as np
 import pywt
@@ -68,7 +68,7 @@ def _translate_boundary_strings(
         raise ValueError(f"Padding mode not supported: {pywt_mode}")
 
 
-def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
+def _as_wavelet(wavelet: Wavelet | str) -> Wavelet:
     """Ensure the input argument to be a pywt wavelet compatible object.
 
     Args:
@@ -84,7 +84,7 @@ def _as_wavelet(wavelet: Union[Wavelet, str]) -> Wavelet:
         return wavelet
 
 
-def _get_len(wavelet: Union[tuple[torch.Tensor, ...], str, Wavelet]) -> int:
+def _get_len(wavelet: tuple[torch.Tensor, ...] | str | Wavelet) -> int:
     """Get number of filter coefficients for various wavelet data types."""
     if isinstance(wavelet, tuple):
         return wavelet[0].shape[0]
@@ -93,9 +93,9 @@ def _get_len(wavelet: Union[tuple[torch.Tensor, ...], str, Wavelet]) -> int:
 
 
 def _get_filter_tensors(
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     flip: bool,
-    device: Union[torch.device, str],
+    device: torch.device | str,
     dtype: torch.dtype = torch.float32,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Convert input wavelet to filter tensors.
@@ -142,7 +142,7 @@ def _create_tensor(
 
 
 def _is_orthogonalize_method_supported(
-    orthogonalization: Optional[OrthogonalizeMethod],
+    orthogonalization: OrthogonalizeMethod | None,
 ) -> bool:
     return orthogonalization in typing.get_args(OrthogonalizeMethod)
 
@@ -293,7 +293,7 @@ def _unfold_axes(data: torch.Tensor, ds: list[int], keep_no: int) -> torch.Tenso
 
 def _check_if_tensor(array: Any) -> torch.Tensor:
     if not isinstance(array, torch.Tensor):
-        raise ValueError(
+        raise TypeError(
             "First element of coeffs must be the approximation coefficient tensor."
         )
     return array
@@ -319,7 +319,7 @@ def _check_same_dtype(tensor: torch.Tensor, torch_dtype: torch.dtype) -> torch.T
 
 
 def _check_same_device_dtype(
-    coeffs: Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd],
+    coeffs: list[torch.Tensor] | WaveletCoeff2d | WaveletCoeffNd,
 ) -> tuple[torch.device, torch.dtype]:
     """Check coefficients for dtype and device consistency.
 
@@ -351,7 +351,7 @@ def _check_same_device_dtype(
 def _get_transpose_order(
     axes: Sequence[int], data_shape: Sequence[int]
 ) -> tuple[list[int], list[int]]:
-    axes = list(map(lambda a: a + len(data_shape) if a < 0 else a, axes))
+    axes = [a + len(data_shape) if a < 0 else a for a in axes]
     all_axes = list(range(len(data_shape)))
     remove_transformed = list(filter(lambda a: a not in axes, all_axes))
     return remove_transformed, axes
@@ -392,9 +392,9 @@ def _coeff_tree_map(
 
 
 def _coeff_tree_map(
-    coeffs: Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd],
+    coeffs: list[torch.Tensor] | WaveletCoeff2d | WaveletCoeffNd,
     function: Callable[[torch.Tensor], torch.Tensor],
-) -> Union[list[torch.Tensor], WaveletCoeff2d, WaveletCoeffNd]:
+) -> list[torch.Tensor] | WaveletCoeff2d | WaveletCoeffNd:
     """Apply `function` to all tensor elements in `coeffs`.
 
     Applying a function to all tensors in the (potentially nested)
@@ -407,16 +407,10 @@ def _coeff_tree_map(
     https://jax.readthedocs.io/en/latest/working-with-pytrees.html
 
     Raises:
-        ValueError: If the input type is not supported.
+        TypeError: If the input type is not supported.
     """
     approx = function(coeffs[0])
-    result_lst: list[
-        Union[
-            torch.Tensor,
-            WaveletDetailDict,
-            WaveletDetailTuple2d,
-        ]
-    ] = []
+    result_lst: list[torch.Tensor | WaveletDetailDict | WaveletDetailTuple2d] = []
     for element in coeffs[1:]:
         if isinstance(element, tuple):
             result_lst.append(
@@ -432,7 +426,7 @@ def _coeff_tree_map(
         elif isinstance(element, torch.Tensor):
             result_lst.append(function(element))
         else:
-            raise ValueError(f"Unexpected input type {type(element)}")
+            raise TypeError(f"Unexpected input type {type(element)}")
 
     if not result_lst:
         # if only approximation coeff:
@@ -445,7 +439,7 @@ def _coeff_tree_map(
     else:
         # cast since we assume that the full list is of the same type
         cast_result_lst = cast(
-            Union[list[WaveletDetailDict], list[WaveletDetailTuple2d]], result_lst
+            list[WaveletDetailDict] | list[WaveletDetailTuple2d], result_lst
         )
         return approx, *cast_result_lst
 
@@ -491,20 +485,12 @@ def _preprocess_coeffs(
 
 
 def _preprocess_coeffs(
-    coeffs: Union[
-        list[torch.Tensor],
-        WaveletCoeff2d,
-        WaveletCoeffNd,
-    ],
+    coeffs: list[torch.Tensor] | WaveletCoeff2d | WaveletCoeffNd,
     ndim: int,
     axes: AxisHint = None,
     add_channel_dim: bool = False,
 ) -> tuple[
-    Union[
-        list[torch.Tensor],
-        WaveletCoeff2d,
-        WaveletCoeffNd,
-    ],
+    list[torch.Tensor] | WaveletCoeff2d | WaveletCoeffNd,
     list[int],
 ]:
     """Preprocess coeff tensor dimensions.
@@ -611,19 +597,11 @@ def _postprocess_coeffs(
 
 
 def _postprocess_coeffs(
-    coeffs: Union[
-        list[torch.Tensor],
-        WaveletCoeff2d,
-        WaveletCoeffNd,
-    ],
+    coeffs: list[torch.Tensor] | WaveletCoeff2d | WaveletCoeffNd,
     ndim: int,
     ds: list[int],
     axes: AxisHint = None,
-) -> Union[
-    list[torch.Tensor],
-    WaveletCoeff2d,
-    WaveletCoeffNd,
-]:
+) -> list[torch.Tensor] | WaveletCoeff2d | WaveletCoeffNd:
     """Postprocess coeff tensor dimensions.
 
     This revereses the operations of :func:`_preprocess_coeffs`.
@@ -805,7 +783,7 @@ def _group_for_symmetric(padding: tuple[int, ...]) -> list[tuple[int, int]]:
 
 
 def _get_padding_n(
-    data: torch.Tensor, wavelet: Union[Wavelet, str], n: int
+    data: torch.Tensor, wavelet: Wavelet | str, n: int
 ) -> tuple[int, ...]:
     wavelet_length = _get_len(wavelet)
     rv: list[int] = []
@@ -854,7 +832,7 @@ def _get_default_axes(n: int) -> tuple[int, ...]:
 
 def _preprocess_deconstruction(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     ndim: int,
     axes: AxisHint = None,

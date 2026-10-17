@@ -149,10 +149,10 @@ def test_boundary_transform_1d(
     )
     error = np.sum(np.abs(rec_pywt - rec.numpy()))
     print(
-        "wavelet: {},".format(wavelet_str),
-        "level: {},".format(level),
-        "shape: {},".format(data.shape[-1]),
-        "error {:2.2e}".format(error),
+        f"{wavelet_str=},",
+        f"{level=},",
+        f"shape: {data.shape[-1]},",
+        f"error {error:2.2e}",
     )
     assert np.allclose(rec.numpy(), rec_pywt)
     # test the operator matrices
@@ -230,7 +230,7 @@ def test_axis_1d(axis: int) -> None:
     coeff_pywt = pywt.wavedec(data.numpy(), wavelet="haar", level=3, axis=axis)
     assert len(coeff) == len(coeff_pywt)
     assert all(
-        [np.allclose(coeff, coeff_pywt) for coeff, coeff_pywt in zip(coeff, coeff_pywt)]
+        np.allclose(coeff, coeff_pywt) for coeff, coeff_pywt in zip(coeff, coeff_pywt)
     )
 
     matrix_waverec = MatrixWaverec("haar", axis=axis)

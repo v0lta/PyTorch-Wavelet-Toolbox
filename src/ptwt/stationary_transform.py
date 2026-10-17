@@ -1,11 +1,10 @@
 """This module implements stationary wavelet transforms."""
 
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import pywt
 import torch
-import torch.nn.functional as F  # noqa:N812
+import torch.nn.functional as F
 
 from ._util import (
     AxisHint,
@@ -55,8 +54,8 @@ def _circular_pad(x: torch.Tensor, padding_dimensions: Sequence[int]) -> torch.T
 
 def swt(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
-    level: Optional[int] = None,
+    wavelet: Wavelet | str,
+    level: int | None = None,
     *,
     axis: AxisHint = None,
 ) -> list[torch.Tensor]:
@@ -112,7 +111,7 @@ def swt(
 
 def iswt(
     coeffs: WaveletCoeff1d,
-    wavelet: Union[pywt.Wavelet, str],
+    wavelet: pywt.Wavelet | str,
     *,
     axis: AxisHint = None,
 ) -> torch.Tensor:

@@ -1,7 +1,5 @@
 """Ensure pytorch's torch.jit.trace feature works properly."""
 
-from typing import Optional, Union
-
 import numpy as np
 import pytest
 import pywt
@@ -18,8 +16,8 @@ from tests._mackey_glass import MackeyGenerator
 
 def _to_jit_wavedec_fun(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
-    level: Optional[int],
+    wavelet: Wavelet | str,
+    level: int | None,
 ) -> list[torch.Tensor]:
     return wavedec(data, wavelet, mode="reflect", level=level)
 
@@ -42,7 +40,7 @@ def test_conv_fwt_jit(
     wavelet = pywt.Wavelet(wavelet_string)
     wavelet = WaveletTensorTuple.from_wavelet(wavelet, dtype)
 
-    with pytest.warns(Warning):
+    with pytest.warns(Warning):  # noqa:PT031 all lines give warnings
         jit_wavedec = torch.jit.trace(  # type: ignore
             _to_jit_wavedec_fun,
             (mackey_data_1, wavelet, torch.tensor(level)),
@@ -54,9 +52,7 @@ def test_conv_fwt_jit(
     assert np.allclose(mackey_data_1.numpy(), res.numpy()[:, : mackey_data_1.shape[-1]])
 
 
-def _to_jit_wavedec_2(
-    data: torch.Tensor, wavelet: Union[str, Wavelet]
-) -> list[torch.Tensor]:
+def _to_jit_wavedec_2(data: torch.Tensor, wavelet: str | Wavelet) -> list[torch.Tensor]:
     """Ensure uniform datatypes in lists for the tracer.
 
     Going from list[Union[torch.Tensor, tuple[torch.Tensor]]] to list[torch.Tensor]
@@ -73,11 +69,9 @@ def _to_jit_wavedec_2(
     return coeff2
 
 
-def _to_jit_waverec_2(
-    data: list[torch.Tensor], wavelet: Union[str, Wavelet]
-) -> torch.Tensor:
+def _to_jit_waverec_2(data: list[torch.Tensor], wavelet: str | Wavelet) -> torch.Tensor:
     """Undo the stacking from the jit wavedec2 wrapper."""
-    d_unstack: list[Union[torch.Tensor, tuple[torch.Tensor, ...]]] = [data[0]]
+    d_unstack: list[torch.Tensor | tuple[torch.Tensor, ...]] = [data[0]]
     for c in data[1:]:
         d_unstack.append(tuple(sc.squeeze(0) for sc in torch.split(c, 1, dim=0)))
     rec = waverec2(tuple(d_unstack), wavelet)  # type: ignore
@@ -93,7 +87,7 @@ def test_conv_fwt_jit_2d() -> None:
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy())
 
     wavelet = WaveletTensorTuple.from_wavelet(wavelet, dtype=torch.float64)
-    with pytest.warns(Warning):
+    with pytest.warns(Warning):  # noqa:PT031 all lines give warnings
         jit_wavedec2 = torch.jit.trace(  # type: ignore
             _to_jit_wavedec_2,
             (data, wavelet),
@@ -126,7 +120,7 @@ def _to_jit_wavedec_3(data: torch.Tensor, wavelet: str) -> list[torch.Tensor]:
 
 def _to_jit_waverec_3(data: list[torch.Tensor], wavelet: pywt.Wavelet) -> torch.Tensor:
     """Undo the stacking from the jit wavedec3 wrapper."""
-    d_unstack: list[Union[torch.Tensor, dict[str, torch.Tensor]]] = [data[0]]
+    d_unstack: list[torch.Tensor | dict[str, torch.Tensor]] = [data[0]]
     keys = ("aad", "ada", "add", "daa", "dad", "dda", "ddd")
     for c in data[1:]:
         d_unstack.append(
@@ -145,7 +139,7 @@ def test_conv_fwt_jit_3d() -> None:
     assert np.allclose(rec.squeeze(1).numpy(), data.numpy())
 
     wavelet = WaveletTensorTuple.from_wavelet(wavelet, dtype=torch.float64)
-    with pytest.warns(Warning):
+    with pytest.warns(Warning):  # noqa:PT031 all lines give warnings
         jit_wavedec3 = torch.jit.trace(  # type: ignore
             _to_jit_wavedec_3,
             (data, wavelet),

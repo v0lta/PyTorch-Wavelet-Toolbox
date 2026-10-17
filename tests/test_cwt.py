@@ -55,9 +55,8 @@ def test_cwt_cuda(cuda: bool, wavelet: str = "cgau6") -> None:
     sig = signal.chirp(t, f0=0, f1=20, t1=1, method="linear")
     cwtmatr, freqs = pywt.cwt(data=sig, scales=np.arange(1, 64), wavelet=wavelet)
     sig = torch.from_numpy(sig)
-    if cuda:
-        if torch.cuda.is_available():
-            sig = sig.cuda()
+    if cuda and torch.cuda.is_available():
+        sig = sig.cuda()
     cwtmatr_pt, freqs_pt = cwt(sig, np.arange(1, 64), wavelet)
     if cuda:
         cwtmatr_pt = cwtmatr_pt.cpu()
@@ -103,9 +102,8 @@ def test_nn_cwt(samples: int, scales: Any, cuda: bool) -> None:
     scales_np = scales.numpy() if type(scales) is torch.Tensor else scales
     cwtmatr, freqs = pywt.cwt(data=sig, scales=scales_np, wavelet=pywt_shannon)
     sig = torch.from_numpy(sig)
-    if cuda:
-        if torch.cuda.is_available():
-            sig = sig.cuda()
+    if cuda and torch.cuda.is_available():
+        sig = sig.cuda()
     cwtmatr_pt, freqs_pt = cwt(data=sig, scales=scales, wavelet=ptwt_shannon)
     assert np.allclose(cwtmatr_pt.detach().cpu().numpy(), cwtmatr)
     assert np.allclose(freqs, freqs_pt)

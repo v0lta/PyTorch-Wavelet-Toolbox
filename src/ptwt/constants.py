@@ -3,25 +3,24 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Literal, NamedTuple, Protocol, Union
+from typing import Literal, NamedTuple, Protocol, TypeAlias
 
 import torch
-from typing_extensions import TypeAlias, Unpack
 
 __all__ = [
     "BoundaryMode",
     "ExtendedBoundaryMode",
-    "PaddingMode",
-    "PacketNodeOrder",
     "OrthogonalizeMethod",
+    "PacketNodeOrder",
+    "PaddingMode",
     "Wavelet",
-    "WaveletDetailTuple2d",
+    "WaveletCoeff1d",
     "WaveletCoeff2d",
     "WaveletCoeff2dSeparable",
     "WaveletCoeffNd",
     "WaveletDetailDict",
+    "WaveletDetailTuple2d",
     "WaveletTensorTuple",
-    "WaveletCoeff1d",
 ]
 
 SUPPORTED_DTYPES = {torch.float32, torch.float64}
@@ -107,7 +106,7 @@ This is a type literal for the way of padding used at boundaries.
     ... x2 x1 | x1 x2 ... xn | xn xn-1 ...
 """
 
-ExtendedBoundaryMode = Union[Literal["boundary"], BoundaryMode]
+ExtendedBoundaryMode: TypeAlias = Literal["boundary"] | BoundaryMode
 """
 This is a type literal for the way of handling signal boundaries.
 
@@ -199,9 +198,7 @@ Alias of ``dict[str, torch.Tensor]``
 
 
 # Note: This data structure was chosen to follow pywt's conventions
-WaveletCoeff2d: TypeAlias = tuple[
-    torch.Tensor, Unpack[tuple[WaveletDetailTuple2d, ...]]
-]
+WaveletCoeff2d: TypeAlias = tuple[torch.Tensor, *tuple[WaveletDetailTuple2d, ...]]
 """Type alias for 2d wavelet transform results.
 
 This type alias represents the result of a 2d wavelet transform
@@ -221,7 +218,7 @@ Alias of ``tuple[torch.Tensor, *tuple[WaveletDetailTuple2d, ...]]``
 """
 
 # Note: This data structure was chosen to follow pywt's conventions
-WaveletCoeffNd: TypeAlias = tuple[torch.Tensor, Unpack[tuple[WaveletDetailDict, ...]]]
+WaveletCoeffNd: TypeAlias = tuple[torch.Tensor, *tuple[WaveletDetailDict, ...]]
 """Type alias for wavelet transform results in any dimension.
 
 This type alias represents the result of a Nd wavelet transform

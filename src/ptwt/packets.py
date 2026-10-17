@@ -6,7 +6,7 @@ import collections
 from collections.abc import Callable, Iterable
 from functools import partial
 from itertools import product
-from typing import TYPE_CHECKING, Literal, Optional, Union, cast, overload
+from typing import TYPE_CHECKING, Literal, cast, overload
 
 import numpy as np
 import pywt
@@ -70,11 +70,11 @@ class WaveletPacket(BaseDict):
     @_deprecated_alias(boundary_orthogonalization="orthogonalization")
     def __init__(
         self,
-        data: Optional[torch.Tensor],
-        wavelet: Union[Wavelet, str],
+        data: torch.Tensor | None,
+        wavelet: Wavelet | str,
         *,
         mode: ExtendedBoundaryMode = "reflect",
-        maxlevel: Optional[int] = None,
+        maxlevel: int | None = None,
         axis: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
     ) -> None:
@@ -133,7 +133,7 @@ class WaveletPacket(BaseDict):
         self.orthogonalization = orthogonalization
         self._matrix_wavedec_dict: dict[int, MatrixWavedec] = {}
         self._matrix_waverec_dict: dict[int, MatrixWaverec] = {}
-        self.maxlevel: Optional[int] = None
+        self.maxlevel: int | None = None
         self.axis = _ensure_axes(axes=axis, dim=1)[0]
 
         self._filter_keys = {"a", "d"}
@@ -149,7 +149,7 @@ class WaveletPacket(BaseDict):
     def transform(
         self,
         data: torch.Tensor,
-        maxlevel: Optional[int] = None,
+        maxlevel: int | None = None,
     ) -> WaveletPacket:
         """Lazily calculate the 1d wavelet packet transform for the input data.
 
@@ -226,14 +226,12 @@ class WaveletPacket(BaseDict):
                 data_a = self[node + "a"]
                 data_d = self[node + "d"]
                 rec = self._get_waverec(data_a.shape[self.axis])([data_a, data_d])
-                if level > 0:
-                    if rec.shape[self.axis] != self[node].shape[self.axis]:
-                        assert (
-                            rec.shape[self.axis] == self[node].shape[self.axis] + 1
-                        ), "padding error, please open an issue on github"
-                        rec = rec.swapaxes(self.axis, -1)[..., :-1].swapaxes(
-                            -1, self.axis
+                if level > 0 and rec.shape[self.axis] != self[node].shape[self.axis]:
+                    if rec.shape[self.axis] != self[node].shape[self.axis] + 1:
+                        raise RuntimeError(
+                            "padding error, please open an issue on GitHub"
                         )
+                    rec = rec.swapaxes(self.axis, -1)[..., :-1].swapaxes(-1, self.axis)
                 self[node] = rec
         return self
 
@@ -242,7 +240,7 @@ class WaveletPacket(BaseDict):
         length: int,
     ) -> Callable[[torch.Tensor], list[torch.Tensor]]:
         if self.mode == "boundary":
-            if length not in self._matrix_wavedec_dict.keys():
+            if length not in self._matrix_wavedec_dict:
                 self._matrix_wavedec_dict[length] = MatrixWavedec(
                     self.wavelet,
                     level=1,
@@ -260,7 +258,7 @@ class WaveletPacket(BaseDict):
         length: int,
     ) -> Callable[[WaveletCoeff1d], torch.Tensor]:
         if self.mode == "boundary":
-            if length not in self._matrix_waverec_dict.keys():
+            if length not in self._matrix_waverec_dict:
                 self._matrix_waverec_dict[length] = MatrixWaverec(
                     self.wavelet,
                     orthogonalization=self.orthogonalization,
@@ -369,11 +367,11 @@ class WaveletPacket2D(BaseDict):
     @_deprecated_alias(boundary_orthogonalization="orthogonalization")
     def __init__(
         self,
-        data: Optional[torch.Tensor],
-        wavelet: Union[Wavelet, str],
+        data: torch.Tensor | None,
+        wavelet: Wavelet | str,
         *,
         mode: ExtendedBoundaryMode = "reflect",
-        maxlevel: Optional[int] = None,
+        maxlevel: int | None = None,
         axes: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
         separable: bool = False,
@@ -427,7 +425,7 @@ class WaveletPacket2D(BaseDict):
         if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
 
-        self.maxlevel: Optional[int] = None
+        self.maxlevel: int | None = None
         if data is not None:
             self.transform(data, maxlevel)
         else:
@@ -436,7 +434,7 @@ class WaveletPacket2D(BaseDict):
     def transform(
         self,
         data: torch.Tensor,
-        maxlevel: Optional[int] = None,
+        maxlevel: int | None = None,
     ) -> WaveletPacket2D:
         """Lazily calculate the 2d wavelet packet transform for the input data.
 
@@ -512,14 +510,14 @@ class WaveletPacket2D(BaseDict):
                     rec = _swap_axes(rec, self.axes)
                     swapped_node = _swap_axes(self[node], self.axes)
                     if rec.shape[-1] != swapped_node.shape[-1]:
-                        assert (
-                            rec.shape[-1] == swapped_node.shape[-1] + 1
-                        ), "padding error, please open an issue on GitHub"
+                        assert rec.shape[-1] == swapped_node.shape[-1] + 1, (
+                            "padding error, please open an issue on GitHub"
+                        )
                         rec = rec[..., :-1]
                     if rec.shape[-2] != swapped_node.shape[-2]:
-                        assert (
-                            rec.shape[-2] == swapped_node.shape[-2] + 1
-                        ), "padding error, please open an issue on GitHub"
+                        assert rec.shape[-2] == swapped_node.shape[-2] + 1, (
+                            "padding error, please open an issue on GitHub"
+                        )
                         rec = rec[..., :-1, :]
                     rec = _undo_swap_axes(rec, self.axes)
                 self[node] = rec
@@ -538,13 +536,15 @@ class WaveletPacket2D(BaseDict):
         self.data[path + "v"] = result_v
         self.data[path + "d"] = result_d
 
-    def _get_wavedec(self, shape: tuple[int, ...]) -> Callable[
+    def _get_wavedec(
+        self, shape: tuple[int, ...]
+    ) -> Callable[
         [torch.Tensor],
         WaveletCoeff2d,
     ]:
         if self.mode == "boundary":
             shape = tuple(shape)
-            if shape not in self.matrix_wavedec2_dict.keys():
+            if shape not in self.matrix_wavedec2_dict:
                 self.matrix_wavedec2_dict[shape] = MatrixWavedec2(
                     self.wavelet,
                     level=1,
@@ -574,7 +574,7 @@ class WaveletPacket2D(BaseDict):
     ) -> Callable[[WaveletCoeff2d], torch.Tensor]:
         if self.mode == "boundary":
             shape = tuple(shape)
-            if shape not in self.matrix_waverec2_dict.keys():
+            if shape not in self.matrix_waverec2_dict:
                 self.matrix_waverec2_dict[shape] = MatrixWaverec2(
                     self.wavelet,
                     axes=self.axes,
@@ -678,7 +678,7 @@ class WaveletPacket2D(BaseDict):
     @staticmethod
     def get_level(
         level: int, order: PacketNodeOrder = "freq"
-    ) -> Union[list[str], list[list[str]]]:
+    ) -> list[str] | list[list[str]]:
         """Return the paths to the filter tree nodes.
 
         Args:
