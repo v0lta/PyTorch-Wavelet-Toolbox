@@ -181,18 +181,19 @@ def test_matrix_transform_2d_rebuild(wavelet_str: str, separable: bool) -> None:
 
 def test_separable_haar_2d() -> None:
     """See if the separable haar coefficients are correct."""
-    batch_size = 1
+    batch_size = 3
     test_data = torch.rand(batch_size, 32, 32).type(torch.float64)
 
     pywtl, pywth = pywt.wavedec(test_data.numpy(), "haar", level=1, axis=-1)
     pywtll, pywthl = pywt.wavedec(pywtl, "haar", level=1, axis=-2)
     pywtlh, pywthh = pywt.wavedec(pywth, "haar", level=1, axis=-2)
-    pywtres = (pywtll, pywtlh, pywthl, pywthh)
+    # pywt's (horizontal, vertical, diagonal) detail order
+    pywtres = (pywtll, pywthl, pywtlh, pywthh)
 
-    ptwtres_nested = MatrixWavedec2("haar", 1)(test_data)
-    # flatten list
-    ptwtres = [tensor for tensor_list in ptwtres_nested for tensor in tensor_list]
+    ptwtll, ptwt_details = MatrixWavedec2("haar", 1)(test_data)
+    ptwtres = (ptwtll, *ptwt_details)
 
+    assert len(ptwtres) == len(pywtres)
     assert all(
         np.allclose(pywt_test, ptwt_test.numpy())
         for pywt_test, ptwt_test in zip(pywtres, ptwtres)

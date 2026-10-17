@@ -68,7 +68,7 @@ def ptwt_grid(wp, order):
     return {i: (node, wp[node].abs().sum().item()) for i, node in enumerate(nodes)}
 
 
-def test_grid_table(title, pywt_g, ptwt_g, positions):
+def _assert_grid_table(title, pywt_g, ptwt_g, positions):
     """Assert that the packages match."""
     print(f"  {title}")
     print(f"    {'pos':<8}{'pywt':<16}{'ptwt':<16}")
@@ -100,7 +100,7 @@ def compare(signal_np, label, mode, separable):
     print("  ptwt freq order:", ptwt_wp.get_level(1, order="freq"))
 
     natural_positions = [0, 1, 2, 3]
-    test_grid_table(
+    _assert_grid_table(
         "natural order comparison:",
         pywt_grid(pywt_wp, order="natural"),
         ptwt_grid(ptwt_wp, order="natural"),
@@ -108,7 +108,7 @@ def compare(signal_np, label, mode, separable):
     )
 
     freq_positions = [(0, 0), (0, 1), (1, 0), (1, 1)]
-    test_grid_table(
+    _assert_grid_table(
         "freq order comparison:",
         pywt_grid(pywt_wp, order="freq"),
         ptwt_grid(ptwt_wp, order="freq"),

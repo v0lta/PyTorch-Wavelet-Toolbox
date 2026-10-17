@@ -615,7 +615,7 @@ class WaveletPacket2D(BaseDict):
             # assert for type checking
             assert len(coeffs) == 2
             a, (h, v, d) = coeffs
-            return fsdict_func((a, {"ad": h, "da": v, "dd": d}))
+            return fsdict_func((a, {"da": h, "ad": v, "dd": d}))
 
         return _fsdict_func
 
