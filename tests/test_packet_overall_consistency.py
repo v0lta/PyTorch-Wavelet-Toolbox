@@ -1,4 +1,4 @@
-"""Test case based on: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/issues/137"""
+"""Test case based on NiclasPi's: https://github.com/v0lta/PyTorch-Wavelet-Toolbox/issues/137"""
 
 from collections.abc import Sequence
 from typing import Any
