@@ -15,6 +15,7 @@ import torch
 from ._util import (
     AxisHint,
     _as_wavelet,
+    _check_orthogonal_wavelet,
     _deprecated_alias,
     _ensure_axes,
     _is_orthogonalize_method_supported,
@@ -140,6 +141,9 @@ class WaveletPacket(BaseDict):
 
         if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
+
+        if self.mode == "boundary":
+            _check_orthogonal_wavelet(self.wavelet)
 
         if data is not None:
             self.transform(data, maxlevel)
@@ -424,6 +428,9 @@ class WaveletPacket2D(BaseDict):
 
         if not _is_orthogonalize_method_supported(self.orthogonalization):
             raise NotImplementedError
+
+        if self.mode == "boundary":
+            _check_orthogonal_wavelet(self.wavelet)
 
         self.maxlevel: int | None = None
         if data is not None:

@@ -147,6 +147,36 @@ def _is_orthogonalize_method_supported(
     return orthogonalization in typing.get_args(OrthogonalizeMethod)
 
 
+def _check_orthogonal_wavelet(wavelet: Wavelet | str) -> None:
+    """Ensure the wavelet is orthogonal, as the boundary filters require.
+
+    Boundary filter orthogonalization assumes the synthesis matrix is the
+    transpose of the analysis matrix. This only holds for orthogonal wavelets,
+    whose synthesis filters are the time-reversed analysis filters,
+    g0[k] = h0[-k] and g1[k] = h1[-k]. See page 79 of the book Ripples in
+    Mathematics by Jensen and la Cour-Harbo.
+
+    Args:
+        wavelet (Wavelet or str): A pywt wavelet compatible object or
+            the name of a pywt wavelet.
+
+    Raises:
+        ValueError: If the wavelet is not orthogonal, i.e. biorthogonal.
+    """
+    dec_lo, dec_hi, rec_lo, rec_hi = _get_filter_tensors(
+        wavelet, flip=False, device="cpu", dtype=torch.float64
+    )
+    if not (
+        torch.allclose(rec_lo, dec_lo.flip(-1))
+        and torch.allclose(rec_hi, dec_hi.flip(-1))
+    ):
+        raise ValueError(
+            f"Boundary wavelets require an orthogonal wavelet, but "
+            f"{_as_wavelet(wavelet).name} is not orthogonal. Use the "
+            "convolution-based transforms for biorthogonal wavelets."
+        )
+
+
 def _is_dtype_supported(dtype: torch.dtype) -> bool:
     return dtype in SUPPORTED_DTYPES
 

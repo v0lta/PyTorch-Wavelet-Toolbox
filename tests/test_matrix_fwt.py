@@ -2,6 +2,7 @@
 
 # Written by moritz ( @ wolter.tech ) in 2021
 
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
@@ -19,6 +20,9 @@ from ptwt.matmul_transform import (
     construct_boundary_a,
     construct_boundary_s,
 )
+from ptwt.matmul_transform_2 import MatrixWavedec2, MatrixWaverec2
+from ptwt.matmul_transform_3 import MatrixWavedec3, MatrixWaverec3
+from ptwt.packets import WaveletPacket, WaveletPacket2D
 from tests._mackey_glass import MackeyGenerator
 
 
@@ -243,3 +247,43 @@ def test_deprecation() -> None:
     """Ensure the deprecation warning is raised."""
     with pytest.warns(DeprecationWarning):
         MatrixWavedec("haar", 3, boundary="qr")  # type: ignore
+
+
+@pytest.mark.parametrize("wavelet_str", ["bior2.2", "bior4.4", "rbio2.2"])
+@pytest.mark.parametrize(
+    "transform",
+    [
+        MatrixWavedec,
+        MatrixWaverec,
+        MatrixWavedec2,
+        MatrixWaverec2,
+        MatrixWavedec3,
+        MatrixWaverec3,
+    ],
+)
+def test_biorthogonal_matrix_raises(
+    wavelet_str: str, transform: Callable[[str], Any]
+) -> None:
+    """Ensure we construct wavelet matrices only for orthogonal wavelets."""
+    with pytest.raises(ValueError):
+        transform(wavelet_str)
+
+
+@pytest.mark.parametrize("wavelet_str", ["bior2.2", "bior4.4", "rbio2.2"])
+@pytest.mark.parametrize("packet", [WaveletPacket, WaveletPacket2D])
+def test_biorthogonal_boundary_packets_raise(
+    wavelet_str: str, packet: Callable[..., Any]
+) -> None:
+    """Ensure we construct boundary packets only for orthogonal wavelets."""
+    with pytest.raises(ValueError):
+        packet(None, wavelet_str, mode="boundary")
+    # convolution-based packets still support biorthogonal wavelets.
+    packet(None, wavelet_str, mode="reflect")
+
+
+def test_orthogonal_biorthogonal_family_member() -> None:
+    """Ensure bior1.1, the Haar wavelet, still works with boundary matrices."""
+    data = torch.randn(1, 64, dtype=torch.float64)
+    coeffs = MatrixWavedec("bior1.1", level=3)(data)
+    rec = MatrixWaverec("bior1.1")(coeffs)
+    assert torch.allclose(rec, data)
