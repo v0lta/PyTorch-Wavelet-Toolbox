@@ -6,7 +6,7 @@ and its transpose. This module treats boundaries with edge-padding.
 
 from __future__ import annotations
 
-from typing import Optional, Union, cast
+from typing import cast
 
 import pywt
 import torch
@@ -32,10 +32,10 @@ __all__ = ["wavedec", "waverec"]
 
 def _fwt_pad(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
-    mode: Optional[BoundaryMode] = None,
-    padding: Optional[tuple[int, int]] = None,
+    mode: BoundaryMode | None = None,
+    padding: tuple[int, int] | None = None,
 ) -> torch.Tensor:
     """Pad the input signal to make the fwt matrix work.
 
@@ -68,10 +68,10 @@ def _fwt_pad(
 
 def wavedec(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     mode: BoundaryMode = "reflect",
-    level: Optional[int] = None,
+    level: int | None = None,
     axis: int = -1,
 ) -> list[torch.Tensor]:
     r"""Compute the analysis (forward) 1d fast wavelet transform.
@@ -122,7 +122,7 @@ def wavedec(
         >>> # compute the forward fwt coefficients
         >>> ptwt.wavedec(data, 'haar', mode='zero', level=2)
     """
-    data, ds, dec_lo, dec_hi, dec_filt = _preprocess_deconstruction(
+    data, ds, dec_lo, _dec_hi, dec_filt = _preprocess_deconstruction(
         data, wavelet, axes=axis, ndim=1
     )
 
@@ -144,7 +144,7 @@ def wavedec(
 
 
 def waverec(
-    coeffs: WaveletCoeff1d, wavelet: Union[Wavelet, str], *, axis: AxisHint = None
+    coeffs: WaveletCoeff1d, wavelet: Wavelet | str, *, axis: AxisHint = None
 ) -> torch.Tensor:
     """Reconstruct a 1d signal from wavelet coefficients.
 

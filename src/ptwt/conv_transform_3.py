@@ -5,7 +5,7 @@ The functions here are based on torch.nn.functional.conv3d and it's transpose.
 
 from __future__ import annotations
 
-from typing import Optional, Union, cast
+from typing import cast
 
 import pywt
 import torch
@@ -33,10 +33,10 @@ __all__ = ["wavedec3", "waverec3"]
 
 def _fwt_pad3(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     mode: BoundaryMode,
-    padding: Optional[tuple[int, int, int, int, int, int]] = None,
+    padding: tuple[int, int, int, int, int, int] | None = None,
 ) -> torch.Tensor:
     """Pad data for the 3d-FWT.
 
@@ -75,10 +75,10 @@ def _fwt_pad3(
 
 def wavedec3(
     data: torch.Tensor,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     mode: BoundaryMode = "zero",
-    level: Optional[int] = None,
+    level: int | None = None,
     axes: tuple[int, int, int] = (-3, -2, -1),
 ) -> WaveletCoeffNd:
     """Compute the three-dimensional fast wavelet transformation.
@@ -109,7 +109,7 @@ def wavedec3(
         >>> transformed = ptwt.wavedec3(data, "haar", level=2, mode="reflect")
     """
     wavelet = _as_wavelet(wavelet)
-    data, ds, dec_lo, dec_hi, dec_filt = _preprocess_deconstruction(
+    data, ds, _dec_lo, _dec_hi, dec_filt = _preprocess_deconstruction(
         data, wavelet, axes=axes, ndim=3
     )
 
@@ -147,7 +147,7 @@ def wavedec3(
 
 def waverec3(
     coeffs: WaveletCoeffNd,
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     *,
     axes: AxisHint = None,
 ) -> torch.Tensor:

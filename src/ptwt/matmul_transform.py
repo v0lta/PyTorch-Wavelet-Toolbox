@@ -8,7 +8,7 @@ of boundary filters in "Ripples in Mathematics" section 10.3 .
 """
 
 import sys
-from typing import Optional, Union, cast
+from typing import cast
 
 import numpy as np
 import torch
@@ -41,13 +41,13 @@ from .sparse_math import (
     construct_strided_conv_matrix,
 )
 
-__all__ = ["orthogonalize", "MatrixWavedec", "MatrixWaverec"]
+__all__ = ["MatrixWavedec", "MatrixWaverec", "orthogonalize"]
 
 
 def _construct_a(
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     length: int,
-    device: Union[torch.device, str] = "cpu",
+    device: torch.device | str = "cpu",
     dtype: torch.dtype = torch.float64,
     *,
     mode: PaddingMode = "sameshift",
@@ -82,9 +82,9 @@ def _construct_a(
 
 
 def _construct_s(
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     length: int,
-    device: Union[torch.device, str] = "cpu",
+    device: torch.device | str = "cpu",
     dtype: torch.dtype = torch.float64,
     *,
     mode: PaddingMode = "sameshift",
@@ -211,8 +211,8 @@ class MatrixWavedec(BaseMatrixWaveDec):
     @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
-        wavelet: Union[Wavelet, str],
-        level: Optional[int] = None,
+        wavelet: Wavelet | str,
+        level: int | None = None,
         *,
         axis: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
@@ -253,7 +253,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         self.orthogonalization = orthogonalization
         self.axis = _ensure_axes(axes=axis, dim=1)[0]
 
-        self.input_length: Optional[int] = None
+        self.input_length: int | None = None
         self.fwt_matrix_list: list[torch.Tensor] = []
         self.pad_list: list[bool] = []
         self.padded = False
@@ -308,7 +308,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
             )
 
     def _construct_analysis_matrices(
-        self, device: Union[torch.device, str], dtype: torch.dtype
+        self, device: torch.device | str, dtype: torch.dtype
     ) -> None:
         if self.level is None or self.input_length is None:
             raise AssertionError
@@ -327,7 +327,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
                     f"level {curr_level}, the current signal length {curr_length} is "
                     f"smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
-                    f"{curr_level-1}.\n"
+                    f"{curr_level - 1}.\n"
                 )
                 break
 
@@ -432,9 +432,9 @@ class MatrixWavedec(BaseMatrixWaveDec):
 
 @_deprecated_alias(boundary="orthogonalization")
 def construct_boundary_a(
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     length: int,
-    device: Union[torch.device, str] = "cpu",
+    device: torch.device | str = "cpu",
     orthogonalization: OrthogonalizeMethod = "qr",
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
@@ -465,9 +465,9 @@ def construct_boundary_a(
 
 @_deprecated_alias(boundary="orthogonalization")
 def construct_boundary_s(
-    wavelet: Union[Wavelet, str],
+    wavelet: Wavelet | str,
     length: int,
-    device: Union[torch.device, str] = "cpu",
+    device: torch.device | str = "cpu",
     orthogonalization: OrthogonalizeMethod = "qr",
     dtype: torch.dtype = torch.float64,
 ) -> torch.Tensor:
@@ -499,7 +499,7 @@ def construct_boundary_s(
     return s_orth.transpose(1, 0)
 
 
-class MatrixWaverec(object):
+class MatrixWaverec:
     """Matrix-based inverse fast wavelet transform.
 
     Example:
@@ -515,7 +515,7 @@ class MatrixWaverec(object):
     @_deprecated_alias(boundary="orthogonalization")
     def __init__(
         self,
-        wavelet: Union[Wavelet, str],
+        wavelet: Wavelet | str,
         *,
         axis: AxisHint = None,
         orthogonalization: OrthogonalizeMethod = "qr",
@@ -546,8 +546,8 @@ class MatrixWaverec(object):
         self.orthogonalization = orthogonalization
         self.axis = _ensure_axes(axes=axis, dim=1)
         self.ifwt_matrix_list: list[torch.Tensor] = []
-        self.level: Optional[int] = None
-        self.input_length: Optional[int] = None
+        self.level: int | None = None
+        self.input_length: int | None = None
         self.padded = False
 
         if not _is_orthogonalize_method_supported(self.orthogonalization):
@@ -601,7 +601,7 @@ class MatrixWaverec(object):
             )
 
     def _construct_synthesis_matrices(
-        self, device: Union[torch.device, str], dtype: torch.dtype
+        self, device: torch.device | str, dtype: torch.dtype
     ) -> None:
         self.ifwt_matrix_list = []
         self.size_list = []
@@ -620,7 +620,7 @@ class MatrixWaverec(object):
                     f"level {curr_level}, the current signal length {curr_length} is "
                     f"smaller than the filter length {filt_len}. Therefore, the "
                     "transformation is only computed up to the decomposition level "
-                    f"{curr_level-1}.\n"
+                    f"{curr_level - 1}.\n"
                 )
                 break
 
@@ -694,9 +694,8 @@ class MatrixWaverec(object):
                 if next_len != pred_len:
                     lo = lo[:-1, :]
                     pred_len = lo.shape[0]
-                    assert (
-                        pred_len == next_len
-                    ), "padding error, please open an issue on github"
+                    if pred_len != next_len:
+                        raise RuntimeError("padding error, please open an issue on GitHub")
 
         res_lo = lo.T
 

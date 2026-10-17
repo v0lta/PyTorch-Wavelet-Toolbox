@@ -3,7 +3,7 @@
 This module is based on pywt's cwt implementation.
 """
 
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import torch
@@ -26,8 +26,8 @@ def _next_fast_len(n: int) -> int:
 
 def cwt(
     data: torch.Tensor,
-    scales: Union[np.ndarray, torch.Tensor],
-    wavelet: Union[ContinuousWavelet, str],
+    scales: np.ndarray | torch.Tensor,
+    wavelet: ContinuousWavelet | str,
     sampling_period: float = 1.0,
     precision: int = 12,
 ) -> tuple[torch.Tensor, np.ndarray]:
@@ -79,9 +79,8 @@ def cwt(
     elif np.isscalar(scales):
         scales = np.array([scales])
 
-    if isinstance(wavelet, torch.nn.Module):
-        if data.is_cuda:
-            wavelet.cuda()
+    if isinstance(wavelet, torch.nn.Module) and data.is_cuda:
+        wavelet.cuda()
 
     int_psi, x = _integrate_wavelet(wavelet, precision=precision)
     if type(wavelet) is ContinuousWavelet:
@@ -131,7 +130,7 @@ def cwt(
         if d > 0:
             coef = coef[..., int(np.floor(d)) : -int(np.ceil(d))]
         elif d < 0:
-            raise ValueError("Selected scale of {} too small.".format(scale))
+            raise ValueError(f"Selected scale of {scale} too small.")
 
         out.append(coef)
     out_tensor = torch.stack(out)
@@ -149,16 +148,13 @@ def cwt(
             frequencies = np.array([frequencies])
     frequencies /= sampling_period
 
-    if isinstance(wavelet, _DifferentiableContinuousWavelet):
-        if data.is_cuda:
-            wavelet.cuda()
+    if isinstance(wavelet, _DifferentiableContinuousWavelet) and data.is_cuda:
+        wavelet.cuda()
 
     return out_tensor, frequencies
 
 
-def _integrate_wavelet(
-    wavelet: Union[ContinuousWavelet, str], precision: int = 8
-) -> Any:
+def _integrate_wavelet(wavelet: ContinuousWavelet | str, precision: int = 8) -> Any:
     """
     Integrate `psi` wavelet function from -Inf to x using rectangle integration.
 
@@ -189,9 +185,9 @@ def _integrate_wavelet(
     """
 
     def _integrate(
-        arr: Union[np.ndarray, torch.Tensor],
-        step: Union[np.ndarray, torch.Tensor],
-    ) -> Union[np.ndarray, torch.Tensor]:
+        arr: np.ndarray | torch.Tensor,
+        step: np.ndarray | torch.Tensor,
+    ) -> np.ndarray | torch.Tensor:
         if type(arr) is np.ndarray:
             integral: Any = np.cumsum(arr)
         elif type(arr) is torch.Tensor:
@@ -201,9 +197,7 @@ def _integrate_wavelet(
         integral *= step
         return integral
 
-    if type(wavelet) is str:
-        wavelet = DiscreteContinuousWavelet(wavelet)
-    elif not isinstance(
+    if type(wavelet) is str or not isinstance(
         wavelet, (Wavelet, ContinuousWavelet, _DifferentiableContinuousWavelet)
     ):
         wavelet = DiscreteContinuousWavelet(wavelet)
