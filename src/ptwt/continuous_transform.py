@@ -325,8 +325,7 @@ def cdelta_cmor(
     # -------------------------------------------------------------------
     W_s = np.array(
         [
-            (np.sqrt(2.0 * np.pi * s) / N)
-            * np.sum(np.conj(psi_hat(s * omega)))
+            (np.sqrt(2.0 * np.pi * s) / N) * np.sum(np.conj(psi_hat(s * omega)))
             for s in scales
         ]
     )
@@ -340,9 +339,7 @@ def cdelta_cmor(
     # normalises the amplitude so that the inverse CWT exactly recovers
     # the original signal.
     # -------------------------------------------------------------------
-    C_delta = float(
-        (dj / psi0) * np.sum(np.real(W_s) / np.sqrt(scales))
-    )
+    C_delta = float((dj / psi0) * np.sum(np.real(W_s) / np.sqrt(scales)))
 
     return C_delta
 
@@ -449,7 +446,7 @@ def icwt(
 
     # Parse B and C from the wavelet name string "cmor{B}-{C}"
     try:
-        params_str = wavelet_name[4:]          # strip "cmor"
+        params_str = wavelet_name[4:]  # strip "cmor"
         B_str, C_str = params_str.split("-")
         B = float(B_str)
         C = float(C_str)
