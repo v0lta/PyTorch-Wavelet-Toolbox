@@ -3,7 +3,7 @@
 This module is based on pywt's cwt implementation.
 """
 
-from typing import Any
+from typing import Any, overload
 
 import numpy as np
 import torch
@@ -184,18 +184,25 @@ def _integrate_wavelet(wavelet: ContinuousWavelet | str, precision: int = 8) -> 
         >>> [int_psi_d, int_psi_r, x] = _integrate_wavelet(wavelet2, precision=5)
     """
 
+    @overload
+    def _integrate(arr: torch.Tensor, step: torch.Tensor) -> torch.Tensor: ...
+
+    @overload
+    def _integrate(arr: np.ndarray, step: np.ndarray) -> np.ndarray: ...
+
     def _integrate(
-        arr: np.ndarray | torch.Tensor,
-        step: np.ndarray | torch.Tensor,
+        arr: np.ndarray | torch.Tensor, step: np.ndarray | torch.Tensor
     ) -> np.ndarray | torch.Tensor:
-        if type(arr) is np.ndarray:
-            integral: Any = np.cumsum(arr)
-        elif type(arr) is torch.Tensor:
-            integral = torch.cumsum(arr, -1)
+        if isinstance(arr, np.ndarray) and isinstance(step, np.ndarray):
+            np_integral = np.cumsum(arr)
+            np_integral *= step
+            return np_integral
+        elif isinstance(arr, torch.Tensor) and isinstance(step, torch.Tensor):
+            torch_integral: torch.Tensor = torch.cumsum(arr, -1)
+            torch_integral *= step
+            return torch_integral
         else:
             raise TypeError("Only ndarrays or tensors are integratable.")
-        integral *= step
-        return integral
 
     if type(wavelet) is str or not isinstance(
         wavelet, (Wavelet, ContinuousWavelet, _DifferentiableContinuousWavelet)

@@ -79,7 +79,7 @@ def _as_wavelet(wavelet: Wavelet | str) -> Wavelet:
         The input wavelet object or the pywt wavelet object described by the input str.
     """
     if isinstance(wavelet, str):
-        return pywt.Wavelet(wavelet)
+        return pywt.Wavelet(wavelet)  # type:ignore[no-any-return]
     else:
         return wavelet
 
