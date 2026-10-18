@@ -147,8 +147,8 @@ def _is_orthogonalize_method_supported(
     return orthogonalization in typing.get_args(OrthogonalizeMethod)
 
 
-def _check_orthogonal_wavelet(wavelet: Wavelet | str) -> None:
-    """Ensure the wavelet is orthogonal, as the boundary filters require.
+def _is_orthogonal(wavelet: Wavelet | str) -> bool:
+    """Return true if the input Wavelet is orthogonal.
 
     Boundary filter orthogonalization assumes the synthesis matrix is the
     transpose of the analysis matrix. This only holds for orthogonal wavelets,
@@ -157,19 +157,30 @@ def _check_orthogonal_wavelet(wavelet: Wavelet | str) -> None:
     Mathematics by Jensen and la Cour-Harbo.
 
     Args:
+        wavelet (Wavelet or str): The wavelet
+
+    Returns:
+        true if orthogonal.
+    """
+    dec_lo, dec_hi, rec_lo, rec_hi = _get_filter_tensors(
+        wavelet, flip=False, device="cpu", dtype=torch.float64
+    )
+    return torch.allclose(rec_lo, dec_lo.flip(-1)) and torch.allclose(
+        rec_hi, dec_hi.flip(-1)
+    )
+
+
+def _check_orthogonal_wavelet(wavelet: Wavelet | str) -> None:
+    """Ensure the wavelet is orthogonal, as the boundary filters require.
+
+    Args:
         wavelet (Wavelet or str): A pywt wavelet compatible object or
             the name of a pywt wavelet.
 
     Raises:
         ValueError: If the wavelet is not orthogonal, i.e. biorthogonal.
     """
-    dec_lo, dec_hi, rec_lo, rec_hi = _get_filter_tensors(
-        wavelet, flip=False, device="cpu", dtype=torch.float64
-    )
-    if not (
-        torch.allclose(rec_lo, dec_lo.flip(-1))
-        and torch.allclose(rec_hi, dec_hi.flip(-1))
-    ):
+    if not _is_orthogonal(wavelet):
         raise ValueError(
             f"Boundary wavelets require an orthogonal wavelet, but "
             f"{_as_wavelet(wavelet).name} is not orthogonal. Use the "
