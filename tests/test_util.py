@@ -12,10 +12,10 @@ from ptwt._util import (
     _get_pad,
     _get_padding_n,
     _group_for_symmetric,
+    _is_orthogonal,
     _pad_symmetric,
     _pad_symmetric_1d,
     _unfold_axes,
-    _is_orthogonal
 )
 
 
@@ -133,11 +133,13 @@ def test_get_padding_3d() -> None:
     ) == _get_padding_n(data, wavelet, 3)
 
 
-@pytest.mark.parametrize("wavelet", [
-    *list(map(pywt.Wavelet, pywt.wavelist(family="sym"))),
-    *list(map(pywt.Wavelet, pywt.wavelist(family="db")))
-])
+@pytest.mark.parametrize(
+    "wavelet",
+    [
+        *list(map(pywt.Wavelet, pywt.wavelist(family="sym"))),
+        *list(map(pywt.Wavelet, pywt.wavelist(family="db"))),
+    ],
+)
 def test_orthogonal(wavelet: pywt.Wavelet) -> None:
-    """"Check our orthogonality test."""
+    """ "Check our orthogonality test."""
     assert _is_orthogonal(wavelet) is wavelet.orthogonal
-
