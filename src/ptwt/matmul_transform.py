@@ -16,6 +16,7 @@ import torch
 from ._util import (
     AxisHint,
     _as_wavelet,
+    _check_orthogonal_wavelet,
     _check_same_device_dtype,
     _deprecated_alias,
     _ensure_axes,
@@ -264,6 +265,8 @@ class MatrixWavedec(BaseMatrixWaveDec):
 
         if self.wavelet.dec_len != self.wavelet.rec_len:
             raise ValueError("All filters must have the same length")
+
+        _check_orthogonal_wavelet(self.wavelet)
 
     @property
     def sparse_fwt_operator(self) -> torch.Tensor:
@@ -555,6 +558,8 @@ class MatrixWaverec:
 
         if self.wavelet.dec_len != self.wavelet.rec_len:
             raise ValueError("All filters must have the same length")
+
+        _check_orthogonal_wavelet(self.wavelet)
 
     @property
     def sparse_ifwt_operator(self) -> torch.Tensor:
