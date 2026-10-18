@@ -43,7 +43,6 @@ def test_separable_conv(shape: Sequence[int], level: int) -> None:
             ptwt_dict[key]
             for ptwt_dict in ptwt_res[1:]
             for key in sorted(ptwt_dict.keys())
-            if len(key) == len(shape)
         ]
     )
     flat_ptwt_res = [
@@ -102,8 +101,8 @@ def test_conv_mm_2d(
         if isinstance(c_conv, torch.Tensor):
             assert np.allclose(c_conv.numpy(), c_mm.numpy())  # type: ignore
         else:
-            # (ll, (lh, hl, hh), ...)
-            c_conv_list = [c_conv[key] for key in ("ad", "da", "dd")]  # type: ignore
+            # (a, (h, v, d), ...) following pywt
+            c_conv_list = [c_conv[key] for key in ("da", "ad", "dd")]  # type: ignore
             assert all(
                 np.allclose(c_el_conv.numpy(), c_el_mm.numpy())
                 for c_el_conv, c_el_mm in zip(c_conv_list, c_mm)  # type: ignore
