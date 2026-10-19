@@ -327,10 +327,7 @@ def cdelta_cmor(
     # normalisation below.
     # -------------------------------------------------------------------
     W_s = np.array(
-        [
-            (np.sqrt(2.0 * np.pi * s) / N) * np.sum(np.conj(psi_hat(s * omega)))
-            for s in scales
-        ]
+        [(np.sqrt(s) / N) * np.sum(np.conj(psi_hat(s * omega))) for s in scales]
     )
 
     # -------------------------------------------------------------------
@@ -350,8 +347,8 @@ def cdelta_cmor(
 def icwt(
     t: np.ndarray,
     a: np.ndarray,
-    W: Union[np.ndarray, torch.Tensor],
-    wavelet: Union[ContinuousWavelet, str],
+    W: np.ndarray | torch.Tensor,
+    wavelet: ContinuousWavelet | str,
 ) -> tuple[torch.Tensor, float]:
     """Reconstruct a real-valued signal from its CWT coefficients using the
     Torrence & Compo (1998) inversion formula (their Eq. 11).
@@ -436,7 +433,7 @@ def icwt(
     elif isinstance(wavelet, ContinuousWavelet):
         wavelet_name = wavelet.name
     else:
-        raise ValueError(
+        raise TypeError(
             f"wavelet must be a pywt.ContinuousWavelet or str, got {type(wavelet)}"
         )
 
