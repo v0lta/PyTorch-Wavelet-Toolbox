@@ -14,7 +14,7 @@ from torch.fft import fft, ifft
 __all__ = [
     "cwt",
     "icwt",
-    "cdelta_cmor",
+    "complex_morlet_reconstruction",
 ]
 
 
@@ -233,7 +233,7 @@ def _integrate_wavelet(wavelet: ContinuousWavelet | str, precision: int = 8) -> 
         return _integrate(psi_d, step), _integrate(psi_r, step), x
 
 
-def cdelta_cmor(
+def complex_morlet_reconstruction(
     bandwidth: float,
     center_frequency: float,
     fft_length: int = 4096,
@@ -241,8 +241,7 @@ def cdelta_cmor(
     min_scale: float = 0.5,
     max_scale: float = 10000.0,
 ) -> float:
-    """Compute the :cite:`torrence1998` reconstruction constant *C_delta* for a
-    complex Morlet wavelet ``cmor{B}-{C}``.
+    r"""Compute the reconstruction constant :math:`C_{\delta}` for a complex Morlet wavelet.
 
     The constant is defined by :cite:`torrence1998` Eq. 13 and is required
     to correctly normalize the inverse CWT sum.  It depends only on the wavelet
@@ -252,11 +251,11 @@ def cdelta_cmor(
 
     .. math::
 
-        \\hat{\\psi}(s\\omega) =
-            \\exp\\!\\left(-\\frac{B(s\\omega - \\omega_0)^2}{4}\\right)
-            \\cdot H(s\\omega)
+        \hat{\psi}(s\omega) =
+            \exp\!\left(-\frac{B(s\omega - \omega_0)^2}{4}\right)
+            \cdot H(s\omega)
 
-    where :math:`\\omega_0 = 2\\pi C` is the center (angular) frequency,
+    where :math:`\omega_0 = 2\pi C` is the center (angular) frequency,
     :math:`B` is the bandwidth parameter, and :math:`H` is the Heaviside
     step function that enforces the analytic (one-sided) nature of the wavelet.
 
@@ -264,25 +263,25 @@ def cdelta_cmor(
 
     .. math::
 
-        \\psi(0) = \\frac{1}{\\sqrt{\\pi B}}
+        \psi(0) = \frac{1}{\sqrt{\pi B}}
 
     as required by :cite:`torrence1998` Eq. 4.
 
     Args:
-        bandwidth: Bandwidth parameter of the cmor wavelet (``cmor{bandwidth}-{center_frequency}``).
-        center_frequency: Center-frequency parameter of the cmor wavelet (``cmor{bandwidth}-{center_frequency}``).
+        bandwidth: Bandwidth parameter $B$ of the complex Morlet wavelet
+        center_frequency: Center-frequency parameter $C$ of the complex Morlet wavelet
         fft_length: Number of FFT points used for the internal numerical integration.
-            Larger values give a more accurate result but increase runtime.
-            Defaults to 4096.
+            Larger values give a more accurate result, but increase runtime.
+            Defaults to 4,096.
         n_scales: Number of scales to sum over when evaluating Eq. 13.
-            Should span several decades; defaults to 1000.
+            Should span several decades; defaults to 1,000.
         min_scale: Smallest scale in the internal sum (dimensionless).
             Defaults to 0.5.
         max_scale: Largest scale in the internal sum (dimensionless).
-            Defaults to 10000.
+            Defaults to 10,000.
 
     Returns:
-        The scalar reconstruction constant *reconstruction_constant*.
+        The scalar reconstruction constant :math:`C_{\delta}`.
     """
     # Angular center frequency of the cmor wavelet
     center_angular_frequency = 2.0 * np.pi * center_frequency
@@ -377,34 +376,28 @@ def icwt(
     coefficients: np.ndarray | torch.Tensor,
     wavelet: ContinuousWavelet | str,
 ) -> tuple[torch.Tensor, float]:
-    """Reconstruct a real-valued signal using the :cite:`torrence1998` inversion formula.
+    r"""Reconstruct a real-valued signal using the :cite:`torrence1998` inversion formula.
 
     The reconstruction formula is
 
     .. math::
 
-        x(t) = \\frac{\\delta j \\,\\sqrt{\\delta t}}{\\psi(0)\\, C_\\delta}
-               \\sum_{j} \\frac{\\mathrm{Re}[W(a_j, t)]}{\\sqrt{a_j}}
+        x(t) = \frac{\delta j \,\sqrt{\delta t}}{\psi(0)\, C_{\delta}}
+               \sum_{j} \frac{\mathrm{Re}[W(a_j, t)]}{\sqrt{a_j}}
 
     where
 
-    * :math:`\\delta j` is the logarithmic scale spacing,
-    * :math:`\\delta t` is the sampling interval,
-    * :math:`\\psi(0)` is the mother wavelet evaluated at the origin,
-    * :math:`C_\\delta` is the wavelet-dependent reconstruction constant
-      (see :func:`cdelta_cmor`)
+    * :math:`\delta j` is the logarithmic scale spacing,
+    * :math:`\delta t` is the sampling interval,
+    * :math:`\psi(0)` is the mother wavelet evaluated at the origin,
+    * :math:`C_{\delta}` is the wavelet-dependent reconstruction constant
+      (see :func:`~ptwt.continuous_transform.complex_morlet_reconstruction`)
     * :math:`W(a_j, t)` are the CWT coefficients at scale :math:`a_j`.
-
-    .. warning::
-
-        This function currently **only supports complex Morlet (cmor) wavelets**
-        (e.g. ``"cmor1.5-1.0"`` or ``pywt.ContinuousWavelet("cmor1.5-1.0")``).
-        Attempting to use any other wavelet family will raise a ``ValueError``.
 
     .. note::
 
         The scale array ``scales`` must correspond to the scales used in the
-        forward :func:`ptwt.cwt` call that produced ``cwt_coefficients``.
+        forward :func:`ptwt.cwt` call that produced ``coefficients``.
         :func:`ptwt.cwt` uses its ``scales`` argument directly (in samples) and
         only applies ``sampling_period`` to the returned frequencies, so divide
         the scales you gave to ``cwt`` by ``Fs`` (equivalently, multiply them by
@@ -413,9 +406,9 @@ def icwt(
     Args:
         time_array:
             1-D time array of length *T* (seconds).  Must be uniformly sampled.
-        scales: 1-D array of analysis scales of length *S* (dimensionless, i.e.
+        scales: 1-D array of analysis scales of length $S$ (dimensionless, i.e.
             ``pywt_scales / Fs``).  Must be logarithmically spaced (the
-            logarithmic voice spacing :math:`\\delta j` is derived from
+            logarithmic voice spacing :math:`\delta j` is derived from
             ``scales[1] / scales[0]``).
         coefficients:
             CWT coefficient matrix of shape ``[S, batch, T]`` or ``[S, T]``
@@ -428,16 +421,14 @@ def icwt(
             a string of the form ``"cmor{}-{C}"`` (e.g. ``"cmor1.5-1.0"``).
 
     Returns:
-        A tuple ``(reconstructed_signal, reconstruction_constant)`` where
-
         * ``reconstructed_signal`` is a :class:`torch.Tensor` with the same shape
-          as the time dimension of ``cwt_coefficients`` (i.e. ``[batch, T]`` or ``[T]``).
-        * ``reconstruction_constant`` is the scalar :cite:`torrence1998` reconstruction constant
-          that was used.
+          as the time dimension of ``coefficients`` (i.e. ``[batch, T]`` or ``[T]``).
+        * ``reconstruction_constant`` :math:`C_{\delta}` based on the
+          :math:`B` and :math:`C` parameters of the complex Morlet wavelet
 
     Raises:
-        ValueError: If ``wavelet`` is not a complex Morlet (cmor) family wavelet.
-        ValueError: If ``scales`` contains fewer than two elements ($\\delta j$ cannot be computed).
+        NotImplementedError: If ``wavelet`` is not a complex Morlet (cmor) family wavelet.
+        ValueError: If ``scales`` contains fewer than two elements (:math:`\delta j` cannot be computed).
 
     Example:
         >>> import torch, numpy as np, ptwt, pywt
@@ -465,7 +456,7 @@ def icwt(
         )
 
     if not wavelet_name.lower().startswith("cmor"):
-        raise ValueError(
+        raise NotImplementedError(
             f"icwt_torrence currently only supports complex Morlet (cmor) wavelets; "
             f"got '{wavelet_name}'.  Other wavelet families require separate "
             f"derivations of psi(0) and psi_hat and are not yet implemented."
@@ -500,7 +491,7 @@ def icwt(
     wavelet_at_origin = 1.0 / np.sqrt(np.pi * bandwidth)
 
     # Reconstruction constant C_delta (Torrence & Compo Eq. 13)
-    reconstruction_constant = cdelta_cmor(bandwidth, center_frequency)
+    reconstruction_constant = complex_morlet_reconstruction(bandwidth, center_frequency)
 
     # ------------------------------------------------------------------
     # Convert inputs to torch tensors, preserving device / dtype

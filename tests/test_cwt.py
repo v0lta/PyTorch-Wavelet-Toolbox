@@ -182,7 +182,7 @@ def test_icwt_rejects_non_cmor(wavelet: str) -> None:
     sig = torch.randn(1, Fs, dtype=torch.float32)
     scales_samples = np.geomspace(2, 32, 16)
     coefficients, _ = cwt(sig, scales_samples, wavelet, sampling_period=1 / Fs)
-    with pytest.raises(ValueError, match="cmor"):
+    with pytest.raises(NotImplementedError, match="cmor"):
         icwt(
             time_array=t,
             scales=scales_samples / Fs,

@@ -9,4 +9,4 @@ Continuous Wavelet Transform (CWT)
 
 .. autofunction:: icwt
 
-.. autofunction:: ptwt.continuous_transform.cdelta_cmor
+.. autofunction:: ptwt.continuous_transform.complex_morlet_reconstruction
