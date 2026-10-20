@@ -532,9 +532,7 @@ def icwt(
         inverse_sqrt_scales = scales_tensor[:, None] ** (-0.5)
 
     # Sum of Re[W(s, t)] / sqrt(s)  over scale axis (dim=0)
-    weighted_scale_sum = torch.sum(
-        coefficients.real * inverse_sqrt_scales, dim=0
-    )
+    weighted_scale_sum = torch.sum(coefficients.real * inverse_sqrt_scales, dim=0)
 
     # Apply the Torrence & Compo amplitude factor
     amplitude_factor = (scale_spacing * np.sqrt(sampling_interval)) / (
