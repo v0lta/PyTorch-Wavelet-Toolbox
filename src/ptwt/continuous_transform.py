@@ -491,13 +491,13 @@ def icwt(
     # ------------------------------------------------------------------
 
     # Sampling interval (seconds per sample)
-    sampling_interval = float(time_array[1] - time_array[0])
+    sampling_interval = time_array[1] - time_array[0]
 
     # Logarithmic voice spacing dj (Torrence & Compo Eq. 9)
-    scale_spacing = float(np.log2(scales[1] / scales[0]))
+    scale_spacing = np.log2(scales[1] / scales[0])
 
     # Value of the cmor mother wavelet at the origin: psi(0) = 1 / sqrt(pi * B)
-    wavelet_at_origin = float(1.0 / np.sqrt(np.pi * bandwidth))
+    wavelet_at_origin = 1.0 / np.sqrt(np.pi * bandwidth)
 
     # Reconstruction constant C_delta (Torrence & Compo Eq. 13)
     reconstruction_constant = cdelta_cmor(bandwidth, center_frequency)
