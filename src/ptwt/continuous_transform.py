@@ -362,7 +362,7 @@ def cdelta_cmor(
 def icwt(
     time_array: np.ndarray,
     scales: np.ndarray,
-    cwt_coefficients: np.ndarray | torch.Tensor,
+    coefficients: np.ndarray | torch.Tensor,
     wavelet: ContinuousWavelet | str,
 ) -> tuple[torch.Tensor, float]:
     """Reconstruct a real-valued signal from its CWT coefficients using the
@@ -403,7 +403,7 @@ def icwt(
              ``pywt_scales / Fs``).  Must be logarithmically spaced (the
              logarithmic voice spacing :math:`\\delta j` is derived from
              ``scales[1] / scales[0]``).
-         cwt_coefficients: CWT coefficient matrix of shape ``[S, batch, T]`` or ``[S, T]``
+         coefficients: CWT coefficient matrix of shape ``[S, batch, T]`` or ``[S, T]``
              as returned by :func:`ptwt.cwt`.  Accepts both
              :class:`torch.Tensor` and :class:`numpy.ndarray`; the output
              dtype/device matches the input.
@@ -494,11 +494,11 @@ def icwt(
     # ------------------------------------------------------------------
     # Convert inputs to torch tensors, preserving device / dtype
     # ------------------------------------------------------------------
-    if isinstance(cwt_coefficients, np.ndarray):
-        coefficients_tensor = torch.from_numpy(cwt_coefficients)
+    if isinstance(coefficients, np.ndarray):
+        coefficients_tensor = torch.from_numpy(coefficients)
     else:
         coefficients_tensor = (
-            cwt_coefficients  # already a tensor; keeps device & grad info
+            coefficients  # already a tensor; keeps device & grad info
         )
 
     # Scale array as a tensor on the same device as the coefficients
