@@ -333,7 +333,7 @@ def cdelta_cmor(
     # normalizes the amplitude so that the inverse CWT exactly recovers
     # the original signal.
     # -------------------------------------------------------------------
-    reconstruction_constant = float(
+    reconstruction_constant = (
         (scale_spacing / wavelet_at_origin)
         * np.sum(np.real(wavelet_coefficients) / np.sqrt(scales))
     )
