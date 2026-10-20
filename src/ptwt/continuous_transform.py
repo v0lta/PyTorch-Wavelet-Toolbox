@@ -299,30 +299,6 @@ def cdelta_cmor(
     # (Torrence & Compo Eq. 4, analytic morlet variant)
     wavelet_at_origin = 1.0 / np.sqrt(np.pi * bandwidth)
 
-    def wavelet_fourier_transform(scaled_angular_frequencies: np.ndarray) -> np.ndarray:
-        """Normalized Fourier transform of the cmor mother wavelet.
-
-        Implements the analytic (one-sided) complex Morlet transfer function.
-        The Heaviside factor ensures the wavelet is strictly analytic.
-
-        Args:
-            scaled_angular_frequencies: Product of scale *s* and angular
-                frequency array *angular_frequencies*.
-
-        Returns:
-            Complex array of wavelet Fourier coefficients.
-        """
-        # Heaviside: keep only positive frequencies (analytic signal)
-        positive_frequency_mask = (scaled_angular_frequencies > 0).astype(float)
-        return (
-            np.exp(
-                -bandwidth
-                * (scaled_angular_frequencies - center_angular_frequency) ** 2
-                / 4.0
-            )
-            * positive_frequency_mask
-        )
-
     # -------------------------------------------------------------------
     # Torrence & Compo Eq. 12:
     #
@@ -337,7 +313,13 @@ def cdelta_cmor(
     wavelet_coefficients = np.array(
         [
             (np.sqrt(scale) / fft_length)
-            * np.sum(np.conj(wavelet_fourier_transform(scale * angular_frequencies)))
+            * np.sum(
+                np.conj(
+                    _cmor_fourier_transform(
+                        scale * angular_frequencies, bandwidth, center_angular_frequency
+                    )
+                )
+            )
             for scale in scales
         ]
     )
@@ -357,6 +339,35 @@ def cdelta_cmor(
     )
 
     return reconstruction_constant
+
+
+def _cmor_fourier_transform(
+    scaled_angular_frequencies: np.ndarray,
+    bandwidth: float,
+    center_angular_frequency: float,
+) -> np.ndarray:
+    """Normalized Fourier transform of the cmor mother wavelet.
+
+    Implements the analytic (one-sided) complex Morlet transfer function.
+    The Heaviside factor ensures the wavelet is strictly analytic.
+
+    Args:
+        scaled_angular_frequencies: Product of scale *s* and angular
+            frequency array *angular_frequencies*.
+
+    Returns:
+        Complex array of wavelet Fourier coefficients.
+    """
+    # Heaviside: keep only positive frequencies (analytic signal)
+    positive_frequency_mask = (scaled_angular_frequencies > 0).astype(float)
+    return (
+        np.exp(
+            -bandwidth
+            * (scaled_angular_frequencies - center_angular_frequency) ** 2
+            / 4.0
+        )
+        * positive_frequency_mask
+    )
 
 
 def icwt(
