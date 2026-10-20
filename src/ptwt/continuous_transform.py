@@ -252,7 +252,7 @@ def cdelta_cmor(
             \\exp\\!\\left(-\\frac{B(s\\omega - \\omega_0)^2}{4}\\right)
             \\cdot H(s\\omega)
 
-    where :math:`\\omega_0 = 2\\pi C` is the centre (angular) frequency,
+    where :math:`\\omega_0 = 2\\pi C` is the center (angular) frequency,
     :math:`B` is the bandwidth parameter, and :math:`H` is the Heaviside
     step function that enforces the analytic (one-sided) nature of the wavelet.
 
@@ -266,7 +266,7 @@ def cdelta_cmor(
 
     Args:
         bandwidth: Bandwidth parameter of the cmor wavelet (``cmor{bandwidth}-{center_frequency}``).
-        center_frequency: Centre-frequency parameter of the cmor wavelet (``cmor{bandwidth}-{center_frequency}``).
+        center_frequency: Center-frequency parameter of the cmor wavelet (``cmor{bandwidth}-{center_frequency}``).
         fft_length: Number of FFT points used for the internal numerical integration.
             Larger values give a more accurate result but increase runtime.
             Defaults to 4096.
@@ -283,7 +283,7 @@ def cdelta_cmor(
     References:
         Torrence & Compo (1998), Eq. 12–13.
     """
-    # Angular centre frequency of the cmor wavelet
+    # Angular center frequency of the cmor wavelet
     center_angular_frequency = 2.0 * np.pi * center_frequency
 
     # Discrete angular frequencies for an N-point FFT
