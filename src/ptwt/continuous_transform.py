@@ -11,7 +11,11 @@ from pywt import ContinuousWavelet, DiscreteContinuousWavelet, Wavelet
 from pywt._functions import scale2frequency
 from torch.fft import fft, ifft
 
-__all__ = ["cwt", "icwt"]
+__all__ = [
+    "cwt",
+    "icwt",
+    "cdelta_cmor",
+]
 
 
 def _next_fast_len(n: int) -> int:
@@ -237,10 +241,10 @@ def cdelta_cmor(
     min_scale: float = 0.5,
     max_scale: float = 10000.0,
 ) -> float:
-    """Compute the Torrence & Compo reconstruction constant *C_delta* for a
+    """Compute the :cite:`torrence1998` reconstruction constant *C_delta* for a
     complex Morlet wavelet ``cmor{B}-{C}``.
 
-    The constant is defined in Torrence & Compo (1998) Eq. 13 and is required
+    The constant is defined by :cite:`torrence1998` Eq. 13 and is required
     to correctly normalize the inverse CWT sum.  It depends only on the wavelet
     family / parameters and **not** on the signal being reconstructed.
 
@@ -262,7 +266,7 @@ def cdelta_cmor(
 
         \\psi(0) = \\frac{1}{\\sqrt{\\pi B}}
 
-    as required by Torrence & Compo Eq. 4.
+    as required by :cite:`torrence1998` Eq. 4.
 
     Args:
         bandwidth: Bandwidth parameter of the cmor wavelet (``cmor{bandwidth}-{center_frequency}``).
@@ -279,9 +283,6 @@ def cdelta_cmor(
 
     Returns:
         The scalar reconstruction constant *reconstruction_constant*.
-
-    References:
-        Torrence & Compo (1998), Eq. 12–13.
     """
     # Angular center frequency of the cmor wavelet
     center_angular_frequency = 2.0 * np.pi * center_frequency
@@ -376,81 +377,80 @@ def icwt(
     coefficients: np.ndarray | torch.Tensor,
     wavelet: ContinuousWavelet | str,
 ) -> tuple[torch.Tensor, float]:
-    """Reconstruct a real-valued signal from its CWT coefficients using the
-     Torrence & Compo (1998) inversion formula (their Eq. 11).
+    """Reconstruct a real-valued signal using the :cite:`torrence1998` inversion formula.
 
-     The reconstruction formula is
+    The reconstruction formula is
 
-     .. math::
+    .. math::
 
-         x(t) = \\frac{\\delta j \\,\\sqrt{\\delta t}}{\\psi(0)\\, C_\\delta}
-                \\sum_{j} \\frac{\\mathrm{Re}[W(a_j, t)]}{\\sqrt{a_j}}
+        x(t) = \\frac{\\delta j \\,\\sqrt{\\delta t}}{\\psi(0)\\, C_\\delta}
+               \\sum_{j} \\frac{\\mathrm{Re}[W(a_j, t)]}{\\sqrt{a_j}}
 
-     where
+    where
 
-     * :math:`\\delta j` is the logarithmic scale spacing,
-     * :math:`\\delta t` is the sampling interval,
-     * :math:`\\psi(0)` is the mother wavelet evaluated at the origin,
-     * :math:`C_\\delta` is the wavelet-dependent reconstruction constant
-       (see :func:`cdelta_cmor`), and
-     * :math:`W(a_j, t)` are the CWT coefficients at scale :math:`a_j`.
+    * :math:`\\delta j` is the logarithmic scale spacing,
+    * :math:`\\delta t` is the sampling interval,
+    * :math:`\\psi(0)` is the mother wavelet evaluated at the origin,
+    * :math:`C_\\delta` is the wavelet-dependent reconstruction constant
+      (see :func:`cdelta_cmor`)
+    * :math:`W(a_j, t)` are the CWT coefficients at scale :math:`a_j`.
 
-     .. note::
-         This function currently **only supports complex Morlet (cmor) wavelets**
-         (e.g. ``"cmor1.5-1.0"`` or ``pywt.ContinuousWavelet("cmor1.5-1.0")``).
-         Attempting to use any other wavelet family will raise a ``ValueError``.
+    .. warning::
+
+        This function currently **only supports complex Morlet (cmor) wavelets**
+        (e.g. ``"cmor1.5-1.0"`` or ``pywt.ContinuousWavelet("cmor1.5-1.0")``).
+        Attempting to use any other wavelet family will raise a ``ValueError``.
 
     .. note::
-         The scale array ``scales`` must correspond to the scales used in the
-         forward :func:`ptwt.cwt` call that produced ``cwt_coefficients``.
-         :func:`ptwt.cwt` uses its ``scales`` argument directly (in samples) and
-         only applies ``sampling_period`` to the returned frequencies, so divide
-         the scales you gave to ``cwt`` by ``Fs`` (equivalently, multiply them by
-         ``sampling_period``) before passing them here.
 
-     Args:
-         time_array: 1-D time array of length *T* (seconds).  Must be uniformly sampled.
-         scales: 1-D array of analysis scales of length *S* (dimensionless, i.e.
-             ``pywt_scales / Fs``).  Must be logarithmically spaced (the
-             logarithmic voice spacing :math:`\\delta j` is derived from
-             ``scales[1] / scales[0]``).
-         coefficients: CWT coefficient matrix of shape ``[S, batch, T]`` or ``[S, T]``
-             as returned by :func:`ptwt.cwt`.  Accepts both
-             :class:`torch.Tensor` and :class:`numpy.ndarray`; the output
-             dtype/device matches the input.
-         wavelet: The wavelet used for the forward CWT.  Must be a cmor wavelet,
-             specified either as a :class:`pywt.ContinuousWavelet` instance or
-             a string of the form ``"cmor{}-{C}"`` (e.g. ``"cmor1.5-1.0"``).
+        The scale array ``scales`` must correspond to the scales used in the
+        forward :func:`ptwt.cwt` call that produced ``cwt_coefficients``.
+        :func:`ptwt.cwt` uses its ``scales`` argument directly (in samples) and
+        only applies ``sampling_period`` to the returned frequencies, so divide
+        the scales you gave to ``cwt`` by ``Fs`` (equivalently, multiply them by
+        ``sampling_period``) before passing them here.
 
-     Returns:
-         A tuple ``(reconstructed_signal, reconstruction_constant)`` where
+    Args:
+        time_array:
+            1-D time array of length *T* (seconds).  Must be uniformly sampled.
+        scales: 1-D array of analysis scales of length *S* (dimensionless, i.e.
+            ``pywt_scales / Fs``).  Must be logarithmically spaced (the
+            logarithmic voice spacing :math:`\\delta j` is derived from
+            ``scales[1] / scales[0]``).
+        coefficients:
+            CWT coefficient matrix of shape ``[S, batch, T]`` or ``[S, T]``
+            as returned by :func:`ptwt.cwt`.  Accepts both
+            :class:`torch.Tensor` and :class:`numpy.ndarray`; the output
+            dtype/device matches the input.
+        wavelet:
+            The wavelet used for the forward CWT.  Must be a cmor wavelet,
+            specified either as a :class:`pywt.ContinuousWavelet` instance or
+            a string of the form ``"cmor{}-{C}"`` (e.g. ``"cmor1.5-1.0"``).
 
-         * ``reconstructed_signal`` is a :class:`torch.Tensor` with the same shape
-           as the time dimension of ``cwt_coefficients`` (i.e. ``[batch, T]`` or ``[T]``).
-         * ``reconstruction_constant`` is the scalar Torrence & Compo reconstruction constant
-           that was used.
+    Returns:
+        A tuple ``(reconstructed_signal, reconstruction_constant)`` where
 
-     Raises:
-         ValueError: If ``wavelet`` is not a complex Morlet (cmor) family wavelet.
-         ValueError: If ``scales`` contains fewer than two elements (dj cannot be
-             computed).
+        * ``reconstructed_signal`` is a :class:`torch.Tensor` with the same shape
+          as the time dimension of ``cwt_coefficients`` (i.e. ``[batch, T]`` or ``[T]``).
+        * ``reconstruction_constant`` is the scalar :cite:`torrence1998` reconstruction constant
+          that was used.
 
-     References:
-         Torrence & Compo (1998), Eq. 11.
+    Raises:
+        ValueError: If ``wavelet`` is not a complex Morlet (cmor) family wavelet.
+        ValueError: If ``scales`` contains fewer than two elements ($\\delta j$ cannot be computed).
 
-     Example::
-
-         >>> import torch, numpy as np, ptwt, pywt
-         >>> Fs = 1000
-         >>> t_np = np.linspace(0, 1, Fs, endpoint=False)
-         >>> t_pt = torch.from_numpy(t_np)
-         >>> x = torch.sin(2 * np.pi * 50 * t_pt).unsqueeze(0)
-         >>> scales_pywt = np.geomspace(1, 256, 64) * Fs  # pywt convention
-         >>> wavelet = pywt.ContinuousWavelet("cmor1.5-1.0")
-         >>> coeffs, _ = ptwt.cwt(x, scales_pywt, wavelet, sampling_period=1/Fs)
-         >>> x_rec, reconstruction_constant = icwt(
-         ...     t_np, scales_pywt / Fs, coeffs, wavelet
-         ... )
+    Example:
+        >>> import torch, numpy as np, ptwt, pywt
+        >>> Fs = 1000
+        >>> t_np = np.linspace(0, 1, Fs, endpoint=False)
+        >>> t_pt = torch.from_numpy(t_np)
+        >>> x = torch.sin(2 * np.pi * 50 * t_pt).unsqueeze(0)
+        >>> scales_pywt = np.geomspace(1, 256, 64) * Fs  # pywt convention
+        >>> wavelet = pywt.ContinuousWavelet("cmor1.5-1.0")
+        >>> coeffs, _ = ptwt.cwt(x, scales_pywt, wavelet, sampling_period=1/Fs)
+        >>> x_rec, reconstruction_constant = icwt(
+        ...     t_np, scales_pywt / Fs, coeffs, wavelet
+        ... )
     """
     # ------------------------------------------------------------------
     # Validate wavelet family – only cmor is currently supported
