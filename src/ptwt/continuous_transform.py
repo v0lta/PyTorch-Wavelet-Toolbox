@@ -241,7 +241,7 @@ def cdelta_cmor(
     complex Morlet wavelet ``cmor{B}-{C}``.
 
     The constant is defined in Torrence & Compo (1998) Eq. 13 and is required
-    to correctly normalise the inverse CWT sum.  It depends only on the wavelet
+    to correctly normalize the inverse CWT sum.  It depends only on the wavelet
     family / parameters and **not** on the signal being reconstructed.
 
     The complex Morlet (cmor) wavelet used here has the Fourier transform
@@ -300,7 +300,7 @@ def cdelta_cmor(
     wavelet_at_origin = 1.0 / np.sqrt(np.pi * bandwidth)
 
     def wavelet_fourier_transform(scaled_angular_frequencies: np.ndarray) -> np.ndarray:
-        """Normalised Fourier transform of the cmor mother wavelet.
+        """Normalized Fourier transform of the cmor mother wavelet.
 
         Implements the analytic (one-sided) complex Morlet transfer function.
         The Heaviside factor ensures the wavelet is strictly analytic.
@@ -332,7 +332,7 @@ def cdelta_cmor(
     # For a delta function at n=0  the FFT of the input is all-ones, so the
     # convolution in frequency space becomes a plain sum of psi_hat values.
     # The 1/N factor from the IFFT convention is absorbed into the 1/N
-    # normalisation below.
+    # normalization below.
     # -------------------------------------------------------------------
     wavelet_coefficients = np.array(
         [
@@ -348,7 +348,7 @@ def cdelta_cmor(
     #   C_delta = (dj / psi(0)) * sum_j { Re[W_j(s_j)] / sqrt(s_j) }
     #
     # This represents the reconstruction of a delta function; C_delta
-    # normalises the amplitude so that the inverse CWT exactly recovers
+    # normalizes the amplitude so that the inverse CWT exactly recovers
     # the original signal.
     # -------------------------------------------------------------------
     reconstruction_constant = float(
@@ -516,7 +516,7 @@ def icwt(
     # scales_tensor shape:        [S]
     # ------------------------------------------------------------------
 
-    # Normalise each scale slice by 1/sqrt(a_j) then sum over the scale axis
+    # Normalize each scale slice by 1/sqrt(a_j) then sum over the scale axis
     if coefficients_tensor.dim() == 3:
         # [S, batch, T] -> broadcast scales over batch and time dimensions
         inverse_sqrt_scales = scales_tensor[:, None, None] ** (-0.5)
