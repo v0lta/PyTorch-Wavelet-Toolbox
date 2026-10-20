@@ -9,7 +9,7 @@ from .constants import (
     WaveletDetailTuple2d,
     WaveletTensorTuple,
 )
-from .continuous_transform import cwt
+from .continuous_transform import cwt, icwt
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
 from .conv_transform_3 import wavedec3, waverec3
@@ -41,6 +41,7 @@ __all__ = [
     "fswavedec3",
     "fswaverec2",
     "fswaverec3",
+    "icwt",
     "iswt",
     "swt",
     "wavedec",
