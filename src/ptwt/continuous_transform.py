@@ -506,15 +506,11 @@ def icwt(
     # Convert inputs to torch tensors, preserving device / dtype
     # ------------------------------------------------------------------
     if isinstance(coefficients, np.ndarray):
-        coefficients_tensor = torch.from_numpy(coefficients)
-    else:
-        coefficients_tensor = (
-            coefficients  # already a tensor; keeps device & grad info
-        )
+        coefficients = torch.from_numpy(coefficients)
 
     # Scale array as a tensor on the same device as the coefficients
     scales_tensor = torch.tensor(
-        scales, dtype=coefficients_tensor.real.dtype, device=coefficients_tensor.device
+        scales, dtype=coefficients.real.dtype, device=coefficients.device
     )
 
     # ------------------------------------------------------------------
@@ -523,12 +519,12 @@ def icwt(
     #   x_n  =  (dj * sqrt(dt)) / (psi(0) * C_delta)
     #           * sum_j { Re[W_j(n)] / sqrt(a_j) }
     #
-    # coefficients_tensor shape:  [S, batch, T]  or  [S, T]
+    # coefficients shape:  [S, batch, T]  or  [S, T]
     # scales_tensor shape:        [S]
     # ------------------------------------------------------------------
 
     # Normalize each scale slice by 1/sqrt(a_j) then sum over the scale axis
-    if coefficients_tensor.dim() == 3:
+    if coefficients.dim() == 3:
         # [S, batch, T] -> broadcast scales over batch and time dimensions
         inverse_sqrt_scales = scales_tensor[:, None, None] ** (-0.5)
     else:
@@ -537,7 +533,7 @@ def icwt(
 
     # Sum of Re[W(s, t)] / sqrt(s)  over scale axis (dim=0)
     weighted_scale_sum = torch.sum(
-        coefficients_tensor.real * inverse_sqrt_scales, dim=0
+        coefficients.real * inverse_sqrt_scales, dim=0
     )
 
     # Apply the Torrence & Compo amplitude factor
