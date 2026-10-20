@@ -41,6 +41,7 @@ __all__ = [
     "fswavedec3",
     "fswaverec2",
     "fswaverec3",
+    "icwt",
     "iswt",
     "swt",
     "wavedec",

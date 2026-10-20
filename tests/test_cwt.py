@@ -145,7 +145,12 @@ def test_icwt_cuda(cuda: bool, wavelet: str = "cmor1.5-1.0") -> None:
     if cuda:
         sig_pt = sig_pt.cuda()
     cwtmatr_pt, _ = cwt(sig_pt, scales_samples, wavelet, sampling_period=1 / Fs)
-    x_rec, _ = icwt(t=t, a=scales_samples / Fs, W=cwtmatr_pt, wavelet=wavelet)
+    x_rec, _ = icwt(
+        time_array=t,
+        scales=scales_samples / Fs,
+        cwt_coefficients=cwtmatr_pt,
+        wavelet=wavelet,
+    )
     assert x_rec.device == cwtmatr_pt.device
 
 
@@ -159,10 +164,14 @@ def test_icwt_accepts_wavelet_object() -> None:
     wavelet_str = "cmor1.5-1.0"
     wavelet_obj = pywt.ContinuousWavelet("cmor1.5-1.0")
     coeffs, _ = cwt(sig, scales_pywt, wavelet_str, sampling_period=1 / Fs)
-    x_rec_str, C_delta_str = icwt(t=t, a=scales_dim, W=coeffs, wavelet=wavelet_str)
-    x_rec_obj, C_delta_obj = icwt(t=t, a=scales_dim, W=coeffs, wavelet=wavelet_obj)
+    x_rec_str, reconstruction_constant_str = icwt(
+        time_array=t, scales=scales_dim, cwt_coefficients=coeffs, wavelet=wavelet_str
+    )
+    x_rec_obj, reconstruction_constant_obj = icwt(
+        time_array=t, scales=scales_dim, cwt_coefficients=coeffs, wavelet=wavelet_obj
+    )
     assert torch.allclose(x_rec_str, x_rec_obj)
-    assert np.isclose(C_delta_str, C_delta_obj)
+    assert np.isclose(reconstruction_constant_str, reconstruction_constant_obj)
 
 
 @pytest.mark.parametrize("wavelet", ["mexh", "morl", "cgau1", "gaus1"])
@@ -174,21 +183,31 @@ def test_icwt_rejects_non_cmor(wavelet: str) -> None:
     scales_samples = np.geomspace(2, 32, 16)
     coeffs, _ = cwt(sig, scales_samples, wavelet, sampling_period=1 / Fs)
     with pytest.raises(ValueError, match="cmor"):
-        icwt(t=t, a=scales_samples / Fs, W=coeffs, wavelet=wavelet)
+        icwt(
+            time_array=t,
+            scales=scales_samples / Fs,
+            cwt_coefficients=coeffs,
+            wavelet=wavelet,
+        )
 
 
 @pytest.mark.parametrize("wavelet", ["cmor1.5-1.0", "cmor0.5-1.0", "cmor3.0-2.0"])
 def test_icwt_cdelta_valid(wavelet: str) -> None:
-    """C_delta must be finite and positive for all valid cmor wavelets."""
+    """reconstruction_constant must be finite and positive for all valid cmor wavelets."""
     Fs = 500
     t = np.linspace(0, 1, Fs, endpoint=False)
     scales_samples = np.geomspace(4, 100, 64)
     sig_np = np.sin(2 * np.pi * 20 * t) + 0.5 * np.sin(2 * np.pi * 40 * t)
     sig = torch.from_numpy(sig_np).float()
     coeffs, _ = cwt(sig, scales_samples, wavelet, sampling_period=1 / Fs)
-    x_rec, C_delta = icwt(t=t, a=scales_samples / Fs, W=coeffs, wavelet=wavelet)
-    assert np.isfinite(C_delta)
-    assert C_delta > 0
+    x_rec, reconstruction_constant = icwt(
+        time_array=t,
+        scales=scales_samples / Fs,
+        cwt_coefficients=coeffs,
+        wavelet=wavelet,
+    )
+    assert np.isfinite(reconstruction_constant)
+    assert reconstruction_constant > 0
     mae = np.abs(x_rec.numpy() - sig.numpy()).mean()
     assert mae < 0.05, f"mean absolute error: {mae}"
 
@@ -202,10 +221,15 @@ def test_icwt(wavelet: str, scales: np.ndarray) -> None:
     sig = np.sin(2 * np.pi * 20 * t) + 0.5 * np.sin(2 * np.pi * 40 * t)
     sig_pt = torch.from_numpy(sig).float()
     coeffs, _ = cwt(sig_pt, scales, wavelet, sampling_period=1 / Fs)
-    x_rec, C_delta = icwt(t=t, a=scales / Fs, W=coeffs, wavelet=wavelet)
+    x_rec, reconstruction_constant = icwt(
+        time_array=t,
+        scales=scales / Fs,
+        cwt_coefficients=coeffs,
+        wavelet=wavelet,
+    )
     x_rec_np = x_rec.numpy()
     assert np.all(np.isfinite(x_rec_np))
-    assert np.isfinite(C_delta)
-    assert C_delta > 0
+    assert np.isfinite(reconstruction_constant)
+    assert reconstruction_constant > 0
     mae = np.abs(x_rec_np - sig).mean()
     assert mae < 0.05, f"mean absolute error: {mae}"
