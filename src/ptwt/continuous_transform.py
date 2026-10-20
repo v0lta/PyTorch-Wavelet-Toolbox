@@ -431,9 +431,9 @@ def icwt(
 
          >>> import torch, numpy as np, ptwt, pywt
          >>> Fs = 1000
-         >>> t_np  = np.linspace(0, 1, Fs, endpoint=False)
-         >>> t_pt  = torch.from_numpy(t_np)
-         >>> x     = torch.sin(2 * np.pi * 50 * t_pt).unsqueeze(0)
+         >>> t_np = np.linspace(0, 1, Fs, endpoint=False)
+         >>> t_pt = torch.from_numpy(t_np)
+         >>> x = torch.sin(2 * np.pi * 50 * t_pt).unsqueeze(0)
          >>> scales_pywt = np.geomspace(1, 256, 64) * Fs  # pywt convention
          >>> wavelet = pywt.ContinuousWavelet("cmor1.5-1.0")
          >>> coeffs, _ = ptwt.cwt(x, scales_pywt, wavelet, sampling_period=1/Fs)
