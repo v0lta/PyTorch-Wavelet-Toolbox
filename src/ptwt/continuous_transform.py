@@ -12,9 +12,9 @@ from pywt._functions import scale2frequency
 from torch.fft import fft, ifft
 
 __all__ = [
+    "complex_morlet_reconstruction",
     "cwt",
     "icwt",
-    "complex_morlet_reconstruction",
 ]
 
 
@@ -243,11 +243,54 @@ def complex_morlet_reconstruction(
 ) -> float:
     r"""Compute the reconstruction constant :math:`C_{\delta}` for a complex Morlet wavelet.
 
-    The constant is defined by :cite:`torrence1998` Eq. 13 and is required
-    to correctly normalize the inverse CWT sum.  It depends only on the wavelet
-    family / parameters and **not** on the signal being reconstructed.
+    This is the constant for the wavelet ``cmor{bandwidth}-{center_frequency}``.
+    It is defined by :cite:`torrence1998` Eq. 13 as
 
-    The complex Morlet (cmor) wavelet used here has the Fourier transform
+    .. math::
+
+        C_{\delta} = \frac{\delta j}{\psi(0)}
+            \sum_{j=0}^{J} \frac{\mathrm{Re}\left[W_{\delta}(s_j)\right]}{\sqrt{s_j}}
+
+    and is needed to normalize the inverse CWT in :func:`ptwt.icwt`. It depends
+    only on the wavelet parameters and **not** on the signal being reconstructed.
+
+    The quantities in this equation are:
+
+    * :math:`s_j` is the :math:`j`-th scale. Here scales are dimensionless,
+      i.e. measured in units of the sampling interval (:math:`\delta t = 1`),
+      so the constant does not depend on the sampling frequency. The scales are
+      logarithmically spaced between ``min_scale`` and ``max_scale``, with
+      :math:`j = 0, \dots, J` and :math:`J = \text{n\_scales} - 1`. They are
+      internal scales used only to evaluate the constant and are independent of
+      the ``scales`` passed to :func:`ptwt.icwt`.
+    * :math:`\delta j = \log_2(s_1 / s_0)` is the logarithmic scale spacing
+      (:cite:`torrence1998` Eq. 9).
+    * :math:`\psi(0) = 1 / \sqrt{\pi B}` is the mother wavelet evaluated at
+      the origin (:cite:`torrence1998` Eq. 4), where :math:`B` is ``bandwidth``.
+    * :math:`W_{\delta}(s_j)` is the wavelet transform at scale :math:`s_j` of
+      a discrete delta function at :math:`n = 0` (:cite:`torrence1998` Eq. 12).
+      The FFT of such a signal is constant, so the transform reduces to a sum
+      over the :math:`N` FFT bins (``fft_length``):
+
+      .. math::
+
+          W_{\delta}(s_j) = \frac{\sqrt{s_j}}{N}
+              \sum_{k=0}^{N-1} \hat{\psi}^{*}(s_j \omega_k)
+
+      where :math:`\omega_k = 2\pi f_k` is the angular frequency of the
+      :math:`k`-th FFT bin, :math:`f_k` is the :math:`k`-th value returned by
+      ``np.fft.fftfreq(fft_length)`` (cycles per sample), and :math:`^{*}`
+      denotes the complex conjugate.
+
+      .. note::
+
+          The prefactor :math:`\sqrt{s_j} / N` uses the :math:`\sqrt{s}`
+          normalization of :func:`ptwt.cwt` with :math:`\delta t = 1`. It
+          therefore differs from the prefactor :math:`\sqrt{2\pi s / \delta t}`
+          printed in Eq. 12 of the paper.
+
+    The Fourier transform of the complex Morlet wavelet used in
+    :math:`W_{\delta}` is
 
     .. math::
 
@@ -255,61 +298,42 @@ def complex_morlet_reconstruction(
             \exp\!\left(-\frac{B(s\omega - \omega_0)^2}{4}\right)
             \cdot H(s\omega)
 
-    where :math:`\omega_0 = 2\pi C` is the center (angular) frequency,
-    :math:`B` is the bandwidth parameter, and :math:`H` is the Heaviside
-    step function that enforces the analytic (one-sided) nature of the wavelet.
-
-    The value at the origin is
-
-    .. math::
-
-        \psi(0) = \frac{1}{\sqrt{\pi B}}
-
-    as required by :cite:`torrence1998` Eq. 4.
+    where :math:`s` is the (dimensionless) scale, :math:`\omega` is the
+    angular frequency in radians per sample, :math:`B` is ``bandwidth``,
+    :math:`\omega_0 = 2\pi C` is the center angular frequency with :math:`C`
+    = ``center_frequency``, and :math:`H` is the Heaviside step function that
+    keeps only positive frequencies, which makes the wavelet analytic
+    (one-sided).
 
     Args:
-        bandwidth: Bandwidth parameter $B$ of the complex Morlet wavelet
-        center_frequency: Center-frequency parameter $C$ of the complex Morlet wavelet
-        fft_length: Number of FFT points used for the internal numerical integration.
-            Larger values give a more accurate result, but increase runtime.
-            Defaults to 4,096.
-        n_scales: Number of scales to sum over when evaluating Eq. 13.
-            Should span several decades; defaults to 1,000.
-        min_scale: Smallest scale in the internal sum (dimensionless).
-            Defaults to 0.5.
-        max_scale: Largest scale in the internal sum (dimensionless).
-            Defaults to 10,000.
+        bandwidth: Bandwidth parameter :math:`B` of the complex Morlet wavelet
+            (``cmor{bandwidth}-{center_frequency}``).
+        center_frequency: Center-frequency parameter :math:`C` of the complex
+            Morlet wavelet (``cmor{bandwidth}-{center_frequency}``).
+        fft_length: Number of FFT points :math:`N` used for the internal
+            numerical integration. Larger values give a more accurate result,
+            but increase runtime. Defaults to 4,096.
+        n_scales: Number of scales :math:`J + 1` to sum over when evaluating
+            Eq. 13. Should span several decades; defaults to 1,000.
+        min_scale: Smallest scale :math:`s_0` in the internal sum
+            (dimensionless). Defaults to 0.5.
+        max_scale: Largest scale :math:`s_J` in the internal sum
+            (dimensionless). Defaults to 10,000.
 
     Returns:
         The scalar reconstruction constant :math:`C_{\delta}`.
     """
-    # Angular center frequency of the cmor wavelet
     center_angular_frequency = 2.0 * np.pi * center_frequency
 
-    # Discrete angular frequencies for an N-point FFT
     angular_frequencies = np.fft.fftfreq(fft_length) * 2.0 * np.pi
 
-    # Logarithmically spaced scale array (same spacing as the analysis scales)
     scales = np.geomspace(min_scale, max_scale, n_scales)
 
-    # Logarithmic voice spacing  dj  (Torrence & Compo Eq. 9)
     scale_spacing = np.log2(scales[1] / scales[0])
 
-    # Value of the cmor mother wavelet at the origin: psi(0) = 1 / sqrt(pi * B)
-    # (Torrence & Compo Eq. 4, analytic morlet variant)
     wavelet_at_origin = 1.0 / np.sqrt(np.pi * bandwidth)
 
-    # -------------------------------------------------------------------
-    # Torrence & Compo Eq. 12:
-    #
-    #   W_n(s) = sqrt(2 * pi * s / delta_t) * sum_k { Psi*(s*omega_k) }
-    #                                               N
-    #
-    # For a delta function at n=0  the FFT of the input is all-ones, so the
-    # convolution in frequency space becomes a plain sum of psi_hat values.
-    # The 1/N factor from the IFFT convention is absorbed into the 1/N
-    # normalization below.
-    # -------------------------------------------------------------------
+    # W_delta(s_j) from the docstring; the 1/N is the FFT normalization.
     wavelet_coefficients = np.array(
         [
             (np.sqrt(scale) / fft_length)
@@ -324,18 +348,8 @@ def complex_morlet_reconstruction(
         ]
     )
 
-    # -------------------------------------------------------------------
-    # Torrence & Compo Eq. 13:
-    #
-    #   C_delta = (dj / psi(0)) * sum_j { Re[W_j(s_j)] / sqrt(s_j) }
-    #
-    # This represents the reconstruction of a delta function; C_delta
-    # normalizes the amplitude so that the inverse CWT exactly recovers
-    # the original signal.
-    # -------------------------------------------------------------------
-    reconstruction_constant = (
-        (scale_spacing / wavelet_at_origin)
-        * np.sum(np.real(wavelet_coefficients) / np.sqrt(scales))
+    reconstruction_constant = (scale_spacing / wavelet_at_origin) * np.sum(
+        np.real(wavelet_coefficients) / np.sqrt(scales)
     )
 
     return reconstruction_constant
@@ -346,19 +360,24 @@ def _cmor_fourier_transform(
     bandwidth: float,
     center_angular_frequency: float,
 ) -> np.ndarray:
-    """Normalized Fourier transform of the cmor mother wavelet.
+    r"""Normalized Fourier transform of the cmor mother wavelet.
 
     Implements the analytic (one-sided) complex Morlet transfer function.
     The Heaviside factor ensures the wavelet is strictly analytic.
 
     Args:
-        scaled_angular_frequencies: Product of scale *s* and angular
-            frequency array *angular_frequencies*.
+        scaled_angular_frequencies: The product :math:`s\omega` of the scale
+            :math:`s` and the angular frequencies :math:`\omega`
+            (in radians per sample).
+        bandwidth: Bandwidth parameter :math:`B` of the complex Morlet wavelet.
+        center_angular_frequency: Center angular frequency
+            :math:`\omega_0 = 2\pi C`, where :math:`C` is the center
+            frequency of the complex Morlet wavelet.
 
     Returns:
-        Complex array of wavelet Fourier coefficients.
+        Complex array of wavelet Fourier coefficients, with the same shape as
+        ``scaled_angular_frequencies``.
     """
-    # Heaviside: keep only positive frequencies (analytic signal)
     positive_frequency_mask = (scaled_angular_frequencies > 0).astype(float)
     return (
         np.exp(
@@ -376,76 +395,108 @@ def icwt(
     coefficients: np.ndarray | torch.Tensor,
     wavelet: ContinuousWavelet | str,
 ) -> tuple[torch.Tensor, float]:
-    r"""Reconstruct a real-valued signal using the :cite:`torrence1998` inversion formula.
+    r"""Reconstruct a real-valued signal from its CWT coefficients.
 
-    The reconstruction formula is
+    This inverts :func:`ptwt.cwt` using the :cite:`torrence1998` reconstruction
+    formula (their Eq. 11):
 
     .. math::
 
         x(t) = \frac{\delta j \,\sqrt{\delta t}}{\psi(0)\, C_{\delta}}
-               \sum_{j} \frac{\mathrm{Re}[W(a_j, t)]}{\sqrt{a_j}}
+               \sum_{j=0}^{J} \frac{\mathrm{Re}[W(s_j, t)]}{\sqrt{s_j}}
 
     where
 
-    * :math:`\delta j` is the logarithmic scale spacing,
-    * :math:`\delta t` is the sampling interval,
-    * :math:`\psi(0)` is the mother wavelet evaluated at the origin,
-    * :math:`C_{\delta}` is the wavelet-dependent reconstruction constant
-      (see :func:`~ptwt.continuous_transform.complex_morlet_reconstruction`)
-    * :math:`W(a_j, t)` are the CWT coefficients at scale :math:`a_j`.
+    * :math:`s_j` is the :math:`j`-th analysis scale **in seconds**, with
+      :math:`j = 0, \dots, J` and :math:`J = S - 1` for :math:`S` scales
+      (see the note below for how to obtain it from the scales given to
+      :func:`ptwt.cwt`),
+    * :math:`\delta j = \log_2(s_1 / s_0)` is the logarithmic scale spacing,
+    * :math:`\delta t = 1 / F_s` is the sampling interval in seconds, computed
+      as ``time_array[1] - time_array[0]``,
+    * :math:`\psi(0) = 1 / \sqrt{\pi B}` is the mother wavelet evaluated at
+      the origin, where :math:`B` is the bandwidth of the wavelet
+      ``cmor{bandwidth}-{center_frequency}``,
+    * :math:`C_{\delta}` is the wavelet-dependent reconstruction constant, which
+      depends on :math:`B` and on the center frequency :math:`C`
+      (see :func:`~ptwt.continuous_transform.complex_morlet_reconstruction`
+      for how it is computed), and
+    * :math:`W(s_j, t)` are the CWT coefficients at scale :math:`s_j`.
 
     .. note::
 
-        The scale array ``scales`` must correspond to the scales used in the
-        forward :func:`ptwt.cwt` call that produced ``coefficients``.
-        :func:`ptwt.cwt` uses its ``scales`` argument directly (in samples) and
-        only applies ``sampling_period`` to the returned frequencies, so divide
-        the scales you gave to ``cwt`` by ``Fs`` (equivalently, multiply them by
-        ``sampling_period``) before passing them here.
+        This function currently **only supports complex Morlet (cmor) wavelets**
+        (e.g. ``"cmor1.5-1.0"`` or ``pywt.ContinuousWavelet("cmor1.5-1.0")``).
+        Any other wavelet family raises a ``NotImplementedError``.
+
+    .. note::
+
+        **Scales and the sampling frequency** ``Fs``. ``Fs`` is the sampling
+        frequency of the signal in Hz (samples per second), so
+        ``Fs = 1 / (time_array[1] - time_array[0])``. It is not an argument of
+        this function; it only appears here to convert scales.
+
+        :func:`ptwt.cwt` interprets its ``scales`` in units of samples and only
+        uses ``sampling_period`` to compute the returned frequencies. This
+        function expects scales in seconds. Convert them with
+
+        ``scales = cwt_scales / Fs``
+
+        where ``cwt_scales`` are the scales passed to :func:`ptwt.cwt`
+        (equivalently, ``cwt_scales * sampling_period``).
 
     Args:
         time_array:
-            1-D time array of length *T* (seconds).  Must be uniformly sampled.
-        scales: 1-D array of analysis scales of length $S$ (dimensionless, i.e.
-            ``pywt_scales / Fs``).  Must be logarithmically spaced (the
-            logarithmic voice spacing :math:`\delta j` is derived from
-            ``scales[1] / scales[0]``).
+            1-D time array of length *T* (seconds). Must be uniformly sampled.
+        scales:
+            1-D array of analysis scales of length *S*, in seconds, i.e.
+            ``cwt_scales / Fs`` where ``cwt_scales`` are the scales (in
+            samples) passed to :func:`ptwt.cwt`. Must be logarithmically
+            spaced, since :math:`\delta j` is derived from
+            ``scales[1] / scales[0]``.
         coefficients:
             CWT coefficient matrix of shape ``[S, batch, T]`` or ``[S, T]``
-            as returned by :func:`ptwt.cwt`.  Accepts both
+            as returned by :func:`ptwt.cwt`. Accepts both
             :class:`torch.Tensor` and :class:`numpy.ndarray`; the output
             dtype/device matches the input.
         wavelet:
-            The wavelet used for the forward CWT.  Must be a cmor wavelet,
+            The wavelet used for the forward CWT. Must be a cmor wavelet,
             specified either as a :class:`pywt.ContinuousWavelet` instance or
-            a string of the form ``"cmor{}-{C}"`` (e.g. ``"cmor1.5-1.0"``).
+            a string of the form ``"cmor{bandwidth}-{center_frequency}"``
+            (e.g. ``"cmor1.5-1.0"``).
 
     Returns:
-        * ``reconstructed_signal`` is a :class:`torch.Tensor` with the same shape
-          as the time dimension of ``coefficients`` (i.e. ``[batch, T]`` or ``[T]``).
-        * ``reconstruction_constant`` :math:`C_{\delta}` based on the
-          :math:`B` and :math:`C` parameters of the complex Morlet wavelet
+        A tuple ``(reconstructed_signal, reconstruction_constant)`` where
+
+        * ``reconstructed_signal`` is a :class:`torch.Tensor` with the same
+          shape as the time dimension of ``coefficients`` (i.e.
+          ``[batch, T]`` or ``[T]``).
+        * ``reconstruction_constant`` is the scalar reconstruction constant
+          :math:`C_{\delta}` that was used, based on the :math:`B` and
+          :math:`C` parameters of the complex Morlet wavelet.
 
     Raises:
-        NotImplementedError: If ``wavelet`` is not a complex Morlet (cmor) family wavelet.
-        ValueError: If ``scales`` contains fewer than two elements (:math:`\delta j` cannot be computed).
+        TypeError: If ``wavelet`` is neither a string nor a
+            :class:`pywt.ContinuousWavelet`.
+        NotImplementedError: If ``wavelet`` is not a complex Morlet (cmor)
+            family wavelet.
+        ValueError: If the bandwidth and center frequency cannot be parsed
+            from the wavelet name.
+        ValueError: If ``scales`` contains fewer than two elements
+            (:math:`\delta j` cannot be computed).
 
     Example:
         >>> import torch, numpy as np, ptwt, pywt
-        >>> Fs = 1000
+        >>> Fs = 1000  # sampling frequency in Hz, so sampling_period = 1 / Fs
         >>> t_np = np.linspace(0, 1, Fs, endpoint=False)
-        >>> t_pt = torch.from_numpy(t_np)
-        >>> x = torch.sin(2 * np.pi * 50 * t_pt).unsqueeze(0)
-        >>> scales_pywt = np.geomspace(1, 256, 64) * Fs  # pywt convention
+        >>> x = torch.sin(2 * np.pi * 50 * torch.from_numpy(t_np)).unsqueeze(0)
+        >>> cwt_scales = np.geomspace(2, 256, 64)  # in samples, as ptwt.cwt expects
         >>> wavelet = pywt.ContinuousWavelet("cmor1.5-1.0")
-        >>> coeffs, _ = ptwt.cwt(x, scales_pywt, wavelet, sampling_period=1/Fs)
-        >>> x_rec, reconstruction_constant = icwt(
-        ...     t_np, scales_pywt / Fs, coeffs, wavelet
+        >>> coeffs, _ = ptwt.cwt(x, cwt_scales, wavelet, sampling_period=1 / Fs)
+        >>> x_rec, reconstruction_constant = ptwt.icwt(
+        ...     t_np, cwt_scales / Fs, coeffs, wavelet  # scales in seconds
         ... )
     """
-    # ------------------------------------------------------------------
-    # Validate wavelet family – only cmor is currently supported
-    # ------------------------------------------------------------------
     if isinstance(wavelet, str):
         wavelet_name = wavelet
     elif isinstance(wavelet, ContinuousWavelet):
@@ -462,59 +513,35 @@ def icwt(
             f"derivations of psi(0) and psi_hat and are not yet implemented."
         )
 
-    # Parse B and C from the wavelet name string "cmor{B}-{C}"
     try:
-        parameter_string = wavelet_name[4:]  # strip "cmor"
+        parameter_string = wavelet_name[4:]
         bandwidth_str, center_frequency_str = parameter_string.split("-")
         bandwidth = float(bandwidth_str)
         center_frequency = float(center_frequency_str)
     except (ValueError, AttributeError) as error:
         raise ValueError(
             f"Could not parse bandwidth and center_frequency from wavelet name '{wavelet_name}'. "
-            f"Expected format: 'cmor{{bandwidth}}-{{enter_frequency}}' (e.g. 'cmor1.5-1.0')."
+            f"Expected format: 'cmor{{bandwidth}}-{{center_frequency}}' (e.g. 'cmor1.5-1.0')."
         ) from error
 
     if len(scales) < 2:
         raise ValueError("Scale array 'scales' must contain at least 2 elements.")
 
-    # ------------------------------------------------------------------
-    # Derive transform parameters
-    # ------------------------------------------------------------------
-
-    # Sampling interval (seconds per sample)
     sampling_interval = time_array[1] - time_array[0]
 
-    # Logarithmic voice spacing dj (Torrence & Compo Eq. 9)
     scale_spacing = np.log2(scales[1] / scales[0])
 
-    # Value of the cmor mother wavelet at the origin: psi(0) = 1 / sqrt(pi * B)
     wavelet_at_origin = 1.0 / np.sqrt(np.pi * bandwidth)
 
-    # Reconstruction constant C_delta (Torrence & Compo Eq. 13)
     reconstruction_constant = complex_morlet_reconstruction(bandwidth, center_frequency)
 
-    # ------------------------------------------------------------------
-    # Convert inputs to torch tensors, preserving device / dtype
-    # ------------------------------------------------------------------
     if isinstance(coefficients, np.ndarray):
         coefficients = torch.from_numpy(coefficients)
 
-    # Scale array as a tensor on the same device as the coefficients
     scales_tensor = torch.tensor(
         scales, dtype=coefficients.real.dtype, device=coefficients.device
     )
 
-    # ------------------------------------------------------------------
-    # Torrence & Compo Eq. 11:
-    #
-    #   x_n  =  (dj * sqrt(dt)) / (psi(0) * C_delta)
-    #           * sum_j { Re[W_j(n)] / sqrt(a_j) }
-    #
-    # coefficients shape:  [S, batch, T]  or  [S, T]
-    # scales_tensor shape:        [S]
-    # ------------------------------------------------------------------
-
-    # Normalize each scale slice by 1/sqrt(a_j) then sum over the scale axis
     if coefficients.dim() == 3:
         # [S, batch, T] -> broadcast scales over batch and time dimensions
         inverse_sqrt_scales = scales_tensor[:, None, None] ** (-0.5)
@@ -522,10 +549,8 @@ def icwt(
         # [S, T] -> broadcast scales over time dimension only
         inverse_sqrt_scales = scales_tensor[:, None] ** (-0.5)
 
-    # Sum of Re[W(s, t)] / sqrt(s)  over scale axis (dim=0)
     weighted_scale_sum = torch.sum(coefficients.real * inverse_sqrt_scales, dim=0)
 
-    # Apply the Torrence & Compo amplitude factor
     amplitude_factor = (scale_spacing * np.sqrt(sampling_interval)) / (
         wavelet_at_origin * reconstruction_constant
     )
