@@ -77,7 +77,6 @@ def swt(
 
         axis : Compute the transform over this axis. If none, the last is used.
 
-
     Returns:
         Same as :func:`wavedec`. Equivalent to :func:`pywt.swt` with trim_approx=True.
     """

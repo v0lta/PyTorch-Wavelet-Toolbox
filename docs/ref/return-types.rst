@@ -28,7 +28,7 @@ Transforms in N dimensions
 
 .. autoclass:: WaveletDetailDict
 
-Fully separable 2d transforms
+Fully separable 2D transforms
 -----------------------------
 
 .. autoclass:: WaveletCoeff2dSeparable

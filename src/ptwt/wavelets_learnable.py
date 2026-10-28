@@ -177,10 +177,8 @@ class ProductFilter(WaveletFilter, torch.nn.Module):
         """Create a Product filter object.
 
         Args:
-            dec_lo : Low pass analysis filter.
-            dec_hi : High pass analysis filter.
-            rec_lo : Low pass synthesis filter.
-            rec_hi : High pass synthesis filter.
+            dec_lo : Low pass analysis filter. dec_hi : High pass analysis filter.
+            rec_lo : Low pass synthesis filter. rec_hi : High pass synthesis filter.
         """
         super().__init__()
         self.dec_lo = torch.nn.Parameter(dec_lo)
