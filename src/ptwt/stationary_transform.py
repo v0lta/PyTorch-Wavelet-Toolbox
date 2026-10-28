@@ -61,7 +61,7 @@ def swt(
 ) -> list[torch.Tensor]:
     """Compute a multilevel 1d stationary wavelet transform.
 
-    This fuction is equivalent to pywt's :func:`pywt.swt` with `trim_approx=True` and
+    This function is equivalent to pywt's :func:`pywt.swt` with `trim_approx=True` and
     `norm=False`.
 
     Args:
@@ -76,7 +76,6 @@ def swt(
             If None, the level is computed based on the signal shape. Defaults to None.
 
         axis : Compute the transform over this axis. If none, the last is used.
-
 
     Returns:
         Same as :func:`wavedec`. Equivalent to :func:`pywt.swt` with trim_approx=True.

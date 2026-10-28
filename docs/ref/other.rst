@@ -2,10 +2,10 @@
 
 .. currentmodule:: ptwt
 
-Other functions
+Other Functions
 ===============
 
-Version information
+Version Information
 -------------------
 
 .. automodule:: ptwt.version

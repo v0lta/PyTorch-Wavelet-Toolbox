@@ -316,8 +316,7 @@ def _compare_coeffs(
     """Compare coefficient lists.
 
     Args:
-        ptwt_res: Our result list.
-        pywt_res: A pyt result list.
+        ptwt_res: Our result list. pywt_res: A pyt result list.
 
     Returns:
         A list with bools from allclose.

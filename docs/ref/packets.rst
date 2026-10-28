@@ -5,7 +5,7 @@
 Wavelet Packet Transform (WPT)
 ==============================
 
-Packets in 1d using :class:`WaveletPacket`
+Packets in 1D using :class:`WaveletPacket`
 ------------------------------------------
 
 .. autoclass:: WaveletPacket
@@ -13,7 +13,7 @@ Packets in 1d using :class:`WaveletPacket`
     :special-members: __getitem__
     :undoc-members:
 
-Packets in 2d using :class:`WaveletPacket2D`
+Packets in 2D using :class:`WaveletPacket2D`
 --------------------------------------------
 
 .. autoclass:: WaveletPacket2D
@@ -21,7 +21,7 @@ Packets in 2d using :class:`WaveletPacket2D`
     :special-members: __getitem__
     :undoc-members:
 
-Node ordering
+Node Ordering
 -------------
 
 .. autoclass:: ptwt.constants.PacketNodeOrder
