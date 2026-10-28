@@ -38,9 +38,9 @@ approximation coefficients of the previous level, i.e.
 
 where :math:`s \in \mathbb{N}_0` denotes the level and :math:`\mathbf{c}_{\mathcal{A},
 0}:= \mathbf{x}` is the original input signal. Each decomposition step halves the size
-of the coefficients as a downsampling is applied on each level. The 1d FWT is imlemented
-in :py:meth:`ptwt.wavedec`. :py:meth:`ptwt.waverec` provides the inverse functionality
-visible on the righthand side of :numref:`fig-fwt`.
+of the coefficients as a downsampling is applied on each level. The 1D FWT is
+implemented in :py:meth:`ptwt.wavedec`. :py:meth:`ptwt.waverec` provides the inverse
+functionality visible on the right-hand side of :numref:`fig-fwt`.
 
 The **Wavelet Packet Transform (WPT)** additionally expands the high-frequency part of
 the tree. The figure below depicts the idea.
@@ -52,7 +52,7 @@ the tree. The figure below depicts the idea.
     :alt: wavelet packet transform computation diagram.
     :align: center
 
-    Scematic drawing of the full WPT in a single dimension. Compared to
+    Schematic drawing of the full WPT in a single dimension. Compared to
     :numref:`fig-fwt`, the high-pass filtered side of the tree is expanded, too.
 
 Whole expansion is not the only possible way to construct a wavelet packet tree. See

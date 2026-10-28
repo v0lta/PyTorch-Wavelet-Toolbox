@@ -276,12 +276,12 @@ class _DifferentiableContinuousWavelet(
 
     @property
     def bandwidth(self) -> torch.Tensor:
-        """Square the bandwith parameter to ensure positive values."""
+        """Square the bandwidth parameter to ensure positive values."""
         return self.bandwidth_par * self.bandwidth_par
 
     @property
     def center(self) -> torch.Tensor:
-        """Square the bandwith parameter to ensure positive values."""
+        """Square the bandwidth parameter to ensure positive values."""
         return self.center_par * self.center_par
 
     def wavefun(

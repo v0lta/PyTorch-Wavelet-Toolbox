@@ -73,7 +73,7 @@ class MatrixWavedec3(BaseMatrixWaveDec):
         This transform uses zero padding to transform coefficients
         with an odd length.
         To avoid padding consider transforming signals
-        with dimensions divisable by :math:`2^L`
+        with dimensions divisible by :math:`2^L`
         for a :math:`L`-level transform.
     """
 

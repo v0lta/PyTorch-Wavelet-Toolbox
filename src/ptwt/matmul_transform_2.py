@@ -244,7 +244,7 @@ def _matrix_pad_2(height: int, width: int) -> tuple[int, int, tuple[bool, bool]]
 class MatrixWavedec2(BaseMatrixWaveDec):
     """Compute the 2d fast wavelet transform using sparse matrices.
 
-    This transform is the sparse matrix correspondant to
+    This transform is the sparse matrix corresponding to
     :func:`ptwt.wavedec2`. The convolution operations are
     implemented as a matrix-vector product between a
     sparse transformation matrix and the input signal.
@@ -266,7 +266,7 @@ class MatrixWavedec2(BaseMatrixWaveDec):
         This transform uses zero padding to transform coefficients
         with an odd length.
         To avoid padding consider transforming signals
-        with dimensions divisable by :math:`2^L`
+        with dimensions divisible by :math:`2^L`
         for a :math:`L`-level transform.
 
     Example:

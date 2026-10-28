@@ -92,16 +92,16 @@ def _construct_s(
 ) -> torch.Tensor:
     """Create a raw synthesis matrix.
 
-    The construced matrix is NOT necessary orthogonal.
+    The constructed matrix is NOT necessary orthogonal.
     In most cases construct_boundary_s should be used instead.
 
     Args:
-        wavelet (Wavelet or str): A pywt wavelet compatible object or
+        wavelet: A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        length (int): The length of the originally transformed signal.
-        device (torch.device, optional): Choose cuda or cpu.
+        length: The length of the originally transformed signal.
+        device: Choose cuda or cpu.
             Defaults to torch.device("cpu").
-        dtype (torch.dtype): The desired data type. Choose torch.float32
+        dtype: The desired data type. Choose torch.float32
             or torch.float64. Defaults to torch.float64.
         mode: The padding mode to use.
             See :data:`ptwt.constants.PaddingMode`. Defaults to 'sameshift'.
@@ -173,7 +173,7 @@ class BaseMatrixWaveDec:
 class MatrixWavedec(BaseMatrixWaveDec):
     """Compute the 1d fast wavelet transform using sparse matrices.
 
-    This transform is the sparse matrix correspondant to
+    This transform is the sparse matrix corresponding to
     :func:`ptwt.wavedec`. The convolution operations are
     implemented as a matrix-vector product between a
     sparse transformation matrix and the input signal.
@@ -196,7 +196,7 @@ class MatrixWavedec(BaseMatrixWaveDec):
         padding to transform coefficients with an odd length,
         with the padding mode specified by `odd_coeff_padding_mode`.
         To avoid padding consider transforming signals
-        with a length divisable by :math:`2^L`
+        with a length divisible by :math:`2^L`
         for a :math:`L`-level transform.
 
     Example:

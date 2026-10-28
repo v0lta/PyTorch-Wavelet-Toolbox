@@ -84,7 +84,7 @@ class WaveletTensorTuple(NamedTuple):
 BoundaryMode = Literal["constant", "zero", "reflect", "periodic", "symmetric"]
 r"""This is a type literal for the way of padding used at boundaries.
 
-- ``reflect``: Refection padding reflects samples at the border:
+- ``reflect``: Reflection padding reflects samples at the border:
 
   .. math::
 

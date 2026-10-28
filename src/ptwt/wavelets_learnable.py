@@ -224,7 +224,7 @@ class SoftOrthogonalWavelet(ProductFilter, torch.nn.Module):
         """Return a Strang inspired soft orthogonality loss.
 
         See Strang p. 148/149 or Harbo p. 80. Since L is a convolution matrix, LL^T can
-        be evaluated trough convolution.
+        be evaluated through convolution.
 
         Returns:
             A tensor with the orthogonality constraint value.

@@ -55,7 +55,7 @@ def _translate_boundary_strings(
     We support ``constant``, ``zero``, ``reflect``,
     ``periodic`` and ``symmetric``.
     Unfortunately, ``constant`` has different meanings in the
-    Pytorch and PyWavelet communities.
+    PyTorch and PyWavelet communities.
 
     Raises:
         ValueError: If the padding mode is not supported.
@@ -72,7 +72,7 @@ def _as_wavelet(wavelet: Wavelet | str) -> Wavelet:
     """Ensure the input argument to be a pywt wavelet compatible object.
 
     Args:
-        wavelet (Wavelet or str): The input argument, which is either a
+        wavelet: The input argument, which is either a
             pywt wavelet compatible object or a valid pywt wavelet name string.
 
     Returns:
@@ -101,11 +101,11 @@ def _get_filter_tensors(
     """Convert input wavelet to filter tensors.
 
     Args:
-        wavelet (Wavelet or str): A pywt wavelet compatible object or
+        wavelet: A pywt wavelet compatible object or
             the name of a pywt wavelet.
-        flip (bool): Flip filters left-right, if true.
-        device (torch.device or str): PyTorch target device.
-        dtype (torch.dtype): The data type sets the precision of the
+        flip: Flip filters left-right, if true.
+        device: PyTorch target device.
+        dtype: The data type sets the precision of the
             computation. Default: torch.float32.
 
     Returns:
@@ -157,7 +157,7 @@ def _is_orthogonal(wavelet: Wavelet | str) -> bool:
     Mathematics by Jensen and la Cour-Harbo.
 
     Args:
-        wavelet (Wavelet or str): The wavelet
+        wavelet: The wavelet
 
     Returns:
         true if orthogonal.
@@ -174,7 +174,7 @@ def _check_orthogonal_wavelet(wavelet: Wavelet | str) -> None:
     """Ensure the wavelet is orthogonal, as the boundary filters require.
 
     Args:
-        wavelet (Wavelet or str): A pywt wavelet compatible object or
+        wavelet: A pywt wavelet compatible object or
             the name of a pywt wavelet.
 
     Raises:
@@ -240,15 +240,15 @@ def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
     """Compute the required padding.
 
     Args:
-        data_len (int): The length of the input vector.
-        filt_len (int): The size of the used filter.
+        data_len: The length of the input vector.
+        filt_len: The size of the used filter.
 
     Returns:
         A tuple (padr, padl). The first entry specifies how many numbers
         to attach on the right. The second entry covers the left side.
     """
     # pad to ensure we see all filter positions and
-    # for pywt compatability.
+    # for pywt compatibility.
     # convolution output length:
     # see https://arxiv.org/pdf/1603.07285.pdf section 2.3:
     # floor([data_len - filt_len]/2) + 1
@@ -259,11 +259,11 @@ def _get_pad(data_len: int, filt_len: int) -> tuple[int, int]:
     # (data_len + total_pad - filt_len) + 2 = data_len + filt_len - 1
     # total_pad = 2*filt_len - 3
 
-    # we pad half of the total requried padding on each side.
+    # we pad half of the total required padding on each side.
     padr = (2 * filt_len - 3) // 2
     padl = (2 * filt_len - 3) // 2
 
-    # pad to even singal length.
+    # pad to even signal length.
     padr += data_len % 2
 
     return padl, padr
@@ -313,8 +313,8 @@ def _fold_axes(data: torch.Tensor, keep_no: int) -> tuple[torch.Tensor, list[int
     """Fold unchanged leading dimensions into a single batch dimension.
 
     Args:
-        data (torch.Tensor): The input data array.
-        keep_no (int): The number of dimensions to keep.
+        data: The input data array.
+        keep_no: The number of dimensions to keep.
 
     Returns:
         A tuple (result_tensor, input_shape) where result_tensor is the
@@ -328,7 +328,7 @@ def _fold_axes(data: torch.Tensor, keep_no: int) -> tuple[torch.Tensor, list[int
 
 
 def _unfold_axes(data: torch.Tensor, ds: list[int], keep_no: int) -> torch.Tensor:
-    """Unfold i.e. [batch*channel,height,widht] to [batch,channel,height,width]."""
+    """Unfold i.e. [batch*channel,height,width] to [batch,channel,height,width]."""
     return torch.reshape(data, ds[:-keep_no] + list(data.shape[-keep_no:]))
 
 
@@ -342,7 +342,7 @@ def _check_if_tensor(array: Any) -> torch.Tensor:
 
 def _check_axes_argument(axes: Sequence[int]) -> None:
     if len(set(axes)) != len(axes):
-        raise ValueError("Cant transform the same axis twice.")
+        raise ValueError("Can't transform the same axis twice.")
 
 
 def _check_same_device(
@@ -368,7 +368,7 @@ def _check_same_device_dtype(
     device and dtype.
 
     Args:
-        coeffs (Wavelet coefficients): The resulting coefficients of
+        coeffs: The resulting coefficients of
             a discrete wavelet transform. Can be either of
             `list[torch.Tensor]` (1d case),
             :data:`ptwt.constants.WaveletCoeff2d` (2d case) or
@@ -543,15 +543,15 @@ def _preprocess_coeffs(
     batch dimension.
 
     Args:
-        coeffs (Wavelet coefficients): The resulting coefficients of
+        coeffs: The resulting coefficients of
             a discrete wavelet transform. Can be either of
             `list[torch.Tensor]` (1d case),
             :data:`ptwt.constants.WaveletCoeff2d` (2d case) or
             :data:`ptwt.constants.WaveletCoeffNd` (Nd case).
-        ndim (int): The number of axes :math:`N` on which the transformation
+        ndim: The number of axes :math:`N` on which the transformation
             was applied.
-        axes : Axes on which the transform was calculated.
-        add_channel_dim (bool): If True, ensures that all returned coefficients
+        axes: Axes on which the transform was calculated.
+        add_channel_dim: If True, ensures that all returned coefficients
             have at least `:math:`N + 2` axes by potentially adding a new axis at dim 1.
             Defaults to False.
 
@@ -653,16 +653,16 @@ def _postprocess_coeffs(
     original position.
 
     Args:
-        coeffs (Wavelet coefficients): The preprocessed coefficients of
+        coeffs: The preprocessed coefficients of
             a discrete wavelet transform. Can be either of
             `list[torch.Tensor]` (1d case),
             :data:`ptwt.constants.WaveletCoeff2d` (2d case) or
             :data:`ptwt.constants.WaveletCoeffNd` (Nd case).
-        ndim (int): The number of axes :math:`N` on which the transformation was
+        ndim: The number of axes :math:`N` on which the transformation was
             applied.
-        ds (list of ints): The shape of the original first coefficient before
+        ds: The shape of the original first coefficient before
             preprocessing, i.e. of ``coeffs[0]``.
-        axes : Axes on which the transform was calculated.
+        axes: Axes on which the transform was calculated.
 
     Returns:
         The result of undoing the preprocessing operations on `coeffs`.
@@ -710,11 +710,11 @@ def _preprocess_tensor(
     batch dimension.
 
     Args:
-        data (torch.Tensor): An input tensor with at least `ndim` axes.
-        ndim (int): The number of axes :math:`N` on which the transformation is
+        data: An input tensor with at least `ndim` axes.
+        ndim: The number of axes :math:`N` on which the transformation is
             applied.
-        axes : Axes on which the transform is calculated.
-        add_channel_dim (bool): If True, ensures that the return has at
+        axes: Axes on which the transform is calculated.
+        add_channel_dim: If True, ensures that the return has at
             least :math:`N + 2` axes by potentially adding a new axis at dim 1.
             Defaults to True.
 
@@ -746,12 +746,12 @@ def _postprocess_tensor(
     original position.
 
     Args:
-        data (torch.Tensor): An preprocessed input tensor.
-        ndim (int): The number of axes :math:`N` on which the transformation is
+        data: An preprocessed input tensor.
+        ndim: The number of axes :math:`N` on which the transformation is
             applied.
-        ds (list of ints): The shape of the original input tensor before
+        ds: The shape of the original input tensor before
             preprocessing.
-        axes : Axes on which the transform was calculated.
+        axes: Axes on which the transform was calculated.
 
     Returns:
         The result of undoing the preprocessing operations on `data`.
@@ -906,8 +906,8 @@ def _construct_2d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     """Construct two-dimensional filters using outer products.
 
     Args:
-        lo (torch.Tensor): Low-pass input filter.
-        hi (torch.Tensor): High-pass input filter
+        lo: Low-pass input filter.
+        hi: High-pass input filter
 
     Returns:
         Stacked 2d-filters of dimension
@@ -930,8 +930,8 @@ def _construct_3d_filt(lo: torch.Tensor, hi: torch.Tensor) -> torch.Tensor:
     """Construct three-dimensional filters using outer products.
 
     Args:
-        lo (torch.Tensor): Low-pass input filter.
-        hi (torch.Tensor): High-pass input filter
+        lo: Low-pass input filter.
+        hi: High-pass input filter
 
     Returns:
         Stacked 3d filters of dimension::
