@@ -10,9 +10,11 @@ readme = "README.rst"
 authors = [
     {name = "Moritz Wolter", email = "moritz@wolter.tech"},
     {name = "Felix Blanke"},
+    {name = "Charles Tapley Hoyt", email = "cthoyt@gmail.com"},
 ]
 maintainers = [
     {name = "Moritz Wolter", email = "moritz@wolter.tech"},
+    {name = "Charles Tapley Hoyt", email = "cthoyt@gmail.com"},
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
