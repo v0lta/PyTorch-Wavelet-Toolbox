@@ -20,11 +20,17 @@ __all__ = [
 
 
 def _next_fast_len(n: int) -> int:
-    """Round up size to the nearest power of two.
+    """Round up to the nearest power of two.
 
-    Given a number of samples `n`, returns the next power of two
-    following this number to take advantage of FFT speedup.
-    This fallback is less efficient than `scipy.fftpack.next_fast_len`
+    Args:
+        n: the number of samples
+
+    Returns:
+        The next power of two following this number to take advantage of FFT speedup
+
+    .. warning::
+
+        This fallback is less efficient than ``scipy.fftpack.next_fast_len``
     """
     return int(2 ** np.ceil(np.log2(n)))
 
@@ -42,26 +48,32 @@ def cwt(
     https://github.com/PyWavelets/pywt/blob/master/pywt/_cwt.py
 
     Args:
-        data (torch.Tensor): The input tensor of shape ``[batch_size, time]``.
-        scales (torch.Tensor or np.array):
-            The wavelet scales to use. One can use
-            ``f = pywt.scale2frequency(wavelet, scale)/sampling_period`` to determine
-            what physical frequency, ``f``. Here, ``f`` is in hertz when the
-            ``sampling_period`` is given in seconds.
-        wavelet (ContinuousWavelet or str): The continuous wavelet to work with.
-        sampling_period (float): Sampling period for the frequencies output (optional).
-            The values computed for ``coefs`` are independent of the choice of
-            ``sampling_period`` (i.e. ``scales`` is not scaled by the sampling
-            period).
-        precision (int): Length of the wavelet used for the CWT.
+        data:
+            The input tensor of shape ``[batch_size, time]``.
+
+        scales: The wavelet scales to use. One can use ``f =
+            pywt.scale2frequency(wavelet, scale)/sampling_period`` to determine what
+            physical frequency, ``f``. Here, ``f`` is in hertz when the ``sampling_period``
+            is given in seconds.
+
+        wavelet:
+            The continuous wavelet to work with.
+
+        sampling_period: The optional sampling period
+            for the frequencies output. The values computed for ``coefs`` are
+            independent of the choice of ``sampling_period`` (i.e. ``scales`` is not
+            scaled by the sampling period)
+
+        precision:
+            Length of the wavelet used for the CWT
+
+    Returns:
+        A pair of out_tensor and frequencies. The first tuple-element contains the
+        transformation matrix of shape ``[scales, batch, time]``. The second element
+        contains an array with frequency information.
 
     Raises:
         ValueError: If a scale is too small for the input signal.
-
-    Returns:
-        A tuple (out_tensor, frequencies). The first tuple-element contains
-        the transformation matrix of shape ``[scales, batch, time]``.
-        The second element contains an array with frequency information.
 
     Example:
         >>> import torch, ptwt
@@ -71,8 +83,8 @@ def cwt(
         >>> sig = signal.chirp(t, f0=1, f1=12, t1=2, method="linear")
         >>> widths = np.arange(1, 31)
         >>> cwtmatr, freqs = ptwt.cwt(
-        >>>     torch.from_numpy(sig), widths, "mexh", sampling_period=(4 / 800) * np.pi
-        >>> )
+        ...     torch.from_numpy(sig), widths, "mexh", sampling_period=(4 / 800) * np.pi
+        ... )
     """
     # accept array_like input; make a copy to ensure a contiguous array
     if not isinstance(
@@ -160,32 +172,31 @@ def cwt(
 
 
 def _integrate_wavelet(wavelet: ContinuousWavelet | str, precision: int = 8) -> Any:
-    """
-    Integrate `psi` wavelet function from -Inf to x using rectangle integration.
+    """Integrate `psi` wavelet function from -Inf to x using rectangle integration.
 
     Modified to enable gradient flow through the cwt.
 
     Ported from:
     https://github.com/PyWavelets/pywt/blob/cef09e7f419aaf4c39b9f778bdc2d54b32fd7337/pywt/_functions.py#L60
 
-
     Args:
-        wavelet (Wavelet instance or str): Wavelet to integrate.
+        wavelet: Wavelet to integrate.
             If a string, should be the name of a wavelet.
-        precision (int): Precision that will be used for wavelet function
-            approximation computed with the wavefun(level=precision)
-            Wavelet's method. Defaults to 8.
+
+        precision: Precision that will be used for wavelet function
+            approximation computed with the wavefun(level=precision) Wavelet's method.
+            Defaults to 8.
 
     Returns:
-        A tuple (int_psi, x) for orthogonal wavelets;
-        for other wavelets, a tuple (int_psi_d, int_psi_r, x) is returned instead.
+        A tuple (int_psi, x) for orthogonal wavelets; for other wavelets, a tuple
+        (int_psi_d, int_psi_r, x) is returned instead.
 
     Example:
         >>> from pywt import Wavelet
         >>> from ptwt.continuous_transform import _integrate_wavelet
-        >>> wavelet1 = Wavelet('db2')
+        >>> wavelet1 = Wavelet("db2")
         >>> [int_psi, x] = _integrate_wavelet(wavelet1, precision=5)
-        >>> wavelet2 = Wavelet('bior1.3')
+        >>> wavelet2 = Wavelet("bior1.3")
         >>> [int_psi_d, int_psi_r, x] = _integrate_wavelet(wavelet2, precision=5)
     """
 
