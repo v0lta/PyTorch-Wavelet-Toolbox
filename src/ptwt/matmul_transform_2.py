@@ -527,7 +527,9 @@ class MatrixWavedec2(BaseMatrixWaveDec):
                 ll, lh = torch.split(a_coeffs, current_width // 2, dim=-1)
                 hl, hh = torch.split(d_coeffs, current_width // 2, dim=-1)
 
-                split_list.append(WaveletDetailTuple2d(lh, hl, hh))
+                # lh means high-pass along the width or vertical detail
+                # hl means high-pass along the height or horizontal detail
+                split_list.append(WaveletDetailTuple2d(hl, lh, hh))
         else:
             ll = input_signal.transpose(-2, -1).reshape([batch_size, -1]).T
             for scale, fwt_matrix in enumerate(self.fwt_matrix_list):
@@ -805,8 +807,9 @@ class MatrixWaverec2:
                 synthesis_matrix_rows, synthesis_matrix_cols = self.ifwt_matrix_list[
                     ::-1
                 ][c_pos]
-                a_coeffs = torch.cat((ll, lh), -1)
-                d_coeffs = torch.cat((hl, hh), -1)
+                # We follow a (horizontal, vertical, diagonal) order,
+                a_coeffs = torch.cat((ll, hl), -1)
+                d_coeffs = torch.cat((lh, hh), -1)
                 coeff_tensor = torch.cat((a_coeffs, d_coeffs), -2)
                 if len(curr_shape) == 2:
                     coeff_tensor = coeff_tensor.unsqueeze(0)
