@@ -100,36 +100,18 @@ def _assert_grid_table(
     print(f"  {title}")
     print(f"    {'pos':<8}{'pywt':<16}{'ptwt':<16}")
     for pos in positions:
-        pywt_label, pywt_val = pywt_g[pos]
-        ptwt_label, ptwt_val = ptwt_g[pos]
-        print(
-            f"    {pos!s:<8}"
-            f"{pywt_label:<4}{pywt_val:>9.3f}   "
-            f"{ptwt_label:<4}{ptwt_val:>9.3f}   "
-        )
+        _, pywt_val = pywt_g[pos]
+        _, ptwt_val = ptwt_g[pos]
         assert np.allclose(pywt_val, ptwt_val, rtol=PRECISION_ESP)
 
 
 def compare(
     signal_np: np.ndarray,
-    label: str,
     mode: ExtendedBoundaryMode,
     separable: bool,
 ) -> None:
     pywt_wp = build_pywt_wp(signal_np)
     ptwt_wp = build_ptwt_wp(signal_np, mode=mode, separable=separable)
-
-    print(f"\n{label}  [ptwt mode={mode!r}, separable={separable}]")
-    print(
-        "  pywt natural order:",
-        [node.path for node in pywt_wp.get_level(1, order="natural")],
-    )
-    print("  ptwt natural order:", ptwt_wp.get_level(1, order="natural"))
-    print(
-        "  pywt freq order:",
-        [[n.path for n in node] for node in pywt_wp.get_level(1, order="freq")],
-    )
-    print("  ptwt freq order:", ptwt_wp.get_level(1, order="freq"))
 
     natural_positions: list[GridPos] = [0, 1, 2, 3]
     _assert_grid_table(
@@ -155,15 +137,15 @@ def test_consistency() -> None:
     modes: list[ExtendedBoundaryMode] = ["reflect", "boundary"]
     for mode in modes:
         for separable in [False, True]:
+            # "Signal varies along W (columns), constant along H"
             compare(
                 varies_along_w,
-                "Signal varies along W (columns), constant along H",
                 mode,
                 separable,
             )
+            # "Signal varies along H (rows), constant along W"
             compare(
                 varies_along_h,
-                "Signal varies along H (rows), constant along W",
                 mode,
                 separable,
             )
