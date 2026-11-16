@@ -29,8 +29,8 @@ def test_partial_tree(device: str) -> None:
     np.testing.assert_allclose(
         result.detach().cpu(), ref.reconstruct(False), atol=1e-12
     )
-    result.square().sum().backward()
-    assert x.grad is not None and x.grad.isfinite().all()
+    (grad,) = torch.autograd.grad(result.square().sum(), x)
+    assert grad.isfinite().all()
 
 
 def test_transform_resets_tree() -> None:
