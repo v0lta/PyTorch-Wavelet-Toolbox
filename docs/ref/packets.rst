@@ -25,3 +25,9 @@ Node Ordering
 -------------
 
 .. autoclass:: ptwt.constants.PacketNodeOrder
+
+Packets in 3D using :class:`WaveletPacket3D`
+--------------------------------------------
+
+.. autoclass:: WaveletPacket3D
+   :members:
