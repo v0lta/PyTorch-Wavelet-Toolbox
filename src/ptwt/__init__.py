@@ -16,7 +16,7 @@ from .conv_transform_3 import wavedec3, waverec3
 from .matmul_transform import MatrixWavedec, MatrixWaverec
 from .matmul_transform_2 import MatrixWavedec2, MatrixWaverec2
 from .matmul_transform_3 import MatrixWavedec3, MatrixWaverec3
-from .packets import WaveletPacket, WaveletPacket2D
+from .packets import WaveletPacket, WaveletPacket2D, WaveletPacket3D
 from .separable_conv_transform import fswavedec2, fswavedec3, fswaverec2, fswaverec3
 from .stationary_transform import iswt, swt
 
@@ -35,6 +35,7 @@ __all__ = [
     "WaveletDetailTuple2d",
     "WaveletPacket",
     "WaveletPacket2D",
+    "WaveletPacket3D",
     "WaveletTensorTuple",
     "cwt",
     "fswavedec2",

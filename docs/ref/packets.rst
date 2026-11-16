@@ -21,6 +21,13 @@ Packets in 2D using :class:`WaveletPacket2D`
     :special-members: __getitem__
     :undoc-members:
 
+Packets in 3D using :class:`WaveletPacket3D`
+--------------------------------------------
+
+.. autoclass:: WaveletPacket3D
+    :members:
+    :special-members: __getitem__
+
 Node Ordering
 -------------
 

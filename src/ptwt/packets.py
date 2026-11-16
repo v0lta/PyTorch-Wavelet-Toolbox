@@ -23,6 +23,7 @@ from ._util import (
     _undo_swap_axes,
 )
 from .constants import (
+    BoundaryMode,
     ExtendedBoundaryMode,
     OrthogonalizeMethod,
     PacketNodeOrder,
@@ -34,6 +35,7 @@ from .constants import (
 )
 from .conv_transform import wavedec, waverec
 from .conv_transform_2 import wavedec2, waverec2
+from .conv_transform_3 import wavedec3, waverec3
 from .matmul_transform import MatrixWavedec, MatrixWaverec
 from .matmul_transform_2 import MatrixWavedec2, MatrixWaverec2
 from .separable_conv_transform import fswavedec2, fswaverec2
@@ -44,7 +46,7 @@ else:
     BaseDict = collections.UserDict
 
 
-__all__ = ["WaveletPacket", "WaveletPacket2D"]
+__all__ = ["WaveletPacket", "WaveletPacket2D", "WaveletPacket3D"]
 
 
 def _wpfreq(fs: float, level: int) -> list[float]:
@@ -776,3 +778,83 @@ class WaveletPacket2D(BaseDict):
                 ["".join(row[path]) for path in graycode_order if path in row]
             )
         return result
+
+
+class WaveletPacket3D(BaseDict):
+    """Three-dimensional wavelet packets with lazy decomposition.
+
+    Each level adds three letters to the path, one filter per transformed
+    axis, as in PyWavelets. For example, ``wp["aaaaad"]`` selects the
+    ``aad`` subband of the first-level approximation.
+    """
+
+    def __init__(
+        self,
+        data: torch.Tensor | None,
+        wavelet: Wavelet | str,
+        *,
+        mode: BoundaryMode = "reflect",
+        maxlevel: int | None = None,
+        axes: tuple[int, int, int] = (-3, -2, -1),
+    ) -> None:
+        """Initialize the tree for the given data, wavelet, axes and padding mode."""
+        super().__init__()
+        self.wavelet = _as_wavelet(wavelet)
+        self.mode = mode
+        self.axes = axes
+        self.maxlevel: int | None = None
+        if data is not None:
+            self.transform(data, maxlevel)
+
+    def transform(
+        self, data: torch.Tensor, maxlevel: int | None = None
+    ) -> WaveletPacket3D:
+        """Start a new tree, discarding any previously computed packets."""
+        if (
+            len(self.axes) != 3
+            or data.ndim < 3
+            or any(axis < -data.ndim or axis >= data.ndim for axis in self.axes)
+            or len({axis % data.ndim for axis in self.axes}) != 3
+        ):
+            raise ValueError("Expected three distinct transform axes within the input")
+        if maxlevel is None:
+            size = min(data.shape[axis] for axis in self.axes)
+            maxlevel = pywt.dwt_max_level(size, self.wavelet.dec_len)
+        if maxlevel < 0:
+            raise ValueError("maxlevel must be non-negative")
+        self.maxlevel = maxlevel
+        self.data = {"": data}
+        return self
+
+    def __getitem__(self, key: str) -> torch.Tensor:
+        """Compute missing ancestors and return the selected subband."""
+        if self.maxlevel is None:
+            raise ValueError("Initialize the wavelet packet tree with transform first")
+        if len(key) % 3 or set(key) - {"a", "d"}:
+            raise ValueError(f"Expected groups of three 'a' or 'd' characters: {key!r}")
+        if len(key) > 3 * self.maxlevel:
+            raise KeyError(f"Packet {key!r} exceeds maximum level {self.maxlevel}")
+        if key and key not in self.data:
+            parent = key[:-3]
+            approx, *details = wavedec3(
+                self[parent], self.wavelet, mode=self.mode, axes=self.axes, level=1
+            )
+            self.data[parent + "aaa"] = approx
+            self.data.update(
+                {parent + band: value for band, value in details[0].items()}
+            )
+        return self.data[key]
+
+    def reconstruct(self) -> WaveletPacket3D:
+        """Reconstruct expanded branches from their current child coefficients."""
+        parents = {key[:-3] for key in self.data if key}
+        for parent in sorted(parents, key=len, reverse=True):
+            shape = self.data[parent].shape
+            bands = {
+                "".join(band): self.data[parent + "".join(band)]
+                for band in product("ad", repeat=3)
+            }
+            coeffs = (bands.pop("aaa"), bands)
+            result = waverec3(coeffs, self.wavelet, axes=self.axes)
+            self.data[parent] = result[tuple(slice(n) for n in shape)]
+        return self
