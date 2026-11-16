@@ -21,13 +21,14 @@ Packets in 2D using :class:`WaveletPacket2D`
     :special-members: __getitem__
     :undoc-members:
 
-Node Ordering
--------------
-
-.. autoclass:: ptwt.constants.PacketNodeOrder
-
 Packets in 3D using :class:`WaveletPacket3D`
 --------------------------------------------
 
 .. autoclass:: WaveletPacket3D
-   :members:
+    :members:
+    :special-members: __getitem__
+
+Node Ordering
+-------------
+
+.. autoclass:: ptwt.constants.PacketNodeOrder

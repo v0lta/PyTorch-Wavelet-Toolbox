@@ -836,11 +836,13 @@ class WaveletPacket3D(BaseDict):
             raise KeyError(f"Packet {key!r} exceeds maximum level {self.maxlevel}")
         if key and key not in self.data:
             parent = key[:-3]
-            approx, detail = wavedec3(
+            approx, *details = wavedec3(
                 self[parent], self.wavelet, mode=self.mode, axes=self.axes, level=1
             )
             self.data[parent + "aaa"] = approx
-            self.data.update({parent + band: value for band, value in detail.items()})
+            self.data.update(
+                {parent + band: value for band, value in details[0].items()}
+            )
         return self.data[key]
 
     def reconstruct(self) -> WaveletPacket3D:
